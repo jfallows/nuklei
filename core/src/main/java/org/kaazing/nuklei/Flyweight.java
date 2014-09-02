@@ -15,9 +15,10 @@
  */
 package org.kaazing.nuklei;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
-
 import java.nio.ByteOrder;
+import java.util.function.Consumer;
+
+import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 /**
  * Encapsulation of basic field operations and flyweight usage pattern
@@ -29,7 +30,9 @@ public class Flyweight
     private final ByteOrder byteOrder;
     private int offset;
     private AtomicBuffer buffer;
-
+    private Consumer<Flyweight> observer = (owner) -> {};  // NOP
+    
+    
     /**
      * Construct a flyweight with a given byte order assumed
      *
@@ -69,6 +72,17 @@ public class Flyweight
         this.buffer = buffer;
         this.offset = offset;
         return this;
+    }
+
+    public Flyweight watch(Consumer<Flyweight> observer)
+    {
+        this.observer = observer;
+        return this;
+    }
+    
+    protected final void notifyChanged()
+    {
+        observer.accept(this);
     }
 
     /**
