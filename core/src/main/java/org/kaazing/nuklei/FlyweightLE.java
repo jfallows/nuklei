@@ -20,7 +20,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 /**
- * Big endian flyweight.
+ * Little endian flyweight.
  */
 public class FlyweightLE extends Flyweight
 {
@@ -30,6 +30,30 @@ public class FlyweightLE extends Flyweight
     public FlyweightLE()
     {
         super(LITTLE_ENDIAN);
+    }
+
+    /**
+     * Return the 32-bit field at a given location as an float.
+     *
+     * @param buffer to read from
+     * @param offset to read from
+     * @return float representation of the 32-bit field
+     */
+    public static float floatGet(final AtomicBuffer buffer, final int offset)
+    {
+        return buffer.getFloat(offset, LITTLE_ENDIAN);
+    }
+
+    /**
+     * Return the 64-bit field at a given location as an double.
+     *
+     * @param buffer to read from
+     * @param offset to read from
+     * @return double representation of the 64-bit field
+     */
+    public static double doubleGet(final AtomicBuffer buffer, final int offset)
+    {
+        return buffer.getDouble(offset, LITTLE_ENDIAN);
     }
 
     /**

@@ -32,14 +32,30 @@ public class FlyweightBE extends Flyweight
         super(BIG_ENDIAN);
     }
 
-    public static double doubleGet(final AtomicBuffer buffer, final int offset) {
-        return buffer.getDouble(offset, BIG_ENDIAN);
-    }
-    
-    public static float floatGet(final AtomicBuffer buffer, final int offset) {
+    /**
+     * Return the 32-bit field at a given location as an float.
+     *
+     * @param buffer to read from
+     * @param offset to read from
+     * @return float representation of the 32-bit field
+     */
+    public static float floatGet(final AtomicBuffer buffer, final int offset)
+    {
         return buffer.getFloat(offset, BIG_ENDIAN);
     }
-    
+
+    /**
+     * Return the 64-bit field at a given location as an double.
+     *
+     * @param buffer to read from
+     * @param offset to read from
+     * @return double representation of the 64-bit field
+     */
+    public static double doubleGet(final AtomicBuffer buffer, final int offset)
+    {
+        return buffer.getDouble(offset, BIG_ENDIAN);
+    }
+
     /**
      * Return the 16-bit field at a given location as an unsigned integer.
      *
