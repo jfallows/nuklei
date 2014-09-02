@@ -106,16 +106,20 @@ public class TcpManagerTest
     {
         tcpManager.launch(dedicatedNuklei);
 
-        tcpManagerProxy.attach(PORT, new InetAddress[0], receiveBuffer);
+        long attachId = tcpManagerProxy.attach(PORT, new InetAddress[0], receiveBuffer);
 
-        // TODO: this could race with the attach completing and doing the bind
-        Thread.sleep(100);
+        int messages = receiveSingleMessage((typeId, buffer, offset, length) ->
+        {
+            assertThat(typeId, is(TcpManagerEvents.ATTACH_COMPLETED_TYPE_ID));
+            assertThat(buffer.getLong(offset), is(attachId));
+        });
+        assertThat(messages, is(1));
 
         senderChannel = SocketChannel.open();
         senderChannel.connect(new InetSocketAddress("localhost", PORT));
 
         final long connectionId[] = new long[1];
-        int messages = receiveSingleMessage((typeId, buffer, offset, length) ->
+        messages = receiveSingleMessage((typeId, buffer, offset, length) ->
         {
             assertThat(typeId, is(TcpManagerEvents.NEW_CONNECTION_TYPE_ID));
             connectionId[0] = buffer.getLong(offset);
@@ -142,10 +146,14 @@ public class TcpManagerTest
     {
         tcpManager.launch(dedicatedNuklei);
 
-        tcpManagerProxy.attach(PORT, new InetAddress[0], receiveBuffer);
+        long attachId = tcpManagerProxy.attach(PORT, new InetAddress[0], receiveBuffer);
 
-        // TODO: this could race with the attach completing and doing the bind
-        Thread.sleep(100);
+        int messages = receiveSingleMessage((typeId, buffer, offset, length) ->
+        {
+            assertThat(typeId, is(TcpManagerEvents.ATTACH_COMPLETED_TYPE_ID));
+            assertThat(buffer.getLong(offset), is(attachId));
+        });
+        assertThat(messages, is(1));
 
         receiverChannel = SocketChannel.open();
         receiverChannel.connect(new InetSocketAddress("localhost", PORT));
@@ -153,7 +161,7 @@ public class TcpManagerTest
         receiverChannel.configureBlocking(false);
 
         final long connectionId[] = new long[1];
-        int messages = receiveSingleMessage((typeId, buffer, offset, length) ->
+        messages = receiveSingleMessage((typeId, buffer, offset, length) ->
         {
             assertThat(typeId, is(TcpManagerEvents.NEW_CONNECTION_TYPE_ID));
             connectionId[0] = buffer.getLong(offset);

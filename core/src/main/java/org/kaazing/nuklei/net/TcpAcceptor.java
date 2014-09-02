@@ -96,6 +96,11 @@ public class TcpAcceptor
         return id;
     }
 
+    public MpscRingBufferWriter receiveWriter()
+    {
+        return receiveWriter;
+    }
+
     public void close()
     {
         for (final TcpInterfaceAcceptor acceptor : acceptors)

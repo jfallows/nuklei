@@ -16,6 +16,7 @@
 
 package org.kaazing.nuklei.net;
 
+import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.MessagingNukleus;
 import org.kaazing.nuklei.NioSelectorNukleus;
 import org.kaazing.nuklei.Nuklei;
@@ -25,6 +26,7 @@ import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferWriter;
 import org.kaazing.nuklei.net.command.TcpDetachCmd;
 import org.kaazing.nuklei.net.command.TcpLocalAttachCmd;
 
+import java.nio.ByteBuffer;
 import java.nio.channels.Selector;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,6 +49,7 @@ public class TcpManager
     private final TcpReceiver tcpReceiver;
     private final TcpSender tcpSender;
     private final Map<Long, TcpAcceptor> localAttachesByIdMap;
+    private final AtomicBuffer attachCompletionBuffer;
 
     public TcpManager(final MpscArrayBuffer<Object> commandQueue, final AtomicBuffer sendBuffer)
         throws Exception
@@ -66,6 +69,7 @@ public class TcpManager
         tcpReceiver = new TcpReceiver(tcpReaderCommandQueue, receiveNioSelectorNukleus);
         tcpSender = new TcpSender(tcpSenderCommandQueue, sendBuffer, sendNioSelectorNukleus);
         localAttachesByIdMap = new HashMap<>();
+        attachCompletionBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(BitUtil.SIZE_OF_LONG));
     }
 
     public void launch(final Nuklei nuklei)
@@ -107,6 +111,7 @@ public class TcpManager
                     tcpManagerCommandQueue);
 
             localAttachesByIdMap.put(cmd.id(), acceptor);
+            informOfAttachStatus(receiveWriter, TcpManagerEvents.ATTACH_COMPLETED_TYPE_ID, cmd.id());
         }
         else if (obj instanceof TcpDetachCmd)
         {
@@ -114,6 +119,17 @@ public class TcpManager
             final TcpAcceptor acceptor = localAttachesByIdMap.remove(cmd.id());
 
             acceptor.close();
+            informOfAttachStatus(acceptor.receiveWriter(), TcpManagerEvents.DETACH_COMPLETED_TYPE_ID, acceptor.id());
+        }
+    }
+
+    private void informOfAttachStatus(final MpscRingBufferWriter writer, final int status, final long id)
+    {
+        attachCompletionBuffer.putLong(0, id);
+
+        if (!writer.write(TcpManagerEvents.ATTACH_COMPLETED_TYPE_ID, attachCompletionBuffer, 0, BitUtil.SIZE_OF_LONG))
+        {
+            throw new IllegalStateException("could not write to receive buffer");
         }
     }
 }
