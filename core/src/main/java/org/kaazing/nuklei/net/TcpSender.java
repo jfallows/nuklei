@@ -77,7 +77,6 @@ public class TcpSender
     {
         if (SEND_DATA_TYPE_ID == typeId)
         {
-            // use the typeId to hold the connectionId
             final TcpConnection connection = connectionsByIdMap.get(buffer.getLong(offset));
 
             final int messageOffset = offset + BitUtil.SIZE_OF_LONG;

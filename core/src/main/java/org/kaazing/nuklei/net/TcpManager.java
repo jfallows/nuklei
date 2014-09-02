@@ -21,6 +21,7 @@ import org.kaazing.nuklei.NioSelectorNukleus;
 import org.kaazing.nuklei.Nuklei;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
+import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferWriter;
 import org.kaazing.nuklei.net.command.TcpDetachCmd;
 import org.kaazing.nuklei.net.command.TcpLocalAttachCmd;
 
@@ -91,12 +92,15 @@ public class TcpManager
         if (obj instanceof TcpLocalAttachCmd)
         {
             final TcpLocalAttachCmd cmd = (TcpLocalAttachCmd) obj;
+
+            final MpscRingBufferWriter receiveWriter = new MpscRingBufferWriter(cmd.receiveBuffer());
+
             final TcpAcceptor acceptor =
                 new TcpAcceptor(
                     cmd.port(),
                     cmd.addresses(),
                     cmd.id(),
-                    cmd.receiveBuffer(),
+                    receiveWriter,
                     acceptNioSelectorNukleus,
                     tcpReaderCommandQueue,
                     tcpSenderCommandQueue,

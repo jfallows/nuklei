@@ -19,6 +19,7 @@ package org.kaazing.nuklei.net;
 import org.kaazing.nuklei.NioSelectorNukleus;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
+import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferWriter;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -33,7 +34,7 @@ public class TcpAcceptor
 {
     private final long id;
     private final TcpInterfaceAcceptor[] acceptors;
-    private final AtomicBuffer receiveBuffer;
+    private final MpscRingBufferWriter receiveWriter;
     private final NioSelectorNukleus selectorNukleus;
     private final MpscArrayBuffer<Object> tcpReaderCommandQueue;
     private final MpscArrayBuffer<Object> tcpSenderCommandQueue;
@@ -43,14 +44,14 @@ public class TcpAcceptor
         final int port,
         final InetAddress[] interfaces,
         final long id,
-        final AtomicBuffer receiveBuffer,
+        final MpscRingBufferWriter receiveWriter,
         final NioSelectorNukleus selectorNukleus,
         final MpscArrayBuffer<Object> tcpReaderCommandQueue,
         final MpscArrayBuffer<Object> tcpSenderCommandQueue,
         final MpscArrayBuffer<Object> tcpManagerCommandQueue)
     {
         this.id = id;
-        this.receiveBuffer = receiveBuffer;
+        this.receiveWriter = receiveWriter;
         this.selectorNukleus = selectorNukleus;
         this.tcpReaderCommandQueue = tcpReaderCommandQueue;
         this.tcpSenderCommandQueue = tcpSenderCommandQueue;
@@ -117,11 +118,11 @@ public class TcpAcceptor
             ex.printStackTrace();  // TODO: temporary
         }
 
-        final TcpConnection transport = new TcpConnection(channel, id, receiveBuffer);
+        final TcpConnection connection = new TcpConnection(channel, id, receiveWriter);
 
         // pass transport off to other nukleus' to process
-        tcpReaderCommandQueue.write(transport);
-        tcpSenderCommandQueue.write(transport);
+        tcpReaderCommandQueue.write(connection);
+        tcpSenderCommandQueue.write(connection);
 
         return 1;
     }

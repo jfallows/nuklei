@@ -42,12 +42,12 @@ public class TcpConnection
     public TcpConnection(
         final SocketChannel channel,
         final long id,
-        final AtomicBuffer receiveBuffer)
+        final MpscRingBufferWriter receiveWriter)
     {
         this.channel = channel;
         this.id = id;
 
-        receiveWriter = new MpscRingBufferWriter(receiveBuffer);
+        this.receiveWriter = receiveWriter;
         receiveByteBuffer = ByteBuffer.allocateDirect(MAX_RECEIVE_LENGTH).order(ByteOrder.nativeOrder());
         atomicBuffer = new AtomicBuffer(receiveByteBuffer);
 
