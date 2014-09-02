@@ -13,14 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei;
+package org.kaazing.nuklei.function;
 
-import java.nio.ByteOrder;
+@FunctionalInterface
+public interface ToBooleanFunction<T>
+{
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
-
-public interface FieldAccessor<T> {
-
-    public T get(AtomicBuffer buffer, int offset, int size, ByteOrder byteOrder);
+    /**
+     * Applies this function to the given argument.
+     *
+     * @param value the function argument
+     * @return the function result
+     */
+    boolean applyAsBoolean(T value);
 
 }
