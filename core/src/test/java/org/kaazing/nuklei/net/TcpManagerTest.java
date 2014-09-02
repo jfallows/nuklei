@@ -114,10 +114,11 @@ public class TcpManagerTest
         senderChannel = SocketChannel.open();
         senderChannel.connect(new InetSocketAddress("localhost", PORT));
 
+        final long connectionId[] = new long[1];
         int messages = receiveSingleMessage((typeId, buffer, offset, length) ->
         {
             assertThat(typeId, is(TcpManagerEvents.NEW_CONNECTION_TYPE_ID));
-            assertThat(buffer.getLong(offset), is(0L));
+            connectionId[0] = buffer.getLong(offset);
         });
         assertThat(messages, is(1));
 
@@ -129,7 +130,7 @@ public class TcpManagerTest
         messages = receiveSingleMessage((typeId, buffer, offset, length) ->
         {
             assertThat(typeId, is(TcpManagerEvents.RECEIVED_DATA_TYPE_ID));
-            assertThat(buffer.getLong(offset), is(0L));
+            assertThat(buffer.getLong(offset), is(connectionId[0]));
             assertThat(length, is(BitUtil.SIZE_OF_INT + BitUtil.SIZE_OF_LONG));
             assertThat(buffer.getInt(offset + BitUtil.SIZE_OF_LONG), is(MAGIC_PAYLOAD_INT));
         });
@@ -151,14 +152,15 @@ public class TcpManagerTest
 //        receiverChannel.socket().setSoTimeout(100);
         receiverChannel.configureBlocking(false);
 
+        final long connectionId[] = new long[1];
         int messages = receiveSingleMessage((typeId, buffer, offset, length) ->
         {
             assertThat(typeId, is(TcpManagerEvents.NEW_CONNECTION_TYPE_ID));
-            assertThat(buffer.getLong(offset), is(0L));
+            connectionId[0] = buffer.getLong(offset);
         });
         assertThat(messages, is(1));
 
-        sendAtomicBuffer.putLong(0, 0);  // set connection ID
+        sendAtomicBuffer.putLong(0, connectionId[0]);  // set connection ID
         sendAtomicBuffer.putInt(BitUtil.SIZE_OF_LONG, MAGIC_PAYLOAD_INT);
 
         tcpManagerProxy.send(sendAtomicBuffer, 0, BitUtil.SIZE_OF_LONG + BitUtil.SIZE_OF_INT);

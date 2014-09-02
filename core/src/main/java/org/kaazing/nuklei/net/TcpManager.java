@@ -42,6 +42,7 @@ public class TcpManager
     private final NioSelectorNukleus sendNioSelectorNukleus;
     private final MpscArrayBuffer<Object> tcpReaderCommandQueue;
     private final MpscArrayBuffer<Object> tcpSenderCommandQueue;
+    private final MpscArrayBuffer<Object> tcpManagerCommandQueue;
     private final TcpReceiver tcpReceiver;
     private final TcpSender tcpSender;
     private final Map<Long, TcpAcceptor> localAttachesByIdMap;
@@ -49,6 +50,7 @@ public class TcpManager
     public TcpManager(final MpscArrayBuffer<Object> commandQueue, final AtomicBuffer sendBuffer)
         throws Exception
     {
+        tcpManagerCommandQueue = commandQueue;
         acceptNioSelectorNukleus = new NioSelectorNukleus(Selector.open());
         receiveNioSelectorNukleus = new NioSelectorNukleus(Selector.open());
         sendNioSelectorNukleus = new NioSelectorNukleus(Selector.open());
@@ -97,7 +99,8 @@ public class TcpManager
                     cmd.receiveBuffer(),
                     acceptNioSelectorNukleus,
                     tcpReaderCommandQueue,
-                    tcpSenderCommandQueue);
+                    tcpSenderCommandQueue,
+                    tcpManagerCommandQueue);
 
             localAttachesByIdMap.put(cmd.id(), acceptor);
         }

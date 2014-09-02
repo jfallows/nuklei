@@ -37,6 +37,7 @@ public class TcpAcceptor
     private final NioSelectorNukleus selectorNukleus;
     private final MpscArrayBuffer<Object> tcpReaderCommandQueue;
     private final MpscArrayBuffer<Object> tcpSenderCommandQueue;
+    private final MpscArrayBuffer<Object> tcpManagerCommandQueue;
 
     public TcpAcceptor(
         final int port,
@@ -45,13 +46,15 @@ public class TcpAcceptor
         final AtomicBuffer receiveBuffer,
         final NioSelectorNukleus selectorNukleus,
         final MpscArrayBuffer<Object> tcpReaderCommandQueue,
-        final MpscArrayBuffer<Object> tcpSenderCommandQueue)
+        final MpscArrayBuffer<Object> tcpSenderCommandQueue,
+        final MpscArrayBuffer<Object> tcpManagerCommandQueue)
     {
         this.id = id;
         this.receiveBuffer = receiveBuffer;
         this.selectorNukleus = selectorNukleus;
         this.tcpReaderCommandQueue = tcpReaderCommandQueue;
         this.tcpSenderCommandQueue = tcpSenderCommandQueue;
+        this.tcpManagerCommandQueue = tcpManagerCommandQueue;
 
         try
         {
@@ -103,7 +106,7 @@ public class TcpAcceptor
 
     private int onAcceptable(final SocketChannel channel)
     {
-        final long id = tcpSenderCommandQueue.nextId();
+        final long id = tcpManagerCommandQueue.nextId();
 
         try
         {

@@ -31,7 +31,7 @@ import java.util.Map;
  */
 public class TcpSender
 {
-    public static final int SEND_DATA_TYPE_ID = 3;
+    public static final int SEND_DATA_TYPE_ID = 1;
 
     private static final int MPSC_READ_LIMIT = 10;
 
