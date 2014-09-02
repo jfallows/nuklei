@@ -23,5 +23,4 @@ public class TcpManagerEvents
 {
     public static final int NEW_CONNECTION_TYPE_ID = 1;
     public static final int RECEIVED_DATA_TYPE_ID = 2;
-    public static final int SEND_DATA_TYPE_ID = 3;
 }

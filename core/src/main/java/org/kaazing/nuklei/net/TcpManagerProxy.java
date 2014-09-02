@@ -79,9 +79,19 @@ public class TcpManagerProxy
         }
     }
 
+    /**
+     * Send a message from the given {@link TcpManager}.
+     *
+     * The message must be formatted to begin with a long that contains the connection id
+     * followed by the actual data itself.
+     *
+     * @param buffer containing the message and connection id
+     * @param offset with the buffer that the connection id starts
+     * @param length of the connection id plus the data
+     */
     public void send(final AtomicBuffer buffer, final int offset, final int length)
     {
-        if (!sendWriter.write(TcpManagerEvents.SEND_DATA_TYPE_ID, buffer, offset, length))
+        if (!sendWriter.write(TcpSender.SEND_DATA_TYPE_ID, buffer, offset, length))
         {
             throw new IllegalStateException("could not write to send buffer");
         }
