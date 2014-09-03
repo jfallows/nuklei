@@ -42,12 +42,14 @@ public class TcpSender
     private final Map<Long, TcpConnection> connectionsByIdMap;
     private final ByteBuffer sendByteBuffer;
     private final MpscArrayBuffer<Object> tcpManagerCommandQueue;
+    private final MpscArrayBuffer<Object> tcpReceiverCommandQueue;
 
     public TcpSender(
         final MpscArrayBuffer<Object> commandQueue,
         final AtomicBuffer sendBuffer,
         final NioSelectorNukleus selectorNukleus,
-        final MpscArrayBuffer<Object> tcpManagerCommandQueue)
+        final MpscArrayBuffer<Object> tcpManagerCommandQueue,
+        final MpscArrayBuffer<Object> tcpReceiverCommandQueue)
     {
         final MessagingNukleus.Builder builder = new MessagingNukleus.Builder()
             .nioSelector(selectorNukleus)
@@ -56,6 +58,7 @@ public class TcpSender
 
         this.selectorNukleus = selectorNukleus;
         this.tcpManagerCommandQueue = tcpManagerCommandQueue;
+        this.tcpReceiverCommandQueue = tcpReceiverCommandQueue;
 
         messagingNukleus = new MessagingNukleus(builder);
         connectionsByIdMap = new HashMap<>();
@@ -75,7 +78,12 @@ public class TcpSender
             final TcpConnection connection = (TcpConnection)obj;
 
             connectionsByIdMap.put(connection.id(), connection);
-            connection.informOfNewConnection();
+
+            // pass on to receiver so it can hook things up also
+            if (!tcpReceiverCommandQueue.write(connection))
+            {
+                throw new IllegalStateException("could not write to command queue");
+            }
         }
         else if (obj instanceof TcpCloseConnectionCmd)
         {

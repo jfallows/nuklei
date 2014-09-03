@@ -36,11 +36,13 @@ public class TcpReceiver
     private final NioSelectorNukleus selectorNukleus;
     private final Map<Long, TcpConnection> connectionsByIdMap;
     private final MpscArrayBuffer<Object> tcpManagerCommandQueue;
+    private final MpscArrayBuffer<Object> tcpSenderCommandQueue;
 
     public TcpReceiver(
         final MpscArrayBuffer<Object> commandQueue,
         final NioSelectorNukleus selectorNukleus,
-        final MpscArrayBuffer<Object> tcpManagerCommandQueue)
+        final MpscArrayBuffer<Object> tcpManagerCommandQueue,
+        final MpscArrayBuffer<Object> tcpSenderCommandQueue)
     {
         final MessagingNukleus.Builder builder = new MessagingNukleus.Builder()
             .nioSelector(selectorNukleus)
@@ -48,6 +50,7 @@ public class TcpReceiver
 
         this.selectorNukleus = selectorNukleus;
         this.tcpManagerCommandQueue = tcpManagerCommandQueue;
+        this.tcpSenderCommandQueue = tcpSenderCommandQueue;
 
         messagingNukleus = new MessagingNukleus(builder);
         connectionsByIdMap = new HashMap<>();
@@ -68,6 +71,8 @@ public class TcpReceiver
             {
                 selectorNukleus.register(connection.channel(), SelectionKey.OP_READ, connection::onReadable);
                 connectionsByIdMap.put(connection.id(), connection);
+
+                connection.informOfNewConnection();
             }
             catch (final Exception ex)
             {

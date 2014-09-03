@@ -38,8 +38,9 @@ public class TcpConnection
     private final AtomicBuffer informBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(BitUtil.SIZE_OF_LONG));
 
     // TODO: these will false share most likely
-    private boolean senderClosed = false;
-    private boolean receiverClosed = false;
+    private volatile boolean senderClosed = false;
+    private volatile boolean receiverClosed = false;
+    private boolean closed = false;
 
     // TODO: connect version of constructor
 
@@ -69,6 +70,7 @@ public class TcpConnection
 
     public void close()
     {
+        closed = true;
         try
         {
             channel.close();
@@ -77,6 +79,7 @@ public class TcpConnection
         {
             throw new RuntimeException(ex);
         }
+
     }
 
     public void send(final ByteBuffer buffer)
@@ -142,6 +145,11 @@ public class TcpConnection
     public boolean hasReceiverClosed()
     {
         return receiverClosed;
+    }
+
+    public boolean isClosed()
+    {
+        return closed;
     }
 
     public void informOfNewConnection()

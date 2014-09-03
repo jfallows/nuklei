@@ -125,9 +125,12 @@ public class TcpAcceptor
 
         final TcpConnection connection = new TcpConnection(channel, id, receiveWriter);
 
-        // pass transport off to other nukleus' to process
-        tcpReaderCommandQueue.write(connection);
-        tcpSenderCommandQueue.write(connection);
+        // pass transport off to other nukleus' to process.
+        // First to sender then will be passed to receiver
+        if (!tcpSenderCommandQueue.write(connection))
+        {
+            throw new IllegalStateException("could not write to command queue");
+        }
 
         return 1;
     }

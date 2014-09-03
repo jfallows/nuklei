@@ -67,8 +67,22 @@ public class TcpManager
             .nioSelector(acceptNioSelectorNukleus);
 
         messagingNukleus = new MessagingNukleus(builder);
-        tcpReceiver = new TcpReceiver(tcpReceiverCommandQueue, receiveNioSelectorNukleus, tcpManagerCommandQueue);
-        tcpSender = new TcpSender(tcpSenderCommandQueue, sendBuffer, sendNioSelectorNukleus, tcpManagerCommandQueue);
+
+        tcpReceiver =
+            new TcpReceiver(
+                tcpReceiverCommandQueue,
+                receiveNioSelectorNukleus,
+                tcpManagerCommandQueue,
+                tcpSenderCommandQueue);
+
+        tcpSender =
+            new TcpSender(
+                tcpSenderCommandQueue,
+                sendBuffer,
+                sendNioSelectorNukleus,
+                tcpManagerCommandQueue,
+                tcpReceiverCommandQueue);
+
         localAttachesByIdMap = new HashMap<>();
         informingBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(BitUtil.SIZE_OF_LONG));
     }
@@ -143,7 +157,7 @@ public class TcpManager
         {
             final TcpConnection connection = (TcpConnection) obj;
 
-            if (connection.hasSenderClosed() && connection.hasReceiverClosed())
+            if (connection.hasSenderClosed() && connection.hasReceiverClosed() && !connection.isClosed())
             {
                 connection.close();
             }
