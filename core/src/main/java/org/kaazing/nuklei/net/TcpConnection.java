@@ -35,6 +35,11 @@ public class TcpConnection
     private final long id;
     private final ByteBuffer receiveByteBuffer;
     private final AtomicBuffer atomicBuffer;
+    private final AtomicBuffer informBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(BitUtil.SIZE_OF_LONG));
+
+    // TODO: these will false share most likely
+    private boolean senderClosed = false;
+    private boolean receiverClosed = false;
 
     // TODO: connect version of constructor
 
@@ -50,8 +55,6 @@ public class TcpConnection
         this.receiveWriter = receiveWriter;
         receiveByteBuffer = ByteBuffer.allocateDirect(MAX_RECEIVE_LENGTH).order(ByteOrder.nativeOrder());
         atomicBuffer = new AtomicBuffer(receiveByteBuffer);
-
-        informOfNewConnection();
     }
 
     public SocketChannel channel()
@@ -62,6 +65,18 @@ public class TcpConnection
     public long id()
     {
         return id;
+    }
+
+    public void close()
+    {
+        try
+        {
+            channel.close();
+        }
+        catch (final Exception ex)
+        {
+            throw new RuntimeException(ex);
+        }
     }
 
     public void send(final ByteBuffer buffer)
@@ -109,11 +124,31 @@ public class TcpConnection
         return 0;
     }
 
-    private void informOfNewConnection()
+    public void senderClosed()
     {
-        atomicBuffer.putLong(0, id);
+        senderClosed = true;
+    }
 
-        if (!receiveWriter.write(TcpManagerEvents.NEW_CONNECTION_TYPE_ID, atomicBuffer, 0, BitUtil.SIZE_OF_LONG))
+    public boolean hasSenderClosed()
+    {
+        return senderClosed;
+    }
+
+    public void receiverClosed()
+    {
+        receiverClosed = true;
+    }
+
+    public boolean hasReceiverClosed()
+    {
+        return receiverClosed;
+    }
+
+    public void informOfNewConnection()
+    {
+        informBuffer.putLong(0, id);
+
+        if (!receiveWriter.write(TcpManagerEvents.NEW_CONNECTION_TYPE_ID, informBuffer, 0, BitUtil.SIZE_OF_LONG))
         {
             throw new IllegalStateException("could not write to receive buffer");
         }

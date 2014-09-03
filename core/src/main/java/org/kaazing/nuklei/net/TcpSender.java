@@ -22,6 +22,7 @@ import org.kaazing.nuklei.NioSelectorNukleus;
 import org.kaazing.nuklei.Nuklei;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
+import org.kaazing.nuklei.net.command.TcpCloseConnectionCmd;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -32,6 +33,7 @@ import java.util.Map;
 public class TcpSender
 {
     public static final int SEND_DATA_TYPE_ID = 1;
+    public static final int CLOSE_TYPE_ID = 2;
 
     private static final int MPSC_READ_LIMIT = 10;
 
@@ -39,11 +41,13 @@ public class TcpSender
     private final NioSelectorNukleus selectorNukleus;
     private final Map<Long, TcpConnection> connectionsByIdMap;
     private final ByteBuffer sendByteBuffer;
+    private final MpscArrayBuffer<Object> tcpManagerCommandQueue;
 
     public TcpSender(
         final MpscArrayBuffer<Object> commandQueue,
         final AtomicBuffer sendBuffer,
-        final NioSelectorNukleus selectorNukleus)
+        final NioSelectorNukleus selectorNukleus,
+        final MpscArrayBuffer<Object> tcpManagerCommandQueue)
     {
         final MessagingNukleus.Builder builder = new MessagingNukleus.Builder()
             .nioSelector(selectorNukleus)
@@ -51,6 +55,7 @@ public class TcpSender
             .mpscArrayBuffer(commandQueue, this::commandHandler, MPSC_READ_LIMIT);
 
         this.selectorNukleus = selectorNukleus;
+        this.tcpManagerCommandQueue = tcpManagerCommandQueue;
 
         messagingNukleus = new MessagingNukleus(builder);
         connectionsByIdMap = new HashMap<>();
@@ -70,6 +75,18 @@ public class TcpSender
             final TcpConnection connection = (TcpConnection)obj;
 
             connectionsByIdMap.put(connection.id(), connection);
+            connection.informOfNewConnection();
+        }
+        else if (obj instanceof TcpCloseConnectionCmd)
+        {
+            final TcpCloseConnectionCmd cmd = (TcpCloseConnectionCmd) obj;
+            final TcpConnection connection = connectionsByIdMap.remove(cmd.connectionId());
+
+            if (null != connection)
+            {
+                connection.senderClosed();
+                informTcpManagerOfClose(connection);
+            }
         }
     }
 
@@ -87,6 +104,24 @@ public class TcpSender
             {
                 connection.send(sendByteBuffer);
             }
+        }
+        else if (CLOSE_TYPE_ID == typeId)
+        {
+            final TcpConnection connection = connectionsByIdMap.remove(buffer.getLong(offset));
+
+            if (null != connection)
+            {
+                connection.senderClosed();
+                informTcpManagerOfClose(connection);
+            }
+        }
+    }
+
+    private void informTcpManagerOfClose(final TcpConnection connection)
+    {
+        if (!tcpManagerCommandQueue.write(connection))
+        {
+            throw new IllegalStateException("could not write to command queue");
         }
     }
 }

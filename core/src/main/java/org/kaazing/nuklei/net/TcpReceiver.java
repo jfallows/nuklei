@@ -20,6 +20,7 @@ import org.kaazing.nuklei.MessagingNukleus;
 import org.kaazing.nuklei.NioSelectorNukleus;
 import org.kaazing.nuklei.Nuklei;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
+import org.kaazing.nuklei.net.command.TcpCloseConnectionCmd;
 
 import java.nio.channels.SelectionKey;
 import java.util.HashMap;
@@ -34,14 +35,19 @@ public class TcpReceiver
     private final MessagingNukleus messagingNukleus;
     private final NioSelectorNukleus selectorNukleus;
     private final Map<Long, TcpConnection> connectionsByIdMap;
+    private final MpscArrayBuffer<Object> tcpManagerCommandQueue;
 
-    public TcpReceiver(final MpscArrayBuffer<Object> commandQueue, final NioSelectorNukleus selectorNukleus)
+    public TcpReceiver(
+        final MpscArrayBuffer<Object> commandQueue,
+        final NioSelectorNukleus selectorNukleus,
+        final MpscArrayBuffer<Object> tcpManagerCommandQueue)
     {
         final MessagingNukleus.Builder builder = new MessagingNukleus.Builder()
             .nioSelector(selectorNukleus)
             .mpscArrayBuffer(commandQueue, this::commandHandler, MPSC_READ_LIMIT);
 
         this.selectorNukleus = selectorNukleus;
+        this.tcpManagerCommandQueue = tcpManagerCommandQueue;
 
         messagingNukleus = new MessagingNukleus(builder);
         connectionsByIdMap = new HashMap<>();
@@ -68,6 +74,25 @@ public class TcpReceiver
                 ex.printStackTrace(); // TODO: temp
             }
         }
+        else if (obj instanceof TcpCloseConnectionCmd)
+        {
+            final TcpCloseConnectionCmd cmd = (TcpCloseConnectionCmd) obj;
+            final TcpConnection connection = connectionsByIdMap.remove(cmd.connectionId());
+
+            if (null != connection)
+            {
+                selectorNukleus.cancel(connection.channel(), SelectionKey.OP_READ);
+                connection.receiverClosed();
+                informTcpManagerOfClose(connection);
+            }
+        }
     }
 
+    private void informTcpManagerOfClose(final TcpConnection connection)
+    {
+        if (!tcpManagerCommandQueue.write(connection))
+        {
+            throw new IllegalStateException("could not write to command queue");
+        }
+    }
 }

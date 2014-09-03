@@ -23,6 +23,7 @@ import org.kaazing.nuklei.Nuklei;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferWriter;
+import org.kaazing.nuklei.net.command.TcpCloseConnectionCmd;
 import org.kaazing.nuklei.net.command.TcpDetachCmd;
 import org.kaazing.nuklei.net.command.TcpLocalAttachCmd;
 
@@ -43,13 +44,13 @@ public class TcpManager
     private final NioSelectorNukleus acceptNioSelectorNukleus;
     private final NioSelectorNukleus receiveNioSelectorNukleus;
     private final NioSelectorNukleus sendNioSelectorNukleus;
-    private final MpscArrayBuffer<Object> tcpReaderCommandQueue;
+    private final MpscArrayBuffer<Object> tcpReceiverCommandQueue;
     private final MpscArrayBuffer<Object> tcpSenderCommandQueue;
     private final MpscArrayBuffer<Object> tcpManagerCommandQueue;
     private final TcpReceiver tcpReceiver;
     private final TcpSender tcpSender;
     private final Map<Long, TcpAcceptor> localAttachesByIdMap;
-    private final AtomicBuffer attachCompletionBuffer;
+    private final AtomicBuffer informingBuffer;
 
     public TcpManager(final MpscArrayBuffer<Object> commandQueue, final AtomicBuffer sendBuffer)
         throws Exception
@@ -58,7 +59,7 @@ public class TcpManager
         acceptNioSelectorNukleus = new NioSelectorNukleus(Selector.open());
         receiveNioSelectorNukleus = new NioSelectorNukleus(Selector.open());
         sendNioSelectorNukleus = new NioSelectorNukleus(Selector.open());
-        tcpReaderCommandQueue = new MpscArrayBuffer<>(TCP_READER_COMMAND_QUEUE_SIZE);
+        tcpReceiverCommandQueue = new MpscArrayBuffer<>(TCP_READER_COMMAND_QUEUE_SIZE);
         tcpSenderCommandQueue = new MpscArrayBuffer<>(TCP_SENDER_COMMAND_QUEUE_SIZE);
 
         final MessagingNukleus.Builder builder = new MessagingNukleus.Builder()
@@ -66,10 +67,10 @@ public class TcpManager
             .nioSelector(acceptNioSelectorNukleus);
 
         messagingNukleus = new MessagingNukleus(builder);
-        tcpReceiver = new TcpReceiver(tcpReaderCommandQueue, receiveNioSelectorNukleus);
-        tcpSender = new TcpSender(tcpSenderCommandQueue, sendBuffer, sendNioSelectorNukleus);
+        tcpReceiver = new TcpReceiver(tcpReceiverCommandQueue, receiveNioSelectorNukleus, tcpManagerCommandQueue);
+        tcpSender = new TcpSender(tcpSenderCommandQueue, sendBuffer, sendNioSelectorNukleus, tcpManagerCommandQueue);
         localAttachesByIdMap = new HashMap<>();
-        attachCompletionBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(BitUtil.SIZE_OF_LONG));
+        informingBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(BitUtil.SIZE_OF_LONG));
     }
 
     public void launch(final Nuklei nuklei)
@@ -106,7 +107,7 @@ public class TcpManager
                     cmd.id(),
                     receiveWriter,
                     acceptNioSelectorNukleus,
-                    tcpReaderCommandQueue,
+                    tcpReceiverCommandQueue,
                     tcpSenderCommandQueue,
                     tcpManagerCommandQueue);
 
@@ -121,13 +122,39 @@ public class TcpManager
             acceptor.close();
             informOfAttachStatus(acceptor.receiveWriter(), TcpManagerEvents.DETACH_COMPLETED_TYPE_ID, acceptor.id());
         }
+        else if (obj instanceof TcpCloseConnectionCmd)
+        {
+            final TcpCloseConnectionCmd cmd = (TcpCloseConnectionCmd) obj;
+
+            if (!tcpReceiverCommandQueue.write(cmd))
+            {
+                throw new IllegalStateException("could not write to command queue");
+            }
+
+            if (cmd.isImmediate())
+            {
+                if (!tcpSenderCommandQueue.write(cmd))
+                {
+                    throw new IllegalStateException("could not write to command queue");
+                }
+            }
+        }
+        else if (obj instanceof TcpConnection)
+        {
+            final TcpConnection connection = (TcpConnection) obj;
+
+            if (connection.hasSenderClosed() && connection.hasReceiverClosed())
+            {
+                connection.close();
+            }
+        }
     }
 
     private void informOfAttachStatus(final MpscRingBufferWriter writer, final int status, final long id)
     {
-        attachCompletionBuffer.putLong(0, id);
+        informingBuffer.putLong(0, id);
 
-        if (!writer.write(TcpManagerEvents.ATTACH_COMPLETED_TYPE_ID, attachCompletionBuffer, 0, BitUtil.SIZE_OF_LONG))
+        if (!writer.write(TcpManagerEvents.ATTACH_COMPLETED_TYPE_ID, informingBuffer, 0, BitUtil.SIZE_OF_LONG))
         {
             throw new IllegalStateException("could not write to receive buffer");
         }

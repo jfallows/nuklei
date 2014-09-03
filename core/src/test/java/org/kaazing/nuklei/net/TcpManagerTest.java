@@ -18,9 +18,11 @@ package org.kaazing.nuklei.net;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.DedicatedNuklei;
+import org.kaazing.nuklei.Nuklei;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBuffer;
@@ -157,7 +159,6 @@ public class TcpManagerTest
 
         receiverChannel = SocketChannel.open();
         receiverChannel.connect(new InetSocketAddress("localhost", PORT));
-//        receiverChannel.socket().setSoTimeout(100);
         receiverChannel.configureBlocking(false);
 
         final long connectionId[] = new long[1];
@@ -181,6 +182,87 @@ public class TcpManagerTest
             assertThat(buffer.getInt(0), is(MAGIC_PAYLOAD_INT));
         });
         assertThat(messages, is(1));
+    }
+
+    @Test(timeout = 1000)
+    public void shouldBeAbleToCloseConnectionWithNoData() throws Exception
+    {
+        tcpManager.launch(dedicatedNuklei);
+
+        long attachId = tcpManagerProxy.attach(PORT, new InetAddress[0], receiveBuffer);
+
+        int messages = receiveSingleMessage((typeId, buffer, offset, length) ->
+        {
+            assertThat(typeId, is(TcpManagerEvents.ATTACH_COMPLETED_TYPE_ID));
+            assertThat(buffer.getLong(offset), is(attachId));
+        });
+        assertThat(messages, is(1));
+
+        receiverChannel = SocketChannel.open();
+        receiverChannel.connect(new InetSocketAddress("localhost", PORT));
+        receiverChannel.configureBlocking(false);
+
+        final long connectionId[] = new long[1];
+        messages = receiveSingleMessage((typeId, buffer, offset, length) ->
+        {
+            assertThat(typeId, is(TcpManagerEvents.NEW_CONNECTION_TYPE_ID));
+            connectionId[0] = buffer.getLong(offset);
+        });
+        assertThat(messages, is(1));
+
+        tcpManagerProxy.closeConnection(connectionId[0], false);
+
+        receiveChannelBuffer.clear();
+
+        messages = receiveSingleMessage(receiverChannel, (buffer) -> {});
+        assertThat(messages, is(-1));
+    }
+
+    @Test(timeout = 1000)
+    public void shouldBeAbleToCloseConnectionWithData() throws Exception
+    {
+        tcpManager.launch(dedicatedNuklei);
+
+        long attachId = tcpManagerProxy.attach(PORT, new InetAddress[0], receiveBuffer);
+
+        int messages = receiveSingleMessage((typeId, buffer, offset, length) ->
+        {
+            assertThat(typeId, is(TcpManagerEvents.ATTACH_COMPLETED_TYPE_ID));
+            assertThat(buffer.getLong(offset), is(attachId));
+        });
+        assertThat(messages, is(1));
+
+        receiverChannel = SocketChannel.open();
+        receiverChannel.connect(new InetSocketAddress("localhost", PORT));
+        receiverChannel.configureBlocking(false);
+
+        final long connectionId[] = new long[1];
+        messages = receiveSingleMessage((typeId, buffer, offset, length) ->
+        {
+            assertThat(typeId, is(TcpManagerEvents.NEW_CONNECTION_TYPE_ID));
+            connectionId[0] = buffer.getLong(offset);
+        });
+        assertThat(messages, is(1));
+
+        sendAtomicBuffer.putLong(0, connectionId[0]);  // set connection ID
+        sendAtomicBuffer.putInt(BitUtil.SIZE_OF_LONG, MAGIC_PAYLOAD_INT);
+
+        tcpManagerProxy.send(sendAtomicBuffer, 0, BitUtil.SIZE_OF_LONG + BitUtil.SIZE_OF_INT);
+        tcpManagerProxy.closeConnection(connectionId[0], false);
+
+        receiveChannelBuffer.clear();
+
+        messages = receiveSingleMessage(receiverChannel, (buffer) ->
+        {
+            assertThat(buffer.position(), is(BitUtil.SIZE_OF_INT));
+            assertThat(buffer.getInt(0), is(MAGIC_PAYLOAD_INT));
+        });
+        assertThat(messages, is(1));
+
+        receiveChannelBuffer.clear();
+
+        messages = receiveSingleMessage(receiverChannel, (buffer) -> {});
+        assertThat(messages, is(-1));
     }
 
     private int receiveSingleMessage(final MpscRingBufferReader.ReadHandler handler)
@@ -207,8 +289,9 @@ public class TcpManagerTest
         if (0 < len)
         {
             handler.accept(receiveChannelBuffer);
+            return 1;
         }
 
-        return 1;
+        return len;
     }
 }

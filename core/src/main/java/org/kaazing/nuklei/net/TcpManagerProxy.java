@@ -16,13 +16,16 @@
 
 package org.kaazing.nuklei.net;
 
+import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferWriter;
+import org.kaazing.nuklei.net.command.TcpCloseConnectionCmd;
 import org.kaazing.nuklei.net.command.TcpDetachCmd;
 import org.kaazing.nuklei.net.command.TcpLocalAttachCmd;
 
 import java.net.InetAddress;
+import java.nio.ByteBuffer;
 
 /**
  * Interface for sending commands to a {@link TcpManager}
@@ -32,6 +35,8 @@ public class TcpManagerProxy
     private final MpscArrayBuffer<Object> commandQueue;
     private final AtomicBuffer sendBuffer;
     private final MpscRingBufferWriter sendWriter;
+    private final ThreadLocal<AtomicBuffer> threadLocalBuffer = ThreadLocal.withInitial(
+        () -> new AtomicBuffer(ByteBuffer.allocateDirect(BitUtil.SIZE_OF_LONG)));
 
     public TcpManagerProxy(final MpscArrayBuffer<Object> commandQueue, final AtomicBuffer sendBuffer)
     {
@@ -94,6 +99,33 @@ public class TcpManagerProxy
         if (!sendWriter.write(TcpSender.SEND_DATA_TYPE_ID, buffer, offset, length))
         {
             throw new IllegalStateException("could not write to send buffer");
+        }
+    }
+
+    /**
+     * Close existing connection.
+     *
+     * @param connectionId to close
+     * @param isImmediate should flush remaining sent data or not
+     */
+    public void closeConnection(final long connectionId, final boolean isImmediate)
+    {
+        final TcpCloseConnectionCmd cmd = new TcpCloseConnectionCmd(connectionId, isImmediate);
+
+        if (!commandQueue.write(cmd))
+        {
+            throw new IllegalStateException("could not write command");
+        }
+
+        if (!isImmediate)
+        {
+            final AtomicBuffer buffer = threadLocalBuffer.get();
+
+            buffer.putLong(0, connectionId);
+            if (!sendWriter.write(TcpSender.CLOSE_TYPE_ID, buffer, 0, BitUtil.SIZE_OF_LONG))
+            {
+                throw new IllegalStateException("could not write to send buffer");
+            }
         }
     }
 
