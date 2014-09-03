@@ -72,11 +72,11 @@ public class TcpManagerProxy
     /**
      * Detach (local or remote)
      *
-     * @param id of the attach
+     * @param attachId of the attach command
      */
-    public void detach(final long id)
+    public void detach(final long attachId)
     {
-        final TcpDetachCmd cmd = new TcpDetachCmd(id);
+        final TcpDetachCmd cmd = new TcpDetachCmd(attachId);
 
         if (!commandQueue.write(cmd))
         {
