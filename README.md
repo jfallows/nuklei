@@ -49,18 +49,20 @@ Spying support.
 - __Spy__: means to attach a "sniffer" to a communication channel to spy on the data exchange. May be lossy. Similar to
 `tcpdump`.
 - __Flyweight__: overlay of structured layout over an `AtomicBuffer`.
-- __Runtime__: runtime around a Nukleus. Might be dedicated thread, or donated thread, pooled thread, FJP, etc.
-- __Scheduler__: scheduling mechanism for multple Nuklei.
+- __Nuklei__: scheduler interface for one or more Nukleus implementations. Some implementations are:
+    - __DedicatedNuklei__: one thread per `Nuklei` scheduler
+    - __FjpFreeStandingNuklei__: ForkJoinPool based `Nuklei` scheduler
+- __Kompound__: container for `Mikro` based services
+    - __Mikro__: interface for pure message based services
+    - __Proxy__: interface for sending messages to other services
 
 ## TODOs
 
 - Pre-packaged Nuklei
-    - TCP Acceptor
     - TCP Connector
-    - TCP Reader
-    - TCP Writer
     - UDP Reader
     - UDP Writer
+- Kompound container
 - Spy for RingBuffer and ArrayBuffer
 - Standard Parsers/Flyweights
     - WebSocket (RFC 6455) via HTTP/1.1 Upgrade
