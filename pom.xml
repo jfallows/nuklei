@@ -5,7 +5,7 @@
     <groupId>org.kaazing</groupId>
     <artifactId>nuklei-parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>0.1.1</version>
 
     <name>Nuklei Parent</name>
     <url>https://github.com/kaazing/nuklei.git</url>
@@ -25,7 +25,7 @@
     <scm>
         <url>https://github.com/kaazing/nuklei.git</url>
         <connection>scm:git:https://github.com/kaazing/nuklei.git</connection>
-      <tag>nuklei-parent-0.1</tag>
+      <tag>nuklei-parent-0.1.1</tag>
   </scm>
 
     <developers>
