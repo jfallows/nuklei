@@ -109,9 +109,19 @@ public class TcpConnection
             receiveByteBuffer.putLong(id);
             final int length = channel.read(receiveByteBuffer);
 
-            if (!receiveWriter.write(TcpManagerEvents.RECEIVED_DATA_TYPE_ID, atomicBuffer, 0, length + BitUtil.SIZE_OF_LONG))
+            if (0 < length)
             {
-                throw new IllegalStateException("could not write to receive buffer");
+                if (!receiveWriter.write(TcpManagerEvents.RECEIVED_DATA_TYPE_ID, atomicBuffer, 0, length + BitUtil.SIZE_OF_LONG))
+                {
+                    throw new IllegalStateException("could not write to receive buffer");
+                }
+            }
+            else if (-1 == length)
+            {
+                if (!receiveWriter.write(TcpManagerEvents.EOF_TYPE_ID, atomicBuffer, 0, BitUtil.SIZE_OF_LONG))
+                {
+                    throw new IllegalStateException("could not write to receive buffer");
+                }
             }
         }
         catch (final Exception ex)

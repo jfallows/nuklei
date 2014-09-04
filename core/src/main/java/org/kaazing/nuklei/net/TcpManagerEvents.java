@@ -25,4 +25,5 @@ public class TcpManagerEvents
     public static final int RECEIVED_DATA_TYPE_ID = 2;
     public static final int ATTACH_COMPLETED_TYPE_ID = 3;
     public static final int DETACH_COMPLETED_TYPE_ID = 4;
+    public static final int EOF_TYPE_ID = 5;
 }
