@@ -27,13 +27,20 @@ public class DedicatedNuklei implements Nuklei, Runnable
 {
     private final Thread thread;
     private final AtomicReference<Nukleus[]> nukleusArrayRef;
+    private final Idler idler;
 
     private volatile boolean done;
 
     public DedicatedNuklei(final String name)
     {
+        this(name, new SpinYieldParkBackoffIdler());
+    }
+
+    public DedicatedNuklei(final String name, final Idler idler)
+    {
         thread = new Thread(this);
         nukleusArrayRef = new AtomicReference<>();
+        this.idler = idler;
 
         final Nukleus[] initialArray = new Nukleus[0];
 
@@ -99,7 +106,7 @@ public class DedicatedNuklei implements Nuklei, Runnable
                 }
             }
 
-            // TODO: add idle strategy (spin, yield, then park) and pass weight to it
+            idler.idle(weight);
         }
     }
 
