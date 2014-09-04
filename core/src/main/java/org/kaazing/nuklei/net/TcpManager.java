@@ -42,8 +42,6 @@ public class TcpManager
 
     private final MessagingNukleus messagingNukleus;
     private final NioSelectorNukleus acceptNioSelectorNukleus;
-    private final NioSelectorNukleus receiveNioSelectorNukleus;
-    private final NioSelectorNukleus sendNioSelectorNukleus;
     private final MpscArrayBuffer<Object> tcpReceiverCommandQueue;
     private final MpscArrayBuffer<Object> tcpSenderCommandQueue;
     private final MpscArrayBuffer<Object> tcpManagerCommandQueue;
@@ -57,8 +55,6 @@ public class TcpManager
     {
         tcpManagerCommandQueue = commandQueue;
         acceptNioSelectorNukleus = new NioSelectorNukleus(Selector.open());
-        receiveNioSelectorNukleus = new NioSelectorNukleus(Selector.open());
-        sendNioSelectorNukleus = new NioSelectorNukleus(Selector.open());
         tcpReceiverCommandQueue = new MpscArrayBuffer<>(TCP_READER_COMMAND_QUEUE_SIZE);
         tcpSenderCommandQueue = new MpscArrayBuffer<>(TCP_SENDER_COMMAND_QUEUE_SIZE);
 
@@ -67,6 +63,9 @@ public class TcpManager
             .nioSelector(acceptNioSelectorNukleus);
 
         messagingNukleus = new MessagingNukleus(builder);
+
+        final NioSelectorNukleus receiveNioSelectorNukleus = new NioSelectorNukleus(Selector.open());
+        final NioSelectorNukleus sendNioSelectorNukleus = new NioSelectorNukleus(Selector.open());
 
         tcpReceiver =
             new TcpReceiver(

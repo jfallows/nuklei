@@ -38,7 +38,6 @@ public class TcpSender
     private static final int MPSC_READ_LIMIT = 10;
 
     private final MessagingNukleus messagingNukleus;
-    private final NioSelectorNukleus selectorNukleus;
     private final Map<Long, TcpConnection> connectionsByIdMap;
     private final ByteBuffer sendByteBuffer;
     private final MpscArrayBuffer<Object> tcpManagerCommandQueue;
@@ -56,7 +55,6 @@ public class TcpSender
             .mpscRingBuffer(sendBuffer, this::sendHandler, MPSC_READ_LIMIT)
             .mpscArrayBuffer(commandQueue, this::commandHandler, MPSC_READ_LIMIT);
 
-        this.selectorNukleus = selectorNukleus;
         this.tcpManagerCommandQueue = tcpManagerCommandQueue;
         this.tcpReceiverCommandQueue = tcpReceiverCommandQueue;
 
