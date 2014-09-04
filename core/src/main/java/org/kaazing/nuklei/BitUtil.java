@@ -242,6 +242,8 @@ public class BitUtil
      * Generate a string that is the hex representation of a given byte array.
      *
      * @param buffer to convert to a hex representation
+     * @param index to start from
+     * @param length of buffer
      * @return new String holding the hex representation (in Big Endian) of the passed array
      */
     public static String toHex(final byte[] buffer, final int index, final int length)
