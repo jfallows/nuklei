@@ -61,7 +61,74 @@ public class DynamicType extends Type {
     
     @Override
     public Kind kind() {
-        return Kind.DYNAMIC;
+        switch (uint8Get(buffer(), offset())) {
+        case WIDTH_KIND_1_ARRAY:
+        case WIDTH_KIND_4_ARRAY:
+            return Kind.ARRAY;
+        case WIDTH_KIND_1_BINARY:
+        case WIDTH_KIND_4_BINARY:
+            return Kind.BINARY;
+        case WIDTH_KIND_0_TRUE:
+        case WIDTH_KIND_0_FALSE:
+        case WIDTH_KIND_1_BOOLEAN:
+            return Kind.BOOLEAN;
+        case WIDTH_KIND_1_BYTE:
+            return Kind.BYTE;
+        case WIDTH_KIND_4_CHAR:
+            return Kind.CHAR;
+        case WIDTH_KIND_16_DECIMAL128:
+            return Kind.DECIMAL128;
+        case WIDTH_KIND_4_DECIMAL32:
+            return Kind.DECIMAL32;
+        case WIDTH_KIND_8_DECIMAL64:
+            return Kind.DECIMAL64;
+        case WIDTH_KIND_8_DOUBLE:
+            return Kind.DOUBLE;
+        case WIDTH_KIND_4_FLOAT:
+            return Kind.FLOAT;
+        case WIDTH_KIND_1_INT:
+        case WIDTH_KIND_4_INT:
+            return Kind.INT;
+        case WIDTH_KIND_0_LIST:
+        case WIDTH_KIND_1_LIST:
+        case WIDTH_KIND_4_LIST:
+            return Kind.LIST;
+        case WIDTH_KIND_1_LONG:
+        case WIDTH_KIND_8_LONG:
+            return Kind.LONG;
+        case WIDTH_KIND_1_MAP:
+        case WIDTH_KIND_4_MAP:
+            return Kind.MAP;
+        case WIDTH_KIND_0_NULL:
+            return Kind.NULL;
+        case WIDTH_KIND_2_SHORT:
+            return Kind.SHORT;
+        case WIDTH_KIND_1_STRING:
+        case WIDTH_KIND_4_STRING:
+            return Kind.STRING;
+        case WIDTH_KIND_1_SYMBOL:
+        case WIDTH_KIND_4_SYMBOL:
+            return Kind.SYMBOL;
+        case WIDTH_KIND_8_TIMESTAMP:
+            return Kind.TIMESTAMP;
+        case WIDTH_KIND_1_UBYTE:
+            return Kind.UBYTE;
+        case WIDTH_KIND_0_UINT:
+        case WIDTH_KIND_1_UINT:
+        case WIDTH_KIND_4_UINT:
+            return Kind.UINT;
+        case WIDTH_KIND_0_ULONG:
+        case WIDTH_KIND_1_ULONG:
+            return Kind.ULONG;
+        case WIDTH_KIND_2_USHORT:
+            return Kind.USHORT;
+        case WIDTH_KIND_8_ULONG:
+            return Kind.ULONG;
+        case WIDTH_KIND_16_UUID:
+            return Kind.UUID;
+        default:
+            throw new IllegalArgumentException();
+        }
     }
 
     @Override
@@ -123,7 +190,6 @@ public class DynamicType extends Type {
             return offset() + 17;
         default:
             throw new IllegalArgumentException();
-        }
-        
+        }        
     }
 }
