@@ -15,8 +15,15 @@
  */
 package org.kaazing.nuklei.amqp_1_0.codec.types;
 
-import java.math.BigDecimal;
+import static java.lang.Float.floatToIntBits;
+import static java.lang.Float.intBitsToFloat;
+import static java.math.MathContext.DECIMAL32;
 
+import java.math.BigDecimal;
+import java.util.function.Consumer;
+
+import org.kaazing.nuklei.BitUtil;
+import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 /*
@@ -25,10 +32,14 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 public final class Decimal32Type extends Type {
 
     private static final int OFFSET_KIND = 0;
-    private static final int SIZEOF_KIND = 1;
+    private static final int SIZEOF_KIND = BitUtil.SIZE_OF_UINT8;
 
     private static final int OFFSET_VALUE = OFFSET_KIND + SIZEOF_KIND;
-    private static final int SIZEOF_VALUE = 4;
+    private static final int SIZEOF_VALUE_MAX = BitUtil.SIZE_OF_INT32;
+
+    static final int SIZEOF_INT_MAX = SIZEOF_KIND + SIZEOF_VALUE_MAX;
+    
+    private static final short WIDTH_KIND_4 = 0x74;
 
     @Override
     public Kind kind() {
@@ -36,25 +47,57 @@ public final class Decimal32Type extends Type {
     }
 
     @Override
+    public Decimal32Type watch(Consumer<Flyweight> observer) {
+        super.watch(observer);
+        return this;
+    }
+
+    @Override
     public Decimal32Type wrap(AtomicBuffer buffer, int offset) {
         super.wrap(buffer, offset);
+        return this;
+    }
 
-        switch (uint8Get(buffer, offset + OFFSET_KIND)) {
-        case 0x74:
-            break;
-        default:
-            throw new IllegalStateException();
-        }
-
+    public Decimal32Type set(BigDecimal value) {
+        widthKind(WIDTH_KIND_4);
+        int32Put(buffer(), offset() + OFFSET_VALUE, toIntBits(value));
+        notifyChanged();
         return this;
     }
 
     public BigDecimal get() {
-        int32Get(buffer(), offset() + OFFSET_VALUE);
-        throw new UnsupportedOperationException();
+        switch (widthKind()) {
+        case WIDTH_KIND_4:
+            return fromIntBits(int32Get(buffer(), offset() + OFFSET_VALUE));
+        default:
+            throw new IllegalStateException();
+        }
     }
 
     public int limit() {
-        return offset() + OFFSET_VALUE + SIZEOF_VALUE;
+        switch (widthKind()) {
+        case WIDTH_KIND_4:
+            return offset() + OFFSET_VALUE + 4;
+        default:
+            throw new IllegalStateException();
+        }
+    }
+
+    private void widthKind(short value) {
+        uint8Put(buffer(), offset() + OFFSET_KIND, value);
+    }
+
+    private int widthKind() {
+        return uint8Get(buffer(), offset() + OFFSET_KIND);
+    }
+
+    private int toIntBits(BigDecimal value) {
+        // TODO: use IEEE 754 decimal32 format (not binary32)
+        return floatToIntBits(value.floatValue());
+    }
+    
+    private BigDecimal fromIntBits(int value) {
+        // TODO: use IEEE 754 decimal32 format (not binary32)
+        return new BigDecimal(intBitsToFloat(value), DECIMAL32);
     }
 }

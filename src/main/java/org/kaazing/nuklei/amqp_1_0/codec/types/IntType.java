@@ -93,9 +93,9 @@ public final class IntType extends Type {
 
     public int limit() {
         switch (widthKind()) {
-        case 0x54:
+        case WIDTH_KIND_1:
             return offset() + OFFSET_VALUE + 1;
-        case 0x71:
+        case WIDTH_KIND_4:
             return offset() + OFFSET_VALUE + 4;
         default:
             throw new IllegalStateException();

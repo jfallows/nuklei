@@ -15,6 +15,10 @@
  */
 package org.kaazing.nuklei.amqp_1_0.codec.types;
 
+import static java.lang.Double.doubleToLongBits;
+import static java.lang.Double.longBitsToDouble;
+import static java.math.MathContext.DECIMAL128;
+
 import java.math.BigDecimal;
 
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
@@ -32,6 +36,10 @@ public final class Decimal128Type extends Type {
 
     private static final int OFFSET_LOW_VALUE = OFFSET_HIGH_VALUE + SIZEOF_HIGH_VALUE;
     private static final int SIZEOF_LOW_VALUE = 8;
+
+    static final int SIZEOF_DECIMAL128 = SIZEOF_KIND + SIZEOF_LOW_VALUE + SIZEOF_HIGH_VALUE;
+    
+    private static final short WIDTH_KIND_16 = 0x94;
 
     @Override
     public Kind kind() {
@@ -52,13 +60,50 @@ public final class Decimal128Type extends Type {
         return this;
     }
 
+    public Decimal128Type set(BigDecimal value) {
+        widthKind(WIDTH_KIND_16);
+        int64Put(buffer(), offset() + OFFSET_HIGH_VALUE, toLongHighBits(value));
+        int64Put(buffer(), offset() + OFFSET_LOW_VALUE, toLongLowBits(value));
+        notifyChanged();
+        return this;
+    }
+
     public BigDecimal get() {
-        int64Get(buffer(), offset() + OFFSET_HIGH_VALUE);
-        int64Get(buffer(), offset() + OFFSET_LOW_VALUE);
-        throw new UnsupportedOperationException();
+        switch (widthKind()) {
+        case WIDTH_KIND_16:
+            long high = int64Get(buffer(), offset() + OFFSET_HIGH_VALUE);
+            long low = int64Get(buffer(), offset() + OFFSET_LOW_VALUE);
+            return fromLongBits(high, low);
+        default:
+            throw new IllegalStateException();
+        }
     }
 
     public int limit() {
-        return offset() + OFFSET_LOW_VALUE + SIZEOF_LOW_VALUE;
+        return offset() + SIZEOF_DECIMAL128;
     }
+
+    private void widthKind(short value) {
+        uint8Put(buffer(), offset() + OFFSET_KIND, value);
+    }
+
+    private int widthKind() {
+        return uint8Get(buffer(), offset() + OFFSET_KIND);
+    }
+
+    private long toLongHighBits(BigDecimal value) {
+        // TODO: use IEEE 754 decimal128 format (not binary128)
+        return doubleToLongBits(value.doubleValue());
+    }
+
+    private long toLongLowBits(BigDecimal value) {
+        // TODO: use IEEE 754 decimal128 format (not binary128)
+        return doubleToLongBits(value.doubleValue());
+    }
+    
+    private BigDecimal fromLongBits(long high, long low) {
+        // TODO: use IEEE 754 decimal128 format (not binary128)
+        return new BigDecimal(longBitsToDouble(low), DECIMAL128);
+    }
+
 }
