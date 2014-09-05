@@ -19,6 +19,46 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 public class DynamicType extends Type {
 
+    private static final int WIDTH_KIND_0_NULL = 0x40;
+    private static final int WIDTH_KIND_0_TRUE = 0x41;
+    private static final int WIDTH_KIND_0_FALSE = 0x42;
+    private static final int WIDTH_KIND_0_UINT = 0x43;
+    private static final int WIDTH_KIND_0_ULONG = 0x44;
+    private static final int WIDTH_KIND_0_LIST = 0x45;
+    private static final int WIDTH_KIND_1_UBYTE = 0x50;
+    private static final int WIDTH_KIND_1_BYTE = 0x51;
+    private static final int WIDTH_KIND_1_UINT = 0x52;
+    private static final int WIDTH_KIND_1_ULONG = 0x53;
+    private static final int WIDTH_KIND_1_INT = 0x54;
+    private static final int WIDTH_KIND_1_LONG = 0x55;
+    private static final int WIDTH_KIND_1_BOOLEAN = 0x56;
+    private static final int WIDTH_KIND_2_USHORT = 0x60;
+    private static final int WIDTH_KIND_2_SHORT = 0x61;
+    private static final int WIDTH_KIND_4_UINT = 0x70;
+    private static final int WIDTH_KIND_4_INT = 0x71;
+    private static final int WIDTH_KIND_4_FLOAT = 0x72;
+    private static final int WIDTH_KIND_4_CHAR = 0x73;
+    private static final int WIDTH_KIND_4_DECIMAL32 = 0x74;
+    private static final int WIDTH_KIND_8_ULONG = 0x80;
+    private static final int WIDTH_KIND_8_LONG = 0x81;
+    private static final int WIDTH_KIND_8_DOUBLE = 0x82;
+    private static final int WIDTH_KIND_8_TIMESTAMP = 0x83;
+    private static final int WIDTH_KIND_8_DECIMAL64 = 0x84;
+    private static final int WIDTH_KIND_16_DECIMAL128 = 0x94;
+    private static final int WIDTH_KIND_16_UUID = 0x98;
+    private static final int WIDTH_KIND_1_BINARY = 0xa0;
+    private static final int WIDTH_KIND_1_STRING = 0xa1;
+    private static final int WIDTH_KIND_1_SYMBOL = 0xa3;
+    private static final int WIDTH_KIND_4_BINARY = 0xb0;
+    private static final int WIDTH_KIND_4_STRING = 0xb1;
+    private static final int WIDTH_KIND_4_SYMBOL = 0xb3;
+    private static final int WIDTH_KIND_1_LIST = 0xc0;
+    private static final int WIDTH_KIND_1_MAP = 0xc1;
+    private static final int WIDTH_KIND_4_LIST = 0xd0;
+    private static final int WIDTH_KIND_4_MAP = 0xd1;
+    private static final int WIDTH_KIND_1_ARRAY = 0xe0;
+    private static final int WIDTH_KIND_4_ARRAY = 0xf0;
+    
     private final NullType nullType;
     private final BooleanType booleanType;
     private final UByteType ubyteType;
@@ -76,82 +116,82 @@ public class DynamicType extends Type {
         super.wrap(buffer, offset);
 
         switch (uint8Get(buffer, offset)) {
-        case 0x40:
+        case WIDTH_KIND_0_NULL:
             return nullType.wrap(buffer, offset);
-        case 0x41:
-        case 0x42:
+        case WIDTH_KIND_0_TRUE:
+        case WIDTH_KIND_0_FALSE:
             return booleanType.wrap(buffer, offset);
-        case 0x43:
+        case WIDTH_KIND_0_UINT:
             return uintType.wrap(buffer, offset);
-        case 0x44:
+        case WIDTH_KIND_0_ULONG:
             return ulongType.wrap(buffer, offset);
-        case 0x45:
+        case WIDTH_KIND_0_LIST:
             return listType.wrap(buffer, offset);
-        case 0x50:
+        case WIDTH_KIND_1_UBYTE:
             return ubyteType.wrap(buffer, offset);
-        case 0x51:
+        case WIDTH_KIND_1_BYTE:
             return byteType.wrap(buffer, offset);
-        case 0x52:
+        case WIDTH_KIND_1_UINT:
             return uintType.wrap(buffer, offset);
-        case 0x53:
+        case WIDTH_KIND_1_ULONG:
             return ulongType.wrap(buffer, offset);
-        case 0x54:
+        case WIDTH_KIND_1_INT:
             return intType.wrap(buffer, offset);
-        case 0x55:
+        case WIDTH_KIND_1_LONG:
             return longType.wrap(buffer, offset);
-        case 0x56:
+        case WIDTH_KIND_1_BOOLEAN:
             return booleanType.wrap(buffer, offset);
-        case 0x60:
+        case WIDTH_KIND_2_USHORT:
             return ushortType.wrap(buffer, offset);
-        case 0x61:
+        case WIDTH_KIND_2_SHORT:
             return shortType.wrap(buffer, offset);
-        case 0x70:
+        case WIDTH_KIND_4_UINT:
             return uintType.wrap(buffer, offset);
-        case 0x71:
+        case WIDTH_KIND_4_INT:
             return intType.wrap(buffer, offset);
-        case 0x72:
+        case WIDTH_KIND_4_FLOAT:
             return floatType.wrap(buffer, offset);
-        case 0x73:
+        case WIDTH_KIND_4_CHAR:
             return charType.wrap(buffer, offset);
-        case 0x74:
+        case WIDTH_KIND_4_DECIMAL32:
             return decimal32Type.wrap(buffer, offset);
-        case 0x80:
+        case WIDTH_KIND_8_ULONG:
             return ulongType.wrap(buffer, offset);
-        case 0x81:
+        case WIDTH_KIND_8_LONG:
             return longType.wrap(buffer, offset);
-        case 0x82:
+        case WIDTH_KIND_8_DOUBLE:
             return doubleType.wrap(buffer, offset);
-        case 0x83:
+        case WIDTH_KIND_8_TIMESTAMP:
             return timestampType.wrap(buffer, offset);
-        case 0x84:
+        case WIDTH_KIND_8_DECIMAL64:
             return decimal64Type.wrap(buffer, offset);
-        case 0x94:
+        case WIDTH_KIND_16_DECIMAL128:
             return decimal128Type.wrap(buffer, offset);
-        case 0x98:
+        case WIDTH_KIND_16_UUID:
             return uuidType.wrap(buffer, offset);
-        case 0xa0:
+        case WIDTH_KIND_1_BINARY:
             return binaryType.wrap(buffer, offset);
-        case 0xa1:
+        case WIDTH_KIND_1_STRING:
             return stringType.wrap(buffer, offset);
-        case 0xa3:
+        case WIDTH_KIND_1_SYMBOL:
             return symbolType.wrap(buffer, offset);
-        case 0xb0:
+        case WIDTH_KIND_4_BINARY:
             return binaryType.wrap(buffer, offset);
-        case 0xb1:
+        case WIDTH_KIND_4_STRING:
             return stringType.wrap(buffer, offset);
-        case 0xb3:
+        case WIDTH_KIND_4_SYMBOL:
             return symbolType.wrap(buffer, offset);
-        case 0xc0:
+        case WIDTH_KIND_1_LIST:
             return listType.wrap(buffer, offset);
-        case 0xc1:
+        case WIDTH_KIND_1_MAP:
             return mapType.wrap(buffer, offset);
-        case 0xd0:
+        case WIDTH_KIND_4_LIST:
             return listType.wrap(buffer, offset);
-        case 0xd1:
+        case WIDTH_KIND_4_MAP:
             return mapType.wrap(buffer, offset);
-        case 0xe0:
+        case WIDTH_KIND_1_ARRAY:
             return arrayType.wrap(buffer, offset);
-        case 0xf0:
+        case WIDTH_KIND_4_ARRAY:
             return arrayType.wrap(buffer, offset);
         default:
             throw new IllegalArgumentException();
