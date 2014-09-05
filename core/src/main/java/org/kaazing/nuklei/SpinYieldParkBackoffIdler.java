@@ -26,13 +26,13 @@ import java.util.concurrent.locks.LockSupport;
 public class SpinYieldParkBackoffIdler implements Idler
 {
     /** Default maxSpins */
-    public static long DEFAULT_MAX_SPINS = 50;
+    public static final long DEFAULT_MAX_SPINS = 50;
     /** Default maxYields */
-    public static long DEFAULT_MAX_YIELDS = 50;
+    public static final long DEFAULT_MAX_YIELDS = 50;
     /** Default minParkPeriodNs */
-    public static long DEFAULT_MIN_PARK_PERIOD_NS = TimeUnit.NANOSECONDS.toNanos(1);
+    public static final long DEFAULT_MIN_PARK_PERIOD_NS = TimeUnit.NANOSECONDS.toNanos(1);
     /** Default maxParkPeriodNs */
-    public static long DEFAULT_MAX_PARK_PERIOD_NS = TimeUnit.MICROSECONDS.toNanos(100);
+    public static final long DEFAULT_MAX_PARK_PERIOD_NS = TimeUnit.MICROSECONDS.toNanos(100);
 
     public enum State
     {
