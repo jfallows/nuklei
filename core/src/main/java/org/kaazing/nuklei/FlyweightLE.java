@@ -45,6 +45,18 @@ public class FlyweightLE extends Flyweight
     }
 
     /**
+     * Encode the given float value as a 32-bit field at the given location.
+     *
+     * @param buffer to write from
+     * @param offset to write at
+     * @param value to encode represented as a 32-bit field
+     */
+    public static void floatPut(final AtomicBuffer buffer, final int offset, final float value)
+    {
+        buffer.putFloat(offset, value, LITTLE_ENDIAN);
+    }
+
+    /**
      * Return the 64-bit field at a given location as an double.
      *
      * @param buffer to read from
@@ -54,6 +66,18 @@ public class FlyweightLE extends Flyweight
     public static double doubleGet(final AtomicBuffer buffer, final int offset)
     {
         return buffer.getDouble(offset, LITTLE_ENDIAN);
+    }
+
+    /**
+     * Encode the given double value as a 64-bit field at the given location.
+     *
+     * @param buffer to write from
+     * @param offset to write at
+     * @param value to encode represented as a 64-bit field
+     */
+    public static void doublePut(final AtomicBuffer buffer, final int offset, final double value)
+    {
+        buffer.putDouble(offset, value, LITTLE_ENDIAN);
     }
 
     /**
