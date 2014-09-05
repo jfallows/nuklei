@@ -15,8 +15,11 @@
  */
 package org.kaazing.nuklei.amqp_1_0.codec.types;
 
+import static java.lang.Integer.highestOneBit;
+
 import java.util.function.Consumer;
 
+import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.function.AtomicBufferAccessor;
@@ -28,11 +31,18 @@ import org.kaazing.nuklei.function.AtomicBufferMutator;
 public final class BinaryType extends Type {
 
     private static final int OFFSET_LENGTH_KIND = 0;
-    private static final int SIZEOF_LENGTH_KIND = 1;
+    private static final int SIZEOF_LENGTH_KIND = BitUtil.SIZE_OF_UINT8;
 
-    private int offsetValue;
-    private int sizeofValue;
-    private int limit;
+    private static final int OFFSET_LENGTH = OFFSET_LENGTH_KIND + SIZEOF_LENGTH_KIND;
+    static final int SIZEOF_LENGTH_MAX = BitUtil.SIZE_OF_UINT32;
+
+    private static final short WIDTH_KIND_1 = 0xa0;
+    private static final short WIDTH_KIND_4 = 0xb0;
+
+    @Override
+    public Kind kind() {
+        return Kind.BINARY;
+    }
     
     @Override
     public BinaryType watch(Consumer<Flyweight> observer) {
@@ -41,55 +51,90 @@ public final class BinaryType extends Type {
     }
 
     @Override
-    public Kind kind() {
-        return Kind.BINARY;
-    }
-
-    @Override
     public BinaryType wrap(AtomicBuffer buffer, int offset) {
         super.wrap(buffer, offset);
-
-        int lengthKind = uint8Get(buffer, offset + OFFSET_LENGTH_KIND);
-        switch (lengthKind) {
-        case 0xa0:
-            int offsetLengthA0 = OFFSET_LENGTH_KIND + SIZEOF_LENGTH_KIND;
-            int sizeofLengthA0 = 1;
-            sizeofValue = uint8Get(buffer, offset + offsetLengthA0);
-            offsetValue = offsetLengthA0 + sizeofLengthA0;
-            limit = offset + OFFSET_LENGTH_KIND + SIZEOF_LENGTH_KIND + sizeofLengthA0 + sizeofValue;
-            break;
-        case 0xb0:
-            int offsetLengthB0 = OFFSET_LENGTH_KIND + SIZEOF_LENGTH_KIND;
-            int sizeofLengthB0 = 4;
-            sizeofValue = int32Get(buffer, offset + offsetLengthB0);
-            offsetValue = offsetLengthB0 + sizeofLengthB0;
-            limit = offset + OFFSET_LENGTH_KIND + SIZEOF_LENGTH_KIND + sizeofLengthB0 + sizeofValue;
-            break;
-        default:
-            // unexpected
-            break;
-        }
-
         return this;
     }
-    
+
     public <T> T get(AtomicBufferAccessor<T> accessor) {
-        return accessor.access(buffer(), offset() + offsetValue, sizeofValue);
+
+        switch (widthKind()) {
+        case WIDTH_KIND_1:
+            return accessor.access(buffer(), lengthLimit(), uint8Get(buffer(), offset() + OFFSET_LENGTH));
+        case WIDTH_KIND_4:
+            return accessor.access(buffer(), lengthLimit(), int32Get(buffer(), offset() + OFFSET_LENGTH));
+        default:
+            throw new IllegalStateException();
+        }
     }
     
     public <T> BinaryType set(AtomicBufferMutator<T> mutator, T value) {
-        throw new UnsupportedOperationException();
-//        notifyChanged();
-//        return this;
-    }
-
-    public BinaryType set(BinaryType value) {
-        buffer().putBytes(offset(), value.buffer(), value.offset(), value.limit() - value.offset());
+        length(mutator.mutate((length) -> { maxLength(length); return lengthLimit(); }, buffer(), value));
         notifyChanged();
         return this;
     }
 
-    public int limit() {
-        return limit;
+    private void length(long length) {
+        switch (widthKind()) {
+        case WIDTH_KIND_1:
+            uint8Put(buffer(), offset() + OFFSET_LENGTH, (short) length);
+            break;
+        case WIDTH_KIND_4:
+            uint32Put(buffer(), offset() + OFFSET_LENGTH, length);
+            break;
+        default:
+            throw new IllegalStateException();
+        }
     }
+
+    public int limit() {
+        switch (widthKind()) {
+        case WIDTH_KIND_1:
+            return lengthLimit() + uint8Get(buffer(), offset() + OFFSET_LENGTH);
+        case WIDTH_KIND_4:
+            return lengthLimit() + int32Get(buffer(), offset() + OFFSET_LENGTH);
+        default:
+            throw new IllegalStateException();
+        }
+    }
+
+    private void widthKind(short widthKind) {
+        uint8Put(buffer(), offset() + OFFSET_LENGTH_KIND, widthKind);
+    }
+
+    private short widthKind() {
+        return uint8Get(buffer(), offset() + OFFSET_LENGTH_KIND);
+    }
+
+    private void maxLength(int value) {
+        switch (highestOneBit(value)) {
+        case 0:
+        case 1:
+        case 2:
+        case 4:
+        case 8:
+        case 16:
+        case 32:
+        case 64:
+        case 128:
+            widthKind(WIDTH_KIND_1);
+            break;
+        default:
+            widthKind(WIDTH_KIND_4);
+            break;
+        }
+    }
+    
+    private int lengthLimit() {
+
+        switch (widthKind()) {
+        case WIDTH_KIND_1:
+            return offset() + OFFSET_LENGTH + BitUtil.SIZE_OF_UINT8;
+        case WIDTH_KIND_4:
+            return offset() + OFFSET_LENGTH + BitUtil.SIZE_OF_UINT32;
+        default:
+            throw new IllegalStateException();
+        }
+    }
+    
 }
