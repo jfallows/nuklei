@@ -66,7 +66,7 @@ public class DynamicType extends Type {
 
     @Override
     public DynamicType wrap(AtomicBuffer buffer, int offset) {
-        super.wrap(buffer(), offset());
+        super.wrap(buffer, offset);
         return this;
     }
 
@@ -86,13 +86,15 @@ public class DynamicType extends Type {
         case WIDTH_KIND_1_INT:
         case WIDTH_KIND_1_LONG:
         case WIDTH_KIND_1_BOOLEAN:
+            return offset() + 2;
         case WIDTH_KIND_1_BINARY:
         case WIDTH_KIND_1_STRING:
         case WIDTH_KIND_1_SYMBOL:
+           return offset() + 2 + uint8Get(buffer(), offset() + 1);
         case WIDTH_KIND_1_LIST:
         case WIDTH_KIND_1_MAP:
         case WIDTH_KIND_1_ARRAY:
-           return offset() + 2;
+            return offset() + 3;
         case WIDTH_KIND_2_USHORT:
         case WIDTH_KIND_2_SHORT:
             return offset() + 3;
@@ -101,13 +103,15 @@ public class DynamicType extends Type {
         case WIDTH_KIND_4_FLOAT:
         case WIDTH_KIND_4_CHAR:
         case WIDTH_KIND_4_DECIMAL32:
+            return offset() + 5;
         case WIDTH_KIND_4_BINARY:
         case WIDTH_KIND_4_STRING:
         case WIDTH_KIND_4_SYMBOL:
+            return offset() + 5 + int32Get(buffer(), offset() + 1);
         case WIDTH_KIND_4_LIST:
         case WIDTH_KIND_4_MAP:
         case WIDTH_KIND_4_ARRAY:
-            return offset() + 5;
+            return offset() + 9;
         case WIDTH_KIND_8_ULONG:
         case WIDTH_KIND_8_LONG:
         case WIDTH_KIND_8_DOUBLE:
