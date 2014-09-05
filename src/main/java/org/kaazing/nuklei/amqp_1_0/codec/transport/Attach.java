@@ -206,11 +206,6 @@ public final class Attach extends CompositeType {
         return desiredCapabilities();
     }
 
-    public Attach setProperties(Fields value) {
-        properties().set(value);
-        return this;
-    }
-    
     public Fields getProperties() {
         return properties();
     }

@@ -39,7 +39,7 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 @RunWith(Theories.class)
 public class DoubleTypeTest {
 
-    public static final int BUFFER_CAPACITY = 64;
+    private static final int BUFFER_CAPACITY = 64;
     
     @DataPoint
     public static final int ZERO_OFFSET = 0;

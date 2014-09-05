@@ -18,7 +18,6 @@ package org.kaazing.nuklei.amqp_1_0.codec.types;
 import static java.nio.ByteOrder.BIG_ENDIAN;
 import static org.junit.Assert.assertEquals;
 import static org.kaazing.nuklei.Flyweight.uint8Get;
-import static org.kaazing.nuklei.amqp_1_0.codec.types.LongType.SIZEOF_LONG_MAX;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -34,78 +33,90 @@ import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 @RunWith(Theories.class)
-public class LongTypeTest {
+public class MapTypeTest {
 
-    private static final int BUFFER_CAPACITY = 64;
+    private static final int BUFFER_CAPACITY = 512;
     
     @DataPoint
     public static final int ZERO_OFFSET = 0;
     
     @DataPoint
-    public static final int NON_ZERO_OFFSET = new Random().nextInt(BUFFER_CAPACITY - SIZEOF_LONG_MAX - 1) + 1;
+    public static final int NON_ZERO_OFFSET = new Random().nextInt(BUFFER_CAPACITY - 256 - 1) + 1;
 
     private final AtomicBuffer buffer = new AtomicBuffer(new byte[BUFFER_CAPACITY]);
     
     @Theory
     public void shouldEncode1(int offset) {
-        LongType longType = new LongType();
-        longType.wrap(buffer, offset);
-        longType.set(1L);
+        MapType mapType = new MapType();
+        mapType.wrap(buffer, offset);
+        mapType.maxLength(0xff);
+        mapType.clear();
         
-        assertEquals(0x55, uint8Get(buffer, offset));
-        assertEquals(offset + 2, longType.limit());
+        assertEquals(0xc1, uint8Get(buffer, offset));
+        assertEquals(offset + 3, mapType.limit());
     }
     
     @Theory
     public void shouldEncode8(int offset) {
-        LongType longType = new LongType();
-        longType.wrap(buffer, offset);
-        longType.set(12345678L);
+        MapType mapType = new MapType();
+        mapType.wrap(buffer, offset);
+        mapType.maxLength(0x100);
+        mapType.clear();
         
-        assertEquals(0x81, uint8Get(buffer, offset));
-        assertEquals(offset + 9, longType.limit());
+        assertEquals(0xd1, uint8Get(buffer, offset));
+        assertEquals(offset + 9, mapType.limit());
     }
     
     @Theory
     public void shouldDecode1(int offset) {
-        buffer.putByte(offset, (byte) 0x55);
+        buffer.putByte(offset, (byte) 0xc1);
         buffer.putByte(offset + 1, (byte) 0x01);
+        buffer.putByte(offset + 2, (byte) 0x00);
         
-        LongType longType = new LongType();
-        longType.wrap(buffer, offset);
+        MapType mapType = new MapType();
+        mapType.wrap(buffer, offset);
         
-        assertEquals(0x01L, longType.get());
-        assertEquals(offset + 2, longType.limit());
+        assertEquals(0x01, mapType.length());
+        assertEquals(0x00, mapType.count());
+        assertEquals(offset + 3, mapType.limit());
     }
     
     @Theory
     public void shouldDecode8(int offset) {
-        buffer.putByte(offset, (byte) 0x81);
-        buffer.putLong(offset + 1, 0x12345678L, BIG_ENDIAN);
+        buffer.putByte(offset, (byte) 0xd1);
+        buffer.putInt(offset + 1, (byte) 0x04, BIG_ENDIAN);
+        buffer.putInt(offset + 5, (byte) 0x00);
         
-        LongType longType = new LongType();
-        longType.wrap(buffer, offset);
+        MapType mapType = new MapType();
+        mapType.wrap(buffer, offset);
         
-        assertEquals(0x12345678L, longType.get());
-        assertEquals(offset + 9, longType.limit());
+        assertEquals(0x04, mapType.length());
+        assertEquals(0x00, mapType.count());
+        assertEquals(offset + 9, mapType.limit());
     }
     
     @Theory
     public void shouldEncodeThenDecode1(int offset) {
-        LongType longType = new LongType();
-        longType.wrap(buffer, offset);
-        longType.set(1L);
+        MapType mapType = new MapType();
+        mapType.wrap(buffer, offset);
+        mapType.maxLength(0xff);
+        mapType.clear();
         
-        assertEquals(1L, longType.get());
+        assertEquals(0x00, mapType.count());
+        assertEquals(0x01, mapType.length());
+        assertEquals(offset + 3, mapType.limit());
     }
     
     @Theory
     public void shouldEncodeThenDecode8(int offset) {
-        LongType longType = new LongType();
-        longType.wrap(buffer, offset);
-        longType.set(12345678L);
+        MapType mapType = new MapType();
+        mapType.wrap(buffer, offset);
+        mapType.maxLength(0x100);
+        mapType.clear();
         
-        assertEquals(12345678L, longType.get());
+        assertEquals(0x00, mapType.count());
+        assertEquals(0x04, mapType.length());
+        assertEquals(offset + 9, mapType.limit());
     }
     
     @Theory
@@ -113,10 +124,10 @@ public class LongTypeTest {
     public void shouldNotDecode(int offset) {
         buffer.putByte(offset, (byte) 0x00);
         
-        LongType longType = new LongType();
-        longType.wrap(buffer, offset);
+        MapType mapType = new MapType();
+        mapType.wrap(buffer, offset);
 
-        assertEquals(0L, longType.get());
+        assertEquals(0, mapType.count());
     }
 
     @Theory
@@ -124,12 +135,12 @@ public class LongTypeTest {
     public void shouldNotifyChanged(int offset) {
         final Consumer<Flyweight> observer = mock(Consumer.class);
         
-        LongType longType = new LongType();
-        longType.watch(observer);
-        longType.wrap(buffer, offset);
-        longType.set(12345678L);
+        MapType mapType = new MapType();
+        mapType.watch(observer);
+        mapType.wrap(buffer, offset);
+        mapType.maxLength(0x00);
+        mapType.clear();
         
-        verify(observer).accept(longType);
+        verify(observer).accept(mapType);
     }
-
 }

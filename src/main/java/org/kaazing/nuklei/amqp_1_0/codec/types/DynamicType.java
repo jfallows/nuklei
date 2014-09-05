@@ -59,148 +59,67 @@ public class DynamicType extends Type {
     private static final int WIDTH_KIND_1_ARRAY = 0xe0;
     private static final int WIDTH_KIND_4_ARRAY = 0xf0;
     
-    private final NullType nullType;
-    private final BooleanType booleanType;
-    private final UByteType ubyteType;
-    private final UShortType ushortType;
-    private final UIntType uintType;
-    private final ULongType ulongType;
-    private final ByteType byteType;
-    private final ShortType shortType;
-    private final IntType intType;
-    private final LongType longType;
-    private final FloatType floatType;
-    private final DoubleType doubleType;
-    private final Decimal32Type decimal32Type;
-    private final Decimal64Type decimal64Type;
-    private final Decimal128Type decimal128Type;
-    private final CharType charType;
-    private final TimestampType timestampType;
-    private final UuidType uuidType;
-    private final BinaryType binaryType;
-    private final StringType stringType;
-    private SymbolType symbolType;
-    private ListType listType;
-    private MapType mapType;
-    private ArrayType arrayType;
-
-    public DynamicType() {
-        nullType = new NullType();
-        booleanType = new BooleanType();
-        ubyteType = new UByteType();
-        ushortType = new UShortType();
-        uintType = new UIntType();
-        ulongType = new ULongType();
-        byteType = new ByteType();
-        shortType = new ShortType();
-        intType = new IntType();
-        longType = new LongType();
-        floatType = new FloatType();
-        doubleType = new DoubleType();
-        decimal32Type = new Decimal32Type();
-        decimal64Type = new Decimal64Type();
-        decimal128Type = new Decimal128Type();
-        charType = new CharType();
-        timestampType = new TimestampType();
-        uuidType = new UuidType();
-        binaryType = new BinaryType();
-        stringType = new StringType();
-        symbolType = new SymbolType();
-        listType = new ListType();
-        mapType = new MapType();
-        arrayType = new ArrayType();
+    @Override
+    public Kind kind() {
+        return Kind.DYNAMIC;
     }
 
     @Override
-    public Type wrap(AtomicBuffer buffer, int offset) {
-        super.wrap(buffer, offset);
+    public DynamicType wrap(AtomicBuffer buffer, int offset) {
+        super.wrap(buffer(), offset());
+        return this;
+    }
 
-        switch (uint8Get(buffer, offset)) {
+    public int limit() {
+        switch (uint8Get(buffer(), offset())) {
         case WIDTH_KIND_0_NULL:
-            return nullType.wrap(buffer, offset);
         case WIDTH_KIND_0_TRUE:
         case WIDTH_KIND_0_FALSE:
-            return booleanType.wrap(buffer, offset);
         case WIDTH_KIND_0_UINT:
-            return uintType.wrap(buffer, offset);
         case WIDTH_KIND_0_ULONG:
-            return ulongType.wrap(buffer, offset);
         case WIDTH_KIND_0_LIST:
-            return listType.wrap(buffer, offset);
+            return offset() + 1;
         case WIDTH_KIND_1_UBYTE:
-            return ubyteType.wrap(buffer, offset);
         case WIDTH_KIND_1_BYTE:
-            return byteType.wrap(buffer, offset);
         case WIDTH_KIND_1_UINT:
-            return uintType.wrap(buffer, offset);
         case WIDTH_KIND_1_ULONG:
-            return ulongType.wrap(buffer, offset);
         case WIDTH_KIND_1_INT:
-            return intType.wrap(buffer, offset);
         case WIDTH_KIND_1_LONG:
-            return longType.wrap(buffer, offset);
         case WIDTH_KIND_1_BOOLEAN:
-            return booleanType.wrap(buffer, offset);
-        case WIDTH_KIND_2_USHORT:
-            return ushortType.wrap(buffer, offset);
-        case WIDTH_KIND_2_SHORT:
-            return shortType.wrap(buffer, offset);
-        case WIDTH_KIND_4_UINT:
-            return uintType.wrap(buffer, offset);
-        case WIDTH_KIND_4_INT:
-            return intType.wrap(buffer, offset);
-        case WIDTH_KIND_4_FLOAT:
-            return floatType.wrap(buffer, offset);
-        case WIDTH_KIND_4_CHAR:
-            return charType.wrap(buffer, offset);
-        case WIDTH_KIND_4_DECIMAL32:
-            return decimal32Type.wrap(buffer, offset);
-        case WIDTH_KIND_8_ULONG:
-            return ulongType.wrap(buffer, offset);
-        case WIDTH_KIND_8_LONG:
-            return longType.wrap(buffer, offset);
-        case WIDTH_KIND_8_DOUBLE:
-            return doubleType.wrap(buffer, offset);
-        case WIDTH_KIND_8_TIMESTAMP:
-            return timestampType.wrap(buffer, offset);
-        case WIDTH_KIND_8_DECIMAL64:
-            return decimal64Type.wrap(buffer, offset);
-        case WIDTH_KIND_16_DECIMAL128:
-            return decimal128Type.wrap(buffer, offset);
-        case WIDTH_KIND_16_UUID:
-            return uuidType.wrap(buffer, offset);
         case WIDTH_KIND_1_BINARY:
-            return binaryType.wrap(buffer, offset);
         case WIDTH_KIND_1_STRING:
-            return stringType.wrap(buffer, offset);
         case WIDTH_KIND_1_SYMBOL:
-            return symbolType.wrap(buffer, offset);
-        case WIDTH_KIND_4_BINARY:
-            return binaryType.wrap(buffer, offset);
-        case WIDTH_KIND_4_STRING:
-            return stringType.wrap(buffer, offset);
-        case WIDTH_KIND_4_SYMBOL:
-            return symbolType.wrap(buffer, offset);
         case WIDTH_KIND_1_LIST:
-            return listType.wrap(buffer, offset);
         case WIDTH_KIND_1_MAP:
-            return mapType.wrap(buffer, offset);
-        case WIDTH_KIND_4_LIST:
-            return listType.wrap(buffer, offset);
-        case WIDTH_KIND_4_MAP:
-            return mapType.wrap(buffer, offset);
         case WIDTH_KIND_1_ARRAY:
-            return arrayType.wrap(buffer, offset);
+           return offset() + 2;
+        case WIDTH_KIND_2_USHORT:
+        case WIDTH_KIND_2_SHORT:
+            return offset() + 3;
+        case WIDTH_KIND_4_UINT:
+        case WIDTH_KIND_4_INT:
+        case WIDTH_KIND_4_FLOAT:
+        case WIDTH_KIND_4_CHAR:
+        case WIDTH_KIND_4_DECIMAL32:
+        case WIDTH_KIND_4_BINARY:
+        case WIDTH_KIND_4_STRING:
+        case WIDTH_KIND_4_SYMBOL:
+        case WIDTH_KIND_4_LIST:
+        case WIDTH_KIND_4_MAP:
         case WIDTH_KIND_4_ARRAY:
-            return arrayType.wrap(buffer, offset);
+            return offset() + 5;
+        case WIDTH_KIND_8_ULONG:
+        case WIDTH_KIND_8_LONG:
+        case WIDTH_KIND_8_DOUBLE:
+        case WIDTH_KIND_8_TIMESTAMP:
+        case WIDTH_KIND_8_DECIMAL64:
+            return offset() + 9;
+        case WIDTH_KIND_16_DECIMAL128:
+        case WIDTH_KIND_16_UUID:
+            return offset() + 17;
         default:
             throw new IllegalArgumentException();
         }
         
-    }
-
-    @Override
-    public Kind kind() {
-        return Kind.UNKNOWN;
     }
 }

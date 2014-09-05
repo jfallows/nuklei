@@ -20,7 +20,7 @@ import org.kaazing.nuklei.FlyweightBE;
 public abstract class Type extends FlyweightBE {
 
     public static enum Kind { 
-        UNKNOWN, NULL, BOOLEAN, UBYTE, USHORT, UINT, ULONG, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE, 
+        DYNAMIC, NULL, BOOLEAN, UBYTE, USHORT, UINT, ULONG, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE, 
         DECIMAL32, DECIMAL64, DECIMAL128, CHAR, TIMESTAMP, UUID, BINARY, STRING, SYMBOL,
         LIST, MAP, ARRAY, DESCRIBED
     };

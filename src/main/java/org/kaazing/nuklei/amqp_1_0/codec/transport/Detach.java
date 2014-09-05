@@ -81,11 +81,6 @@ public final class Detach extends CompositeType {
         return closed().get();
     }
 
-    public Detach setError(Error value) {
-        error().set(value);
-        return this;
-    }
-    
     public Error getError() {
         return error();
     }

@@ -57,11 +57,6 @@ public final class End extends CompositeType {
         return this;
     }
 
-    public End setError(Error value) {
-        error().set(value);
-        return this;
-    }
-    
     public Error getError() {
         return error();
     }

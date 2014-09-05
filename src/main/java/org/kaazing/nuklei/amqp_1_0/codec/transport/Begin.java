@@ -139,11 +139,6 @@ public final class Begin extends CompositeType {
         return desiredCapabilities();
     }
 
-    public Begin setProperties(Fields value) {
-        properties().set(value);
-        return this;
-    }
-    
     public Fields getProperties() {
         return properties();
     }

@@ -174,11 +174,6 @@ public final class Open extends CompositeType {
         return desiredCapabilities();
     }
 
-    public Open setProperties(Fields value) {
-        properties().set(value);
-        return this;
-    }
-    
     public Fields getProperties() {
         return properties();
     }

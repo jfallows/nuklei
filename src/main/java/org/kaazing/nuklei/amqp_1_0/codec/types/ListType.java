@@ -29,11 +29,12 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 public class ListType extends Type {
 
     private final Header header;
-    private FlyweightBE previous;
+    private final DynamicType dynamic;
     
     public ListType() {
         super();
         this.header = new Header();
+        this.dynamic = new DynamicType();
     }
 
     @Override
@@ -50,26 +51,21 @@ public class ListType extends Type {
     @Override
     public ListType wrap(AtomicBuffer buffer, int offset) {
         super.wrap(buffer, offset);
-
         header.wrap(buffer, offset);
-        previous = header;
-
         return this;
+    }
+    
+    public int offsetAt(int index) {
+        int offsetAt = offsetBody();
+        for (; index > 0; index--) {
+            offsetAt = dynamic.wrap(buffer(), offsetAt).limit();
+        }
+        return offsetAt;
     }
     
     public ListType clear() {
         limit(0, offsetBody());
         return this;
-    }
-
-    public boolean hasNext() {
-        return previous.limit() < limit();
-    }
-
-    public <T extends Type> T next(T element) {
-        element.wrap(buffer(), previous.limit());
-        previous = element;
-        return element;
     }
 
     public int length() {
@@ -95,7 +91,7 @@ public class ListType extends Type {
         return header.lengthLimit() + header.length();
     }
     
-    protected final void limit(int count, int limit) {
+    public final void limit(int count, int limit) {
         header.count(count);
         header.length(limit - header.lengthLimit());
         notifyChanged();

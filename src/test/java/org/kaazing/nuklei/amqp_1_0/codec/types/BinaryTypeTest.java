@@ -42,9 +42,9 @@ import org.kaazing.nuklei.function.AtomicBufferMutator;
 @RunWith(Theories.class)
 public class BinaryTypeTest {
 
+    private static final int BUFFER_CAPACITY = 512;
     private static final AtomicBufferAccessor<String> READ_UTF_8 = newAccessor(UTF_8);
     private static final AtomicBufferMutator<String> WRITE_UTF_8 = newMutator(UTF_8);
-    private static final int BUFFER_CAPACITY = 512;
     
     @DataPoint
     public static final int ZERO_OFFSET = 0;

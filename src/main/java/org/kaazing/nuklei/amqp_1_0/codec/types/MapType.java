@@ -15,8 +15,11 @@
  */
 package org.kaazing.nuklei.amqp_1_0.codec.types;
 
+import static java.lang.Integer.highestOneBit;
+
 import java.util.function.Consumer;
 
+import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.FlyweightBE;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
@@ -26,11 +29,12 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
  */
 public class MapType extends Type {
 
-    private final Length length;
-    private FlyweightBE previous;
+    private final Header header;
+    private final DynamicType dynamic;
     
     public MapType() {
-        length = new Length();
+        header = new Header();
+        dynamic = new DynamicType();
     }
 
     @Override
@@ -47,73 +51,196 @@ public class MapType extends Type {
     @Override
     public MapType wrap(AtomicBuffer buffer, int offset) {
         super.wrap(buffer, offset);
-        length.wrap(buffer, offset);
-        previous = length;
+        header.wrap(buffer, offset);
+        return this;
+    }
+
+    public int offsetAt(int index) {
+        int offsetAt = offsetBody();
+        for (; index > 0; index--) {
+            offsetAt = dynamic.wrap(buffer(), offsetAt).limit();
+            offsetAt = dynamic.wrap(buffer(), offsetAt).limit();
+        }
+        return offsetAt;
+    }
+    
+    public MapType clear() {
+        limit(0, offsetBody());
         return this;
     }
 
     public int length() {
-        return length.value() >> 1;
+        return header.length();
     }
 
-    public <T extends Type> boolean next(SymbolType key, T value) {
-        if (value.limit() < limit()) {
-            key.wrap(buffer(), previous.limit());
-            value.wrap(buffer(), key.limit());
-            previous = value;
-            return true;
-        }
-        return false;
-    }
-
-    public int limit() {
-        return length.limit() + length.value();
-    }
-
-    public MapType set(MapType value) {
-        buffer().putBytes(offset(), value.buffer(), value.offset(), value.limit() - value.offset());
-        notifyChanged();
+    public MapType maxLength(int value) {
+        header.max(value);
         return this;
     }
+    
+    public int count() {
+        return header.count();
+    }
+    
+    public MapType maxCount(int value) {
+        header.max(value);
+        return this;
+    }
+    
+    @Override
+    public int limit() {
+        return header.lengthLimit() + header.length();
+    }
+    
+    public final void limit(int count, int limit) {
+        header.count(count);
+        header.length(limit - header.lengthLimit());
+        notifyChanged();
+    }
 
-    private static class Length extends FlyweightBE {
+    protected final int offsetBody() {
+        return header.limit();
+    }
+
+    private static final class Header extends FlyweightBE {
 
         private static final int OFFSET_LENGTH_KIND = 0;
-        private static final int SIZEOF_LENGTH_KIND = 1;
+        private static final int SIZEOF_LENGTH_KIND = BitUtil.SIZE_OF_UINT8;
 
         private static final int OFFSET_LENGTH = OFFSET_LENGTH_KIND + SIZEOF_LENGTH_KIND;
 
-        private int lengthKind;
-        
+        private static final short WIDTH_KIND_1 = 0xc1;
+        private static final short WIDTH_KIND_4 = 0xd1;
+
         @Override
-        public Length wrap(AtomicBuffer buffer, int offset) {
+        public Header wrap(AtomicBuffer buffer, int offset) {
             super.wrap(buffer, offset);
-
-            lengthKind = uint8Get(buffer(), offset() + OFFSET_LENGTH_KIND);
-
             return this;
         }
 
-        public int value() {
-            switch (lengthKind) {
-            case 0xc1:
+        public void count(int value) {
+            switch (kind()) {
+            case WIDTH_KIND_1:
+                switch (highestOneBit(value)) {
+                case 0:
+                case 1:
+                case 2:
+                case 4:
+                case 8:
+                case 16:
+                case 32:
+                case 64:
+                case 128:
+                    uint8Put(buffer(), offset() + OFFSET_LENGTH + 1, (short) value);
+                    break;
+                default:
+                    throw new IllegalStateException();
+                }
+                break;
+            case WIDTH_KIND_4:
+                int32Put(buffer(), offset() + OFFSET_LENGTH + 4, value);
+                break;
+            default:
+                throw new IllegalStateException();
+            }
+        }
+
+        public int count() {
+            switch (kind()) {
+            case WIDTH_KIND_1:
+                return uint8Get(buffer(), offset() + OFFSET_LENGTH + 1);
+            case WIDTH_KIND_4:
+                return int32Get(buffer(), offset() + OFFSET_LENGTH + 4);
+            default:
+                throw new IllegalStateException();
+            }
+        }
+
+        public int length() {
+            switch (kind()) {
+            case WIDTH_KIND_1:
                 return uint8Get(buffer(), offset() + OFFSET_LENGTH);
-            case 0xd1:
+            case WIDTH_KIND_4:
                 return int32Get(buffer(), offset() + OFFSET_LENGTH);
             default:
                 throw new IllegalStateException();
             }
         }
-
-        public int limit() {
-            switch (lengthKind) {
-            case 0xc1:
+        
+        public int lengthLimit() {
+            switch (kind()) {
+            case WIDTH_KIND_1:
                 return offset() + OFFSET_LENGTH + 1;
-            case 0xd1:
+            case WIDTH_KIND_4:
                 return offset() + OFFSET_LENGTH + 4;
             default:
                 throw new IllegalStateException();
             }
+        }
+        
+        public void length(int value) {
+            switch (kind()) {
+            case WIDTH_KIND_1:
+                switch (highestOneBit(value)) {
+                case 1:
+                case 2:
+                case 4:
+                case 8:
+                case 16:
+                case 32:
+                case 64:
+                case 128:
+                    uint8Put(buffer(), offset() + OFFSET_LENGTH, (short) value);
+                    break;
+                default:
+                    throw new IllegalStateException();
+                }
+                break;
+            case WIDTH_KIND_4:
+                int32Put(buffer(), offset() + OFFSET_LENGTH, value);
+                break;
+            default:
+                throw new IllegalStateException();
+            }
+        }
+
+        public void max(int value) {
+            switch (highestOneBit(value)) {
+            case 0:
+            case 1:
+            case 2:
+            case 4:
+            case 8:
+            case 16:
+            case 32:
+            case 64:
+            case 128:
+                kind(WIDTH_KIND_1);
+                break;
+            default:
+                kind(WIDTH_KIND_4);
+                break;
+            }
+            
+        }
+        
+        public int limit() {
+            switch (kind()) {
+            case WIDTH_KIND_1:
+                return offset() + OFFSET_LENGTH + 2;
+            case WIDTH_KIND_4:
+                return offset() + OFFSET_LENGTH + 8;
+            default:
+                throw new IllegalStateException();
+            }
+        }
+
+        private void kind(short kind) {
+            uint8Put(buffer(), offset() + OFFSET_LENGTH_KIND, kind);
+        }
+
+        private short kind() {
+            return uint8Get(buffer(), offset() + OFFSET_LENGTH_KIND);
         }
     }
 

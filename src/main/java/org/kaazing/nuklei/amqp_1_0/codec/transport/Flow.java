@@ -161,11 +161,6 @@ public final class Flow extends CompositeType {
         return echo().get();
     }
 
-    public Flow setProperties(Fields value) {
-        properties().set(value);
-        return this;
-    }
-    
     public Fields getProperties() {
         return properties();
     }
