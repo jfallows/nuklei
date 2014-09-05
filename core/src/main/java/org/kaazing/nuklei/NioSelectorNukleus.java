@@ -152,6 +152,12 @@ public class NioSelectorNukleus implements Nukleus
                 else if ((readyOps & SelectionKey.OP_READ) != 0)
                 {
                     handledMessages += dispatchHandler.dispatch(DISPATCH_READ);
+
+                    if (-1 == handledMessages)
+                    {
+                        cancel(key.channel(), SelectionKey.OP_READ);
+                        handledMessages = 1;
+                    }
                 }
                 else if ((readyOps & SelectionKey.OP_WRITE) != 0)
                 {
