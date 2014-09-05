@@ -18,14 +18,18 @@ package org.kaazing.nuklei.amqp_1_0.codec.types;
 import static org.junit.Assert.assertEquals;
 import static org.kaazing.nuklei.Flyweight.uint8Get;
 import static org.kaazing.nuklei.amqp_1_0.codec.types.UByteType.SIZEOF_UBYTE;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.util.Random;
+import java.util.function.Consumer;
 
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
+import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 @RunWith(Theories.class)
@@ -83,5 +87,18 @@ public class UByteTypeTest {
 
         assertEquals(0, ubyteType.get());
     }
-    
+
+    @Theory
+    @SuppressWarnings("unchecked")
+    public void shouldNotifyChanged(int offset) {
+        final Consumer<Flyweight> observer = mock(Consumer.class);
+        
+        UByteType ubyteType = new UByteType();
+        ubyteType.watch(observer);
+        ubyteType.wrap(buffer, offset);
+        ubyteType.set(0x12);
+        
+        verify(observer).accept(ubyteType);
+    }
+
 }

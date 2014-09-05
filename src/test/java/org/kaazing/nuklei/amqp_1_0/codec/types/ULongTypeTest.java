@@ -19,14 +19,18 @@ import static java.nio.ByteOrder.BIG_ENDIAN;
 import static org.junit.Assert.assertEquals;
 import static org.kaazing.nuklei.Flyweight.uint8Get;
 import static org.kaazing.nuklei.amqp_1_0.codec.types.ULongType.SIZEOF_ULONG_MAX;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.util.Random;
+import java.util.function.Consumer;
 
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
+import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 @RunWith(Theories.class)
@@ -144,5 +148,17 @@ public class ULongTypeTest {
 
         assertEquals(0L, ulongType.get());
     }
-    
+
+    @Theory
+    @SuppressWarnings("unchecked")
+    public void shouldNotifyChanged(int offset) {
+        final Consumer<Flyweight> observer = mock(Consumer.class);
+        
+        ULongType ulongType = new ULongType();
+        ulongType.watch(observer);
+        ulongType.wrap(buffer, offset);
+        ulongType.set(12345678L);
+        
+        verify(observer).accept(ulongType);
+    }
 }

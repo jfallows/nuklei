@@ -22,15 +22,19 @@ import static org.kaazing.nuklei.Flyweight.uint8Get;
 import static org.kaazing.nuklei.FlyweightBE.int32Get;
 import static org.kaazing.nuklei.amqp_1_0.codec.util.FieldAccessors.newAccessor;
 import static org.kaazing.nuklei.amqp_1_0.codec.util.FieldMutators.newMutator;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.util.Arrays;
 import java.util.Random;
+import java.util.function.Consumer;
 
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
+import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.function.AtomicBufferAccessor;
 import org.kaazing.nuklei.function.AtomicBufferMutator;
@@ -135,5 +139,18 @@ public class BinaryTypeTest {
         binaryType.wrap(buffer, offset);
         binaryType.get(READ_UTF_8);
     }
-    
+
+    @Theory
+    @SuppressWarnings("unchecked")
+    public void shouldNotifyChanged(int offset) {
+        final Consumer<Flyweight> observer = mock(Consumer.class);
+        
+        BinaryType binaryType = new BinaryType();
+        binaryType.watch(observer);
+        binaryType.wrap(buffer, offset);
+        binaryType.set(WRITE_UTF_8, "Hello, world");
+        
+        verify(observer).accept(binaryType);
+    }
+
 }

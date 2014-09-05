@@ -56,6 +56,7 @@ public final class CharType extends Type {
     public CharType set(int value) {
         widthKind(WIDTH_KIND_4);
         int32Put(buffer(), offset() + OFFSET_VALUE, value);
+        notifyChanged();
         return this;
     }
 

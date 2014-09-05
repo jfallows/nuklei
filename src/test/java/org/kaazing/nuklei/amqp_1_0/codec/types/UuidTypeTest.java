@@ -21,14 +21,18 @@ import static org.kaazing.nuklei.BitUtil.fromHex;
 import static org.kaazing.nuklei.BitUtil.toHex;
 import static org.kaazing.nuklei.Flyweight.uint8Get;
 import static org.kaazing.nuklei.amqp_1_0.codec.types.UuidType.SIZEOF_UUID;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.util.Random;
+import java.util.function.Consumer;
 
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
+import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 @RunWith(Theories.class)
@@ -87,4 +91,16 @@ public class UuidTypeTest {
         assertEquals(fromString("f81d4fae-7dec-11d0-a765-00a0c91e6bf6"), uuidType.get());
     }
     
+    @Theory
+    @SuppressWarnings("unchecked")
+    public void shouldNotifyChanged(int offset) {
+        final Consumer<Flyweight> observer = mock(Consumer.class);
+        
+        UuidType uuidType = new UuidType();
+        uuidType.watch(observer);
+        uuidType.wrap(buffer, offset);
+        uuidType.set(fromString("f81d4fae-7dec-11d0-a765-00a0c91e6bf6"));
+        
+        verify(observer).accept(uuidType);
+    }
 }

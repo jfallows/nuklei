@@ -20,8 +20,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.kaazing.nuklei.Flyweight.uint8Get;
 import static org.kaazing.nuklei.amqp_1_0.codec.types.BooleanType.SIZEOF_BOOLEAN_MAX;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.util.Random;
+import java.util.function.Consumer;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -29,6 +32,7 @@ import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
+import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 @RunWith(Theories.class)
@@ -181,6 +185,19 @@ public class BooleanTypeTest {
         booleanType.wrap(buffer, offset);
 
         assertTrue(booleanType.get());
+    }
+
+    @Theory
+    @SuppressWarnings("unchecked")
+    public void shouldNotifyChanged(int offset) {
+        final Consumer<Flyweight> observer = mock(Consumer.class);
+        
+        BooleanType booleanType = new BooleanType();
+        booleanType.watch(observer);
+        booleanType.wrap(buffer, offset);
+        booleanType.set(false);
+        
+        verify(observer).accept(booleanType);
     }
     
 }

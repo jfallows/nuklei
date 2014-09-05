@@ -56,6 +56,7 @@ public final class FloatType extends Type {
     public FloatType set(float value) {
         widthKind(WIDTH_KIND_4);
         floatPut(buffer(), offset() + OFFSET_VALUE, value);
+        notifyChanged();
         return this;
     }
     

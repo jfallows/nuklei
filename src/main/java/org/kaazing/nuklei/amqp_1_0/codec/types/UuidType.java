@@ -65,6 +65,7 @@ public final class UuidType extends Type {
         int64Put(buffer(), offset() + OFFSET_MSB, mostSigBits);
         int64Put(buffer(), offset() + OFFSET_LSB, leastSigBits);
         
+        notifyChanged();
         return this;
     }
     

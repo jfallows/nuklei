@@ -20,14 +20,18 @@ import static org.junit.Assert.assertEquals;
 import static org.kaazing.nuklei.Flyweight.uint8Get;
 import static org.kaazing.nuklei.FlyweightBE.uint32Get;
 import static org.kaazing.nuklei.amqp_1_0.codec.types.CharType.SIZEOF_CHAR;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.util.Random;
+import java.util.function.Consumer;
 
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
+import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 @RunWith(Theories.class)
@@ -84,6 +88,19 @@ public class CharTypeTest {
         charType.wrap(buffer, offset);
 
         assertEquals(0, charType.get());
+    }
+
+    @Theory
+    @SuppressWarnings("unchecked")
+    public void shouldNotifyChanged(int offset) {
+        final Consumer<Flyweight> observer = mock(Consumer.class);
+        
+        CharType charType = new CharType();
+        charType.watch(observer);
+        charType.wrap(buffer, offset);
+        charType.set(0x12);
+        
+        verify(observer).accept(charType);
     }
     
 }

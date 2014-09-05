@@ -44,8 +44,10 @@ public final class NullType extends Type {
         }
     }
     
-    public void set(Void value) {
+    public NullType set(Void value) {
         widthKind(WIDTH_KIND_0);
+        notifyChanged();
+        return this;
     }
     
     public int limit() {

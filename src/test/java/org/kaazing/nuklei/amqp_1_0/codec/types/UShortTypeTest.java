@@ -20,14 +20,18 @@ import static org.junit.Assert.assertEquals;
 import static org.kaazing.nuklei.Flyweight.uint8Get;
 import static org.kaazing.nuklei.FlyweightBE.uint16Get;
 import static org.kaazing.nuklei.amqp_1_0.codec.types.UShortType.SIZEOF_USHORT;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.util.Random;
+import java.util.function.Consumer;
 
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
+import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 @RunWith(Theories.class)
@@ -85,5 +89,17 @@ public class UShortTypeTest {
 
         assertEquals(0, ushortType.get());
     }
-    
+
+    @Theory
+    @SuppressWarnings("unchecked")
+    public void shouldNotifyChanged(int offset) {
+        final Consumer<Flyweight> observer = mock(Consumer.class);
+        
+        UShortType ushortType = new UShortType();
+        ushortType.watch(observer);
+        ushortType.wrap(buffer, offset);
+        ushortType.set(0x1234);
+        
+        verify(observer).accept(ushortType);
+    }
 }

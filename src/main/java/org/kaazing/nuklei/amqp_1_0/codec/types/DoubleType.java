@@ -56,6 +56,7 @@ public final class DoubleType extends Type {
     public DoubleType set(double value) {
         widthKind(WIDTH_KIND_8);
         doublePut(buffer(), offset() + OFFSET_VALUE, value);
+        notifyChanged();
         return this;
     }
     

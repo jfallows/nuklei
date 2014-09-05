@@ -21,9 +21,12 @@ import static org.junit.Assert.assertEquals;
 import static org.kaazing.nuklei.Flyweight.uint8Get;
 import static org.kaazing.nuklei.FlyweightBE.int64Get;
 import static org.kaazing.nuklei.amqp_1_0.codec.types.Decimal64Type.SIZEOF_INT_MAX;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.math.BigDecimal;
 import java.util.Random;
+import java.util.function.Consumer;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -31,6 +34,7 @@ import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
+import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 @RunWith(Theories.class)
@@ -90,6 +94,19 @@ public class Decimal64TypeTest {
         decimal64Type.wrap(buffer, offset);
 
         assertEquals(0L, decimal64Type.get());
+    }
+
+    @Theory
+    @SuppressWarnings("unchecked")
+    public void shouldNotifyChanged(int offset) {
+        final Consumer<Flyweight> observer = mock(Consumer.class);
+        
+        Decimal64Type decimal64Type = new Decimal64Type();
+        decimal64Type.watch(observer);
+        decimal64Type.wrap(buffer, offset);
+        decimal64Type.set(new BigDecimal(12345678L, DECIMAL64));
+        
+        verify(observer).accept(decimal64Type);
     }
     
 }

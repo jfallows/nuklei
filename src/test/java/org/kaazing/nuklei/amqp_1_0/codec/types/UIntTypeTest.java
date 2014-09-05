@@ -20,14 +20,18 @@ import static org.junit.Assert.assertEquals;
 import static org.kaazing.nuklei.Flyweight.uint8Get;
 import static org.kaazing.nuklei.FlyweightBE.uint32Get;
 import static org.kaazing.nuklei.amqp_1_0.codec.types.UIntType.SIZEOF_UINT_MAX;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.util.Random;
+import java.util.function.Consumer;
 
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
+import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 @RunWith(Theories.class)
@@ -146,6 +150,19 @@ public class UIntTypeTest {
         uintType.wrap(buffer, offset);
 
         assertEquals(0L, uintType.get());
+    }
+
+    @Theory
+    @SuppressWarnings("unchecked")
+    public void shouldNotifyChanged(int offset) {
+        final Consumer<Flyweight> observer = mock(Consumer.class);
+        
+        UIntType uintType = new UIntType();
+        uintType.watch(observer);
+        uintType.wrap(buffer, offset);
+        uintType.set(12345678L);
+        
+        verify(observer).accept(uintType);
     }
     
 }

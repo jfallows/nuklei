@@ -49,14 +49,6 @@ public final class Decimal128Type extends Type {
     @Override
     public Decimal128Type wrap(AtomicBuffer buffer, int offset) {
         super.wrap(buffer, offset);
-
-        switch (uint8Get(buffer, offset + OFFSET_KIND)) {
-        case 0x94:
-            break;
-        default:
-            throw new IllegalStateException();
-        }
-
         return this;
     }
 

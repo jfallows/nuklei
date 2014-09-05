@@ -22,15 +22,19 @@ import static org.kaazing.nuklei.Flyweight.uint8Get;
 import static org.kaazing.nuklei.FlyweightBE.int32Get;
 import static org.kaazing.nuklei.amqp_1_0.codec.util.FieldMutators.newMutator;
 import static org.kaazing.nuklei.amqp_1_0.codec.util.FieldAccessors.newAccessor;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.util.Arrays;
 import java.util.Random;
+import java.util.function.Consumer;
 
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
+import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.function.AtomicBufferMutator;
 import org.kaazing.nuklei.function.AtomicBufferAccessor;
@@ -139,6 +143,19 @@ public class StringTypeTest {
         StringType stringType = new StringType();
         stringType.wrap(buffer, offset);
         stringType.get(READ_UTF_8);
+    }
+
+    @Theory
+    @SuppressWarnings("unchecked")
+    public void shouldNotifyChanged(int offset) {
+        final Consumer<Flyweight> observer = mock(Consumer.class);
+        
+        StringType stringType = new StringType();
+        stringType.watch(observer);
+        stringType.wrap(buffer, offset);
+        stringType.set(WRITE_UTF_8, "a");
+        
+        verify(observer).accept(stringType);
     }
     
 }

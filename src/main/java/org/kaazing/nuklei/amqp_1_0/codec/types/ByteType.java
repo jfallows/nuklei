@@ -56,6 +56,7 @@ public final class ByteType extends Type {
     public ByteType set(byte value) {
         widthKind(WIDTH_KIND_1);
         int8Put(buffer(), offset() + OFFSET_VALUE, value);
+        notifyChanged();
         return this;
     }
 
