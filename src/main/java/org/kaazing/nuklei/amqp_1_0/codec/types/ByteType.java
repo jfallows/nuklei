@@ -15,6 +15,10 @@
  */
 package org.kaazing.nuklei.amqp_1_0.codec.types;
 
+import java.util.function.Consumer;
+
+import org.kaazing.nuklei.BitUtil;
+import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 /*
@@ -23,35 +27,56 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 public final class ByteType extends Type {
 
     private static final int OFFSET_KIND = 0;
-    private static final int SIZEOF_KIND = 1;
+    private static final int SIZEOF_KIND = BitUtil.SIZE_OF_UINT8;
 
     private static final int OFFSET_VALUE = OFFSET_KIND + SIZEOF_KIND;
     private static final int SIZEOF_VALUE = 1;
 
+    static final int SIZEOF_BYTE = SIZEOF_KIND + SIZEOF_VALUE;
+
+    private static final short WIDTH_KIND_1 = 0x51;
+    
     @Override
     public Kind kind() {
         return Kind.BYTE;
     }
 
     @Override
-    public ByteType wrap(AtomicBuffer buffer, int offset) {
-        super.wrap(buffer, offset);
-
-        switch (uint8Get(buffer, offset + OFFSET_KIND)) {
-        case 0x51:
-            break;
-        default:
-            throw new IllegalStateException();
-        }
-
+    public ByteType watch(Consumer<Flyweight> observer) {
+        super.watch(observer);
         return this;
     }
 
-    public int get() {
-        return int8Get(buffer(), offset() + OFFSET_VALUE);
+    @Override
+    public ByteType wrap(AtomicBuffer buffer, int offset) {
+        super.wrap(buffer, offset);
+        return this;
     }
 
+    public ByteType set(byte value) {
+        widthKind(WIDTH_KIND_1);
+        int8Put(buffer(), offset() + OFFSET_VALUE, value);
+        return this;
+    }
+
+    public byte get() {
+        switch (widthKind()) {
+        case WIDTH_KIND_1:
+            return int8Get(buffer(), offset() + OFFSET_VALUE);
+        default:
+            throw new IllegalStateException();
+        }
+    }
+    
     public int limit() {
-        return offset() + OFFSET_VALUE + SIZEOF_VALUE;
+        return offset() + SIZEOF_BYTE;
+    }
+
+    private short widthKind() {
+        return uint8Get(buffer(), offset() + OFFSET_KIND);
+    }
+
+    private void widthKind(short value) {
+        uint8Put(buffer(), offset() + OFFSET_KIND, value);
     }
 }

@@ -18,6 +18,7 @@ package org.kaazing.nuklei.amqp_1_0.codec.types;
 import static java.nio.ByteOrder.BIG_ENDIAN;
 import static org.junit.Assert.assertEquals;
 import static org.kaazing.nuklei.Flyweight.uint8Get;
+import static org.kaazing.nuklei.amqp_1_0.codec.types.ULongType.SIZEOF_ULONG_MAX;
 
 import java.util.Random;
 
@@ -37,7 +38,7 @@ public class ULongTypeTest {
     public static final int ZERO_OFFSET = 0;
     
     @DataPoint
-    public static final int NON_ZERO_OFFSET = new Random().nextInt(BUFFER_CAPACITY - 8) + 1;
+    public static final int NON_ZERO_OFFSET = new Random().nextInt(BUFFER_CAPACITY - SIZEOF_ULONG_MAX - 1) + 1;
 
     private final AtomicBuffer buffer = new AtomicBuffer(new byte[BUFFER_CAPACITY]);
     

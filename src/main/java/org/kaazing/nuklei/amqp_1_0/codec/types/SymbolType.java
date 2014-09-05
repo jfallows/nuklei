@@ -19,6 +19,7 @@ import static java.lang.Integer.highestOneBit;
 
 import java.util.function.Consumer;
 
+import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.FlyweightBE;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
@@ -77,8 +78,11 @@ public final class SymbolType extends Type {
     private static final class Length extends FlyweightBE {
 
         private static final int OFFSET_LENGTH_KIND = 0;
-        private static final int SIZEOF_LENGTH_KIND = 1;
+        private static final int SIZEOF_LENGTH_KIND = BitUtil.SIZE_OF_UINT8;
         private static final int OFFSET_LENGTH = OFFSET_LENGTH_KIND + SIZEOF_LENGTH_KIND;
+
+        private static final short WIDTH_KIND_1 = 0xa3;
+        private static final short WIDTH_KIND_4 = 0xb3;
 
         private final Mutation maxOffset = (value) -> { max(value); return limit(); };
 
@@ -93,10 +97,10 @@ public final class SymbolType extends Type {
         }
 
         public int get() {
-            switch (lengthKind()) {
-            case 0xa3:
+            switch (widthKind()) {
+            case WIDTH_KIND_1:
                 return uint8Get(buffer(), offset() + OFFSET_LENGTH);
-            case 0xb3:
+            case WIDTH_KIND_4:
                 return int32Get(buffer(), offset() + OFFSET_LENGTH);
             default:
                 throw new IllegalStateException();
@@ -104,8 +108,8 @@ public final class SymbolType extends Type {
         }
         
         public void set(int value) {
-            switch (lengthKind()) {
-            case 0xa3:
+            switch (widthKind()) {
+            case WIDTH_KIND_1:
                 switch (highestOneBit(value)) {
                 case 0:
                 case 1:
@@ -122,7 +126,7 @@ public final class SymbolType extends Type {
                     throw new IllegalStateException();
                 }
                 break;
-            case 0xb3:
+            case WIDTH_KIND_4:
                 int32Put(buffer(), offset() + OFFSET_LENGTH, value);
                 break;
             default:
@@ -141,31 +145,31 @@ public final class SymbolType extends Type {
             case 32:
             case 64:
             case 128:
-                lengthKind(0xa3);
+                lengthKind(WIDTH_KIND_1);
                 break;
             default:
-                lengthKind(0xb3);
+                lengthKind(WIDTH_KIND_4);
                 break;
             }
             
         }
         
         public int limit() {
-            switch (lengthKind()) {
-            case 0xa3:
+            switch (widthKind()) {
+            case WIDTH_KIND_1:
                 return offset() + OFFSET_LENGTH + 1;
-            case 0xb3:
+            case WIDTH_KIND_4:
                 return offset() + OFFSET_LENGTH + 4;
             default:
                 throw new IllegalStateException();
             }
         }
 
-        private void lengthKind(int lengthKind) {
-            uint8Put(buffer(), offset() + OFFSET_LENGTH_KIND, (short) lengthKind);
+        private void lengthKind(short lengthKind) {
+            uint8Put(buffer(), offset() + OFFSET_LENGTH_KIND, lengthKind);
         }
 
-        private int lengthKind() {
+        private int widthKind() {
             return uint8Get(buffer(), offset() + OFFSET_LENGTH_KIND);
         }
     }

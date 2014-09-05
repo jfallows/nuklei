@@ -19,6 +19,7 @@ import static java.lang.Integer.highestOneBit;
 
 import java.util.function.Consumer;
 
+import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.FlyweightBE;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
@@ -104,9 +105,12 @@ public final class StringType extends Type {
     private static final class Length extends FlyweightBE {
 
         private static final int OFFSET_LENGTH_KIND = 0;
-        private static final int SIZEOF_LENGTH_KIND = 1;
+        private static final int SIZEOF_LENGTH_KIND = BitUtil.SIZE_OF_UINT8;
         private static final int OFFSET_LENGTH = OFFSET_LENGTH_KIND + SIZEOF_LENGTH_KIND;
         
+        private static final short WIDTH_KIND_1 = 0xa1;
+        private static final short WIDTH_KIND_4 = 0xb1;
+
         private final Mutation maxOffset = (value) -> { max(value); return limit(); };
 
         @Override
@@ -121,9 +125,9 @@ public final class StringType extends Type {
 
         public int get() {
             switch (lengthKind()) {
-            case 0xa1:
+            case WIDTH_KIND_1:
                 return uint8Get(buffer(), offset() + OFFSET_LENGTH);
-            case 0xb1:
+            case WIDTH_KIND_4:
                 return int32Get(buffer(), offset() + OFFSET_LENGTH);
             default:
                 throw new IllegalStateException();
@@ -132,7 +136,7 @@ public final class StringType extends Type {
         
         public void set(int value) {
             switch (lengthKind()) {
-            case 0xa1:
+            case WIDTH_KIND_1:
                 switch (highestOneBit(value)) {
                 case 0:
                 case 1:
@@ -149,7 +153,7 @@ public final class StringType extends Type {
                     throw new IllegalStateException();
                 }
                 break;
-            case 0xb1:
+            case WIDTH_KIND_4:
                 int32Put(buffer(), offset() + OFFSET_LENGTH, value);
                 break;
             default:
@@ -168,10 +172,10 @@ public final class StringType extends Type {
             case 32:
             case 64:
             case 128:
-                lengthKind(0xa1);
+                lengthKind(WIDTH_KIND_1);
                 break;
             default:
-                lengthKind(0xb1);
+                lengthKind(WIDTH_KIND_4);
                 break;
             }
             
@@ -179,17 +183,17 @@ public final class StringType extends Type {
         
         public int limit() {
             switch (lengthKind()) {
-            case 0xa1:
+            case WIDTH_KIND_1:
                 return offset() + OFFSET_LENGTH + 1;
-            case 0xb1:
+            case WIDTH_KIND_4:
                 return offset() + OFFSET_LENGTH + 4;
             default:
                 throw new IllegalStateException();
             }
         }
 
-        private void lengthKind(int lengthKind) {
-            uint8Put(buffer(), offset() + OFFSET_LENGTH_KIND, (short) lengthKind);
+        private void lengthKind(short lengthKind) {
+            uint8Put(buffer(), offset() + OFFSET_LENGTH_KIND, lengthKind);
         }
 
         private int lengthKind() {

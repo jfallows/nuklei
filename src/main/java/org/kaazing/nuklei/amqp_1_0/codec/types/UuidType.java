@@ -18,6 +18,7 @@ package org.kaazing.nuklei.amqp_1_0.codec.types;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
@@ -27,10 +28,17 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 public final class UuidType extends Type {
 
     private static final int OFFSET_KIND = 0;
-    private static final int SIZEOF_KIND = 1;
+    private static final int SIZEOF_KIND = BitUtil.SIZE_OF_UINT8;
 
-    private static final int OFFSET_VALUE = OFFSET_KIND + SIZEOF_KIND;
-    private static final int SIZEOF_VALUE = 16;
+    private static final int OFFSET_MSB = OFFSET_KIND + SIZEOF_KIND;
+    private static final int SIZEOF_MSB = BitUtil.SIZE_OF_INT64;
+    
+    private static final int OFFSET_LSB = OFFSET_MSB + SIZEOF_MSB;
+    private static final int SIZEOF_LSB = BitUtil.SIZE_OF_INT64;
+    
+    static final int SIZEOF_UUID = SIZEOF_KIND + SIZEOF_MSB + SIZEOF_LSB;
+
+    private static final short WIDTH_KIND_16 = 0x98;
 
     @Override
     public Kind kind() {
@@ -53,18 +61,18 @@ public final class UuidType extends Type {
         long mostSigBits = uuid.getMostSignificantBits();
         long leastSigBits = uuid.getLeastSignificantBits();
 
-        uint8Put(buffer(), offset() + OFFSET_KIND, (short) 0x98);
-        int64Put(buffer(), offset() + OFFSET_VALUE, mostSigBits);
-        int64Put(buffer(), offset() + OFFSET_VALUE + 8, leastSigBits);
+        widthKind(WIDTH_KIND_16);
+        int64Put(buffer(), offset() + OFFSET_MSB, mostSigBits);
+        int64Put(buffer(), offset() + OFFSET_LSB, leastSigBits);
         
         return this;
     }
     
     public UUID get() {
-        switch (uint8Get(buffer(), offset() + OFFSET_KIND)) {
-        case 0x98:
-            long mostSigBits = int64Get(buffer(), offset() + OFFSET_VALUE);
-            long leastSigBits = int64Get(buffer(), offset() + OFFSET_VALUE + 8);
+        switch (widthKind()) {
+        case WIDTH_KIND_16:
+            long mostSigBits = int64Get(buffer(), offset() + OFFSET_MSB);
+            long leastSigBits = int64Get(buffer(), offset() + OFFSET_LSB);
             return new UUID(mostSigBits, leastSigBits);
         default:
             throw new IllegalStateException();
@@ -72,6 +80,14 @@ public final class UuidType extends Type {
     }
 
     public int limit() {
-        return offset() + OFFSET_VALUE + SIZEOF_VALUE;
+        return offset() + SIZEOF_UUID;
+    }
+    
+    private void widthKind(short value) {
+        uint8Put(buffer(), offset() + OFFSET_KIND, value);
+    }
+    
+    private short widthKind() {
+        return uint8Get(buffer(), offset() + OFFSET_KIND);
     }
 }

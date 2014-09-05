@@ -15,6 +15,10 @@
  */
 package org.kaazing.nuklei.amqp_1_0.codec.types;
 
+import java.util.function.Consumer;
+
+import org.kaazing.nuklei.BitUtil;
+import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 /*
@@ -23,10 +27,14 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 public final class ShortType extends Type {
 
     private static final int OFFSET_KIND = 0;
-    private static final int SIZEOF_KIND = 1;
+    private static final int SIZEOF_KIND = BitUtil.SIZE_OF_UINT8;
 
     private static final int OFFSET_VALUE = OFFSET_KIND + SIZEOF_KIND;
-    private static final int SIZEOF_VALUE = 2;
+    private static final int SIZEOF_VALUE = BitUtil.SIZE_OF_INT16;
+    
+    static final int SIZEOF_SHORT = SIZEOF_KIND + SIZEOF_VALUE;
+
+    private static final short WIDTH_KIND_2 = 0x61;
 
     @Override
     public Kind kind() {
@@ -34,21 +42,31 @@ public final class ShortType extends Type {
     }
 
     @Override
-    public ShortType wrap(AtomicBuffer buffer, int offset) {
-        super.wrap(buffer, offset);
-
-        switch (uint8Get(buffer, offset + OFFSET_KIND)) {
-        case 0x61:
-            break;
-        default:
-            throw new IllegalStateException();
-        }
-
+    public ShortType watch(Consumer<Flyweight> observer) {
+        super.watch(observer);
         return this;
     }
 
-    public int get() {
-        return int16Get(buffer(), offset() + OFFSET_VALUE);
+    @Override
+    public ShortType wrap(AtomicBuffer buffer, int offset) {
+        super.wrap(buffer, offset);
+        return this;
+    }
+
+    public ShortType set(short value) {
+        uint8Put(buffer(), offset() + OFFSET_KIND, WIDTH_KIND_2);
+        int16Put(buffer(), offset() + OFFSET_VALUE, (short) value);
+        notifyChanged();
+        return this;
+    }
+
+    public short get() {
+        switch (uint8Get(buffer(), offset() + OFFSET_KIND)) {
+        case WIDTH_KIND_2:
+            return int16Get(buffer(), offset() + OFFSET_VALUE);
+        default:
+            throw new IllegalStateException();
+        }
     }
 
     public int limit() {

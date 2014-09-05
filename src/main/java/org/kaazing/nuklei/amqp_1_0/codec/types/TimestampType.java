@@ -15,6 +15,10 @@
  */
 package org.kaazing.nuklei.amqp_1_0.codec.types;
 
+import java.util.function.Consumer;
+
+import org.kaazing.nuklei.BitUtil;
+import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 /*
@@ -23,10 +27,14 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 public final class TimestampType extends Type {
 
     private static final int OFFSET_KIND = 0;
-    private static final int SIZEOF_KIND = 1;
+    private static final int SIZEOF_KIND = BitUtil.SIZE_OF_UINT8;
 
     private static final int OFFSET_VALUE = OFFSET_KIND + SIZEOF_KIND;
-    private static final int SIZEOF_VALUE = 8;
+    private static final int SIZEOF_VALUE = BitUtil.SIZE_OF_INT64;
+    
+    static final int SIZEOF_TIMESTAMP = SIZEOF_KIND + SIZEOF_VALUE;
+
+    private static final short WIDTH_KIND_8 = 0x83;
 
     @Override
     public Kind kind() {
@@ -34,24 +42,34 @@ public final class TimestampType extends Type {
     }
 
     @Override
-    public TimestampType wrap(AtomicBuffer buffer, int offset) {
-        super.wrap(buffer, offset);
-
-        switch (uint8Get(buffer, offset + OFFSET_KIND)) {
-        case 0x83:
-            break;
-        default:
-            throw new IllegalStateException();
-        }
-
+    public TimestampType watch(Consumer<Flyweight> observer) {
+        super.watch(observer);
         return this;
     }
 
+    @Override
+    public TimestampType wrap(AtomicBuffer buffer, int offset) {
+        super.wrap(buffer, offset);
+        return this;
+    }
+
+    public TimestampType set(long value) {
+        uint8Put(buffer(), offset() + OFFSET_KIND, WIDTH_KIND_8);
+        int64Put(buffer(), offset() + OFFSET_VALUE, value);
+        notifyChanged();
+        return this;
+    }
+    
     public long get() {
-        return int64Get(buffer(), offset() + OFFSET_VALUE);
+        switch (uint8Get(buffer(), offset() + OFFSET_KIND)) {
+        case WIDTH_KIND_8:
+            return int64Get(buffer(), offset() + OFFSET_VALUE);
+        default:
+            throw new IllegalStateException();
+        }
     }
 
     public int limit() {
-        return offset() + OFFSET_VALUE + SIZEOF_VALUE;
+        return offset() + SIZEOF_TIMESTAMP;
     }
 }

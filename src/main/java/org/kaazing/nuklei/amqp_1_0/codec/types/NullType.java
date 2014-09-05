@@ -22,6 +22,8 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
  */
 public final class NullType extends Type {
 
+    private static final short WIDTH_KIND_0 = 0x40;
+
     @Override
     public Kind kind() {
         return Kind.NULL;
@@ -34,8 +36,8 @@ public final class NullType extends Type {
     }
     
     public Void get() {
-        switch (uint8Get(buffer(), offset())) {
-        case 0x40:
+        switch (widthKind()) {
+        case WIDTH_KIND_0:
             return null;
         default:
             throw new IllegalStateException();
@@ -43,11 +45,19 @@ public final class NullType extends Type {
     }
     
     public void set(Void value) {
-        uint8Put(buffer(), offset(), (short) 0x40);
+        widthKind(WIDTH_KIND_0);
     }
     
     public int limit() {
         return offset() + 1;
+    }
+
+    private void widthKind(short value) {
+        uint8Put(buffer(), offset(), value);
+    }
+    
+    private short widthKind() {
+        return uint8Get(buffer(), offset());
     }
 
 }

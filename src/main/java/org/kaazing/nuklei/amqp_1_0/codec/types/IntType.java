@@ -15,6 +15,12 @@
  */
 package org.kaazing.nuklei.amqp_1_0.codec.types;
 
+import static java.lang.Long.highestOneBit;
+
+import java.util.function.Consumer;
+
+import org.kaazing.nuklei.BitUtil;
+import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 /*
@@ -23,11 +29,15 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 public final class IntType extends Type {
 
     private static final int OFFSET_KIND = 0;
-    private static final int SIZEOF_KIND = 1;
+    private static final int SIZEOF_KIND = BitUtil.SIZE_OF_UINT8;
 
     private static final int OFFSET_VALUE = OFFSET_KIND + SIZEOF_KIND;
+    private static final int SIZEOF_VALUE_MAX = BitUtil.SIZE_OF_INT32;
 
-    private Accessor accessor;
+    static final int SIZEOF_INT_MAX = SIZEOF_KIND + SIZEOF_VALUE_MAX;
+    
+    private static final short WIDTH_KIND_1 = 0x54;
+    private static final short WIDTH_KIND_4 = 0x71;
 
     @Override
     public Kind kind() {
@@ -35,63 +45,68 @@ public final class IntType extends Type {
     }
 
     @Override
+    public IntType watch(Consumer<Flyweight> observer) {
+        super.watch(observer);
+        return this;
+    }
+
+    @Override
     public IntType wrap(AtomicBuffer buffer, int offset) {
         super.wrap(buffer, offset);
+        return this;
+    }
 
-        switch (uint8Get(buffer, offset + OFFSET_KIND)) {
-        case 0x54:
-            accessor = INT_1;
-            break;
-        case 0x71:
-            accessor = INT_4;
+    public IntType set(int value) {
+        switch ((int) highestOneBit(value)) {
+        case 0:
+        case 1:
+        case 2:
+        case 4:
+        case 8:
+        case 16:
+        case 32:
+        case 64:
+        case 128:
+            widthKind(WIDTH_KIND_1);
+            uint8Put(buffer(), offset() + OFFSET_VALUE, (short) value);
             break;
         default:
-            throw new IllegalStateException();
+            widthKind(WIDTH_KIND_4);
+            int32Put(buffer(), offset() + OFFSET_VALUE, value);
+            break;
         }
 
+        notifyChanged();
         return this;
     }
 
     public long get() {
-        return accessor.get(buffer(), offset());
+        switch (widthKind()) {
+        case WIDTH_KIND_1:
+            return int8Get(buffer(), offset() + OFFSET_VALUE);
+        case WIDTH_KIND_4:
+            return int32Get(buffer(), offset() + OFFSET_VALUE);
+        default:
+            throw new IllegalStateException();
+        }
     }
 
     public int limit() {
-        return offset() + OFFSET_VALUE + accessor.width();
+        switch (widthKind()) {
+        case 0x54:
+            return offset() + OFFSET_VALUE + 1;
+        case 0x71:
+            return offset() + OFFSET_VALUE + 4;
+        default:
+            throw new IllegalStateException();
+        }
     }
 
-    private interface Accessor {
-        
-        long get(AtomicBuffer buffer, int offset);
-        
-        int width();
+    private void widthKind(short value) {
+        uint8Put(buffer(), offset() + OFFSET_KIND, value);
     }
 
-    private static final Accessor INT_1 = new Accessor() {
-
-        @Override
-        public long get(AtomicBuffer buffer, int offset) {
-            return int8Get(buffer, offset + OFFSET_VALUE);
-        }
-
-        @Override
-        public int width() {
-            return 1;
-        }
-        
-    };
-
-    private static final Accessor INT_4 = new Accessor() {
-
-        @Override
-        public long get(AtomicBuffer buffer, int offset) {
-            return int64Get(buffer, offset + OFFSET_VALUE);
-        }
-
-        @Override
-        public int width() {
-            return 4;
-        }
-        
-    };
+    private int widthKind() {
+        return uint8Get(buffer(), offset() + OFFSET_KIND);
+    }
 }

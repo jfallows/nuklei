@@ -17,6 +17,7 @@ package org.kaazing.nuklei.amqp_1_0.codec.types;
 
 import java.util.function.Consumer;
 
+import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.function.BooleanFunction;
@@ -28,9 +29,17 @@ import org.kaazing.nuklei.function.ToBooleanFunction;
 public final class BooleanType extends Type {
 
     private static final int OFFSET_KIND = 0;
+    private static final int SIZEOF_KIND = BitUtil.SIZE_OF_UINT8;
 
-    private Accessor accessor;
+    private static final int OFFSET_VALUE = OFFSET_KIND + SIZEOF_KIND;
+    private static final int SIZEOF_VALUE_MAX = BitUtil.SIZE_OF_UINT8;
+
+    static final int SIZEOF_BOOLEAN_MAX = SIZEOF_KIND + SIZEOF_VALUE_MAX;
     
+    private static final short WIDTH_KIND_0_TRUE = 0x41;
+    private static final short WIDTH_KIND_0_FALSE = 0x42;
+    private static final short WIDTH_KIND_1 = 0x56;
+
     @Override
     public Kind kind() {
         return Kind.BOOLEAN;
@@ -45,7 +54,6 @@ public final class BooleanType extends Type {
     @Override
     public BooleanType wrap(AtomicBuffer buffer, int offset) {
         super.wrap(buffer, offset);
-        accessor = null;        
         return this;
     }
 
@@ -53,97 +61,31 @@ public final class BooleanType extends Type {
         return set(mutator.applyAsBoolean(value));
     }
 
-    public BooleanType set(BooleanType value) {
-        buffer().putBytes(offset(), value.buffer(), value.offset(), value.limit() - value.offset());
-        return this;
-    }
-
     public <T> T get(BooleanFunction<T> accessor) {
         return accessor.apply(get());
-    }
-
-    public boolean get() {
-        return accessor().get(buffer(), offset());
     }
     
     public BooleanType set(boolean value) {
         // TODO: support zero-or-one
         if (value) {
-            // true
-            uint8Put(buffer(), offset() + OFFSET_KIND, (short) 0x41);
+            widthKind(WIDTH_KIND_0_TRUE);
         }
         else {
-            // false
-            uint8Put(buffer(), offset() + OFFSET_KIND, (short) 0x42);
+            widthKind(WIDTH_KIND_0_FALSE);
         }
 
         notifyChanged();
         return this;
     }
 
-    public int limit() {
-        return offset() + accessor().width();
-    }
-
-    private Accessor accessor() {
-        if (accessor == null) {
-            switch (uint8Get(buffer(), offset() + OFFSET_KIND)) {
-            case 0x41:
-                accessor = TRUE;
-                break;
-            case 0x42:
-                accessor = FALSE;
-                break;
-            case 0x56:
-                accessor = ZERO_OR_ONE;
-                break;
-            default:
-                throw new IllegalStateException();
-            }
-        }
-        return accessor;
-    }
-    
-    private interface Accessor {
-        
-        boolean get(AtomicBuffer buffer, int offset);
-        
-        int width();
-    }
-    
-    private static final Accessor FALSE = new Accessor() {
-
-        @Override
-        public boolean get(AtomicBuffer buffer, int offset) {
-            return false;
-        }
-
-        @Override
-        public int width() {
-            return 0;
-        }
-        
-    };
-    
-    private static final Accessor TRUE = new Accessor() {
-
-        @Override
-        public boolean get(AtomicBuffer buffer, int offset) {
+    public boolean get() {
+        switch (widthKind()) {
+        case WIDTH_KIND_0_TRUE:
             return true;
-        }
-
-        @Override
-        public int width() {
-            return 0;
-        }
-        
-    };
-    
-    private static final Accessor ZERO_OR_ONE = new Accessor() {
-
-        @Override
-        public boolean get(AtomicBuffer buffer, int offset) {
-            switch (uint8Get(buffer, offset)) {
+        case WIDTH_KIND_0_FALSE:
+            return false;
+        case WIDTH_KIND_1:
+            switch (uint8Get(buffer(), offset() + OFFSET_VALUE)) {
             case 0x00:
                 return false;
             case 0x01:
@@ -151,13 +93,29 @@ public final class BooleanType extends Type {
             default:
                 throw new IllegalStateException();
             }
+        default:
+            throw new IllegalStateException();
         }
+    }
 
-        @Override
-        public int width() {
-            return 1;
+    public int limit() {
+        switch (widthKind()) {
+        case WIDTH_KIND_0_TRUE:
+        case WIDTH_KIND_0_FALSE:
+            return offset() + OFFSET_VALUE;
+        case WIDTH_KIND_1:
+            return offset() + OFFSET_VALUE + 1;
+        default:
+            throw new IllegalStateException();
         }
-        
-    };
+    }
+
+    private void widthKind(short value) {
+        uint8Put(buffer(), offset() + OFFSET_KIND, value);
+    }
     
+    private short widthKind() {
+        return uint8Get(buffer(), offset() + OFFSET_KIND);
+    }
+
 }

@@ -17,6 +17,7 @@ package org.kaazing.nuklei.amqp_1_0.codec.types;
 
 import java.util.function.Consumer;
 
+import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
@@ -26,10 +27,14 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 public final class UShortType extends Type {
 
     private static final int OFFSET_KIND = 0;
-    private static final int SIZEOF_KIND = 1;
+    private static final int SIZEOF_KIND = BitUtil.SIZE_OF_UINT8;
 
     private static final int OFFSET_VALUE = OFFSET_KIND + SIZEOF_KIND;
-    private static final int SIZEOF_VALUE = 2;
+    private static final int SIZEOF_VALUE = BitUtil.SIZE_OF_UINT16;
+
+    static final int SIZEOF_USHORT = SIZEOF_KIND + SIZEOF_VALUE;
+
+    private static final short WIDTH_KIND_2 = 0x60;
 
     @Override
     public Kind kind() {
@@ -49,15 +54,15 @@ public final class UShortType extends Type {
     }
 
     public UShortType set(int value) {
-        uint8Put(buffer(), offset() + OFFSET_KIND, (short) 0x60);
+        widthKind(WIDTH_KIND_2);
         uint16Put(buffer(), offset() + OFFSET_VALUE, value);
         notifyChanged();
         return this;
     }
 
     public int get() {
-        switch (uint8Get(buffer(), offset() + OFFSET_KIND)) {
-        case 0x60:
+        switch (widthKind()) {
+        case WIDTH_KIND_2:
             return uint16Get(buffer(), offset() + OFFSET_VALUE);
         default:
             throw new IllegalStateException();
@@ -65,6 +70,14 @@ public final class UShortType extends Type {
     }
 
     public int limit() {
-        return offset() + OFFSET_VALUE + SIZEOF_VALUE;
+        return offset() + SIZEOF_USHORT;
+    }
+    
+    private void widthKind(short value) {
+        uint8Put(buffer(), offset() + OFFSET_KIND, value);
+    }
+
+    private short widthKind() {
+        return uint8Get(buffer(), offset() + OFFSET_KIND);
     }
 }

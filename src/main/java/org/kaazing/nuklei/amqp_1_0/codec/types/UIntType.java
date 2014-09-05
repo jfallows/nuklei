@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 import java.util.function.LongFunction;
 import java.util.function.ToLongFunction;
 
+import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
@@ -30,12 +31,17 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 public final class UIntType extends Type {
 
     private static final int OFFSET_KIND = 0;
-    private static final int SIZEOF_KIND = 1;
+    private static final int SIZEOF_KIND = BitUtil.SIZE_OF_UINT8;
 
     private static final int OFFSET_VALUE = OFFSET_KIND + SIZEOF_KIND;
+    private static final int SIZEOF_VALUE_MAX = BitUtil.SIZE_OF_UINT32;
 
-    private Accessor accessor;
+    static final int SIZEOF_UINT_MAX = SIZEOF_KIND + SIZEOF_VALUE_MAX;
     
+    private static final short WIDTH_KIND_0 = 0x43;
+    private static final short WIDTH_KIND_1 = 0x52;
+    private static final short WIDTH_KIND_4 = 0x70;
+
     @Override
     public Kind kind() {
         return Kind.UINT;
@@ -50,7 +56,6 @@ public final class UIntType extends Type {
     @Override
     public UIntType wrap(AtomicBuffer buffer, int offset) {
         super.wrap(buffer, offset);
-        accessor = null;
         return this;
     }
 
@@ -61,7 +66,7 @@ public final class UIntType extends Type {
     public UIntType set(long value) {
         switch ((int) highestOneBit(value)) {
         case 0:
-            uint8Put(buffer(), offset(), (short) 0x43);
+            widthKind(WIDTH_KIND_0);
             break;
         case 1:
         case 2:
@@ -71,11 +76,11 @@ public final class UIntType extends Type {
         case 32:
         case 64:
         case 128:
-            uint8Put(buffer(), offset(), (short) 0x52);
+            widthKind(WIDTH_KIND_1);
             uint8Put(buffer(), offset() + OFFSET_VALUE, (short) value);
             break;
         default:
-            uint8Put(buffer(), offset(), (short) 0x70);
+            widthKind(WIDTH_KIND_4);
             uint32Put(buffer(), offset() + OFFSET_VALUE, value);
             break;
         }
@@ -89,78 +94,37 @@ public final class UIntType extends Type {
     }
 
     public long get() {
-        return accessor().get(buffer(), offset());
+        switch (widthKind()) {
+        case WIDTH_KIND_0:
+            return 0L;
+        case WIDTH_KIND_1:
+            return uint8Get(buffer(), offset() + OFFSET_VALUE);
+        case WIDTH_KIND_4:
+            return uint32Get(buffer(), offset() + OFFSET_VALUE);
+        default:
+            throw new IllegalStateException();
+        }
     }
 
     public int limit() {
-        return offset() + OFFSET_VALUE + accessor().width();
+        switch (widthKind()) {
+        case WIDTH_KIND_0:
+            return offset() + OFFSET_VALUE;
+        case WIDTH_KIND_1:
+            return offset() + OFFSET_VALUE + 1;
+        case WIDTH_KIND_4:
+            return offset() + OFFSET_VALUE + 4;
+        default:
+            throw new IllegalStateException();
+        }
+    }
+    
+    private void widthKind(short value) {
+        uint8Put(buffer(), offset() + OFFSET_KIND, value);
     }
 
-    private Accessor accessor() {
-        if (accessor == null) {
-            switch (uint8Get(buffer(), offset() + OFFSET_KIND)) {
-            case 0x43:
-                accessor = UINT_0;
-                break;
-            case 0x52:
-                accessor = UINT_1;
-                break;
-            case 0x70:
-                accessor = UINT_4;
-                break;
-            default:
-                throw new IllegalStateException();
-            }
-        }
-        return accessor;
+    private short widthKind() {
+        return uint8Get(buffer(), offset() + OFFSET_KIND);
     }
 
-    private interface Accessor {
-        
-        long get(AtomicBuffer buffer, int offset);
-        
-        int width();
-    }
-
-    private static final Accessor UINT_0 = new Accessor() {
-
-        @Override
-        public long get(AtomicBuffer buffer, int offset) {
-            return 0;
-        }
-
-        @Override
-        public int width() {
-            return 0;
-        }
-        
-    };
-
-    private static final Accessor UINT_1 = new Accessor() {
-
-        @Override
-        public long get(AtomicBuffer buffer, int offset) {
-            return uint8Get(buffer, offset + OFFSET_VALUE);
-        }
-
-        @Override
-        public int width() {
-            return 1;
-        }
-        
-    };
-
-    private static final Accessor UINT_4 = new Accessor() {
-
-        @Override
-        public long get(AtomicBuffer buffer, int offset) {
-            return int32Get(buffer, offset + OFFSET_VALUE);
-        }
-
-        @Override
-        public int width() {
-            return 4;
-        }
-        
-    };
 }
