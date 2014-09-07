@@ -52,7 +52,7 @@ public class TcpReceiver
         this.tcpManagerCommandQueue = tcpManagerCommandQueue;
         this.tcpSenderCommandQueue = tcpSenderCommandQueue;
 
-        messagingNukleus = new MessagingNukleus(builder);
+        messagingNukleus = builder.build();
         connectionsByIdMap = new HashMap<>();
     }
 

@@ -62,7 +62,7 @@ public class TcpManager
             .mpscArrayBuffer(commandQueue, this::commandHandler, MPSC_READ_LIMIT)
             .nioSelector(acceptNioSelectorNukleus);
 
-        messagingNukleus = new MessagingNukleus(builder);
+        messagingNukleus = builder.build();
 
         final NioSelectorNukleus receiveNioSelectorNukleus = new NioSelectorNukleus(Selector.open());
         final NioSelectorNukleus sendNioSelectorNukleus = new NioSelectorNukleus(Selector.open());

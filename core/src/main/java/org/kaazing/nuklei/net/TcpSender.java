@@ -58,7 +58,7 @@ public class TcpSender
         this.tcpManagerCommandQueue = tcpManagerCommandQueue;
         this.tcpReceiverCommandQueue = tcpReceiverCommandQueue;
 
-        messagingNukleus = new MessagingNukleus(builder);
+        messagingNukleus = builder.build();
         connectionsByIdMap = new HashMap<>();
         sendByteBuffer = sendBuffer.duplicateByteBuffer();
         sendByteBuffer.clear();

@@ -51,7 +51,7 @@ public class MessagingNukleus implements Nukleus
      *
      * @param builder for the nukleus
      */
-    public MessagingNukleus(final Builder builder)
+    private MessagingNukleus(final Builder builder)
     {
         if (null == builder.ringBuffer && null == builder.arrayBuffer && null == builder.nioSelectorNukleus)
         {
@@ -164,6 +164,10 @@ public class MessagingNukleus implements Nukleus
         {
             nioSelectorNukleus = nukleus;
             return this;
+        }
+
+        public MessagingNukleus build() {
+            return new MessagingNukleus(this);
         }
     }
 }
