@@ -55,6 +55,34 @@ public class DynamicTypeTest {
     private final AtomicBuffer buffer = new AtomicBuffer(new byte[BUFFER_CAPACITY]);
     
     @Theory
+    public void shouldDecodeDynamicAsArray1(int offset) {
+        ArrayType arrayType = new ArrayType();
+        arrayType.wrap(buffer, offset);
+        arrayType.maxLength(0xff);
+        arrayType.length(0x00);
+        
+        DynamicType dynamicType = new DynamicType();
+        dynamicType.wrap(buffer, offset);
+
+        assertSame(Kind.ARRAY, dynamicType.kind());
+        assertEquals(arrayType.limit(), dynamicType.limit());
+    }
+    
+    @Theory
+    public void shouldDecodeDynamicAsArray4(int offset) {
+        ArrayType arrayType = new ArrayType();
+        arrayType.wrap(buffer, offset);
+        arrayType.maxLength(0x100);
+        arrayType.length(0x00);
+        
+        DynamicType dynamicType = new DynamicType();
+        dynamicType.wrap(buffer, offset);
+
+        assertSame(Kind.ARRAY, dynamicType.kind());
+        assertEquals(arrayType.limit(), dynamicType.limit());
+    }
+    
+    @Theory
     public void shouldDecodeDynamicAsBinary1(int offset) {
         BinaryType binaryType = new BinaryType();
         binaryType.wrap(buffer, offset);

@@ -19,6 +19,7 @@ import static java.lang.Integer.highestOneBit;
 
 import java.util.function.Consumer;
 
+import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.FlyweightBE;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
@@ -30,10 +31,8 @@ public final class ArrayType extends Type {
 
     private final Length length;
     
-    private FlyweightBE previous;
-
     public ArrayType() {
-        this.length = new Length().watch((owner) -> { /* TODO */});
+        this.length = new Length().watch((owner) -> { notifyChanged(); });
     }
 
     @Override
@@ -51,45 +50,47 @@ public final class ArrayType extends Type {
     public ArrayType wrap(AtomicBuffer buffer, int offset) {
         super.wrap(buffer, offset);
         length.wrap(buffer, offset);
-        previous = length;
         return this;
     }
 
+    public ArrayType maxLength(int value) {
+        length.max(value);
+        return this;
+    }
+    
     public int length() {
         return length.get();
-    }
-
-    public boolean hasNext() {
-        return previous.limit() < limit();
-    }
-
-    public <T extends Type> T next(T element) {
-        element.wrap(buffer(), previous.limit());
-        previous = element;
-        return element;
     }
     
     public int limit() {
         return length.limit() + length.get();
     }
 
+    public ArrayType limit(int value) {
+        length.set(value - length.limit());
+        return this;
+    }
+
     public ArrayType length(int value) {
         length.set(value);
-        notifyChanged();
         return this;
     }
     
     public ArrayType set(ArrayType value) {
         buffer().putBytes(offset(), value.buffer(), value.offset(), value.limit() - value.offset());
+        notifyChanged();
         return this;
     }
 
     private static class Length extends FlyweightBE {
 
         private static final int OFFSET_LENGTH_KIND = 0;
-        private static final int SIZEOF_LENGTH_KIND = 1;
+        private static final int SIZEOF_LENGTH_KIND = BitUtil.SIZE_OF_UINT8;
 
         private static final int OFFSET_LENGTH = OFFSET_LENGTH_KIND + SIZEOF_LENGTH_KIND;
+
+        private static final short WIDTH_KIND_1 = 0xe0;
+        private static final short WIDTH_KIND_4 = 0xf0;
 
         @Override
         public Length watch(Consumer<Flyweight> observer) {
@@ -103,7 +104,7 @@ public final class ArrayType extends Type {
             return this;
         }
 
-        public void set(int value) {
+        public void max(int value) {
             switch (highestOneBit(value)) {
             case 0:
             case 1:
@@ -114,14 +115,42 @@ public final class ArrayType extends Type {
             case 32:
             case 64:
             case 128:
-                lengthKind(0xe0);
-                uint8Put(buffer(), offset() + OFFSET_LENGTH, (short) value);
+                lengthKind(WIDTH_KIND_1);
                 break;
             default:
-                lengthKind(0xf0);
-                int32Put(buffer(), offset() + OFFSET_LENGTH, value);
+                lengthKind(WIDTH_KIND_4);
                 break;
             }
+            
+        }
+        
+        public Length set(int value) {
+            switch (lengthKind()) {
+            case WIDTH_KIND_1:
+                switch (highestOneBit(value)) {
+                case 0:
+                case 1:
+                case 2:
+                case 4:
+                case 8:
+                case 16:
+                case 32:
+                case 64:
+                case 128:
+                    uint8Put(buffer(), offset() + OFFSET_LENGTH, (short) value);
+                    break;
+                default:
+                    throw new IllegalStateException();
+                }
+                break;
+            case WIDTH_KIND_4:
+                int32Put(buffer(), offset() + OFFSET_LENGTH, value);
+                break;
+            default:
+                throw new IllegalArgumentException();
+            }
+            notifyChanged();
+            return this;
         }
 
         public int get() {
@@ -146,19 +175,19 @@ public final class ArrayType extends Type {
             }
         }
 
-        private int lengthKind() {
+        private short lengthKind() {
             return uint8Get(buffer(), offset() + OFFSET_LENGTH_KIND);
         }
         
-        private void lengthKind(int lengthKind) {
+        private void lengthKind(short lengthKind) {
             switch (lengthKind) {
-            case 0xe0:
-            case 0xf0:
+            case WIDTH_KIND_1:
+            case WIDTH_KIND_4:
+                uint8Put(buffer(), offset() + OFFSET_LENGTH_KIND, lengthKind);
                 break;
             default:
                 throw new IllegalStateException();
             }
-            uint8Put(buffer(), offset() + OFFSET_LENGTH_KIND, (short) lengthKind);
         }
     }
 }
