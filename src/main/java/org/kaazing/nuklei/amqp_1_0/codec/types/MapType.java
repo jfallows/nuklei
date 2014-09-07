@@ -33,7 +33,7 @@ public class MapType extends Type {
     private final DynamicType dynamic;
     
     public MapType() {
-        header = new Header();
+        header = new Header().watch((owner) -> notifyChanged());
         dynamic = new DynamicType();
     }
 
@@ -95,7 +95,6 @@ public class MapType extends Type {
     public final void limit(int count, int limit) {
         header.count(count);
         header.length(limit - header.lengthLimit());
-        notifyChanged();
     }
 
     protected final int offsetBody() {
@@ -111,6 +110,12 @@ public class MapType extends Type {
 
         private static final short WIDTH_KIND_1 = 0xc1;
         private static final short WIDTH_KIND_4 = 0xd1;
+
+        @Override
+        public Header watch(Consumer<Flyweight> observer) {
+            super.watch(observer);
+            return this;
+        }
 
         @Override
         public Header wrap(AtomicBuffer buffer, int offset) {
@@ -178,7 +183,7 @@ public class MapType extends Type {
             }
         }
         
-        public void length(int value) {
+        public Header length(int value) {
             switch (kind()) {
             case WIDTH_KIND_1:
                 switch (highestOneBit(value)) {
@@ -202,6 +207,9 @@ public class MapType extends Type {
             default:
                 throw new IllegalStateException();
             }
+            
+            notifyChanged();
+            return this;
         }
 
         public void max(int value) {

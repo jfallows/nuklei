@@ -19,6 +19,7 @@ import static java.lang.Integer.highestOneBit;
 
 import java.util.function.Consumer;
 
+import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.FlyweightBE;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
@@ -33,7 +34,7 @@ public class ListType extends Type {
     
     public ListType() {
         super();
-        this.header = new Header();
+        this.header = new Header().watch((owner) -> notifyChanged());
         this.dynamic = new DynamicType();
     }
 
@@ -94,7 +95,6 @@ public class ListType extends Type {
     public final void limit(int count, int limit) {
         header.count(count);
         header.length(limit - header.lengthLimit());
-        notifyChanged();
     }
 
     protected final int offsetBody() {
@@ -104,8 +104,12 @@ public class ListType extends Type {
     private static final class Header extends FlyweightBE {
 
         private static final int OFFSET_LENGTH_KIND = 0;
-        private static final int SIZEOF_LENGTH_KIND = 1;
+        private static final int SIZEOF_LENGTH_KIND = BitUtil.SIZE_OF_UINT8;
         private static final int OFFSET_LENGTH = OFFSET_LENGTH_KIND + SIZEOF_LENGTH_KIND;
+
+        private static final short WIDTH_KIND_0 = 0x45;
+        private static final short WIDTH_KIND_1 = 0xc0;
+        private static final short WIDTH_KIND_4 = 0xd0;
 
         @Override
         public Header wrap(AtomicBuffer buffer, int offset) {
@@ -113,14 +117,20 @@ public class ListType extends Type {
             return this;
         }
 
+        @Override
+        public Header watch(Consumer<Flyweight> observer) {
+            super.watch(observer);
+            return this;
+        }
+
         public void count(int value) {
             switch (kind()) {
-            case 0x45:
+            case WIDTH_KIND_0:
                 if (value != 0) {
                     throw new IllegalStateException();
                 }
                 break;
-            case 0xc0:
+            case WIDTH_KIND_1:
                 switch (highestOneBit(value)) {
                 case 0:
                 case 1:
@@ -137,7 +147,7 @@ public class ListType extends Type {
                     throw new IllegalStateException();
                 }
                 break;
-            case 0xd0:
+            case WIDTH_KIND_4:
                 int32Put(buffer(), offset() + OFFSET_LENGTH + 4, value);
                 break;
             default:
@@ -147,11 +157,11 @@ public class ListType extends Type {
 
         public int count() {
             switch (kind()) {
-            case 0x45:
+            case WIDTH_KIND_0:
                 return 0;
-            case 0xc0:
+            case WIDTH_KIND_1:
                 return uint8Get(buffer(), offset() + OFFSET_LENGTH + 1);
-            case 0xd0:
+            case WIDTH_KIND_4:
                 return int32Get(buffer(), offset() + OFFSET_LENGTH + 4);
             default:
                 throw new IllegalStateException();
@@ -160,11 +170,11 @@ public class ListType extends Type {
 
         public int length() {
             switch (kind()) {
-            case 0x45:
+            case WIDTH_KIND_0:
                 return 0;
-            case 0xc0:
+            case WIDTH_KIND_1:
                 return uint8Get(buffer(), offset() + OFFSET_LENGTH);
-            case 0xd0:
+            case WIDTH_KIND_4:
                 return int32Get(buffer(), offset() + OFFSET_LENGTH);
             default:
                 throw new IllegalStateException();
@@ -173,25 +183,25 @@ public class ListType extends Type {
         
         public int lengthLimit() {
             switch (kind()) {
-            case 0x45:
+            case WIDTH_KIND_0:
                 return offset() + OFFSET_LENGTH_KIND + SIZEOF_LENGTH_KIND;
-            case 0xc0:
+            case WIDTH_KIND_1:
                 return offset() + OFFSET_LENGTH + 1;
-            case 0xd0:
+            case WIDTH_KIND_4:
                 return offset() + OFFSET_LENGTH + 4;
             default:
                 throw new IllegalStateException();
             }
         }
         
-        public void length(int value) {
+        public Header length(int value) {
             switch (kind()) {
-            case 0x45:
+            case WIDTH_KIND_0:
                 if (value != 0) {
                     throw new IllegalStateException();
                 }
                 break;
-            case 0xc0:
+            case WIDTH_KIND_1:
                 switch (highestOneBit(value)) {
                 case 1:
                 case 2:
@@ -207,18 +217,21 @@ public class ListType extends Type {
                     throw new IllegalStateException();
                 }
                 break;
-            case 0xd0:
+            case WIDTH_KIND_4:
                 int32Put(buffer(), offset() + OFFSET_LENGTH, value);
                 break;
             default:
                 throw new IllegalStateException();
             }
+            
+            notifyChanged();
+            return this;
         }
 
         public void max(int value) {
             switch (highestOneBit(value)) {
             case 0:
-                kind(0x45);
+                kind(WIDTH_KIND_0);
                 break;
             case 1:
             case 2:
@@ -228,10 +241,10 @@ public class ListType extends Type {
             case 32:
             case 64:
             case 128:
-                kind(0xc0);
+                kind(WIDTH_KIND_1);
                 break;
             default:
-                kind(0xd0);
+                kind(WIDTH_KIND_4);
                 break;
             }
             
@@ -239,22 +252,22 @@ public class ListType extends Type {
         
         public int limit() {
             switch (kind()) {
-            case 0x45:
+            case WIDTH_KIND_0:
                 return offset() + OFFSET_LENGTH_KIND + SIZEOF_LENGTH_KIND;
-            case 0xc0:
+            case WIDTH_KIND_1:
                 return offset() + OFFSET_LENGTH + 2;
-            case 0xd0:
+            case WIDTH_KIND_4:
                 return offset() + OFFSET_LENGTH + 8;
             default:
                 throw new IllegalStateException();
             }
         }
 
-        private void kind(int kind) {
-            uint8Put(buffer(), offset() + OFFSET_LENGTH_KIND, (short) kind);
+        private void kind(short kind) {
+            uint8Put(buffer(), offset() + OFFSET_LENGTH_KIND, kind);
         }
 
-        private int kind() {
+        private short kind() {
             return uint8Get(buffer(), offset() + OFFSET_LENGTH_KIND);
         }
     }
