@@ -32,6 +32,8 @@ import java.util.function.IntSupplier;
  */
 public class TcpAcceptor
 {
+    private static final InetAddress[] WILDCARD_ADDRESS = new InetAddress[1];
+
     private final long id;
     private final TcpInterfaceAcceptor[] acceptors;
     private final MpscRingBufferWriter receiveWriter;
@@ -42,7 +44,7 @@ public class TcpAcceptor
 
     public TcpAcceptor(
         final int port,
-        final InetAddress[] interfaces,
+        InetAddress[] interfaces,
         final long id,
         final MpscRingBufferWriter receiveWriter,
         final NioSelectorNukleus selectorNukleus,
@@ -59,30 +61,19 @@ public class TcpAcceptor
 
         try
         {
-            if (0 == interfaces.length)
-            {
-                acceptors = new TcpInterfaceAcceptor[1];
+            if (interfaces.length == 0) {
+                interfaces = WILDCARD_ADDRESS;
+            }
+            acceptors = new TcpInterfaceAcceptor[interfaces.length];
 
+            for (int i = 0; i < acceptors.length; i++)
+            {
                 final ServerSocketChannel acceptor = ServerSocketChannel.open();
-                acceptor.bind(new InetSocketAddress(port));
+                acceptor.bind(new InetSocketAddress(interfaces[i], port));
                 acceptor.configureBlocking(false);
 
-                acceptors[0] = new TcpInterfaceAcceptor(acceptor);
-                selectorNukleus.register(acceptors[0].acceptor(), SelectionKey.OP_ACCEPT, composeAcceptor(acceptors[0]));
-            }
-            else
-            {
-                acceptors = new TcpInterfaceAcceptor[interfaces.length];
-
-                for (int i = 0; i < acceptors.length; i++)
-                {
-                    final ServerSocketChannel acceptor = ServerSocketChannel.open();
-                    acceptor.bind(new InetSocketAddress(interfaces[i], port));
-                    acceptor.configureBlocking(false);
-
-                    acceptors[i] = new TcpInterfaceAcceptor(acceptor);
-                    selectorNukleus.register(acceptors[i].acceptor(), SelectionKey.OP_ACCEPT, composeAcceptor(acceptors[i]));
-                }
+                acceptors[i] = new TcpInterfaceAcceptor(acceptor);
+                selectorNukleus.register(acceptors[i].acceptor(), SelectionKey.OP_ACCEPT, composeAcceptor(acceptors[i]));
             }
         }
         catch (final Exception ex)
