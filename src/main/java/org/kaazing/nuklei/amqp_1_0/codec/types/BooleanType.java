@@ -40,6 +40,9 @@ public final class BooleanType extends Type {
     private static final short WIDTH_KIND_0_FALSE = 0x42;
     private static final short WIDTH_KIND_1 = 0x56;
 
+    private static final short WIDTH_KIND_1_VALUE_FALSE = 0x00;
+    private static final short WIDTH_KIND_1_VALUE_TRUE = 0x01;
+    
     @Override
     public Kind kind() {
         return Kind.BOOLEAN;
@@ -86,9 +89,9 @@ public final class BooleanType extends Type {
             return false;
         case WIDTH_KIND_1:
             switch (uint8Get(buffer(), offset() + OFFSET_VALUE)) {
-            case 0x00:
+            case WIDTH_KIND_1_VALUE_FALSE:
                 return false;
-            case 0x01:
+            case WIDTH_KIND_1_VALUE_TRUE:
                 return true;
             default:
                 throw new IllegalStateException();
