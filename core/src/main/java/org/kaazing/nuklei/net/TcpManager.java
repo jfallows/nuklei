@@ -51,39 +51,45 @@ public class TcpManager
     private final AtomicBuffer informingBuffer;
 
     public TcpManager(final MpscArrayBuffer<Object> commandQueue, final AtomicBuffer sendBuffer)
-        throws Exception
     {
-        tcpManagerCommandQueue = commandQueue;
-        acceptNioSelectorNukleus = new NioSelectorNukleus(Selector.open());
-        tcpReceiverCommandQueue = new MpscArrayBuffer<>(TCP_READER_COMMAND_QUEUE_SIZE);
-        tcpSenderCommandQueue = new MpscArrayBuffer<>(TCP_SENDER_COMMAND_QUEUE_SIZE);
+        try
+        {
+            tcpManagerCommandQueue = commandQueue;
+            acceptNioSelectorNukleus = new NioSelectorNukleus(Selector.open());
+            tcpReceiverCommandQueue = new MpscArrayBuffer<>(TCP_READER_COMMAND_QUEUE_SIZE);
+            tcpSenderCommandQueue = new MpscArrayBuffer<>(TCP_SENDER_COMMAND_QUEUE_SIZE);
 
-        final MessagingNukleus.Builder builder = new MessagingNukleus.Builder()
-            .mpscArrayBuffer(commandQueue, this::commandHandler, MPSC_READ_LIMIT)
-            .nioSelector(acceptNioSelectorNukleus);
+            final MessagingNukleus.Builder builder = new MessagingNukleus.Builder()
+                .mpscArrayBuffer(commandQueue, this::commandHandler, MPSC_READ_LIMIT)
+                .nioSelector(acceptNioSelectorNukleus);
 
-        messagingNukleus = builder.build();
+            messagingNukleus = builder.build();
 
-        final NioSelectorNukleus receiveNioSelectorNukleus = new NioSelectorNukleus(Selector.open());
-        final NioSelectorNukleus sendNioSelectorNukleus = new NioSelectorNukleus(Selector.open());
+            final NioSelectorNukleus receiveNioSelectorNukleus = new NioSelectorNukleus(Selector.open());
+            final NioSelectorNukleus sendNioSelectorNukleus = new NioSelectorNukleus(Selector.open());
 
-        tcpReceiver =
-            new TcpReceiver(
-                tcpReceiverCommandQueue,
-                receiveNioSelectorNukleus,
-                tcpManagerCommandQueue,
-                tcpSenderCommandQueue);
+            tcpReceiver =
+                new TcpReceiver(
+                    tcpReceiverCommandQueue,
+                    receiveNioSelectorNukleus,
+                    tcpManagerCommandQueue,
+                    tcpSenderCommandQueue);
 
-        tcpSender =
-            new TcpSender(
-                tcpSenderCommandQueue,
-                sendBuffer,
-                sendNioSelectorNukleus,
-                tcpManagerCommandQueue,
-                tcpReceiverCommandQueue);
+            tcpSender =
+                new TcpSender(
+                    tcpSenderCommandQueue,
+                    sendBuffer,
+                    sendNioSelectorNukleus,
+                    tcpManagerCommandQueue,
+                    tcpReceiverCommandQueue);
 
-        localAttachesByIdMap = new HashMap<>();
-        informingBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(BitUtil.SIZE_OF_LONG));
+            localAttachesByIdMap = new HashMap<>();
+            informingBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(BitUtil.SIZE_OF_LONG));
+        }
+        catch (final Exception ex)
+        {
+            throw new RuntimeException(ex);
+        }
     }
 
     public void launch(final Nuklei nuklei)
