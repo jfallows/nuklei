@@ -55,6 +55,7 @@
     <modules>
         <module>core</module>
         <module>benchmarks</module>
+        <module>kompound</module>
     </modules>
 
     <build>
