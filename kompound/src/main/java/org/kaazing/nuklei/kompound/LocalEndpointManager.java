@@ -45,6 +45,7 @@ public class LocalEndpointManager
 
         List<MikroService> servicesOnAddress = getOrAddAddress(localEndpointConfiguration.localAddress(), mikroService);
 
+        System.out.println("before add " + servicesOnAddress + " " + mikroService);
         servicesOnAddress.add(mikroService);
     }
 
@@ -63,7 +64,7 @@ public class LocalEndpointManager
 
     private List<MikroService> getOrAddAddress(final InetSocketAddress address, final MikroService mikroService)
     {
-        final List<MikroService> services = mikroByAddressMap.get(address);
+        List<MikroService> services = mikroByAddressMap.get(address);
 
         if (null != services)
         {
@@ -74,6 +75,8 @@ public class LocalEndpointManager
         interfaces[0] = address.getAddress();
         tcpManagerProxy.attach(address.getPort(), interfaces, mikroService.receiveBuffer());
 
-        return mikroByAddressMap.put(address, new ArrayList<>());
+        services = new ArrayList<>();
+        mikroByAddressMap.put(address, services);
+        return services;
     }
 }
