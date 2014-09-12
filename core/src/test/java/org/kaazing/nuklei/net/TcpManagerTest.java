@@ -18,11 +18,9 @@ package org.kaazing.nuklei.net;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.DedicatedNuklei;
-import org.kaazing.nuklei.Nuklei;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBuffer;
@@ -112,7 +110,7 @@ public class TcpManagerTest
 
         int messages = receiveSingleMessage((typeId, buffer, offset, length) ->
         {
-            assertThat(typeId, is(TcpManagerEvents.ATTACH_COMPLETED_TYPE_ID));
+            assertThat(typeId, is(TcpManagerTypeId.ATTACH_COMPLETED));
             assertThat(buffer.getLong(offset), is(attachId));
         });
         assertThat(messages, is(1));
@@ -123,7 +121,7 @@ public class TcpManagerTest
         final long connectionId[] = new long[1];
         messages = receiveSingleMessage((typeId, buffer, offset, length) ->
         {
-            assertThat(typeId, is(TcpManagerEvents.NEW_CONNECTION_TYPE_ID));
+            assertThat(typeId, is(TcpManagerTypeId.NEW_CONNECTION));
             connectionId[0] = buffer.getLong(offset);
         });
         assertThat(messages, is(1));
@@ -135,7 +133,7 @@ public class TcpManagerTest
 
         messages = receiveSingleMessage((typeId, buffer, offset, length) ->
         {
-            assertThat(typeId, is(TcpManagerEvents.RECEIVED_DATA_TYPE_ID));
+            assertThat(typeId, is(TcpManagerTypeId.RECEIVED_DATA));
             assertThat(buffer.getLong(offset), is(connectionId[0]));
             assertThat(length, is(BitUtil.SIZE_OF_INT + BitUtil.SIZE_OF_LONG));
             assertThat(buffer.getInt(offset + BitUtil.SIZE_OF_LONG), is(MAGIC_PAYLOAD_INT));
@@ -152,7 +150,7 @@ public class TcpManagerTest
 
         int messages = receiveSingleMessage((typeId, buffer, offset, length) ->
         {
-            assertThat(typeId, is(TcpManagerEvents.ATTACH_COMPLETED_TYPE_ID));
+            assertThat(typeId, is(TcpManagerTypeId.ATTACH_COMPLETED));
             assertThat(buffer.getLong(offset), is(attachId));
         });
         assertThat(messages, is(1));
@@ -164,7 +162,7 @@ public class TcpManagerTest
         final long connectionId[] = new long[1];
         messages = receiveSingleMessage((typeId, buffer, offset, length) ->
         {
-            assertThat(typeId, is(TcpManagerEvents.NEW_CONNECTION_TYPE_ID));
+            assertThat(typeId, is(TcpManagerTypeId.NEW_CONNECTION));
             connectionId[0] = buffer.getLong(offset);
         });
         assertThat(messages, is(1));
@@ -193,7 +191,7 @@ public class TcpManagerTest
 
         int messages = receiveSingleMessage((typeId, buffer, offset, length) ->
         {
-            assertThat(typeId, is(TcpManagerEvents.ATTACH_COMPLETED_TYPE_ID));
+            assertThat(typeId, is(TcpManagerTypeId.ATTACH_COMPLETED));
             assertThat(buffer.getLong(offset), is(attachId));
         });
         assertThat(messages, is(1));
@@ -205,7 +203,7 @@ public class TcpManagerTest
         final long connectionId[] = new long[1];
         messages = receiveSingleMessage((typeId, buffer, offset, length) ->
         {
-            assertThat(typeId, is(TcpManagerEvents.NEW_CONNECTION_TYPE_ID));
+            assertThat(typeId, is(TcpManagerTypeId.NEW_CONNECTION));
             connectionId[0] = buffer.getLong(offset);
         });
         assertThat(messages, is(1));
@@ -227,7 +225,7 @@ public class TcpManagerTest
 
         int messages = receiveSingleMessage((typeId, buffer, offset, length) ->
         {
-            assertThat(typeId, is(TcpManagerEvents.ATTACH_COMPLETED_TYPE_ID));
+            assertThat(typeId, is(TcpManagerTypeId.ATTACH_COMPLETED));
             assertThat(buffer.getLong(offset), is(attachId));
         });
         assertThat(messages, is(1));
@@ -239,7 +237,7 @@ public class TcpManagerTest
         final long connectionId[] = new long[1];
         messages = receiveSingleMessage((typeId, buffer, offset, length) ->
         {
-            assertThat(typeId, is(TcpManagerEvents.NEW_CONNECTION_TYPE_ID));
+            assertThat(typeId, is(TcpManagerTypeId.NEW_CONNECTION));
             connectionId[0] = buffer.getLong(offset);
         });
         assertThat(messages, is(1));

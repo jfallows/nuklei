@@ -111,7 +111,7 @@ public class TcpConnection
 
             if (-1 == length)
             {
-                if (!receiveWriter.write(TcpManagerEvents.EOF_TYPE_ID, atomicBuffer, 0, BitUtil.SIZE_OF_LONG))
+                if (!receiveWriter.write(TcpManagerTypeId.EOF, atomicBuffer, 0, BitUtil.SIZE_OF_LONG))
                 {
                     throw new IllegalStateException("could not write to receive buffer");
                 }
@@ -119,7 +119,7 @@ public class TcpConnection
                 return -1; // signal selector to cancel OP_READ and short circuit the rest here
             }
 
-            if (!receiveWriter.write(TcpManagerEvents.RECEIVED_DATA_TYPE_ID, atomicBuffer, 0, length + BitUtil.SIZE_OF_LONG))
+            if (!receiveWriter.write(TcpManagerTypeId.RECEIVED_DATA, atomicBuffer, 0, length + BitUtil.SIZE_OF_LONG))
             {
                 throw new IllegalStateException("could not write to receive buffer");
             }
@@ -166,7 +166,7 @@ public class TcpConnection
     {
         informBuffer.putLong(0, id);
 
-        if (!receiveWriter.write(TcpManagerEvents.NEW_CONNECTION_TYPE_ID, informBuffer, 0, BitUtil.SIZE_OF_LONG))
+        if (!receiveWriter.write(TcpManagerTypeId.NEW_CONNECTION, informBuffer, 0, BitUtil.SIZE_OF_LONG))
         {
             throw new IllegalStateException("could not write to receive buffer");
         }

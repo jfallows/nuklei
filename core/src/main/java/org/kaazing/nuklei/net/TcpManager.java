@@ -131,7 +131,7 @@ public class TcpManager
                     tcpManagerCommandQueue);
 
             localAttachesByIdMap.put(cmd.id(), acceptor);
-            informOfAttachStatus(receiveWriter, TcpManagerEvents.ATTACH_COMPLETED_TYPE_ID, cmd.id());
+            informOfAttachStatus(receiveWriter, TcpManagerTypeId.ATTACH_COMPLETED, cmd.id());
         }
         else if (obj instanceof TcpDetachCmd)
         {
@@ -139,7 +139,7 @@ public class TcpManager
             final TcpAcceptor acceptor = localAttachesByIdMap.remove(cmd.id());
 
             acceptor.close();
-            informOfAttachStatus(acceptor.receiveWriter(), TcpManagerEvents.DETACH_COMPLETED_TYPE_ID, acceptor.id());
+            informOfAttachStatus(acceptor.receiveWriter(), TcpManagerTypeId.DETACH_COMPLETED, acceptor.id());
         }
         else if (obj instanceof TcpCloseConnectionCmd)
         {
@@ -173,7 +173,7 @@ public class TcpManager
     {
         informingBuffer.putLong(0, id);
 
-        if (!writer.write(TcpManagerEvents.ATTACH_COMPLETED_TYPE_ID, informingBuffer, 0, BitUtil.SIZE_OF_LONG))
+        if (!writer.write(TcpManagerTypeId.ATTACH_COMPLETED, informingBuffer, 0, BitUtil.SIZE_OF_LONG))
         {
             throw new IllegalStateException("could not write to receive buffer");
         }

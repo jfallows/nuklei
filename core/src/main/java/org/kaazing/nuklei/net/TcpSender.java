@@ -32,9 +32,6 @@ import java.util.Map;
  */
 public class TcpSender
 {
-    public static final int SEND_DATA_TYPE_ID = 1;
-    public static final int CLOSE_TYPE_ID = 2;
-
     private static final int MPSC_READ_LIMIT = 10;
 
     private final MessagingNukleus messagingNukleus;
@@ -98,7 +95,7 @@ public class TcpSender
 
     private void sendHandler(final int typeId, final AtomicBuffer buffer, final int offset, final int length)
     {
-        if (SEND_DATA_TYPE_ID == typeId)
+        if (TcpManagerTypeId.SEND_DATA == typeId)
         {
             final TcpConnection connection = connectionsByIdMap.get(buffer.getLong(offset));
 
@@ -111,7 +108,7 @@ public class TcpSender
                 connection.send(sendByteBuffer);
             }
         }
-        else if (CLOSE_TYPE_ID == typeId)
+        else if (TcpManagerTypeId.CLOSE_CONNECTION == typeId)
         {
             final TcpConnection connection = connectionsByIdMap.remove(buffer.getLong(offset));
 

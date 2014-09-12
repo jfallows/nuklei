@@ -19,11 +19,16 @@ package org.kaazing.nuklei.net;
 /**
  * Events for the TCP Manager
  */
-public class TcpManagerEvents
+public class TcpManagerTypeId
 {
-    public static final int NEW_CONNECTION_TYPE_ID = 1;
-    public static final int RECEIVED_DATA_TYPE_ID = 2;
-    public static final int ATTACH_COMPLETED_TYPE_ID = 3;
-    public static final int DETACH_COMPLETED_TYPE_ID = 4;
-    public static final int EOF_TYPE_ID = 5;
+    /** events */
+    public static final int NEW_CONNECTION = 1;
+    public static final int RECEIVED_DATA = 2;
+    public static final int ATTACH_COMPLETED = 3;
+    public static final int DETACH_COMPLETED = 4;
+    public static final int EOF = 5;
+
+    /** commands */
+    public static final int SEND_DATA = 6;
+    public static final int CLOSE_CONNECTION = 7;
 }

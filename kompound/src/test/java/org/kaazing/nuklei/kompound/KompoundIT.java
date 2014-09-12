@@ -23,7 +23,7 @@ import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.kompound.cmd.StartCmd;
 import org.kaazing.nuklei.kompound.cmd.StopCmd;
-import org.kaazing.nuklei.net.TcpManagerEvents;
+import org.kaazing.nuklei.net.TcpManagerTypeId;
 import org.kaazing.nuklei.net.TcpSender;
 import org.kaazing.robot.junit.annotation.Robotic;
 import org.kaazing.robot.junit.rules.RobotRule;
@@ -79,7 +79,7 @@ public class KompoundIT
 
                     public int onAvailable(final int typeId, final AtomicBuffer buffer, final int offset, final int length)
                     {
-                        if (TcpManagerEvents.ATTACH_COMPLETED_TYPE_ID == typeId)
+                        if (TcpManagerTypeId.ATTACH_COMPLETED == typeId)
                         {
                             attached.lazySet(true);
                         }
@@ -111,11 +111,11 @@ public class KompoundIT
                 {
                     switch (typeId)
                     {
-                        case TcpManagerEvents.ATTACH_COMPLETED_TYPE_ID:
+                        case TcpManagerTypeId.ATTACH_COMPLETED:
                             attached.lazySet(true);
                             break;
 
-                        case TcpManagerEvents.RECEIVED_DATA_TYPE_ID:
+                        case TcpManagerTypeId.RECEIVED_DATA:
                             buffer.getBytes(offset + BitUtil.SIZE_OF_LONG, data);
                             break;
                     }
@@ -153,13 +153,13 @@ public class KompoundIT
                     {
                         switch (typeId)
                         {
-                            case TcpManagerEvents.ATTACH_COMPLETED_TYPE_ID:
+                            case TcpManagerTypeId.ATTACH_COMPLETED:
                                 attached.lazySet(true);
                                 break;
 
-                            case TcpManagerEvents.RECEIVED_DATA_TYPE_ID:
+                            case TcpManagerTypeId.RECEIVED_DATA:
                                 // straight echo of connection id and data
-                                sendFunc.write(TcpSender.SEND_DATA_TYPE_ID, buffer, offset, length);
+                                sendFunc.write(TcpManagerTypeId.SEND_DATA, buffer, offset, length);
                                 break;
                         }
                         return 0;
