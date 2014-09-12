@@ -16,20 +16,33 @@
 
 package org.kaazing.nuklei.kompound;
 
+import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.kaazing.nuklei.BitUtil;
+import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import org.kaazing.nuklei.kompound.cmd.StartCmd;
+import org.kaazing.nuklei.kompound.cmd.StopCmd;
 import org.kaazing.nuklei.net.TcpManagerEvents;
 import org.kaazing.robot.junit.annotation.Robotic;
 import org.kaazing.robot.junit.rules.RobotRule;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static junit.framework.TestCase.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+
 public class KompoundIT
 {
+    public static final String URI = "tcp://localhost:9876";
+
     @Rule
     public RobotRule robot = new RobotRule().setScriptRoot("org/kaazing/robot/scripts/nuklei/kompound");
+
+    final AtomicBoolean attached = new AtomicBoolean(false);
 
     private Kompound kompound;
 
@@ -42,32 +55,84 @@ public class KompoundIT
         }
     }
 
-    @Robotic(script = "connect")
     @Test(timeout = 1000)
-    @Ignore
-    public void shouldSpinUpCorrectlyAndConnect() throws Exception {
-        final AtomicBoolean done = new AtomicBoolean(false);
+    public void shouldSpinUpAndShutdownCorrectly() throws Exception
+    {
+        final AtomicBoolean started = new AtomicBoolean(false);
+        final AtomicBoolean stopped = new AtomicBoolean(false);
+
         final Kompound.Builder builder = new Kompound.Builder()
             .service(
-                "tcp://localhost:9876",
+                URI,
+                new Mikro()
+                {
+                    public void onCommand(final Object command)
+                    {
+                        if (command instanceof StartCmd)
+                        {
+                            started.lazySet(true);
+                        }
+                        else if (command instanceof StopCmd)
+                        {
+                            stopped.lazySet(true);
+                        }
+                    }
+
+                    public int onAvailable(final int typeId, final AtomicBuffer buffer, final int offset, final int length)
+                    {
+                        if (TcpManagerEvents.ATTACH_COMPLETED_TYPE_ID == typeId)
+                        {
+                            attached.lazySet(true);
+                        }
+                        return 0;
+                    }
+                });
+
+        kompound = Kompound.startUp(builder);
+        waitToBeAttached();
+
+        kompound.close();
+        kompound = null;
+
+        assertTrue(started.get());
+        assertTrue(stopped.get());
+    }
+
+    @Robotic(script = "ConnectAndWrite")
+    @Test(timeout = 1000)
+    public void shouldAllowConnectionAndSendOfDataFromClient() throws Exception {
+        final String message = "hello world";
+        final byte[] data = new byte[message.length()];
+
+        final Kompound.Builder builder = new Kompound.Builder()
+            .service(
+                URI,
                 (typeId, buffer, offset, length) ->
                 {
-                    System.out.println("typeId " + typeId);
-                    if (TcpManagerEvents.EOF_TYPE_ID == typeId)
+                    switch (typeId)
                     {
-                        done.lazySet(true);
+                        case TcpManagerEvents.ATTACH_COMPLETED_TYPE_ID:
+                            attached.lazySet(true);
+                            break;
+                        case TcpManagerEvents.RECEIVED_DATA_TYPE_ID:
+                            buffer.getBytes(offset + BitUtil.SIZE_OF_LONG, data);
+                            break;
                     }
                     return 0;
                 });
 
         kompound = Kompound.startUp(builder);
+        waitToBeAttached();
+        robot.join();
 
-        while (!done.get())
+        assertThat(data, is(message.getBytes()));
+    }
+
+    private void waitToBeAttached() throws Exception
+    {
+        while (!attached.get())
         {
             Thread.sleep(10);
         }
-        System.out.println("done");
-
-        robot.join();
     }
 }

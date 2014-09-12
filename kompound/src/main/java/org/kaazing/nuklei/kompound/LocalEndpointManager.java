@@ -45,7 +45,6 @@ public class LocalEndpointManager
 
         List<MikroService> servicesOnAddress = getOrAddAddress(localEndpointConfiguration.localAddress(), mikroService);
 
-        System.out.println("before add " + servicesOnAddress + " " + mikroService);
         servicesOnAddress.add(mikroService);
     }
 
