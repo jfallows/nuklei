@@ -133,8 +133,6 @@ public class KompoundIT
     @Test(timeout = 1000)
     public void shouldConnectWriteReadFromClient() throws Exception
     {
-        final AtomicBuffer sendBuffer = new AtomicBuffer(new byte["hello world".length() + BitUtil.SIZE_OF_LONG]);
-
         final Kompound.Builder builder = new Kompound.Builder()
             .service(
                 URI,
@@ -150,7 +148,8 @@ public class KompoundIT
                         }
                     }
 
-                    public int onAvailable(final int typeId, final AtomicBuffer buffer, final int offset, final int length)
+                    public int onAvailable(
+                        final int typeId, final AtomicBuffer buffer, final int offset, final int length)
                     {
                         switch (typeId)
                         {
@@ -159,14 +158,8 @@ public class KompoundIT
                                 break;
 
                             case TcpManagerEvents.RECEIVED_DATA_TYPE_ID:
-                                assertThat(length, is(BitUtil.SIZE_OF_LONG + "hello world".length()));
-
-                                final long connectionId = buffer.getLong(offset);
-
-                                sendBuffer.putLong(0, connectionId);
-                                sendBuffer.putBytes(BitUtil.SIZE_OF_LONG, buffer, offset + BitUtil.SIZE_OF_LONG, length - BitUtil.SIZE_OF_LONG);
-
-                                sendFunc.write(TcpSender.SEND_DATA_TYPE_ID, sendBuffer, 0, sendBuffer.capacity());
+                                // straight echo of connection id and data
+                                sendFunc.write(TcpSender.SEND_DATA_TYPE_ID, buffer, offset, length);
                                 break;
                         }
                         return 0;
