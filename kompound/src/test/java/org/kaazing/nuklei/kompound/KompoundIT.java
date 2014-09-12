@@ -25,7 +25,9 @@ import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.kompound.cmd.StartCmd;
 import org.kaazing.nuklei.kompound.cmd.StopCmd;
+import org.kaazing.nuklei.net.TcpManager;
 import org.kaazing.nuklei.net.TcpManagerEvents;
+import org.kaazing.nuklei.net.TcpSender;
 import org.kaazing.robot.junit.annotation.Robotic;
 import org.kaazing.robot.junit.rules.RobotRule;
 
@@ -56,7 +58,7 @@ public class KompoundIT
     }
 
     @Test(timeout = 1000)
-    public void shouldSpinUpAndShutdownCorrectly() throws Exception
+    public void shouldStartUpAndShutdownCorrectly() throws Exception
     {
         final AtomicBoolean started = new AtomicBoolean(false);
         final AtomicBoolean stopped = new AtomicBoolean(false);
@@ -100,7 +102,8 @@ public class KompoundIT
 
     @Robotic(script = "ConnectAndWrite")
     @Test(timeout = 1000)
-    public void shouldAllowConnectionAndSendOfDataFromClient() throws Exception {
+    public void shouldAllowConnectionAndSendOfDataFromClient() throws Exception
+    {
         final String message = "hello world";
         final byte[] data = new byte[message.length()];
 
@@ -114,6 +117,7 @@ public class KompoundIT
                         case TcpManagerEvents.ATTACH_COMPLETED_TYPE_ID:
                             attached.lazySet(true);
                             break;
+
                         case TcpManagerEvents.RECEIVED_DATA_TYPE_ID:
                             buffer.getBytes(offset + BitUtil.SIZE_OF_LONG, data);
                             break;
@@ -126,6 +130,55 @@ public class KompoundIT
         robot.join();
 
         assertThat(data, is(message.getBytes()));
+    }
+
+    @Robotic(script = "ConnectWriteRead")
+    @Test(timeout = 1000)
+    public void shouldConnectWriteReadFromClient() throws Exception
+    {
+        final AtomicBuffer sendBuffer = new AtomicBuffer(new byte["hello world".length() + BitUtil.SIZE_OF_LONG]);
+
+        final Kompound.Builder builder = new Kompound.Builder()
+            .service(
+                URI,
+                new Mikro()
+                {
+                    Proxy sendFunc;
+
+                    public void onCommand(final Object command)
+                    {
+                        if (command instanceof StartCmd)
+                        {
+                            sendFunc = ((StartCmd) command).sendFunc();
+                        }
+                    }
+
+                    public int onAvailable(final int typeId, final AtomicBuffer buffer, final int offset, final int length)
+                    {
+                        switch (typeId)
+                        {
+                            case TcpManagerEvents.ATTACH_COMPLETED_TYPE_ID:
+                                attached.lazySet(true);
+                                break;
+
+                            case TcpManagerEvents.RECEIVED_DATA_TYPE_ID:
+                                assertThat(length, is(BitUtil.SIZE_OF_LONG + "hello world".length()));
+
+                                final long connectionId = buffer.getLong(offset);
+
+                                sendBuffer.putLong(0, connectionId);
+                                sendBuffer.putBytes(BitUtil.SIZE_OF_LONG, buffer, offset + BitUtil.SIZE_OF_LONG, length - BitUtil.SIZE_OF_LONG);
+
+                                sendFunc.write(TcpSender.SEND_DATA_TYPE_ID, sendBuffer, 0, sendBuffer.capacity());
+                                break;
+                        }
+                        return 0;
+                    }
+                });
+
+        kompound = Kompound.startUp(builder);
+        waitToBeAttached();
+        robot.join();
     }
 
     private void waitToBeAttached() throws Exception

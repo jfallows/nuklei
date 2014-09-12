@@ -1,0 +1,6 @@
+connect tcp://localhost:9876
+connected
+write "hello world"
+read "hello world"
+close
+closed
