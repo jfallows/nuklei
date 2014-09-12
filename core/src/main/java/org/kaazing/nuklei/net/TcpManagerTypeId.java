@@ -17,7 +17,7 @@
 package org.kaazing.nuklei.net;
 
 /**
- * Events for the TCP Manager
+ * Events and commands for the TCP Manager
  */
 public class TcpManagerTypeId
 {
