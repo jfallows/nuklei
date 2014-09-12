@@ -16,16 +16,13 @@
 
 package org.kaazing.nuklei.kompound;
 
-import junit.framework.Assert;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.kompound.cmd.StartCmd;
 import org.kaazing.nuklei.kompound.cmd.StopCmd;
-import org.kaazing.nuklei.net.TcpManager;
 import org.kaazing.nuklei.net.TcpManagerEvents;
 import org.kaazing.nuklei.net.TcpSender;
 import org.kaazing.robot.junit.annotation.Robotic;
