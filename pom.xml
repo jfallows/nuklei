@@ -39,6 +39,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.build.resourceEncoding>UTF-8</project.build.resourceEncoding>
     </properties>
 
     <distributionManagement>
@@ -56,6 +57,7 @@
         <module>core</module>
         <module>benchmarks</module>
         <module>kompound</module>
+        <module>protocol</module>
     </modules>
 
     <build>
