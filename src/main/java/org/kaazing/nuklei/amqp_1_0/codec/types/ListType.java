@@ -203,6 +203,7 @@ public class ListType extends Type {
                 break;
             case WIDTH_KIND_1:
                 switch (highestOneBit(value)) {
+                case 0:
                 case 1:
                 case 2:
                 case 4:
