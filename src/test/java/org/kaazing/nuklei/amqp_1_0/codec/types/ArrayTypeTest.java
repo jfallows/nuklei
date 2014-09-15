@@ -45,11 +45,12 @@ public class ArrayTypeTest {
         ArrayType arrayType = new ArrayType();
         arrayType.wrap(buffer, offset);
         arrayType.maxLength(0xff);
-        arrayType.length(0x00);
+        arrayType.limit(0x00, offset + 0x03);
         
         assertEquals(0xe0, uint8Get(buffer, offset));
-        assertEquals(0x00, uint8Get(buffer, offset + 1));
-        assertEquals(offset + 2, arrayType.limit());
+        assertEquals(0x01, uint8Get(buffer, offset + 1));
+        assertEquals(0x00, uint8Get(buffer, offset + 2));
+        assertEquals(offset + 3, arrayType.limit());
     }
     
     @Theory
@@ -57,10 +58,11 @@ public class ArrayTypeTest {
         ArrayType arrayType = new ArrayType();
         arrayType.wrap(buffer, offset);
         arrayType.maxLength(0x100);
-        arrayType.length(0x00);
+        arrayType.limit(0x00, offset + 0x09);
         
         assertEquals(0xf0, uint8Get(buffer, offset));
-        assertEquals(0x00, int32Get(buffer, offset + 1));
-        assertEquals(offset + 5, arrayType.limit());
+        assertEquals(0x04, int32Get(buffer, offset + 1));
+        assertEquals(0x00, int32Get(buffer, offset + 5));
+        assertEquals(offset + 9, arrayType.limit());
     }
 }

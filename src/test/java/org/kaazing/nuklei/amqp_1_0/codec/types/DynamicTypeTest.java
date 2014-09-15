@@ -59,7 +59,7 @@ public class DynamicTypeTest {
         ArrayType arrayType = new ArrayType();
         arrayType.wrap(buffer, offset);
         arrayType.maxLength(0xff);
-        arrayType.length(0x00);
+        arrayType.limit(0x00, offset + 0x03);
         
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
@@ -73,7 +73,7 @@ public class DynamicTypeTest {
         ArrayType arrayType = new ArrayType();
         arrayType.wrap(buffer, offset);
         arrayType.maxLength(0x100);
-        arrayType.length(0x00);
+        arrayType.limit(0x00, offset + 0x09);
         
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
