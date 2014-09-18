@@ -56,7 +56,7 @@ public class Flyweight
         return offset;
     }
 
-    protected AtomicBuffer buffer() {
+    public AtomicBuffer buffer() {
         return buffer;
     }
 
@@ -80,7 +80,7 @@ public class Flyweight
         return this;
     }
     
-    protected final void notifyChanged()
+    public final void notifyChanged()
     {
         observer.accept(this);
     }
