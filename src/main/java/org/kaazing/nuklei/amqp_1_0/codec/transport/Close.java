@@ -27,9 +27,17 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
  */
 public final class Close extends CompositeType {
 
+    public static final ThreadLocal<Close> LOCAL_REF = new ThreadLocal<Close>() {
+        @Override
+        protected Close initialValue() {
+            return new Close();
+        }
+    };
+
     private final Error error;
 
-    public Close() {
+    // unit tests
+    Close() {
         error = new Error().watch((owner) -> { limit(1, owner.limit()); });
     }
 

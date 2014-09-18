@@ -29,6 +29,13 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
  */
 public final class Flow extends CompositeType {
 
+    public static final ThreadLocal<Flow> LOCAL_REF = new ThreadLocal<Flow>() {
+        @Override
+        protected Flow initialValue() {
+            return new Flow();
+        }
+    };
+
     private final UIntType nextIncomingId;
     private final UIntType incomingWindow;
     private final UIntType nextOutgoingId;

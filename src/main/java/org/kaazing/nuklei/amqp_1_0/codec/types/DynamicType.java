@@ -15,6 +15,9 @@
  */
 package org.kaazing.nuklei.amqp_1_0.codec.types;
 
+import java.util.function.Consumer;
+
+import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 public class DynamicType extends Type {
@@ -132,6 +135,12 @@ public class DynamicType extends Type {
     }
 
     @Override
+    public DynamicType watch(Consumer<Flyweight> observer) {
+        super.watch(observer);
+        return this;
+    }
+
+    @Override
     public DynamicType wrap(AtomicBuffer buffer, int offset) {
         super.wrap(buffer, offset);
         return this;
@@ -182,7 +191,7 @@ public class DynamicType extends Type {
             return offset() + 2 + uint8Get(buffer(), offset() + 1);
         case WIDTH_KIND_1_LIST:
         case WIDTH_KIND_1_MAP:
-            return offset() + 3 + uint8Get(buffer(), offset() + 2);
+            return offset() + 2 + uint8Get(buffer(), offset() + 1);
         case WIDTH_KIND_4_BINARY:
         case WIDTH_KIND_4_STRING:
         case WIDTH_KIND_4_SYMBOL:

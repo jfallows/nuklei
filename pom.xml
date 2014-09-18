@@ -4,14 +4,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.kaazing</groupId>
-    <artifactId>nuklei.amqp_1_0.codec</artifactId>
+    <artifactId>nuklei.amqp_1_0</artifactId>
     <packaging>jar</packaging>
     <version>0.1-SNAPSHOT</version>
 
-    <name>Nuklei AMQP 1.0 codec</name>
-    <description>
-        AMQP 1.0 codec, including flyweights.
-    </description>
+    <name>Nuklei AMQP 1.0 support</name>
+    <description>AMQP 1.0 support, including codec flyweights and state machine</description>
 
     <licenses>
         <license>
@@ -23,12 +21,14 @@
     <inceptionYear>2014</inceptionYear>
 
     <scm>
-        <url>https://github.com/kaazing/nuklei.amqp_1_0.codec.git</url>
-        <connection>scm:git:https://github.com/kaazing/nuklei.amqp_1_0.codec.git</connection>
+        <url>https://github.com/kaazing/nuklei.amqp_1_0.git</url>
+        <connection>scm:git:https://github.com/kaazing/nuklei.amqp_1_0.git</connection>
     </scm>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
 
     <dependencies>
@@ -75,17 +75,6 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                    <fork>true</fork>
-                    <compilerArgument>-XDignore.symbol.file</compilerArgument>
-                </configuration>
             </plugin>
         </plugins>
     </build>

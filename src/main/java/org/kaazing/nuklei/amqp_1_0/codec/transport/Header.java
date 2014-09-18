@@ -20,6 +20,13 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 public final class Header extends FlyweightBE {
 
+    public static final ThreadLocal<Header> LOCAL_REF = new ThreadLocal<Header>() {
+        @Override
+        protected Header initialValue() {
+            return new Header();
+        }
+    };
+
     // ASCII "AMQP"
     public static final int AMQP_PROTOCOL = 0x41 << 24 | 0x4d << 16 | 0x51 << 8 | 0x50; 
     
@@ -37,7 +44,14 @@ public final class Header extends FlyweightBE {
 
     private static final int OFFSET_REVISION_VERSION = OFFSET_MINOR_VERSION + SIZEOF_MINOR_VERSION;
     private static final int SIZEOF_REVISION_VERSION = 1;
+    
+    public static final int SIZEOF_HEADER = SIZEOF_PROTOCOL + SIZEOF_PROTOCOL_ID +
+                            SIZEOF_MAJOR_VERSION + SIZEOF_MINOR_VERSION + SIZEOF_REVISION_VERSION;
 
+    // unit tests
+    Header() {
+    }
+    
     @Override
     public Header wrap(AtomicBuffer buffer, int offset) {
         super.wrap(buffer, offset);

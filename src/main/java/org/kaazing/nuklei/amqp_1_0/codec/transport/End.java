@@ -27,6 +27,13 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
  */
 public final class End extends CompositeType {
 
+    public static final ThreadLocal<End> LOCAL_REF = new ThreadLocal<End>() {
+        @Override
+        protected End initialValue() {
+            return new End();
+        }
+    };
+
     private final Error error;
 
     public End() {

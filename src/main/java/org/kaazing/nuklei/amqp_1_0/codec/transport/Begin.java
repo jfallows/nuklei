@@ -30,6 +30,13 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
  */
 public final class Begin extends CompositeType {
 
+    public static final ThreadLocal<Begin> LOCAL_REF = new ThreadLocal<Begin>() {
+        @Override
+        protected Begin initialValue() {
+            return new Begin();
+        }
+    };
+
     public static final long DEFAULT_HANDLE_MAX = 4294967295L;
 
     private final UShortType remoteChannel;

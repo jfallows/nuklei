@@ -33,6 +33,13 @@ import org.kaazing.nuklei.function.AtomicBufferMutator;
  */
 public final class Open extends CompositeType {
 
+    public static final ThreadLocal<Open> LOCAL_REF = new ThreadLocal<Open>() {
+        @Override
+        protected Open initialValue() {
+            return new Open();
+        }
+    };
+
     public static final long DEFAULT_MAX_FRAME_SIZE = 4294967295L;
 
     private final StringType containerId;
@@ -46,7 +53,8 @@ public final class Open extends CompositeType {
     private final ArrayType desiredCapabilities;
     private final Fields properties;
 
-    public Open() {
+    // unit tests
+    Open() {
         containerId = new StringType().watch((owner) -> { limit(1, owner.limit()); });
         hostname = new StringType().watch((owner) -> { limit(2, owner.limit()); });
         maxFrameSize = new UIntType().watch((owner) -> { limit(3, owner.limit()); });

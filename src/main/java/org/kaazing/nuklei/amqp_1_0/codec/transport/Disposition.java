@@ -30,6 +30,13 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
  */
 public final class Disposition extends CompositeType {
 
+    public static final ThreadLocal<Disposition> LOCAL_REF = new ThreadLocal<Disposition>() {
+        @Override
+        protected Disposition initialValue() {
+            return new Disposition();
+        }
+    };
+
     private final BooleanType role;
     private final UIntType first;
     private final UIntType last;

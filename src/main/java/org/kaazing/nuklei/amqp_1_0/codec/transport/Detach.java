@@ -29,6 +29,13 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
  */
 public final class Detach extends CompositeType {
 
+    public static final ThreadLocal<Detach> LOCAL_REF = new ThreadLocal<Detach>() {
+        @Override
+        protected Detach initialValue() {
+            return new Detach();
+        }
+    };
+
     private final UIntType handle;
     private final BooleanType closed;
     private final Error error;

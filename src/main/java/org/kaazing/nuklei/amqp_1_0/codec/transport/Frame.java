@@ -19,10 +19,18 @@ import static java.nio.ByteOrder.BIG_ENDIAN;
 
 import org.kaazing.nuklei.FlyweightBE;
 import org.kaazing.nuklei.amqp_1_0.codec.messaging.Performative;
+import org.kaazing.nuklei.amqp_1_0.codec.types.DynamicType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.ULongType;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 public final class Frame extends FlyweightBE {
+
+    public static final ThreadLocal<Frame> LOCAL_REF = new ThreadLocal<Frame>() {
+        @Override
+        protected Frame initialValue() {
+            return new Frame();
+        }
+    };
 
     private static final int OFFSET_LENGTH = 0;
     private static final int SIZEOF_LENGTH = 4;
@@ -39,16 +47,26 @@ public final class Frame extends FlyweightBE {
     private static final int OFFSET_PERFORMATIVE = OFFSET_CHANNEL + SIZEOF_CHANNEL;
 
     private final ULongType.Descriptor performative;
+    private final DynamicType body;
     
-    public Frame() {
+    // unit tests
+    Frame() {
         performative = new ULongType.Descriptor();
+        body = new DynamicType().watch((owner) -> setLength(owner.limit() - offset()));
     }
 
     @Override
     public Frame wrap(AtomicBuffer buffer, int offset) {
         super.wrap(buffer, offset);
-        performative.wrap(buffer, offset + OFFSET_PERFORMATIVE);
         return this;
+    }
+
+    public int bodyOffset() {
+        return body().offset();
+    }
+
+    public void bodyChanged() {
+        body().notifyChanged();
     }
 
     public Frame setLength(long value) {
@@ -88,15 +106,23 @@ public final class Frame extends FlyweightBE {
     }
 
     public Frame setPerformative(Performative value) {
-        performative.set(Performative.WRITE, value);
+        performative().set(Performative.WRITE, value);
         return this;
     }
 
     public Performative getPerformative() {
-        return performative.get(Performative.READ);
+        return performative().get(Performative.READ);
     }
-    
+
     public int limit() {
-        return performative.limit();
+        return body().limit();
+    }
+
+    private ULongType.Descriptor performative() {
+        return performative.wrap(buffer(), offset() + OFFSET_PERFORMATIVE);
+    }
+
+    private DynamicType body() {
+        return body.wrap(buffer(), performative().limit());
     }
 }

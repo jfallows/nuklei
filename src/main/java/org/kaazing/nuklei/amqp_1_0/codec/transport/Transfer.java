@@ -34,6 +34,13 @@ import org.kaazing.nuklei.function.AtomicBufferMutator;
  */
 public final class Transfer extends CompositeType {
 
+    public static final ThreadLocal<Transfer> LOCAL_REF = new ThreadLocal<Transfer>() {
+        @Override
+        protected Transfer initialValue() {
+            return new Transfer();
+        }
+    };
+
     private final UIntType handle;
     private final UIntType deliveryId;
     private final BinaryType deliveryTag;

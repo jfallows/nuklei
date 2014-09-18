@@ -41,6 +41,13 @@ import org.kaazing.nuklei.function.AtomicBufferMutator;
  */
 public final class Attach extends CompositeType {
 
+    public static final ThreadLocal<Attach> LOCAL_REF = new ThreadLocal<Attach>() {
+        @Override
+        protected Attach initialValue() {
+            return new Attach();
+        }
+    };
+
     public static final long DEFAULT_HANDLE_MAX = 4294967295L;
 
     private final StringType name;
