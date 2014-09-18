@@ -19,22 +19,22 @@ import java.util.function.Consumer;
 
 import org.kaazing.nuklei.amqp_1_0.codec.transport.Close;
 import org.kaazing.nuklei.amqp_1_0.codec.transport.Open;
-import org.kaazing.nuklei.amqp_1_0.handler.FrameHandler;
-import org.kaazing.nuklei.amqp_1_0.handler.HeaderHandler;
+import org.kaazing.nuklei.amqp_1_0.function.FrameConsumer;
+import org.kaazing.nuklei.amqp_1_0.function.HeaderConsumer;
 
 public class ConnectionHooks {
 
     public Consumer<Connection> whenInitialized = (c) -> {};
     public Consumer<Connection> whenError = (c) -> {};
 
-    public HeaderHandler<Connection> whenHeaderReceived = (c, h) -> {};
-    public HeaderHandler<Connection> whenHeaderSent = (c, h) -> {};
-    public HeaderHandler<Connection> whenHeaderReceivedNotEqualSent = (c, h) -> {};
-    public HeaderHandler<Connection> whenHeaderSentNotEqualReceived = (c, h) -> {};
+    public HeaderConsumer<Connection> whenHeaderReceived = (c, h) -> {};
+    public HeaderConsumer<Connection> whenHeaderSent = (c, h) -> {};
+    public HeaderConsumer<Connection> whenHeaderReceivedNotEqualSent = (c, h) -> {};
+    public HeaderConsumer<Connection> whenHeaderSentNotEqualReceived = (c, h) -> {};
 
-    public FrameHandler<Connection, Open> whenOpenReceived = (p, f, o) -> {};
-    public FrameHandler<Connection, Open> whenOpenSent = (p, f, o) -> {};
-    public FrameHandler<Connection, Close> whenCloseReceived = (p, f, c) -> {};
-    public FrameHandler<Connection, Close> whenCloseSent = (p, f, c) -> {};
+    public FrameConsumer<Connection, Open> whenOpenReceived = (p, f, o) -> {};
+    public FrameConsumer<Connection, Open> whenOpenSent = (p, f, o) -> {};
+    public FrameConsumer<Connection, Close> whenCloseReceived = (p, f, c) -> {};
+    public FrameConsumer<Connection, Close> whenCloseSent = (p, f, c) -> {};
     
 }

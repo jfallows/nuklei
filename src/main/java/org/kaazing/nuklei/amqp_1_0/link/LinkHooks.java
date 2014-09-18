@@ -20,7 +20,7 @@ import java.util.function.Consumer;
 import org.kaazing.nuklei.amqp_1_0.codec.transport.Attach;
 import org.kaazing.nuklei.amqp_1_0.codec.transport.Detach;
 import org.kaazing.nuklei.amqp_1_0.codec.transport.Transfer;
-import org.kaazing.nuklei.amqp_1_0.handler.FrameHandler;
+import org.kaazing.nuklei.amqp_1_0.function.FrameConsumer;
 
 /*
  * See AMQP 1.0 specification, section 2.6 "Links"
@@ -30,11 +30,11 @@ public class LinkHooks {
     public Consumer<Link> whenInitialized = (s) -> {};
     public Consumer<Link> whenError = (s) -> {};
 
-    public FrameHandler<Link, Attach> whenAttachReceived = (s, f, m) -> {};
-    public FrameHandler<Link, Attach> whenAttachSent = (s, f, m) -> {};
-    public FrameHandler<Link, Transfer> whenTransferReceived = (s, f, m) -> {};
-    public FrameHandler<Link, Transfer> whenTransferSent = (s, f, m) -> {};
-    public FrameHandler<Link, Detach> whenDetachReceived = (s, f, m) -> {};
-    public FrameHandler<Link, Detach> whenDetachSent = (s, f, m) -> {};
+    public FrameConsumer<Link, Attach> whenAttachReceived = (s, f, m) -> {};
+    public FrameConsumer<Link, Attach> whenAttachSent = (s, f, m) -> {};
+    public FrameConsumer<Link, Transfer> whenTransferReceived = (s, f, m) -> {};
+    public FrameConsumer<Link, Transfer> whenTransferSent = (s, f, m) -> {};
+    public FrameConsumer<Link, Detach> whenDetachReceived = (s, f, m) -> {};
+    public FrameConsumer<Link, Detach> whenDetachSent = (s, f, m) -> {};
     
 }

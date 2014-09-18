@@ -21,20 +21,20 @@ import org.kaazing.nuklei.amqp_1_0.codec.transport.Begin;
 import org.kaazing.nuklei.amqp_1_0.codec.transport.Disposition;
 import org.kaazing.nuklei.amqp_1_0.codec.transport.End;
 import org.kaazing.nuklei.amqp_1_0.codec.transport.Flow;
-import org.kaazing.nuklei.amqp_1_0.handler.FrameHandler;
+import org.kaazing.nuklei.amqp_1_0.function.FrameConsumer;
 
 public class SessionHooks {
 
     public Consumer<Session> whenInitialized = (s) -> {};
     public Consumer<Session> whenError = (s) -> {};
 
-    public FrameHandler<Session, Begin> whenBeginReceived = (s, f, m) -> {};
-    public FrameHandler<Session, Begin> whenBeginSent = (s, f, m) -> {};
-    public FrameHandler<Session, Flow> whenFlowReceived = (s, f, m) -> {};
-    public FrameHandler<Session, Flow> whenFlowSent = (s, f, m) -> {};
-    public FrameHandler<Session, Disposition> whenDispositionReceived = (s, f, m) -> {};
-    public FrameHandler<Session, Disposition> whenDispositionSent = (s, f, m) -> {};
-    public FrameHandler<Session, End> whenEndReceived = (s, f, m) -> {};
-    public FrameHandler<Session, End> whenEndSent = (s, f, m) -> {};
+    public FrameConsumer<Session, Begin> whenBeginReceived = (s, f, m) -> {};
+    public FrameConsumer<Session, Begin> whenBeginSent = (s, f, m) -> {};
+    public FrameConsumer<Session, Flow> whenFlowReceived = (s, f, m) -> {};
+    public FrameConsumer<Session, Flow> whenFlowSent = (s, f, m) -> {};
+    public FrameConsumer<Session, Disposition> whenDispositionReceived = (s, f, m) -> {};
+    public FrameConsumer<Session, Disposition> whenDispositionSent = (s, f, m) -> {};
+    public FrameConsumer<Session, End> whenEndReceived = (s, f, m) -> {};
+    public FrameConsumer<Session, End> whenEndSent = (s, f, m) -> {};
     
 }

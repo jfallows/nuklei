@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.amqp_1_0.handler;
+package org.kaazing.nuklei.amqp_1_0.function;
 
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.amqp_1_0.codec.transport.Frame;
 
 @FunctionalInterface
-public interface FrameHandler<P, B extends Flyweight> {
+public interface FrameConsumer<P, B extends Flyweight> {
 
     void accept(P parameter, Frame frame, B body);
 }

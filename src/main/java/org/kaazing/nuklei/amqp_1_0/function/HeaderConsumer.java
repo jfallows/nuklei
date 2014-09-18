@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.amqp_1_0.handler;
+package org.kaazing.nuklei.amqp_1_0.function;
 
 import org.kaazing.nuklei.amqp_1_0.codec.transport.Header;
 
-public interface HeaderHandler<P> {
+public interface HeaderConsumer<P> {
     
     void accept(P param, Header header);
 
