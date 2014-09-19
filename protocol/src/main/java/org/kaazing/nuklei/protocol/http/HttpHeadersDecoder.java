@@ -18,7 +18,6 @@ package org.kaazing.nuklei.protocol.http;
 
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
-import org.kaazing.nuklei.net.TcpManagerHeadersDecoder;
 import org.kaazing.nuklei.protocol.Coordinates;
 import org.kaazing.nuklei.protocol.ExpandableBuffer;
 import org.kaazing.nuklei.protocol.ProtocolStageHandler;
@@ -31,7 +30,7 @@ import java.util.function.Supplier;
 
 /**
  */
-public class HttpHeadersDecoder extends TcpManagerHeadersDecoder implements ProtocolStageHandler
+public class HttpHeadersDecoder extends Flyweight implements ProtocolStageHandler
 {
     private static final int INITIAL_REASSEMBLY_BUFFER_CAPACITY = 256;
 
