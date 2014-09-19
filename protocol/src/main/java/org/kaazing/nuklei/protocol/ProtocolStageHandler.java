@@ -16,9 +16,10 @@
 
 package org.kaazing.nuklei.protocol;
 
+import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
-public interface ProtocolHandler
+public interface ProtocolStageHandler
 {
-    public int onAvailable(final AtomicBuffer buffer, final int offset, final int length);
+    public int onAvailable(final Flyweight header, final AtomicBuffer buffer, final int offset, final int length);
 }

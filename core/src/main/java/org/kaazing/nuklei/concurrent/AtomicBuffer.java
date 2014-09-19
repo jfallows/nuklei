@@ -26,6 +26,8 @@ import java.nio.ByteOrder;
  */
 public class AtomicBuffer
 {
+    public static final boolean BOUNDS_CHECK = true;
+
     private static final ByteOrder NATIVE_BYTE_ORDER = ByteOrder.nativeOrder();
     private static final Unsafe UNSAFE = BitUtil.UNSAFE;
     private static final long BYTE_ARRAY_OFFSET = UNSAFE.arrayBaseOffset(byte[].class);
@@ -702,4 +704,17 @@ public class AtomicBuffer
     {
         UNSAFE.setMemory(byteArray, addressOffset + index, length, value);
     }
+
+    private void boundsCheck(final int index, final int length)
+    {
+        if (BOUNDS_CHECK)
+        {
+            if (index < 0 || length < 0 || index + length > capacity)
+            {
+                throw new
+                    IndexOutOfBoundsException(String.format("index=%d length=%d capacity=%d", index, length, capacity));
+            }
+        }
+    }
+
 }
