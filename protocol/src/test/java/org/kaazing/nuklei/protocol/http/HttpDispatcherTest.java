@@ -157,6 +157,7 @@ public class HttpDispatcherTest
         buffer.putBytes(BitUtil.SIZE_OF_LONG, data);
 
         tcpManagerHeadersDecoder.wrap(buffer, 0);
-        return dispatcher.onAvailable(tcpManagerHeadersDecoder, buffer, 0, length);
+        return dispatcher.onAvailable(
+            tcpManagerHeadersDecoder, buffer, BitUtil.SIZE_OF_LONG, length - BitUtil.SIZE_OF_LONG);
     }
 }

@@ -63,8 +63,11 @@ public class HttpDispatcher implements ProtocolStageHandler
         final TcpManagerHeadersDecoder tcpManagerHeadersDecoder = (TcpManagerHeadersDecoder)header;
         final HttpHeadersDecoder decoder = getOrAddDecoder(tcpManagerHeadersDecoder.connectionId());
 
-        decoder.onAvailable(
-            header, buffer, offset + tcpManagerHeadersDecoder.length(), length - tcpManagerHeadersDecoder.length());
+        /*
+         * TODO: can have decoder smart enough to know of WS or use different decoder for WS per connectionId
+         */
+
+        decoder.onAvailable(header, buffer, offset, length);
 
         if (decoder.isDecoded())
         {

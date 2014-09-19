@@ -17,6 +17,7 @@
 package org.kaazing.nuklei.kompound;
 
 import org.kaazing.nuklei.net.TcpManagerProxy;
+import org.kaazing.nuklei.protocol.http.HttpDispatcher;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -33,6 +34,7 @@ public class LocalEndpointManager
 {
     private final TcpManagerProxy tcpManagerProxy;
     private final Map<InetSocketAddress, List<MikroService>> mikroByAddressMap = new HashMap<>();
+    private final Map<InetSocketAddress, HttpDispatcher> httpDispatcherByAddressMap = new HashMap<>();
 
     public LocalEndpointManager(final TcpManagerProxy tcpManagerProxy)
     {
@@ -51,6 +53,11 @@ public class LocalEndpointManager
     public List<MikroService> servicesOnAddress(final InetSocketAddress address)
     {
         return mikroByAddressMap.get(address);
+    }
+
+    public HttpDispatcher httpDispatcherOnAddress(final InetSocketAddress address)
+    {
+        return httpDispatcherByAddressMap.get(address);
     }
 
     public void forEach(final BiConsumer<InetSocketAddress, MikroService> consumer)
@@ -76,6 +83,12 @@ public class LocalEndpointManager
 
         services = new ArrayList<>();
         mikroByAddressMap.put(address, services);
+
+        if ("http".equals(mikroService.scheme()))
+        {
+            httpDispatcherByAddressMap.put(address, new HttpDispatcher());
+        }
+
         return services;
     }
 }

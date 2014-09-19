@@ -64,6 +64,11 @@ public class MikroService
         return uri;
     }
 
+    public String scheme()
+    {
+        return localEndpointConfiguration.scheme();
+    }
+
     public Mikro mikro()
     {
         return mikro;

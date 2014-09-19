@@ -56,12 +56,36 @@ public class Kompound implements AutoCloseable
      */
     public static void main(final String[] args) throws Exception
     {
-        try (final Kompound theKompound = Kompound.startUp())
+        try (final Kompound theKompound = Kompound.startUp(args))
         {
             while (true)
             {
-                Thread.sleep(1000); // actually see about grabbing SIGINT and graceful shutdown
+                Thread.sleep(1000); // TODO: actually see about grabbing SIGINT and graceful shutdown
             }
+        }
+    }
+
+    public static Kompound startUp(final String[] args)
+    {
+        try
+        {
+            final Builder builder = new Builder();
+
+            for (int i = 0; i < args.length; i += 2)
+            {
+                final Object service = Class.forName(args[i + 1]).newInstance();
+
+                if (service instanceof Mikro)
+                {
+                    builder.service(args[i], (Mikro) service);
+                }
+            }
+
+            return builder.build();
+        }
+        catch (final Exception ex)
+        {
+            throw new RuntimeException(ex);
         }
     }
 
@@ -128,6 +152,7 @@ public class Kompound implements AutoCloseable
                         return true;
                     },
                     mikroService.configurationMap());
+                // TODO: should this use normal delivery and not StartCmd if header added? Then header could hold object
                 // call onCommand() directly instead of going through a queue so it occurs ordered correctly
                 mikroService.mikro().onCommand(startCmd);
 
