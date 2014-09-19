@@ -22,7 +22,10 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.RingBufferReader;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferReader;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferWriter;
+import org.kaazing.nuklei.function.Mikro;
+import org.kaazing.nuklei.net.TcpManagerHeadersDecoder;
 
+import java.nio.ByteOrder;
 import java.util.Map;
 
 /**
@@ -39,6 +42,7 @@ public class MikroService implements MpscRingBufferReader.ReadHandler
     private final Map<String, Object> configurationMap;
     private final MessagingNukleus nukleus;
     private final LocalEndpointConfiguration localEndpointConfiguration;
+    private final TcpManagerHeadersDecoder tcpManagerHeadersDecoder;
 
     public MikroService(
         final String uri,
@@ -52,8 +56,8 @@ public class MikroService implements MpscRingBufferReader.ReadHandler
         this.configurationMap = configurationMap;
 
         localEndpointConfiguration = new LocalEndpointConfiguration(uri, configurationMap);
-
         ringBufferWriter = new MpscRingBufferWriter(receiveBuffer);
+        tcpManagerHeadersDecoder = new TcpManagerHeadersDecoder(ByteOrder.nativeOrder());
 
         final MessagingNukleus.Builder builder = new MessagingNukleus.Builder()
             .mpscRingBuffer(receiveBuffer, this::onMessage, MPSC_DEFAULT_READ_LIMIT);
@@ -103,6 +107,12 @@ public class MikroService implements MpscRingBufferReader.ReadHandler
 
     public void onMessage(final int typeId, final AtomicBuffer buffer, final int offset, final int length)
     {
-        mikro.onAvailable(typeId, buffer, offset, length);
+        tcpManagerHeadersDecoder.wrap(buffer, offset);
+        mikro.onMessage(
+            tcpManagerHeadersDecoder,
+            typeId,
+            buffer,
+            offset + tcpManagerHeadersDecoder.length(),
+            length - tcpManagerHeadersDecoder.length());
     }
 }

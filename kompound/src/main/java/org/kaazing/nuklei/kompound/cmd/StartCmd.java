@@ -22,7 +22,7 @@ import org.kaazing.nuklei.kompound.Proxy;
 import java.util.Map;
 
 /**
- * Command sent to inform {@link org.kaazing.nuklei.kompound.Mikro} of start up, configurationMap, etc.
+ * Command sent to inform {@link org.kaazing.nuklei.function.Mikro} of start up, configurationMap, etc.
  */
 public class StartCmd
 {

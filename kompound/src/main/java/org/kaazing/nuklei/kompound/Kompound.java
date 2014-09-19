@@ -20,10 +20,12 @@ import org.kaazing.nuklei.DedicatedNuklei;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBuffer;
+import org.kaazing.nuklei.function.Mikro;
 import org.kaazing.nuklei.kompound.cmd.StartCmd;
 import org.kaazing.nuklei.kompound.cmd.StopCmd;
 import org.kaazing.nuklei.net.TcpManager;
 import org.kaazing.nuklei.net.TcpManagerProxy;
+import org.kaazing.nuklei.net.TcpManagerTypeId;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -41,6 +43,7 @@ public class Kompound implements AutoCloseable
 
     private final MpscArrayBuffer<Object> managerCommandQueue = new MpscArrayBuffer<>(TCP_MANAGER_COMMAND_QUEUE_SIZE);
     private final AtomicBuffer managerSendBuffer = new AtomicBuffer(ByteBuffer.allocate(TCP_MANAGER_SEND_BUFFER_SIZE));
+    private final AtomicBuffer nullBuffer = new AtomicBuffer(new byte[0]);
     private final TcpManager tcpManager;
     private final TcpManagerProxy tcpManagerProxy;
     private final MikroLocator mikroLocator;
@@ -54,6 +57,7 @@ public class Kompound implements AutoCloseable
      *
      * @param args command line arguments
      * @throws Exception if error on setup
+     *
      */
     public static void main(final String[] args) throws Exception
     {
@@ -123,7 +127,7 @@ public class Kompound implements AutoCloseable
         serviceList.forEach(
             (mikroService) ->
             {
-                mikroService.mikro().onCommand(stopCmd);
+                mikroService.mikro().onMessage(stopCmd, TcpManagerTypeId.NONE, nullBuffer, 0, nullBuffer.capacity());
             });
     }
 
@@ -155,7 +159,7 @@ public class Kompound implements AutoCloseable
                     mikroService.configurationMap());
                 // TODO: should this use normal delivery and not StartCmd if header added? Then header could hold object
                 // call onCommand() directly instead of going through a queue so it occurs ordered correctly
-                mikroService.mikro().onCommand(startCmd);
+                mikroService.mikro().onMessage(startCmd, TcpManagerTypeId.NONE, nullBuffer, 0, nullBuffer.capacity());
 
                 localEndpointManager.addEndpoint(mikroService);
 

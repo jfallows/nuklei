@@ -19,12 +19,12 @@ package org.kaazing.nuklei.kompound;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
-import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import org.kaazing.nuklei.function.Mikro;
 import org.kaazing.nuklei.kompound.cmd.StartCmd;
 import org.kaazing.nuklei.kompound.cmd.StopCmd;
+import org.kaazing.nuklei.net.TcpManagerHeadersDecoder;
 import org.kaazing.nuklei.net.TcpManagerTypeId;
-import org.kaazing.nuklei.net.TcpSender;
 import org.kaazing.robot.junit.annotation.Robotic;
 import org.kaazing.robot.junit.rules.RobotRule;
 
@@ -63,27 +63,19 @@ public class KompoundIT
         final Kompound.Builder builder = new Kompound.Builder()
             .service(
                 URI,
-                new Mikro()
+                (header, typeId, buffer, offset, length) ->
                 {
-                    public void onCommand(final Object command)
+                    if (header instanceof StartCmd)
                     {
-                        if (command instanceof StartCmd)
-                        {
-                            started.lazySet(true);
-                        }
-                        else if (command instanceof StopCmd)
-                        {
-                            stopped.lazySet(true);
-                        }
+                        started.lazySet(true);
                     }
-
-                    public int onAvailable(final int typeId, final AtomicBuffer buffer, final int offset, final int length)
+                    else if (header instanceof StopCmd)
                     {
-                        if (TcpManagerTypeId.ATTACH_COMPLETED == typeId)
-                        {
-                            attached.lazySet(true);
-                        }
-                        return 0;
+                        stopped.lazySet(true);
+                    }
+                    else if (TcpManagerTypeId.ATTACH_COMPLETED == typeId)
+                    {
+                        attached.lazySet(true);
                     }
                 });
 
@@ -107,7 +99,7 @@ public class KompoundIT
         final Kompound.Builder builder = new Kompound.Builder()
             .service(
                 URI,
-                (typeId, buffer, offset, length) ->
+                (header, typeId, buffer, offset, length) ->
                 {
                     switch (typeId)
                     {
@@ -116,10 +108,9 @@ public class KompoundIT
                             break;
 
                         case TcpManagerTypeId.RECEIVED_DATA:
-                            buffer.getBytes(offset + BitUtil.SIZE_OF_LONG, data);
+                            buffer.getBytes(offset, data);
                             break;
                     }
-                    return 0;
                 });
 
         kompound = Kompound.startUp(builder);
@@ -140,17 +131,19 @@ public class KompoundIT
                 {
                     Proxy sendFunc;
 
-                    public void onCommand(final Object command)
+                    public void onMessage(
+                        final Object header,
+                        final int typeId,
+                        final AtomicBuffer buffer,
+                        final int offset,
+                        final int length)
                     {
-                        if (command instanceof StartCmd)
+                        if (header instanceof StartCmd)
                         {
-                            sendFunc = ((StartCmd) command).sendFunc();
+                            sendFunc = ((StartCmd) header).sendFunc();
+                            return;
                         }
-                    }
 
-                    public int onAvailable(
-                        final int typeId, final AtomicBuffer buffer, final int offset, final int length)
-                    {
                         switch (typeId)
                         {
                             case TcpManagerTypeId.ATTACH_COMPLETED:
@@ -158,11 +151,15 @@ public class KompoundIT
                                 break;
 
                             case TcpManagerTypeId.RECEIVED_DATA:
-                                // straight echo of connection id and data
-                                sendFunc.write(TcpManagerTypeId.SEND_DATA, buffer, offset, length);
+                                final TcpManagerHeadersDecoder decoder = (TcpManagerHeadersDecoder) header;
+                                final AtomicBuffer echoBuffer = new AtomicBuffer(new byte[decoder.length() + length]);
+
+                                echoBuffer.putLong(0, decoder.connectionId());
+                                echoBuffer.putBytes(decoder.length(), buffer, offset, length);
+
+                                sendFunc.write(TcpManagerTypeId.SEND_DATA, echoBuffer, 0, length + decoder.length());
                                 break;
                         }
-                        return 0;
                     }
                 });
 

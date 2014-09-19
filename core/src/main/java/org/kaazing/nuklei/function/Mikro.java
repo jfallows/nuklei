@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.protocol;
+package org.kaazing.nuklei.function;
 
-import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
-public interface ProtocolStageHandler
+@FunctionalInterface
+public interface Mikro
 {
-    public int onAvailable(final Flyweight header, final AtomicBuffer buffer, final int offset, final int length);
+    void onMessage(final Object header, final int typeId, final AtomicBuffer buffer, final int offset, final int length);
 }

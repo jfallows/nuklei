@@ -16,11 +16,11 @@
 
 package org.kaazing.nuklei.protocol.http;
 
-import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import org.kaazing.nuklei.function.Mikro;
 import org.kaazing.nuklei.net.TcpManagerHeadersDecoder;
+import org.kaazing.nuklei.net.TcpManagerTypeId;
 import org.kaazing.nuklei.protocol.Coordinates;
-import org.kaazing.nuklei.protocol.ProtocolStageHandler;
 import org.kaazing.nuklei.protocol.ProtocolUtil;
 
 import java.util.*;
@@ -29,7 +29,7 @@ import java.util.stream.IntStream;
 
 /**
  */
-public class HttpDispatcher implements ProtocolStageHandler
+public class HttpDispatcher implements Mikro
 {
     private static final int FREE_LIST_SIZE = 16;
 
@@ -50,7 +50,7 @@ public class HttpDispatcher implements ProtocolStageHandler
         decoderSupplier = this::grabDecoderFromFreeListIfPossible;
     }
 
-    public HttpDispatcher addResource(final byte[] method, final byte[] path, final ProtocolStageHandler handler)
+    public HttpDispatcher addResource(final byte[] method, final byte[] path, final Mikro handler)
     {
         final DispatchResource resource = new DispatchResource(method, path, handler);
 
@@ -58,22 +58,25 @@ public class HttpDispatcher implements ProtocolStageHandler
         return this;
     }
 
-    public int onAvailable(final Flyweight header, final AtomicBuffer buffer, final int offset, final int length)
+    public void onMessage(
+        final Object header, final int typeId, final AtomicBuffer buffer, final int offset, final int length)
     {
-        final TcpManagerHeadersDecoder tcpManagerHeadersDecoder = (TcpManagerHeadersDecoder)header;
-        final HttpHeadersDecoder decoder = getOrAddDecoder(tcpManagerHeadersDecoder.connectionId());
-
-        /*
-         * TODO: can have decoder smart enough to know of WS or use different decoder for WS per connectionId
-         */
-
-        decoder.onAvailable(header, buffer, offset, length);
-
-        if (decoder.isDecoded())
+        if (TcpManagerTypeId.RECEIVED_DATA == typeId)
         {
-            return dispatch(decoder);
+            final TcpManagerHeadersDecoder tcpManagerHeadersDecoder = (TcpManagerHeadersDecoder) header;
+            final HttpHeadersDecoder decoder = getOrAddDecoder(tcpManagerHeadersDecoder.connectionId());
+
+            /*
+             * TODO: can have decoder smart enough to know of WS or use different decoder for WS per connectionId
+             */
+
+            decoder.onMessage(header, typeId, buffer, offset, length);
+
+            if (decoder.isDecoded())
+            {
+                dispatch(decoder);
+            }
         }
-        return 0;
     }
 
     private HttpHeadersDecoder getOrAddDecoder(final long connectionId)
@@ -109,7 +112,7 @@ public class HttpDispatcher implements ProtocolStageHandler
         }
     }
 
-    private int dispatch(final HttpHeadersDecoder decoder)
+    private void dispatch(final HttpHeadersDecoder decoder)
     {
         // TODO: change from linear search
         for (int i = resourceList.size() - 1; i >= 0; i--)
@@ -119,13 +122,17 @@ public class HttpDispatcher implements ProtocolStageHandler
             if (match(decoder, HttpHeaderName.PATH, resource.path) &&
                 match(decoder, HttpHeaderName.METHOD, resource.method))
             {
-                return resource.handler.onAvailable(
-                    decoder, decoder.buffer(), decoder.cursor(), decoder.limit() - decoder.cursor());
+                resource.handler.onMessage(
+                    decoder,
+                    TcpManagerTypeId.RECEIVED_DATA,
+                    decoder.buffer(),
+                    decoder.cursor(),
+                    decoder.limit() - decoder.cursor());
+                return;
             }
         }
 
         // TODO: 404 territory!
-        return 0;
     }
 
     private static boolean match(
@@ -142,9 +149,9 @@ public class HttpDispatcher implements ProtocolStageHandler
     {
         private final AtomicBuffer method;
         private final AtomicBuffer path;
-        private final ProtocolStageHandler handler;
+        private final Mikro handler;
 
-        public DispatchResource(final byte[] method, final byte[] path, final ProtocolStageHandler handler)
+        public DispatchResource(final byte[] method, final byte[] path, final Mikro handler)
         {
             this.method = new AtomicBuffer(method);
             this.path = new AtomicBuffer(path);

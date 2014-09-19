@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.net.TcpManagerHeadersDecoder;
+import org.kaazing.nuklei.net.TcpManagerTypeId;
 
 import java.nio.ByteOrder;
 
@@ -48,6 +49,8 @@ public class HttpDispatcherTest
     private final byte[] bytes = new byte[256];
     private final AtomicBuffer atomicBuffer = new AtomicBuffer(bytes);
 
+    private final int[] received = new int[1];
+
     @Test
     public void shouldProcessBasicGetRequest()
     {
@@ -59,7 +62,7 @@ public class HttpDispatcherTest
         dispatcher.addResource(
             METHOD.getBytes(),
             PATH.getBytes(),
-            (header, buffer, offset, length) ->
+            (header, typeId, buffer, offset, length) ->
             {
                 final HttpHeadersDecoder decoder = (HttpHeadersDecoder)header;
 
@@ -81,10 +84,11 @@ public class HttpDispatcherTest
                 assertThat(hostLen, is(HOST_HEADER_VALUE.length()));
                 assertThat(host, is(HOST_HEADER_VALUE));
                 assertThat(length, is(0));
-                return 1;
+                received[0]++;
             });
 
-        assertThat(onRequest(CONNECTION_ID, request), is(1));
+        onRequest(CONNECTION_ID, request);
+        assertThat(received[0], is(1));
     }
 
     @Test
@@ -99,7 +103,7 @@ public class HttpDispatcherTest
         dispatcher.addResource(
             METHOD.getBytes(),
             PATH.getBytes(),
-            (header, buffer, offset, length) ->
+            (header, typeId, buffer, offset, length) ->
             {
                 final HttpHeadersDecoder decoder = (HttpHeadersDecoder)header;
 
@@ -112,10 +116,11 @@ public class HttpDispatcherTest
                 assertThat(host, is(HOST_HEADER_VALUE));
                 assertThat(Integer.parseInt(contentLen), is(BODY.length()));
                 assertThat(length, is(BODY.length()));
-                return 1;
+                received[0]++;
             });
 
-        assertThat(onRequest(CONNECTION_ID, request), is(1));
+        onRequest(CONNECTION_ID, request);
+        assertThat(received[0], is(1));
     }
 
     @Test
@@ -131,7 +136,7 @@ public class HttpDispatcherTest
         dispatcher.addResource(
             METHOD.getBytes(),
             PATH.getBytes(),
-            (header, buffer, offset, length) ->
+            (header, typeId, buffer, offset, length) ->
             {
                 final HttpHeadersDecoder decoder = (HttpHeadersDecoder)header;
 
@@ -141,14 +146,17 @@ public class HttpDispatcherTest
                 assertThat(hostLen, is(HOST_HEADER_VALUE.length()));
                 assertThat(host, is(HOST_HEADER_VALUE));
                 assertThat(length, is(0));
-                return 1;
+                received[0]++;
             });
 
-        assertThat(onRequest(CONNECTION_ID, requestA), is(0));
-        assertThat(onRequest(CONNECTION_ID, requestB), is(1));
+        onRequest(CONNECTION_ID, requestA);
+        assertThat(received[0], is(0));
+
+        onRequest(CONNECTION_ID, requestB);
+        assertThat(received[0], is(1));
     }
 
-    private int onRequest(final long connectionId, final String request)
+    private void onRequest(final long connectionId, final String request)
     {
         final byte[] data = request.getBytes();
         final int length = BitUtil.SIZE_OF_LONG + data.length;
@@ -157,7 +165,11 @@ public class HttpDispatcherTest
         buffer.putBytes(BitUtil.SIZE_OF_LONG, data);
 
         tcpManagerHeadersDecoder.wrap(buffer, 0);
-        return dispatcher.onAvailable(
-            tcpManagerHeadersDecoder, buffer, BitUtil.SIZE_OF_LONG, length - BitUtil.SIZE_OF_LONG);
+        dispatcher.onMessage(
+            tcpManagerHeadersDecoder,
+            TcpManagerTypeId.RECEIVED_DATA,
+            buffer,
+            BitUtil.SIZE_OF_LONG,
+            length - BitUtil.SIZE_OF_LONG);
     }
 }
