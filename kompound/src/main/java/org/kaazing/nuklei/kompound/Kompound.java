@@ -53,6 +53,7 @@ public class Kompound implements AutoCloseable
      * Start a Kompound as a standalone process.
      *
      * @param args command line arguments
+     * @throws Exception if error on setup
      */
     public static void main(final String[] args) throws Exception
     {

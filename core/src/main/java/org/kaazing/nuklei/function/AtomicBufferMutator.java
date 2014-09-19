@@ -24,7 +24,7 @@ public interface AtomicBufferMutator<T>
     public int mutate(Mutation mutation, AtomicBuffer buffer, T value);
 
     public interface Mutation {
-        
+
         public int maxOffset(int maxLength);
     }
 }

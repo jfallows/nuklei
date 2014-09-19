@@ -84,7 +84,8 @@ public class ProtocolUtil
         final int max = index + length;
         for (int i = index; i <= max; i++)
         {
-//            System.out.println("[" + i + "] " + buffer.getByte(i) + " == [" + substrIndex + "] " + substr[substrIndex]);
+//            System.out.println(
+//                "[" + i + "] " + buffer.getByte(i) + " == [" + substrIndex + "] " + substr[substrIndex]);
             if (buffer.getByte(i) != substr[substrIndex])
             {
                 substrIndex = 0;

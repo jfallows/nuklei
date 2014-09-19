@@ -19,6 +19,8 @@ package org.kaazing.nuklei.kompound;
 import org.kaazing.nuklei.MessagingNukleus;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import org.kaazing.nuklei.concurrent.ringbuffer.RingBufferReader;
+import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferReader;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferWriter;
 
 import java.util.Map;
@@ -26,7 +28,7 @@ import java.util.Map;
 /**
  * Wrapper around a Mikro that is used for holding queues and buffers, etc.
  */
-public class MikroService
+public class MikroService implements MpscRingBufferReader.ReadHandler
 {
     private final static int MPSC_DEFAULT_READ_LIMIT = 100;
 
@@ -54,7 +56,7 @@ public class MikroService
         ringBufferWriter = new MpscRingBufferWriter(receiveBuffer);
 
         final MessagingNukleus.Builder builder = new MessagingNukleus.Builder()
-            .mpscRingBuffer(receiveBuffer, mikro::onAvailable, MPSC_DEFAULT_READ_LIMIT);
+            .mpscRingBuffer(receiveBuffer, this::onMessage, MPSC_DEFAULT_READ_LIMIT);
 
         nukleus = builder.build();
     }
@@ -97,5 +99,10 @@ public class MikroService
     public LocalEndpointConfiguration localEndpointConfiguration()
     {
         return localEndpointConfiguration;
+    }
+
+    public void onMessage(final int typeId, final AtomicBuffer buffer, final int offset, final int length)
+    {
+        mikro.onAvailable(typeId, buffer, offset, length);
     }
 }
