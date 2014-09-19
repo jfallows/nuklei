@@ -75,20 +75,10 @@ public class ConnectionStateMachine {
             }
             else {
                 transition(connection, ConnectionTransition.SENT_HEADER_NOT_EQUAL_RECEIVED);
-                connectionHooks.whenHeaderSent.accept(connection, header);
+                connectionHooks.whenHeaderSentNotEqualReceived.accept(connection, header);
             }
             break;
         }
-    }
-    
-    public void receivedNotEqualSent(Connection connection, Header header) {
-        transition(connection, ConnectionTransition.RECEIVED_HEADER_NOT_EQUAL_SENT);
-        connectionHooks.whenHeaderReceivedNotEqualSent.accept(connection, header);
-    }
-    
-    public void sentNotEqualReceived(Connection connection, Header header) {
-        transition(connection, ConnectionTransition.SENT_HEADER_NOT_EQUAL_RECEIVED);
-        connectionHooks.whenHeaderSentNotEqualReceived.accept(connection, header);
     }
     
     public void received(Connection connection, Frame frame, Open open) {

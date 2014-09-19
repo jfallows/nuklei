@@ -15,15 +15,15 @@
  */
 package org.kaazing.nuklei.amqp_1_0.connection;
 
-import org.kaazing.nuklei.amqp_1_0.sender.SenderFactory;
+import org.kaazing.nuklei.amqp_1_0.sender.TcpSenderFactory;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 public final class ConnectionFactory {
     
-    private final SenderFactory senderFactory;
+    private final TcpSenderFactory senderFactory;
     private final ConnectionStateMachine stateMachine;
 
-    public ConnectionFactory(ConnectionHooks connectionHooks, SenderFactory senderFactory) {
+    public ConnectionFactory(ConnectionHooks connectionHooks, TcpSenderFactory senderFactory) {
         this.senderFactory = senderFactory;
         this.stateMachine = new ConnectionStateMachine(connectionHooks);
     }

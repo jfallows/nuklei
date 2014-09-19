@@ -46,23 +46,17 @@ public final class Connection {
     }
 
     public void send(Header header) {
-        assert header.buffer() == sender.sendBuffer;
-        assert header.offset() == sender.sendBufferOffset;
         sender.send(header.limit());
         stateMachine.sent(this, header);
     }
 
     public void send(Frame frame, Open open) {
-        assert frame.buffer() == sender.sendBuffer;
-        assert frame.offset() == sender.sendBufferOffset;
         assert open.limit() == frame.limit();
         sender.send(frame.limit());
         stateMachine.sent(this, frame, open);
     }
 
     public void send(Frame frame, Close close) {
-        assert frame.buffer() == sender.sendBuffer;
-        assert frame.offset() == sender.sendBufferOffset;
         assert close.limit() == frame.limit();
         sender.send(frame.limit());
         stateMachine.sent(this, frame, close);

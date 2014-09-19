@@ -15,14 +15,20 @@
  */
 package org.kaazing.nuklei.amqp_1_0.sender;
 
-import org.kaazing.nuklei.Flyweight;
+import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import org.kaazing.nuklei.net.TcpManagerProxy;
 
-public interface Sender {
+public final class TcpSenderFactory {
     
-    public <T extends Flyweight> T wrap(T flyweight);
+    private final TcpManagerProxy transport;
+    private final AtomicBuffer sendBuffer;
 
-    public void send(int limit);
+    public TcpSenderFactory(TcpManagerProxy transport, AtomicBuffer sendBuffer) {
+        this.transport = transport;
+        this.sendBuffer = sendBuffer;
+    }
 
-    public void close(boolean immediately);
-
+    public TcpSender newSender(long id) {
+        return new TcpSender(transport, sendBuffer, id);
+    }
 }
