@@ -69,7 +69,6 @@ public final class ConnectionHandler {
     }
     
     public void destroy(Connection connection) {
-        connection.stateMachine.end(connection);
     }
 
     private void handleSessionBegin(final Connection connection, final Frame frame) {

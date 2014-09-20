@@ -167,11 +167,6 @@ public class ConnectionStateMachine {
         }
     }
 
-    public void end(Connection connection) {
-        // TODO: confirm if this is the correct transition from transport close
-        connection.state = ConnectionState.END;
-    }
-
     private static void transition(Connection connection, ConnectionTransition transition) {
         connection.state = STATE_MACHINE[connection.state.ordinal()][transition.ordinal()];
     }
