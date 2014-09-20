@@ -46,7 +46,9 @@ public class ConnectionStateMachine {
             transition(connection, ConnectionTransition.RECEIVED_HEADER);
             connectionHooks.whenHeaderReceived.accept(connection, header);
             break;
-        default:
+        case HEADER_SENT:
+        case OPEN_PIPE:
+        case OPEN_CLOSE_PIPE:
             if (connection.headerReceived == connection.headerSent) {
                 transition(connection, ConnectionTransition.RECEIVED_HEADER);
                 connectionHooks.whenHeaderReceived.accept(connection, header);
@@ -55,6 +57,10 @@ public class ConnectionStateMachine {
                 transition(connection, ConnectionTransition.RECEIVED_HEADER_NOT_EQUAL_SENT);
                 connectionHooks.whenHeaderReceivedNotEqualSent.accept(connection, header);
             }
+            break;
+        default:
+            transition(connection, ConnectionTransition.RECEIVED_HEADER);
+            connectionHooks.whenError.accept(connection);
             break;
         }
 
@@ -68,7 +74,7 @@ public class ConnectionStateMachine {
             transition(connection, ConnectionTransition.SENT_HEADER);
             connectionHooks.whenHeaderSent.accept(connection, header);
             break;
-        default:
+        case HEADER_RECEIVED:
             if (connection.headerReceived == connection.headerSent) {
                 transition(connection, ConnectionTransition.SENT_HEADER);
                 connectionHooks.whenHeaderSent.accept(connection, header);
@@ -78,32 +84,87 @@ public class ConnectionStateMachine {
                 connectionHooks.whenHeaderSentNotEqualReceived.accept(connection, header);
             }
             break;
+        default:
+            transition(connection, ConnectionTransition.SENT_HEADER);
+            connectionHooks.whenError.accept(connection);
+            break;
         }
     }
     
     public void received(Connection connection, Frame frame, Open open) {
-        transition(connection, ConnectionTransition.RECEIVED_OPEN);
-        connectionHooks.whenOpenReceived.accept(connection, frame, open);
+        switch (connection.state) {
+        case DISCARDING:
+            transition(connection, ConnectionTransition.RECEIVED_OPEN);
+            break;
+        case HEADER_EXCHANGED:
+        case OPEN_SENT:
+        case CLOSE_PIPE:
+            transition(connection, ConnectionTransition.RECEIVED_OPEN);
+            connectionHooks.whenOpenReceived.accept(connection, frame, open);
+            break;
+        default:
+            transition(connection, ConnectionTransition.RECEIVED_OPEN);
+            connectionHooks.whenError.accept(connection);
+            break;
+        }
     }
     
     public void sent(Connection connection, Frame frame, Open open) {
-        transition(connection, ConnectionTransition.SENT_OPEN);
-        connectionHooks.whenOpenSent.accept(connection, frame, open);
+        switch (connection.state) {
+        case HEADER_SENT:
+        case HEADER_EXCHANGED:
+        case OPEN_RECEIVED:
+            transition(connection, ConnectionTransition.SENT_OPEN);
+            connectionHooks.whenOpenSent.accept(connection, frame, open);
+            break;
+        default:
+            transition(connection, ConnectionTransition.SENT_OPEN);
+            connectionHooks.whenError.accept(connection);
+            break;
+        }
     }
     
     public void received(Connection connection, Frame frame, Close close) {
-        transition(connection, ConnectionTransition.RECEIVED_CLOSE);
-        connectionHooks.whenCloseReceived.accept(connection, frame, close);
+        switch (connection.state) {
+        case DISCARDING:
+        case OPENED:
+        case CLOSE_SENT:
+            transition(connection, ConnectionTransition.RECEIVED_CLOSE);
+            connectionHooks.whenCloseReceived.accept(connection, frame, close);
+            break;
+        default:
+            transition(connection, ConnectionTransition.RECEIVED_CLOSE);
+            connectionHooks.whenError.accept(connection);
+            break;
+        }
     }
     
     public void sent(Connection connection, Frame frame, Close close) {
-        transition(connection, ConnectionTransition.SENT_CLOSE);
-        connectionHooks.whenCloseSent.accept(connection, frame, close);
+        switch (connection.state) {
+        case OPEN_SENT:
+        case OPEN_PIPE:
+        case OPENED:
+        case CLOSE_RECEIVED:
+            transition(connection, ConnectionTransition.SENT_CLOSE);
+            connectionHooks.whenCloseSent.accept(connection, frame, close);
+            break;
+        default:
+            transition(connection, ConnectionTransition.SENT_CLOSE);
+            connectionHooks.whenError.accept(connection);
+            break;
+        }
     }
     
     public void error(Connection connection) {
-        transition(connection, ConnectionTransition.ERROR);
-        connectionHooks.whenError.accept(connection);
+        switch (connection.state) {
+        case DISCARDING:
+            transition(connection, ConnectionTransition.ERROR);
+            break;
+        default:
+            transition(connection, ConnectionTransition.ERROR);
+            connectionHooks.whenError.accept(connection);
+            break;
+        }
     }
 
     public void end(Connection connection) {
@@ -123,15 +184,15 @@ public class ConnectionStateMachine {
 
         ConnectionState[][] stateMachine = new ConnectionState[stateCount][transitionCount];
         for (ConnectionState state : allOf(ConnectionState.class)) {
+            // default transition to "end" state
             for (ConnectionTransition transition : allOf(ConnectionTransition.class)) {
-                // default transition to "end" state
                 stateMachine[state.ordinal()][transition.ordinal()] = ConnectionState.END;
             }
 
             // default "error" transition to "discarding" state
             stateMachine[state.ordinal()][ConnectionTransition.ERROR.ordinal()] = ConnectionState.DISCARDING;
         }
-        
+
         stateMachine[ConnectionState.START.ordinal()][ConnectionTransition.RECEIVED_HEADER.ordinal()] = ConnectionState.HEADER_RECEIVED;
         stateMachine[ConnectionState.START.ordinal()][ConnectionTransition.SENT_HEADER.ordinal()] = ConnectionState.HEADER_SENT;
         stateMachine[ConnectionState.HEADER_RECEIVED.ordinal()][ConnectionTransition.SENT_HEADER.ordinal()] = ConnectionState.HEADER_EXCHANGED;
@@ -144,11 +205,13 @@ public class ConnectionStateMachine {
         stateMachine[ConnectionState.OPEN_CLOSE_PIPE.ordinal()][ConnectionTransition.RECEIVED_HEADER.ordinal()] = ConnectionState.CLOSE_PIPE;
         stateMachine[ConnectionState.OPEN_RECEIVED.ordinal()][ConnectionTransition.SENT_OPEN.ordinal()] = ConnectionState.OPENED;
         stateMachine[ConnectionState.OPEN_SENT.ordinal()][ConnectionTransition.RECEIVED_OPEN.ordinal()] = ConnectionState.OPENED;
+        stateMachine[ConnectionState.OPEN_SENT.ordinal()][ConnectionTransition.SENT_CLOSE.ordinal()] = ConnectionState.CLOSE_PIPE;
         stateMachine[ConnectionState.CLOSE_PIPE.ordinal()][ConnectionTransition.RECEIVED_OPEN.ordinal()] = ConnectionState.CLOSE_SENT;
         stateMachine[ConnectionState.OPENED.ordinal()][ConnectionTransition.RECEIVED_CLOSE.ordinal()] = ConnectionState.CLOSE_RECEIVED;
         stateMachine[ConnectionState.OPENED.ordinal()][ConnectionTransition.SENT_CLOSE.ordinal()] = ConnectionState.CLOSE_SENT;
         stateMachine[ConnectionState.CLOSE_RECEIVED.ordinal()][ConnectionTransition.SENT_CLOSE.ordinal()] = ConnectionState.END;
         stateMachine[ConnectionState.CLOSE_SENT.ordinal()][ConnectionTransition.RECEIVED_CLOSE.ordinal()] = ConnectionState.END;
+        stateMachine[ConnectionState.DISCARDING.ordinal()][ConnectionTransition.RECEIVED_OPEN.ordinal()] = ConnectionState.DISCARDING;
         stateMachine[ConnectionState.DISCARDING.ordinal()][ConnectionTransition.RECEIVED_CLOSE.ordinal()] = ConnectionState.END;
         
         STATE_MACHINE = stateMachine;
