@@ -68,6 +68,10 @@ public final class End extends CompositeType {
         return error();
     }
     
+    public boolean hasError() {
+        return error.offset() < limit();
+    }
+    
     private Error error() {
         return error.wrap(buffer(), offsetBody());
     }

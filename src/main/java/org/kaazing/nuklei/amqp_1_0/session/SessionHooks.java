@@ -36,5 +36,6 @@ public class SessionHooks {
     public FrameConsumer<Session, Disposition> whenDispositionSent = (s, f, m) -> {};
     public FrameConsumer<Session, End> whenEndReceived = (s, f, m) -> {};
     public FrameConsumer<Session, End> whenEndSent = (s, f, m) -> {};
+    public FrameConsumer<Session, End> whenEndSentWithError = (s, f, m) -> {};
     
 }

@@ -41,48 +41,133 @@ public final class SessionStateMachine {
     }
     
     public void received(Session session, Frame frame, Begin begin) {
-        transition(session, SessionTransition.RECEIVED_BEGIN);
-        sessionHooks.whenBeginReceived.accept(session, frame, begin);
+        switch (session.state) {
+        case DISCARDING:
+            transition(session, SessionTransition.RECEIVED_BEGIN);
+            break;
+        case UNMAPPED:
+        case BEGIN_SENT:
+            transition(session, SessionTransition.RECEIVED_BEGIN);
+            sessionHooks.whenBeginReceived.accept(session, frame, begin);
+            break;
+        default:
+            transition(session, SessionTransition.RECEIVED_BEGIN);
+            sessionHooks.whenError.accept(session);
+            break;
+        }
     }
     
     public void sent(Session session, Frame frame, Begin begin) {
-        transition(session, SessionTransition.SENT_BEGIN);
-        sessionHooks.whenBeginSent.accept(session, frame, begin);
+        switch (session.state) {
+        case UNMAPPED:
+        case BEGIN_RECEIVED:
+            transition(session, SessionTransition.SENT_BEGIN);
+            sessionHooks.whenBeginSent.accept(session, frame, begin);
+            break;
+        default:
+            transition(session, SessionTransition.SENT_BEGIN);
+            sessionHooks.whenError.accept(session);
+            break;
+        }
     }
     
     public void received(Session session, Frame frame, Flow flow) {
-        transition(session, SessionTransition.RECEIVED_FLOW);
-        sessionHooks.whenFlowReceived.accept(session, frame, flow);
+        switch (session.state) {
+        case DISCARDING:
+            transition(session, SessionTransition.RECEIVED_FLOW);
+            break;
+        case MAPPED:
+            transition(session, SessionTransition.RECEIVED_FLOW);
+            sessionHooks.whenFlowReceived.accept(session, frame, flow);
+            break;
+        default:
+            transition(session, SessionTransition.RECEIVED_FLOW);
+            sessionHooks.whenError.accept(session);
+            break;
+        }
     }
     
     public void sent(Session session, Frame frame, Flow flow) {
-        transition(session, SessionTransition.SENT_FLOW);
-        sessionHooks.whenFlowSent.accept(session, frame, flow);
+        switch (session.state) {
+        case MAPPED:
+            transition(session, SessionTransition.SENT_FLOW);
+            sessionHooks.whenFlowSent.accept(session, frame, flow);
+            break;
+        default:
+            transition(session, SessionTransition.SENT_FLOW);
+            sessionHooks.whenError.accept(session);
+            break;
+        }
     }
     
     public void received(Session session, Frame frame, Disposition disposition) {
-        transition(session, SessionTransition.RECEIVED_DISPOSITION);
-        sessionHooks.whenDispositionReceived.accept(session, frame, disposition);
+        switch (session.state) {
+        case DISCARDING:
+            transition(session, SessionTransition.RECEIVED_DISPOSITION);
+            break;
+        case MAPPED:
+            transition(session, SessionTransition.RECEIVED_DISPOSITION);
+            sessionHooks.whenDispositionReceived.accept(session, frame, disposition);
+            break;
+        default:
+            transition(session, SessionTransition.RECEIVED_DISPOSITION);
+            sessionHooks.whenError.accept(session);
+            break;
+        }
     }
     
     public void sent(Session session, Frame frame, Disposition disposition) {
-        transition(session, SessionTransition.SENT_DISPOSITION);
-        sessionHooks.whenDispositionSent.accept(session, frame, disposition);
+        switch (session.state) {
+        case MAPPED:
+            transition(session, SessionTransition.SENT_DISPOSITION);
+            sessionHooks.whenDispositionSent.accept(session, frame, disposition);
+            break;
+        default:
+            transition(session, SessionTransition.SENT_DISPOSITION);
+            sessionHooks.whenError.accept(session);
+            break;
+        }
     }
     
     public void received(Session session, Frame frame, End end) {
-        transition(session, SessionTransition.RECEIVED_END);
-        sessionHooks.whenEndReceived.accept(session, frame, end);
+        switch (session.state) {
+        case MAPPED:
+        case END_SENT:
+        case DISCARDING:
+            transition(session, SessionTransition.RECEIVED_END);
+            sessionHooks.whenEndReceived.accept(session, frame, end);
+            break;
+        default:
+            transition(session, SessionTransition.RECEIVED_END);
+            sessionHooks.whenError.accept(session);
+            break;
+        }
     }
     
     public void sent(Session session, Frame frame, End end) {
-        transition(session, SessionTransition.SENT_END);
-        sessionHooks.whenEndSent.accept(session, frame, end);
+        switch (session.state) {
+        case MAPPED:
+        case END_RECEIVED:
+            transition(session, SessionTransition.SENT_END);
+            sessionHooks.whenEndSent.accept(session, frame, end);
+            break;
+        default:
+            transition(session, SessionTransition.SENT_END);
+            sessionHooks.whenError.accept(session);
+            break;
+        }
     }
     
     public void error(Session session) {
-        transition(session, SessionTransition.ERROR);
-        sessionHooks.whenError.accept(session);
+        switch (session.state) {
+        case DISCARDING:
+            transition(session, SessionTransition.ERROR);
+            break;
+        default:
+            transition(session, SessionTransition.ERROR);
+            sessionHooks.whenError.accept(session);
+            break;
+        }
     }
 
     private static void transition(Session session, SessionTransition transition) {
@@ -98,7 +183,7 @@ public final class SessionStateMachine {
         SessionState[][] stateMachine = new SessionState[stateCount][transitionCount];
         for (SessionState state : allOf(SessionState.class)) {
             for (SessionTransition transition : allOf(SessionTransition.class)) {
-                // default transition to "end" state
+                // default transition to "unmapped" state
                 stateMachine[state.ordinal()][transition.ordinal()] = SessionState.UNMAPPED;
             }
 
@@ -118,6 +203,14 @@ public final class SessionStateMachine {
         stateMachine[SessionState.MAPPED.ordinal()][SessionTransition.SENT_DISPOSITION.ordinal()] = SessionState.MAPPED;
         stateMachine[SessionState.END_RECEIVED.ordinal()][SessionTransition.SENT_END.ordinal()] = SessionState.UNMAPPED;
         stateMachine[SessionState.END_SENT.ordinal()][SessionTransition.RECEIVED_END.ordinal()] = SessionState.UNMAPPED;
+        stateMachine[SessionState.DISCARDING.ordinal()][SessionTransition.RECEIVED_BEGIN.ordinal()] = SessionState.DISCARDING;
+        stateMachine[SessionState.DISCARDING.ordinal()][SessionTransition.SENT_BEGIN.ordinal()] = SessionState.UNMAPPED;
+        stateMachine[SessionState.DISCARDING.ordinal()][SessionTransition.RECEIVED_END.ordinal()] = SessionState.UNMAPPED;
+        stateMachine[SessionState.DISCARDING.ordinal()][SessionTransition.SENT_END.ordinal()] = SessionState.UNMAPPED;
+        stateMachine[SessionState.DISCARDING.ordinal()][SessionTransition.RECEIVED_FLOW.ordinal()] = SessionState.DISCARDING;
+        stateMachine[SessionState.DISCARDING.ordinal()][SessionTransition.SENT_FLOW.ordinal()] = SessionState.UNMAPPED;
+        stateMachine[SessionState.DISCARDING.ordinal()][SessionTransition.RECEIVED_DISPOSITION.ordinal()] = SessionState.DISCARDING;
+        stateMachine[SessionState.DISCARDING.ordinal()][SessionTransition.SENT_DISPOSITION.ordinal()] = SessionState.UNMAPPED;
         
         STATE_MACHINE = stateMachine;
     }
