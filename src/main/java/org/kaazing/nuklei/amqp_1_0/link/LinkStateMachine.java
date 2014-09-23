@@ -25,55 +25,55 @@ import org.kaazing.nuklei.amqp_1_0.codec.transport.Transfer;
 /*
  * See AMQP 1.0 specification, section 2.6 "Links"
  */
-public final class LinkStateMachine {
+public final class LinkStateMachine<L> {
 
-    private final LinkHooks linkHooks;
+    private final LinkHooks<L> linkHooks;
     
-    public LinkStateMachine(LinkHooks linkHooks) {
+    public LinkStateMachine(LinkHooks<L> linkHooks) {
         this.linkHooks = linkHooks;
     }
 
-    public void start(Link link) {
+    public void start(Link<L> link) {
         link.state = LinkState.DETACHED;
         linkHooks.whenInitialized.accept(link);
     }
     
-    public void received(Link link, Frame frame, Attach attach) {
+    public void received(Link<L> link, Frame frame, Attach attach) {
         transition(link, LinkTransition.RECEIVED_ATTACH);
         linkHooks.whenAttachReceived.accept(link, frame, attach);
     }
     
-    public void sent(Link link, Frame frame, Attach attach) {
+    public void sent(Link<L> link, Frame frame, Attach attach) {
         transition(link, LinkTransition.SENT_ATTACH);
         linkHooks.whenAttachSent.accept(link, frame, attach);
     }
     
-    public void received(Link link, Frame frame, Transfer transfer) {
+    public void received(Link<L> link, Frame frame, Transfer transfer) {
         transition(link, LinkTransition.RECEIVED_TRANSFER);
         linkHooks.whenTransferReceived.accept(link, frame, transfer);
     }
     
-    public void sent(Link link, Frame frame, Transfer transfer) {
+    public void sent(Link<L> link, Frame frame, Transfer transfer) {
         transition(link, LinkTransition.SENT_TRANSFER);
         linkHooks.whenTransferSent.accept(link, frame, transfer);
     }
     
-    public void received(Link link, Frame frame, Detach detach) {
+    public void received(Link<L> link, Frame frame, Detach detach) {
         transition(link, LinkTransition.RECEIVED_DETACH);
         linkHooks.whenDetachReceived.accept(link, frame, detach);
     }
     
-    public void sent(Link link, Frame frame, Detach detach) {
+    public void sent(Link<L> link, Frame frame, Detach detach) {
         transition(link, LinkTransition.SENT_DETACH);
         linkHooks.whenDetachSent.accept(link, frame, detach);
     }
     
-    public void error(Link link) {
+    public void error(Link<L> link) {
         transition(link, LinkTransition.ERROR);
         linkHooks.whenError.accept(link);
     }
 
-    private static void transition(Link link, LinkTransition transition) {
+    private static void transition(Link<?> link, LinkTransition transition) {
         link.state = STATE_MACHINE[link.state.ordinal()][transition.ordinal()];
     }
    

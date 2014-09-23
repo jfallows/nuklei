@@ -15,17 +15,9 @@
  */
 package org.kaazing.nuklei.amqp_1_0.link;
 
-import org.kaazing.nuklei.amqp_1_0.sender.Sender;
+import org.kaazing.nuklei.amqp_1_0.session.Session;
 
-public final class LinkFactory {
+public interface LinkFactory<S, L> {
 
-    private final LinkStateMachine stateMachine;
-
-    public LinkFactory(LinkHooks linkHooks) {
-        this.stateMachine = new LinkStateMachine(linkHooks);
-    }
-
-    public Link newLink(Sender sender) {
-        return new Link(stateMachine, sender);
-    }
+    Link<L> newLink(Session<S, L> session);
 }

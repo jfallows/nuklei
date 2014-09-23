@@ -36,9 +36,9 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 public class ConnectionStateMachineTest {
 
-    private final ConnectionHooks connectionHooks = new ConnectionHooks();
-    private final ConnectionStateMachine stateMachine = new ConnectionStateMachine(connectionHooks);
-    private final Connection connection = new Connection(stateMachine, mock(Sender.class), new AtomicBuffer(new byte[0]));
+    private final ConnectionHooks<Void, Void, Void> connectionHooks = new ConnectionHooks<>();
+    private final ConnectionStateMachine<Void, Void, Void> stateMachine = new ConnectionStateMachine<>(connectionHooks);
+    private final Connection<Void, Void, Void> connection = new Connection<>(stateMachine, mock(Sender.class), new AtomicBuffer(new byte[0]));
     private final Header header = Header.LOCAL_REF.get().wrap(new AtomicBuffer(new byte[Header.SIZEOF_HEADER]), 0);
     private final Frame frame = Frame.LOCAL_REF.get().wrap(new AtomicBuffer(new byte[64]), 0);
     private final Open open = Open.LOCAL_REF.get();

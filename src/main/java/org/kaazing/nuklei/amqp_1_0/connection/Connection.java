@@ -26,19 +26,20 @@ import org.kaazing.nuklei.amqp_1_0.sender.Sender;
 import org.kaazing.nuklei.amqp_1_0.session.Session;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
-public final class Connection {
+public class Connection<C, S, L> {
     
     public final Sender sender;
     public final AtomicBuffer reassemblyBuffer;
-    public final ConnectionStateMachine stateMachine;
-    public final Map<Integer, Session> sessions;
+    public final ConnectionStateMachine<C, S, L> stateMachine;
+    public final Map<Integer, Session<S, L>> sessions;
     
     public long headerSent;
     public long headerReceived;
 
+    public C parameter;
     public ConnectionState state;
 
-    Connection(ConnectionStateMachine stateMachine, Sender sender, AtomicBuffer reassemblyBuffer) {
+    public Connection(ConnectionStateMachine<C, S, L> stateMachine, Sender sender, AtomicBuffer reassemblyBuffer) {
         this.stateMachine = stateMachine;
         this.sender = sender;
         this.reassemblyBuffer = reassemblyBuffer;

@@ -27,20 +27,20 @@ import org.kaazing.nuklei.amqp_1_0.codec.transport.Frame;
 /*
  * See AMQP 1.0 specification, section 2.5.5 "Session States"
  */
-public final class SessionStateMachine {
+public final class SessionStateMachine<S, L> {
 
-    private final SessionHooks sessionHooks;
+    private final SessionHooks<S, L> sessionHooks;
     
-    public SessionStateMachine(SessionHooks sessionHooks) {
+    public SessionStateMachine(SessionHooks<S, L> sessionHooks) {
         this.sessionHooks = sessionHooks;
     }
 
-    public void start(Session session) {
+    public void start(Session<S, L> session) {
         session.state = SessionState.UNMAPPED;
         sessionHooks.whenInitialized.accept(session);
     }
     
-    public void received(Session session, Frame frame, Begin begin) {
+    public void received(Session<S, L> session, Frame frame, Begin begin) {
         switch (session.state) {
         case DISCARDING:
             transition(session, SessionTransition.RECEIVED_BEGIN);
@@ -57,7 +57,7 @@ public final class SessionStateMachine {
         }
     }
     
-    public void sent(Session session, Frame frame, Begin begin) {
+    public void sent(Session<S, L> session, Frame frame, Begin begin) {
         switch (session.state) {
         case UNMAPPED:
         case BEGIN_RECEIVED:
@@ -71,7 +71,7 @@ public final class SessionStateMachine {
         }
     }
     
-    public void received(Session session, Frame frame, Flow flow) {
+    public void received(Session<S, L> session, Frame frame, Flow flow) {
         switch (session.state) {
         case DISCARDING:
             transition(session, SessionTransition.RECEIVED_FLOW);
@@ -87,7 +87,7 @@ public final class SessionStateMachine {
         }
     }
     
-    public void sent(Session session, Frame frame, Flow flow) {
+    public void sent(Session<S, L> session, Frame frame, Flow flow) {
         switch (session.state) {
         case MAPPED:
             transition(session, SessionTransition.SENT_FLOW);
@@ -100,7 +100,7 @@ public final class SessionStateMachine {
         }
     }
     
-    public void received(Session session, Frame frame, Disposition disposition) {
+    public void received(Session<S, L> session, Frame frame, Disposition disposition) {
         switch (session.state) {
         case DISCARDING:
             transition(session, SessionTransition.RECEIVED_DISPOSITION);
@@ -116,7 +116,7 @@ public final class SessionStateMachine {
         }
     }
     
-    public void sent(Session session, Frame frame, Disposition disposition) {
+    public void sent(Session<S, L> session, Frame frame, Disposition disposition) {
         switch (session.state) {
         case MAPPED:
             transition(session, SessionTransition.SENT_DISPOSITION);
@@ -129,7 +129,7 @@ public final class SessionStateMachine {
         }
     }
     
-    public void received(Session session, Frame frame, End end) {
+    public void received(Session<S, L> session, Frame frame, End end) {
         switch (session.state) {
         case MAPPED:
         case END_SENT:
@@ -144,7 +144,7 @@ public final class SessionStateMachine {
         }
     }
     
-    public void sent(Session session, Frame frame, End end) {
+    public void sent(Session<S, L> session, Frame frame, End end) {
         switch (session.state) {
         case MAPPED:
         case END_RECEIVED:
@@ -158,7 +158,7 @@ public final class SessionStateMachine {
         }
     }
     
-    public void error(Session session) {
+    public void error(Session<S, L> session) {
         switch (session.state) {
         case DISCARDING:
             transition(session, SessionTransition.ERROR);
@@ -170,7 +170,7 @@ public final class SessionStateMachine {
         }
     }
 
-    private static void transition(Session session, SessionTransition transition) {
+    private static void transition(Session<?, ?> session, SessionTransition transition) {
         session.state = STATE_MACHINE[session.state.ordinal()][transition.ordinal()];
     }
    

@@ -35,22 +35,22 @@ import org.kaazing.nuklei.function.AlignedReadHandler;
 import org.kaazing.nuklei.function.AlignedReadHandler.DataOffsetSupplier;
 import org.kaazing.nuklei.function.StatefulReadHandler;
 
-public final class ConnectionReadHandler implements ReadHandler {
+public final class ConnectionReadHandler<C, S, L> implements ReadHandler {
 
-    private final ConnectionFactory connectionFactory;
-    private final Map<Long, Connection> statesByConnectionID;
-    private final ConnectionHandler connectionHandler;
+    private final ConnectionFactory<C, S, L> connectionFactory;
+    private final Map<Long, Connection<C, S, L>> statesByConnectionID;
+    private final ConnectionHandler<C, S, L> connectionHandler;
     private final ReadHandler readHandler;
 
     
-    public ConnectionReadHandler(ConnectionFactory connectionFactory, DataOffsetSupplier dataOffset, ConnectionHandler connectionHandler) {
+    public ConnectionReadHandler(ConnectionFactory<C, S, L> connectionFactory, DataOffsetSupplier dataOffset, ConnectionHandler<C, S, L> connectionHandler) {
         
         this.connectionFactory = connectionFactory;
         this.connectionHandler = connectionHandler;
 
-        AlignedReadHandler<Connection> alignedHandler = this::readAligned;
+        AlignedReadHandler<Connection<C, S, L>> alignedHandler = this::readAligned;
 
-        StatefulReadHandler<Connection> statefulHandler = 
+        StatefulReadHandler<Connection<C, S, L>> statefulHandler = 
                 alignedHandler.alignedBy(dataOffset, (connection) -> (connection != null) ? connection.reassemblyBuffer : null, ConnectionReadHandler::alignLength);
 
         this.statesByConnectionID = new HashMap<>();
@@ -62,7 +62,7 @@ public final class ConnectionReadHandler implements ReadHandler {
         readHandler.onMessage(typeId, buffer, offset, length);
     }
 
-    private static int alignLength(Connection connection, int typeId, AtomicBuffer buffer, int offset, int length)  {
+    private static <C, S, L> int alignLength(Connection<C, S, L> connection, int typeId, AtomicBuffer buffer, int offset, int length)  {
         switch (typeId) {
         case RECEIVED_DATA:
             switch (connection.state) {
@@ -80,7 +80,7 @@ public final class ConnectionReadHandler implements ReadHandler {
         }
     }
     
-    private void readAligned(Connection connection, int typeId, AtomicBuffer buffer, int offset, int length)  {
+    private void readAligned(Connection<C, S, L> connection, int typeId, AtomicBuffer buffer, int offset, int length)  {
         if (connection == null) {
             return;
         }
@@ -117,12 +117,12 @@ public final class ConnectionReadHandler implements ReadHandler {
         }
     }
     
-    private Connection connectionLifecycle(int typeId, AtomicBuffer buffer, int offset, int length)  {
+    private Connection<C, S, L> connectionLifecycle(int typeId, AtomicBuffer buffer, int offset, int length)  {
         switch (typeId) {
         case NEW_CONNECTION:
             long newConnectionID = buffer.getLong(offset);
             AtomicBuffer reassemblyBuffer = new AtomicBuffer(ByteBuffer.allocate(8192));
-            Connection newConnection = connectionFactory.newConnection(newConnectionID, reassemblyBuffer);
+            Connection<C, S, L> newConnection = connectionFactory.newConnection(newConnectionID, reassemblyBuffer);
             statesByConnectionID.put(newConnectionID, newConnection);
             return newConnection;
         case RECEIVED_DATA:

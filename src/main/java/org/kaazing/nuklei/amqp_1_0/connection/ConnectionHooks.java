@@ -22,19 +22,19 @@ import org.kaazing.nuklei.amqp_1_0.codec.transport.Open;
 import org.kaazing.nuklei.amqp_1_0.function.FrameConsumer;
 import org.kaazing.nuklei.amqp_1_0.function.HeaderConsumer;
 
-public class ConnectionHooks {
+public class ConnectionHooks<C, S, L> {
 
-    public Consumer<Connection> whenInitialized = (c) -> {};
-    public Consumer<Connection> whenError = (c) -> {};
+    public Consumer<Connection<C, S, L>> whenInitialized = (c) -> {};
+    public Consumer<Connection<C, S, L>> whenError = (c) -> {};
 
-    public HeaderConsumer<Connection> whenHeaderReceived = (c, h) -> {};
-    public HeaderConsumer<Connection> whenHeaderSent = (c, h) -> {};
-    public HeaderConsumer<Connection> whenHeaderReceivedNotEqualSent = (c, h) -> {};
-    public HeaderConsumer<Connection> whenHeaderSentNotEqualReceived = (c, h) -> {};
+    public HeaderConsumer<Connection<C, S, L>> whenHeaderReceived = (c, h) -> {};
+    public HeaderConsumer<Connection<C, S, L>> whenHeaderSent = (c, h) -> {};
+    public HeaderConsumer<Connection<C, S, L>> whenHeaderReceivedNotEqualSent = (c, h) -> {};
+    public HeaderConsumer<Connection<C, S, L>> whenHeaderSentNotEqualReceived = (c, h) -> {};
 
-    public FrameConsumer<Connection, Open> whenOpenReceived = (p, f, o) -> {};
-    public FrameConsumer<Connection, Open> whenOpenSent = (p, f, o) -> {};
-    public FrameConsumer<Connection, Close> whenCloseReceived = (p, f, c) -> {};
-    public FrameConsumer<Connection, Close> whenCloseSent = (p, f, c) -> {};
+    public FrameConsumer<Connection<C, S, L>, Open> whenOpenReceived = (p, f, o) -> {};
+    public FrameConsumer<Connection<C, S, L>, Open> whenOpenSent = (p, f, o) -> {};
+    public FrameConsumer<Connection<C, S, L>, Close> whenCloseReceived = (p, f, c) -> {};
+    public FrameConsumer<Connection<C, S, L>, Close> whenCloseSent = (p, f, c) -> {};
     
 }

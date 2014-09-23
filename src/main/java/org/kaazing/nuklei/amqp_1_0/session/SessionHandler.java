@@ -27,21 +27,21 @@ import org.kaazing.nuklei.amqp_1_0.link.Link;
 import org.kaazing.nuklei.amqp_1_0.link.LinkFactory;
 import org.kaazing.nuklei.amqp_1_0.link.LinkHandler;
 
-public final class SessionHandler {
+public final class SessionHandler<S, L> {
 
-    private final LinkFactory linkFactory;
-    private final LinkHandler linkHandler;
+    private final LinkFactory<S, L> linkFactory;
+    private final LinkHandler<L> linkHandler;
 
-    public SessionHandler(LinkFactory linkFactory, LinkHandler linkHandler) {
+    public SessionHandler(LinkFactory<S, L> linkFactory, LinkHandler<L> linkHandler) {
         this.linkFactory = linkFactory;
         this.linkHandler = linkHandler;
     }
 
-    public void init(Session session) {
+    public void init(Session<S, L> session) {
         session.stateMachine.start(session);
     }
     
-    public void handle(Session session, Frame frame) {
+    public void handle(Session<S, L> session, Frame frame) {
         switch (frame.getPerformative()) {
         case BEGIN:
             Begin begin = Begin.LOCAL_REF.get().wrap(frame.buffer(), frame.bodyOffset());
@@ -74,22 +74,22 @@ public final class SessionHandler {
         }
     }
 
-    private void handleLinkAttach(Session session, Frame frame) {
+    private void handleLinkAttach(Session<S, L> session, Frame frame) {
         Attach attach = Attach.LOCAL_REF.get().wrap(frame.buffer(), frame.bodyOffset());
         int newHandle = (int) attach.getHandle();
-        Link newLink = session.links.get(newHandle);
+        Link<L> newLink = session.links.get(newHandle);
         if (newLink == null) {
-            newLink = linkFactory.newLink(session.sender);
+            newLink = linkFactory.newLink(session);
             session.links.put(newHandle, newLink);
             linkHandler.init(newLink);
         }
         linkHandler.handle(newLink, frame);
     }
 
-    private void handleLinkTransfer(Session session, Frame frame) {
+    private void handleLinkTransfer(Session<S, L> session, Frame frame) {
         Transfer transfer = Transfer.LOCAL_REF.get().wrap(frame.buffer(), frame.bodyOffset());
         int handle = (int) transfer.getHandle();
-        Link link = session.links.get(handle);
+        Link<L> link = session.links.get(handle);
         if (link == null) {
             session.stateMachine.error(session);
         }
@@ -98,10 +98,10 @@ public final class SessionHandler {
         }
     }
 
-    private void handleLinkDetach(Session session, Frame frame) {
+    private void handleLinkDetach(Session<S, L> session, Frame frame) {
         Detach detach = Detach.LOCAL_REF.get().wrap(frame.buffer(), frame.bodyOffset());
         int oldHandle = (int) detach.getHandle();
-        Link oldLink = session.links.remove(oldHandle);
+        Link<L> oldLink = session.links.remove(oldHandle);
         if (oldLink == null) {
             session.stateMachine.error(session);
         }

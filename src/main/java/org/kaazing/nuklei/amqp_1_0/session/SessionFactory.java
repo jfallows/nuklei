@@ -15,17 +15,10 @@
  */
 package org.kaazing.nuklei.amqp_1_0.session;
 
-import org.kaazing.nuklei.amqp_1_0.sender.Sender;
+import org.kaazing.nuklei.amqp_1_0.connection.Connection;
 
-public final class SessionFactory {
+public interface SessionFactory<C, S, L> {
 
-    private final SessionStateMachine stateMachine;
+    Session<S, L> newSession(Connection<C, S, L> connection);
 
-    public SessionFactory(SessionHooks sessionHooks) {
-        this.stateMachine = new SessionStateMachine(sessionHooks);
-    }
-
-    public Session newSession(Sender sender) {
-        return new Session(stateMachine, sender);
-    }
 }

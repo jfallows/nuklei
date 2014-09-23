@@ -23,13 +23,13 @@ import org.kaazing.nuklei.amqp_1_0.codec.transport.Transfer;
 /*
  * See AMQP 1.0 specification, section 2.6 "Links"
  */
-public final class LinkHandler {
+public final class LinkHandler<L> {
     
-    public void init(Link session) {
+    public void init(Link<L> session) {
         session.stateMachine.start(session);
     }
     
-    public void handle(Link link, Frame frame) {
+    public void handle(Link<L> link, Frame frame) {
         switch (frame.getPerformative()) {
         case ATTACH:
             Attach attach = Attach.LOCAL_REF.get().wrap(frame.buffer(), frame.bodyOffset());

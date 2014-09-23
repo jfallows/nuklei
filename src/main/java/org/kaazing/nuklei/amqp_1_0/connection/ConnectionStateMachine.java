@@ -25,20 +25,20 @@ import org.kaazing.nuklei.amqp_1_0.codec.transport.Open;
 /*
  * See AMQP 1.0 specification, section 2.4.7 "Connection State Diagram"
  */
-public class ConnectionStateMachine {
+public class ConnectionStateMachine<C, S, L> {
 
-    private final ConnectionHooks connectionHooks;
+    private final ConnectionHooks<C, S, L> connectionHooks;
     
-    public ConnectionStateMachine(ConnectionHooks connectionHooks) {
+    public ConnectionStateMachine(ConnectionHooks<C, S, L> connectionHooks) {
         this.connectionHooks = connectionHooks;
     }
 
-    public void start(Connection connection) {
+    public void start(Connection<C, S, L> connection) {
         connection.state = ConnectionState.START;
         connectionHooks.whenInitialized.accept(connection);
     }
     
-    public void received(Connection connection, Header header) {
+    public void received(Connection<C, S, L> connection, Header header) {
         connection.headerReceived = header.buffer().getLong(header.offset());
 
         switch (connection.state) {
@@ -66,7 +66,7 @@ public class ConnectionStateMachine {
 
     }
     
-    public void sent(Connection connection, Header header) {
+    public void sent(Connection<C, S, L> connection, Header header) {
         connection.headerSent = header.buffer().getLong(header.offset());
 
         switch (connection.state) {
@@ -91,7 +91,7 @@ public class ConnectionStateMachine {
         }
     }
     
-    public void received(Connection connection, Frame frame, Open open) {
+    public void received(Connection<C, S, L> connection, Frame frame, Open open) {
         switch (connection.state) {
         case DISCARDING:
             transition(connection, ConnectionTransition.RECEIVED_OPEN);
@@ -109,7 +109,7 @@ public class ConnectionStateMachine {
         }
     }
     
-    public void sent(Connection connection, Frame frame, Open open) {
+    public void sent(Connection<C, S, L> connection, Frame frame, Open open) {
         switch (connection.state) {
         case HEADER_SENT:
         case HEADER_EXCHANGED:
@@ -124,7 +124,7 @@ public class ConnectionStateMachine {
         }
     }
     
-    public void received(Connection connection, Frame frame, Close close) {
+    public void received(Connection<C, S, L> connection, Frame frame, Close close) {
         switch (connection.state) {
         case DISCARDING:
         case OPENED:
@@ -139,7 +139,7 @@ public class ConnectionStateMachine {
         }
     }
     
-    public void sent(Connection connection, Frame frame, Close close) {
+    public void sent(Connection<C, S, L> connection, Frame frame, Close close) {
         switch (connection.state) {
         case OPEN_SENT:
         case OPEN_PIPE:
@@ -155,7 +155,7 @@ public class ConnectionStateMachine {
         }
     }
     
-    public void error(Connection connection) {
+    public void error(Connection<C, S, L> connection) {
         switch (connection.state) {
         case DISCARDING:
             transition(connection, ConnectionTransition.ERROR);
@@ -167,7 +167,7 @@ public class ConnectionStateMachine {
         }
     }
 
-    private static void transition(Connection connection, ConnectionTransition transition) {
+    private static void transition(Connection<?, ?, ?> connection, ConnectionTransition transition) {
         connection.state = STATE_MACHINE[connection.state.ordinal()][transition.ordinal()];
     }
    

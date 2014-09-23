@@ -23,25 +23,25 @@ import org.kaazing.nuklei.amqp_1_0.session.Session;
 import org.kaazing.nuklei.amqp_1_0.session.SessionFactory;
 import org.kaazing.nuklei.amqp_1_0.session.SessionHandler;
 
-public final class ConnectionHandler {
+public final class ConnectionHandler<C, S, L> {
     
-    private final SessionHandler sessionHandler;
-    private final SessionFactory sessionFactory;
+    private final SessionHandler<S, L> sessionHandler;
+    private final SessionFactory<C, S, L> sessionFactory;
 
-    public ConnectionHandler(SessionFactory sessionFactory, SessionHandler sessionHandler) {
+    public ConnectionHandler(SessionFactory<C, S, L> sessionFactory, SessionHandler<S, L> sessionHandler) {
         this.sessionHandler = sessionHandler;
         this.sessionFactory = sessionFactory;
     }
     
-    public void init(Connection connection) {
+    public void init(Connection<C, S, L> connection) {
         connection.stateMachine.start(connection);
     }
     
-    public void handleHeader(final Connection connection, final Header header) {
+    public void handleHeader(final Connection<C, S, L> connection, final Header header) {
         connection.stateMachine.received(connection, header);
     }
     
-    public void handleFrame(final Connection connection, final Frame frame) {
+    public void handleFrame(final Connection<C, S, L> connection, final Frame frame) {
 
         switch (frame.getPerformative()) {
         case OPEN:
@@ -68,23 +68,23 @@ public final class ConnectionHandler {
         }
     }
     
-    public void destroy(Connection connection) {
+    public void destroy(Connection<C, S, L> connection) {
     }
 
-    private void handleSessionBegin(final Connection connection, final Frame frame) {
+    private void handleSessionBegin(final Connection<C, S, L> connection, final Frame frame) {
         int newChannel = frame.getChannel();
-        Session newSession = connection.sessions.get(newChannel);
+        Session<S, L> newSession = connection.sessions.get(newChannel);
         if (newSession == null) {
-            newSession = sessionFactory.newSession(connection.sender);
+            newSession = sessionFactory.newSession(connection);
             connection.sessions.put(newChannel, newSession);
             sessionHandler.init(newSession);
         }
         sessionHandler.handle(newSession, frame);
     }
 
-    private void handleSessionFrame(final Connection connection, final Frame frame) {
+    private void handleSessionFrame(final Connection<C, S, L> connection, final Frame frame) {
         int channel = frame.getChannel();
-        Session session = connection.sessions.get(channel);
+        Session<S, L> session = connection.sessions.get(channel);
         if (session == null) {
             connection.stateMachine.error(connection);
         }
@@ -93,9 +93,9 @@ public final class ConnectionHandler {
         }
     }
 
-    private void handleSessionEnd(final Connection connection, final Frame frame) {
+    private void handleSessionEnd(final Connection<C, S, L> connection, final Frame frame) {
         int oldChannel = frame.getChannel();
-        Session oldSession = connection.sessions.remove(oldChannel);
+        Session<S, L> oldSession = connection.sessions.remove(oldChannel);
         if (oldSession == null) {
             connection.stateMachine.error(connection);
         }

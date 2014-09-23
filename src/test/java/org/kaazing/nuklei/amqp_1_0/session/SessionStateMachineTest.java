@@ -35,9 +35,9 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 
 public class SessionStateMachineTest {
 
-    private final SessionHooks sessionHooks = new SessionHooks();
-    private final SessionStateMachine stateMachine = new SessionStateMachine(sessionHooks);
-    private final Session session = new Session(stateMachine, mock(Sender.class));
+    private final SessionHooks<Void, Void> sessionHooks = new SessionHooks<>();
+    private final SessionStateMachine<Void, Void> stateMachine = new SessionStateMachine<>(sessionHooks);
+    private final Session<Void, Void> session = new Session<>(stateMachine, mock(Sender.class));
 
     private final Frame frame = Frame.LOCAL_REF.get().wrap(new AtomicBuffer(new byte[64]), 0);
     private final Begin begin = Begin.LOCAL_REF.get();
