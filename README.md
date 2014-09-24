@@ -1,6 +1,6 @@
 # Nuklei
 
-Micro services toolkit
+An experiment in connecting services in various languages via composable standard protocols.
 
 ## License (See LICENSE file for full license)
 
