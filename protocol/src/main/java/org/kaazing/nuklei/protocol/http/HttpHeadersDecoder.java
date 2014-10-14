@@ -204,6 +204,8 @@ public class HttpHeadersDecoder extends Flyweight implements Mikro
         }
     }
 
+    // TODO: HTTP responder needs to know connectionId, etc. So, have dispatcher set it when it resets decoder.
+
     private HttpHeadersDecoder reset(final AtomicBuffer buffer, final int offset)
     {
         wrap(buffer, offset);

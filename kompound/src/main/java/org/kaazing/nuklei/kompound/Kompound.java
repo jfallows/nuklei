@@ -41,9 +41,10 @@ public class Kompound implements AutoCloseable
     public static final int TCP_MANAGER_SEND_BUFFER_SIZE = 64 * 1024 + MpscRingBuffer.STATE_TRAILER_SIZE;
     public static final int MIKRO_RECEIVE_BUFFER_SIZE = 64 * 1024 + MpscRingBuffer.STATE_TRAILER_SIZE;
 
+    private static final AtomicBuffer NULL_BUFFER = new AtomicBuffer(new byte[0]);
+
     private final MpscArrayBuffer<Object> managerCommandQueue = new MpscArrayBuffer<>(TCP_MANAGER_COMMAND_QUEUE_SIZE);
     private final AtomicBuffer managerSendBuffer = new AtomicBuffer(ByteBuffer.allocate(TCP_MANAGER_SEND_BUFFER_SIZE));
-    private final AtomicBuffer nullBuffer = new AtomicBuffer(new byte[0]);
     private final TcpManager tcpManager;
     private final TcpManagerProxy tcpManagerProxy;
     private final MikroLocator mikroLocator;
@@ -51,7 +52,6 @@ public class Kompound implements AutoCloseable
     private final DedicatedNuklei mikroNuklei;
     private final ArrayList<MikroService> serviceList;
     private final LocalEndpointManager localEndpointManager;
-    private final Proxy sendFunc;
 
     /**
      * Start a Kompound as a standalone process.
@@ -128,7 +128,7 @@ public class Kompound implements AutoCloseable
         serviceList.forEach(
             (mikroService) ->
             {
-                mikroService.mikro().onMessage(stopCmd, TcpManagerTypeId.NONE, nullBuffer, 0, nullBuffer.capacity());
+                mikroService.mikro().onMessage(stopCmd, TcpManagerTypeId.NONE, NULL_BUFFER, 0, NULL_BUFFER.capacity());
             });
     }
 
@@ -146,14 +146,12 @@ public class Kompound implements AutoCloseable
             tcpManagerNuklei = new DedicatedNuklei("tcp-manager");
 
             tcpManager.launch(tcpManagerNuklei);
-            sendFunc = this::tcpSendFunc;
         }
         else
         {
             tcpManager = null;
             tcpManagerProxy = null;
             tcpManagerNuklei = null;
-            sendFunc = (typeId, buffer, offset, length) -> { return true; };
         }
 
         final StartCmd startCmd = new StartCmd();
@@ -161,32 +159,20 @@ public class Kompound implements AutoCloseable
         // add endpoints, which might do checks.
         serviceList.forEach(localEndpointManager::addEndpoint);
 
-        // TODO: HTTP responder needs to be abstracted out into Proxy and CONNECTION_ID (include this in Decoder?)
-
         // reach here then configuration and URIs, etc. should all be good. So, inform mikros of start.
         serviceList.forEach(
             (mikroService) ->
             {
-                startCmd.reset(
-                    mikroLocator,
-                    sendFunc,
-                    mikroService.configurationMap());
+                startCmd.reset(mikroLocator, mikroService.configurationMap());
 
                 // call directly instead of going through a queue so it occurs ordered correctly
-                mikroService.mikro().onMessage(startCmd, TcpManagerTypeId.NONE, nullBuffer, 0, nullBuffer.capacity());
+                mikroService.mikro().onMessage(startCmd, TcpManagerTypeId.NONE, NULL_BUFFER, 0, NULL_BUFFER.capacity());
             });
 
         // do attaches
         localEndpointManager.doLocalAttaches(tcpManagerProxy);
 
         localEndpointManager.doSpinUp(mikroNuklei);
-    }
-
-    private boolean tcpSendFunc(final int typeId, final AtomicBuffer buffer, final int offset, final int length)
-    {
-        // TODO: change TcpManagerProxy.send to take a typeId so that it is symmetric with recv/read
-        tcpManagerProxy.send(buffer, offset, length);
-        return true;
     }
 
     public static class Builder

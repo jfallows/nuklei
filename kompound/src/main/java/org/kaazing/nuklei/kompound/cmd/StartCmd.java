@@ -17,7 +17,6 @@
 package org.kaazing.nuklei.kompound.cmd;
 
 import org.kaazing.nuklei.kompound.MikroLocator;
-import org.kaazing.nuklei.kompound.Proxy;
 
 import java.util.Map;
 
@@ -27,24 +26,17 @@ import java.util.Map;
 public class StartCmd
 {
     private MikroLocator locator;
-    private Proxy sendFunc;
     private Map<String, Object> configurationMap;
 
-    public void reset(final MikroLocator locator, final Proxy sendFunc, final Map<String, Object> configurationMap)
+    public void reset(final MikroLocator locator, final Map<String, Object> configurationMap)
     {
         this.locator = locator;
-        this.sendFunc = sendFunc;
         this.configurationMap = configurationMap;
     }
 
     public MikroLocator locator()
     {
         return locator;
-    }
-
-    public Proxy sendFunc()
-    {
-        return sendFunc;
     }
 
     public Map<String, Object> configurationMap()

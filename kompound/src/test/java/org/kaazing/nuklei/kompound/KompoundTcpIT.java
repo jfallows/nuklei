@@ -127,39 +127,21 @@ public class KompoundTcpIT
         final Kompound.Builder builder = new Kompound.Builder()
             .service(
                 URI,
-                new Mikro()
+                (header, typeId, buffer, offset, length) ->
                 {
-                    Proxy sendFunc;
-
-                    public void onMessage(
-                        final Object header,
-                        final int typeId,
-                        final AtomicBuffer buffer,
-                        final int offset,
-                        final int length)
+                    switch (typeId)
                     {
-                        if (header instanceof StartCmd)
-                        {
-                            sendFunc = ((StartCmd) header).sendFunc();
-                            return;
-                        }
+                        case TcpManagerTypeId.ATTACH_COMPLETED:
+                            attached.lazySet(true);
+                            break;
 
-                        switch (typeId)
-                        {
-                            case TcpManagerTypeId.ATTACH_COMPLETED:
-                                attached.lazySet(true);
-                                break;
+                        case TcpManagerTypeId.RECEIVED_DATA:
+                            final TcpManagerHeadersDecoder decoder = (TcpManagerHeadersDecoder) header;
+                            final AtomicBuffer echoBuffer = new AtomicBuffer(new byte[decoder.length() + length]);
 
-                            case TcpManagerTypeId.RECEIVED_DATA:
-                                final TcpManagerHeadersDecoder decoder = (TcpManagerHeadersDecoder) header;
-                                final AtomicBuffer echoBuffer = new AtomicBuffer(new byte[decoder.length() + length]);
-
-                                echoBuffer.putLong(0, decoder.connectionId());
-                                echoBuffer.putBytes(decoder.length(), buffer, offset, length);
-
-                                sendFunc.write(TcpManagerTypeId.SEND_DATA, echoBuffer, 0, length + decoder.length());
-                                break;
-                        }
+                            echoBuffer.putBytes(decoder.length(), buffer, offset, length);
+                            decoder.respond(echoBuffer, decoder.length(), length);
+                            break;
                     }
                 });
 

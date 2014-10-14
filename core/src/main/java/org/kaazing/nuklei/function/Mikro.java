@@ -21,5 +21,6 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 @FunctionalInterface
 public interface Mikro
 {
-    void onMessage(final Object header, final int typeId, final AtomicBuffer buffer, final int offset, final int length);
+    void onMessage(
+        final Object header, final int typeId, final AtomicBuffer buffer, final int offset, final int length);
 }

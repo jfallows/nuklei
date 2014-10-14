@@ -22,6 +22,7 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferReader;
 import org.kaazing.nuklei.function.Mikro;
 import org.kaazing.nuklei.net.TcpManagerHeadersDecoder;
+import org.kaazing.nuklei.net.TcpManagerProxy;
 import org.kaazing.nuklei.protocol.http.HttpDispatcher;
 
 import java.nio.ByteBuffer;
@@ -49,6 +50,8 @@ public class LocalEndpoint
     private final TcpManagerHeadersDecoder tcpManagerHeadersDecoder;
     private final HttpDispatcher httpDispatcher;
     private final LocalEndpointConfiguration initialConfiguration;
+
+    private TcpManagerProxy tcpManagerProxy = null;
 
     private Mikro tcpMikro;
 
@@ -121,6 +124,12 @@ public class LocalEndpoint
     public LocalEndpointConfiguration initialConfiguration()
     {
         return initialConfiguration;
+    }
+
+    public void tcpManagerProxy(final TcpManagerProxy tcpManagerProxy)
+    {
+        this.tcpManagerProxy = tcpManagerProxy;
+        tcpManagerHeadersDecoder.tcpManagerProxy(tcpManagerProxy);
     }
 
     private void onTcpMessage(final int typeId, final AtomicBuffer buffer, final int offset, final int length)

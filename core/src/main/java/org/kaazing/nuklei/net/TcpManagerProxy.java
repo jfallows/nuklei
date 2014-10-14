@@ -103,6 +103,20 @@ public class TcpManagerProxy
     }
 
     /**
+     * Direct interface for sending events to the {@link TcpSender}.
+     *
+     * @param typeId of the event
+     * @param buffer for the event contents
+     * @param offset within the buffer for the contents
+     * @param length of the event contents in bytes
+     * @return success or failure
+     */
+    public boolean write(final int typeId, final AtomicBuffer buffer, final int offset, final int length)
+    {
+        return sendWriter.write(typeId, buffer, offset, length);
+    }
+
+    /**
      * Close existing connection.
      *
      * @param connectionId to close
