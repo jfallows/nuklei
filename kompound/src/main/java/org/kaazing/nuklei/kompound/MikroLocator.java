@@ -40,7 +40,9 @@ public class MikroLocator
 
         if (null != service)
         {
-            return service.proxy();
+            // TODO: replace with better
+//            return service.proxy();
+            return null;
         }
         else
         {

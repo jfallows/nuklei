@@ -16,79 +16,97 @@
 
 package org.kaazing.nuklei.kompound;
 
+import org.kaazing.nuklei.DedicatedNuklei;
 import org.kaazing.nuklei.net.TcpManagerProxy;
-import org.kaazing.nuklei.protocol.http.HttpDispatcher;
 
+import java.io.File;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
+import java.util.Objects;
 
 /**
  * Local endpoint manager for Kompound
  */
 public class LocalEndpointManager
 {
-    private final TcpManagerProxy tcpManagerProxy;
-    private final Map<InetSocketAddress, List<MikroService>> mikroByAddressMap = new HashMap<>();
-    private final Map<InetSocketAddress, HttpDispatcher> httpDispatcherByAddressMap = new HashMap<>();
-
-    public LocalEndpointManager(final TcpManagerProxy tcpManagerProxy)
-    {
-        this.tcpManagerProxy = tcpManagerProxy;
-    }
+    private final Map<InetSocketAddress, LocalEndpoint> endpointByAddressMap = new HashMap<>();
+    private final Map<File, LocalEndpoint> endpointByFileMap = new HashMap<>();
 
     public void addEndpoint(final MikroService mikroService)
     {
         final LocalEndpointConfiguration localEndpointConfiguration = mikroService.localEndpointConfiguration();
+        final LocalEndpoint.Type endpointType = localEndpointConfiguration.endpointType();
+        final InetSocketAddress address = localEndpointConfiguration.localAddress();
+        final File file = localEndpointConfiguration.file();
 
-        List<MikroService> servicesOnAddress = getOrAddAddress(localEndpointConfiguration.localAddress(), mikroService);
-
-        servicesOnAddress.add(mikroService);
-    }
-
-    public List<MikroService> servicesOnAddress(final InetSocketAddress address)
-    {
-        return mikroByAddressMap.get(address);
-    }
-
-    public HttpDispatcher httpDispatcherOnAddress(final InetSocketAddress address)
-    {
-        return httpDispatcherByAddressMap.get(address);
-    }
-
-    public void forEach(final BiConsumer<InetSocketAddress, MikroService> consumer)
-    {
-        mikroByAddressMap.forEach(
-            (address, list) ->
-                list.forEach(
-                    (mikroService) -> consumer.accept(address, mikroService)));
-    }
-
-    private List<MikroService> getOrAddAddress(final InetSocketAddress address, final MikroService mikroService)
-    {
-        List<MikroService> services = mikroByAddressMap.get(address);
-
-        if (null != services)
+        LocalEndpoint localEndpoint = null;
+        if (LocalEndpoint.Type.TCP == endpointType)
         {
-            return services;
+            localEndpoint = getOrAddLocalEndpoint(endpointByAddressMap, address, localEndpointConfiguration);
+
+            // may also add to file map if configuration specifies a File also
+            if (null != file)
+            {
+                final LocalEndpoint existingEndpoint = endpointByFileMap.get(file);
+                if (null != existingEndpoint && localEndpoint != existingEndpoint)
+                {
+                    throw new IllegalArgumentException("mikro specifies an existing file, but not same endpoint");
+                }
+                else if (null == existingEndpoint)
+                {
+                    endpointByFileMap.put(file, localEndpoint);
+                }
+            }
+        }
+        else if (LocalEndpoint.Type.SHMEM == endpointType)
+        {
+            localEndpoint = getOrAddLocalEndpoint(endpointByFileMap, file, localEndpointConfiguration);
         }
 
-        InetAddress[] interfaces = new InetAddress[1];
-        interfaces[0] = address.getAddress();
-        tcpManagerProxy.attach(address.getPort(), interfaces, mikroService.receiveBuffer());
+        Objects.requireNonNull(localEndpoint);
+        localEndpoint.add(mikroService);
+    }
 
-        services = new ArrayList<>();
-        mikroByAddressMap.put(address, services);
+    public void doLocalAttaches(final TcpManagerProxy tcpManagerProxy)
+    {
+        endpointByAddressMap.forEach(
+            (address, localEndpoint) ->
+            {
+                InetAddress[] interfaces = new InetAddress[1];
+                interfaces[0] = address.getAddress();
+                tcpManagerProxy.attach(address.getPort(), interfaces, localEndpoint.buffer());
+            });
+    }
 
-        if ("http".equals(mikroService.scheme()))
+    public void doSpinUp(final DedicatedNuklei nuklei)
+    {
+        endpointByAddressMap.forEach((address, localEndpoint) -> nuklei.spinUp(localEndpoint.nukleus()));
+
+        // if strictly file, then spin it up. If not, then already spun up
+        endpointByFileMap.forEach(
+            (file, localEndpoint) ->
+            {
+                if (localEndpoint.initialConfiguration().endpointType() == LocalEndpoint.Type.SHMEM)
+                {
+                    nuklei.spinUp(localEndpoint.nukleus());
+                }
+            }
+        );
+    }
+
+    private static <T> LocalEndpoint getOrAddLocalEndpoint(
+        final Map<T, LocalEndpoint> map, final T key, final LocalEndpointConfiguration localEndpointConfiguration)
+    {
+        LocalEndpoint localEndpoint = map.get(key);
+
+        if (null == localEndpoint)
         {
-            httpDispatcherByAddressMap.put(address, new HttpDispatcher());
+            localEndpoint = new LocalEndpoint(localEndpointConfiguration);
+            map.put(key, localEndpoint);
         }
 
-        return services;
+        return localEndpoint;
     }
 }

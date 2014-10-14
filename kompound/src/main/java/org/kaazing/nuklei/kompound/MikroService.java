@@ -16,63 +16,36 @@
 
 package org.kaazing.nuklei.kompound;
 
-import org.kaazing.nuklei.MessagingNukleus;
-import org.kaazing.nuklei.Nukleus;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
-import org.kaazing.nuklei.concurrent.ringbuffer.RingBufferReader;
-import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferReader;
-import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferWriter;
 import org.kaazing.nuklei.function.Mikro;
-import org.kaazing.nuklei.net.TcpManagerHeadersDecoder;
 
-import java.nio.ByteOrder;
 import java.util.Map;
+import java.util.Objects;
 
 /**
- * Wrapper around a Mikro that is used for holding queues and buffers, etc.
+ * Wrapper around a Mikro that is used for holding configuration, etc.
  */
-public class MikroService implements MpscRingBufferReader.ReadHandler
+public class MikroService
 {
-    private final static int MPSC_DEFAULT_READ_LIMIT = 100;
-
     private final String uri;
     private final Mikro mikro;
-    private final AtomicBuffer receiveBuffer;
-    private final MpscRingBufferWriter ringBufferWriter;
-    private final Map<String, Object> configurationMap;
-    private final MessagingNukleus nukleus;
     private final LocalEndpointConfiguration localEndpointConfiguration;
-    private final TcpManagerHeadersDecoder tcpManagerHeadersDecoder;
 
     public MikroService(
         final String uri,
         final Mikro mikro,
-        final AtomicBuffer receiveBuffer,
         final Map<String, Object> configurationMap)
     {
+        Objects.requireNonNull(configurationMap);
+
         this.uri = uri;
         this.mikro = mikro;
-        this.receiveBuffer = receiveBuffer;
-        this.configurationMap = configurationMap;
 
         localEndpointConfiguration = new LocalEndpointConfiguration(uri, configurationMap);
-        ringBufferWriter = new MpscRingBufferWriter(receiveBuffer);
-        tcpManagerHeadersDecoder = new TcpManagerHeadersDecoder(ByteOrder.nativeOrder());
-
-        final MessagingNukleus.Builder builder = new MessagingNukleus.Builder()
-            .mpscRingBuffer(receiveBuffer, this::onMessage, MPSC_DEFAULT_READ_LIMIT);
-
-        nukleus = builder.build();
     }
 
     public String uri()
     {
         return uri;
-    }
-
-    public String scheme()
-    {
-        return localEndpointConfiguration.scheme();
     }
 
     public Mikro mikro()
@@ -82,37 +55,11 @@ public class MikroService implements MpscRingBufferReader.ReadHandler
 
     public Map<String, Object> configurationMap()
     {
-        return configurationMap;
-    }
-
-    public Proxy proxy()
-    {
-        return ringBufferWriter::write;
-    }
-
-    public AtomicBuffer receiveBuffer()
-    {
-        return receiveBuffer;
-    }
-
-    public Nukleus nukleus()
-    {
-        return nukleus;
+        return localEndpointConfiguration.configurationMap();
     }
 
     public LocalEndpointConfiguration localEndpointConfiguration()
     {
         return localEndpointConfiguration;
-    }
-
-    public void onMessage(final int typeId, final AtomicBuffer buffer, final int offset, final int length)
-    {
-        tcpManagerHeadersDecoder.wrap(buffer, offset);
-        mikro.onMessage(
-            tcpManagerHeadersDecoder,
-            typeId,
-            buffer,
-            offset + tcpManagerHeadersDecoder.length(),
-            length - tcpManagerHeadersDecoder.length());
     }
 }

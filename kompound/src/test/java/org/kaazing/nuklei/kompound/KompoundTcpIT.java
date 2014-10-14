@@ -34,7 +34,7 @@ import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
-public class KompoundIT
+public class KompoundTcpIT
 {
     public static final String URI = "tcp://localhost:9876";
 
