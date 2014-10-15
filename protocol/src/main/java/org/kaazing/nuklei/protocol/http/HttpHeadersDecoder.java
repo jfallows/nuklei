@@ -93,7 +93,8 @@ public class HttpHeadersDecoder extends Flyweight implements Mikro
 
         if (0 == coordinates.length())
         {
-            final Coordinates unmatchedCoordinates = matchHeaderAndRemove(name.buffer());
+            final Coordinates unmatchedCoordinates = matchHeaderAndRemove(name.buffer(), name.lowerCaseBuffer(),
+                    name.upperCaseBuffer());
 
             if (null != unmatchedCoordinates)
             {
@@ -122,7 +123,7 @@ public class HttpHeadersDecoder extends Flyweight implements Mikro
 
         if (0 == coordinates.length())
         {
-            final Coordinates unmatchedCoordinates = matchHeaderAndRemove(name.buffer());
+            final Coordinates unmatchedCoordinates = matchHeaderAndRemove(name.buffer(), name.lowerCaseBuffer(), name.upperCaseBuffer());
 
             if (null != unmatchedCoordinates)
             {
@@ -342,7 +343,8 @@ public class HttpHeadersDecoder extends Flyweight implements Mikro
         return false;
     }
 
-    private Coordinates matchHeaderAndRemove(final AtomicBuffer nameBuffer)
+    private Coordinates matchHeaderAndRemove(final AtomicBuffer nameBuffer, final AtomicBuffer lowerCaseBuffer,
+            final AtomicBuffer upperCaseBuffer)
     {
         for (int i = unmatchedHeaderList.size() - 1; i >= 0; i--)
         {
@@ -350,6 +352,19 @@ public class HttpHeadersDecoder extends Flyweight implements Mikro
 
             if (coordinates.length() >= nameBuffer.capacity() &&
                 ProtocolUtil.compareMemory(buffer(), offset() + coordinates.offset(), nameBuffer, 0, nameBuffer.capacity()))
+            {
+                unmatchedHeaderList.remove(i);
+
+                return coordinates;
+            }
+        }
+
+        for (int i = unmatchedHeaderList.size() - 1; i >= 0; i--)
+        {
+            final Coordinates coordinates = unmatchedHeaderList.get(i);
+
+            if (coordinates.length() >= nameBuffer.capacity() &&
+                    ProtocolUtil.compareCaseInsensitiveMemory(buffer(), offset() + coordinates.offset(), lowerCaseBuffer, upperCaseBuffer, 0, nameBuffer.capacity()))
             {
                 unmatchedHeaderList.remove(i);
 
