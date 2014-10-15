@@ -92,6 +92,35 @@ public class HttpDispatcherTest
     }
 
     @Test
+    public void processMixedCaseHeader()
+    {
+        final String request =
+                METHOD + SP + PATH + SP + VERSION + CRLF +
+                "HOsT" + COLON + SP + HOST_HEADER_VALUE + CRLF +
+                CRLF;
+
+        dispatcher.addResource(
+                METHOD.getBytes(),
+                PATH.getBytes(),
+                (header, typeId, buffer, offset, length) ->
+                {
+                    final HttpHeadersDecoder decoder = (HttpHeadersDecoder)header;
+
+                    final int hostLen = decoder.header(HttpHeaderName.HOST, atomicBuffer, 0);
+                    final String host = new String(bytes, 0, hostLen);
+
+                    assertThat(hostLen, is(HOST_HEADER_VALUE.length()));
+                    assertThat(host, is(HOST_HEADER_VALUE));
+
+                    assertThat(length, is(0));
+                    received[0]++;
+                });
+
+        onRequest(CONNECTION_ID, request);
+        assertThat(received[0], is(1));
+    }
+
+    @Test
     public void shouldProcessPostWithBody()
     {
         final String request =

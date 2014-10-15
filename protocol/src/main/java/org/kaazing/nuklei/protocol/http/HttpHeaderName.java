@@ -88,6 +88,15 @@ public enum HttpHeaderName
             }
         }
 
+        // Match headers with case-insensitive match
+        for (final HttpHeaderName name : Singleton.STANDARD_NAMES)
+        {
+            if (ProtocolUtil.compareCaseInsensitiveMemory(buffer, offset, name.lowerCaseBuffer, name.upperCaseBuffer, 0, name.length()))
+            {
+                return name;
+            }
+        }
+
         return null;
     }
 

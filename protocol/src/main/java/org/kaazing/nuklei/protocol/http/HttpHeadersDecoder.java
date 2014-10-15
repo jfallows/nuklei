@@ -123,7 +123,8 @@ public class HttpHeadersDecoder extends Flyweight implements Mikro
 
         if (0 == coordinates.length())
         {
-            final Coordinates unmatchedCoordinates = matchHeaderAndRemove(name.buffer(), name.lowerCaseBuffer(), name.upperCaseBuffer());
+            final Coordinates unmatchedCoordinates = matchHeaderAndRemove(name.buffer(), name.lowerCaseBuffer(),
+                    name.upperCaseBuffer());
 
             if (null != unmatchedCoordinates)
             {
@@ -359,12 +360,14 @@ public class HttpHeadersDecoder extends Flyweight implements Mikro
             }
         }
 
+        // Match with case-insensitive header name
         for (int i = unmatchedHeaderList.size() - 1; i >= 0; i--)
         {
             final Coordinates coordinates = unmatchedHeaderList.get(i);
 
             if (coordinates.length() >= nameBuffer.capacity() &&
-                    ProtocolUtil.compareCaseInsensitiveMemory(buffer(), offset() + coordinates.offset(), lowerCaseBuffer, upperCaseBuffer, 0, nameBuffer.capacity()))
+                    ProtocolUtil.compareCaseInsensitiveMemory(buffer(), offset() + coordinates.offset(),
+                            lowerCaseBuffer, upperCaseBuffer, 0, nameBuffer.capacity()))
             {
                 unmatchedHeaderList.remove(i);
 
