@@ -36,10 +36,12 @@ public enum HttpHeaderName
     CONTENT_LENGTH("Content-Length:");
 
     private final AtomicBuffer buffer;
+    private final AtomicBuffer upperCaseBuffer;
+    private final AtomicBuffer lowerCaseBuffer;
 
     HttpHeaderName()
     {
-        buffer = new AtomicBuffer(new byte[0]);
+        lowerCaseBuffer = upperCaseBuffer = buffer = new AtomicBuffer(new byte[0]);
     }
 
     HttpHeaderName(final String name)
@@ -48,6 +50,12 @@ public enum HttpHeaderName
 
         buffer = new AtomicBuffer(ByteBuffer.allocateDirect(bytesName.length));
         buffer.putBytes(0, bytesName);
+
+        upperCaseBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(bytesName.length));
+        upperCaseBuffer.putBytes(0, name.toUpperCase().getBytes());
+
+        lowerCaseBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(bytesName.length));
+        lowerCaseBuffer.putBytes(0, name.toLowerCase().getBytes());
     }
 
     public int length()
@@ -60,11 +68,30 @@ public enum HttpHeaderName
         return buffer;
     }
 
+    public AtomicBuffer lowerCaseBuffer()
+    {
+        return lowerCaseBuffer;
+    }
+
+    public AtomicBuffer upperCaseBuffer()
+    {
+        return upperCaseBuffer;
+    }
+
     public static HttpHeaderName get(final AtomicBuffer buffer, final int offset)
     {
         for (final HttpHeaderName name : Singleton.STANDARD_NAMES)
         {
             if (ProtocolUtil.compareMemory(buffer, offset, name.buffer, 0, name.length()))
+            {
+                return name;
+            }
+        }
+
+        // Match headers with case-insensitive match
+        for (final HttpHeaderName name : Singleton.STANDARD_NAMES)
+        {
+            if (ProtocolUtil.compareCaseInsensitiveMemory(buffer, offset, name.lowerCaseBuffer, name.upperCaseBuffer, 0, name.length()))
             {
                 return name;
             }
