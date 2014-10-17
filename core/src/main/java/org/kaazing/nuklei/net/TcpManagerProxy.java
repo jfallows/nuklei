@@ -23,8 +23,10 @@ import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferWriter;
 import org.kaazing.nuklei.net.command.TcpCloseConnectionCmd;
 import org.kaazing.nuklei.net.command.TcpDetachCmd;
 import org.kaazing.nuklei.net.command.TcpLocalAttachCmd;
+import org.kaazing.nuklei.net.command.TcpRemoteAttachCmd;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 /**
@@ -60,6 +62,36 @@ public class TcpManagerProxy
     {
         final long id = commandQueue.nextId();
         final TcpLocalAttachCmd cmd = new TcpLocalAttachCmd(port, id, addresses, receiveBuffer);
+
+        if (!commandQueue.write(cmd))
+        {
+            throw new IllegalStateException("could not write command");
+        }
+
+        return id;
+    }
+
+    /**
+     * Remote Attach
+     *
+     * @param localPort to bind to
+     * @param localAddress to bind to
+     * @param remotePort to connect to
+     * @param remoteAddress to connect to
+     * @param receiveBuffer to place received data from connection`
+     * @return id to use for {@link #detach(long)}
+     */
+    public long attach(
+        final int localPort,
+        final InetAddress localAddress,
+        final int remotePort,
+        final InetAddress remoteAddress,
+        final AtomicBuffer receiveBuffer)
+    {
+        final long id = commandQueue.nextId();
+        final InetSocketAddress local = new InetSocketAddress(localAddress, localPort);
+        final InetSocketAddress remote = new InetSocketAddress(remoteAddress, remotePort);
+        final TcpRemoteAttachCmd cmd = new TcpRemoteAttachCmd(id, local, remote, receiveBuffer);
 
         if (!commandQueue.write(cmd))
         {

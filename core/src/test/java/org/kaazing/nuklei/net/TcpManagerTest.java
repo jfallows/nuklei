@@ -30,6 +30,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.function.Consumer;
 
@@ -45,6 +46,7 @@ public class TcpManagerTest
     private static final int MANAGER_SEND_BUFFER_SIZE = 64*1024 + MpscRingBuffer.STATE_TRAILER_SIZE;
     private static final int RECEIVE_BUFFER_SIZE = 64*1024 + MpscRingBuffer.STATE_TRAILER_SIZE;
     private static final int PORT = 40134;
+    private static final int CONNECT_PORT = 40134;
     private static final int SEND_BUFFER_SIZE = 1024;
     private static final int MAGIC_PAYLOAD_INT = 8;
 
@@ -62,6 +64,7 @@ public class TcpManagerTest
     private DedicatedNuklei dedicatedNuklei;
     private SocketChannel senderChannel;
     private SocketChannel receiverChannel;
+    private ServerSocketChannel serverSocketChannel;
 
     @Before
     public void setUp() throws Exception
@@ -92,6 +95,11 @@ public class TcpManagerTest
         if (null != receiverChannel)
         {
             receiverChannel.close();
+        }
+
+        if (null != serverSocketChannel)
+        {
+            serverSocketChannel.close();
         }
     }
 
@@ -261,6 +269,34 @@ public class TcpManagerTest
 
         messages = receiveSingleMessage(receiverChannel, (buffer) -> {});
         assertThat(messages, is(-1));
+    }
+
+    @Test(timeout = 1000)
+    public void shouldConnectOut() throws Exception
+    {
+        tcpManager.launch(dedicatedNuklei);
+
+        serverSocketChannel = ServerSocketChannel.open();
+        serverSocketChannel.bind(new InetSocketAddress(CONNECT_PORT));
+
+        long attachId = tcpManagerProxy.attach(
+            0, InetAddress.getByName("0.0.0.0"), CONNECT_PORT, InetAddress.getLoopbackAddress(), receiveBuffer);
+
+        final SocketChannel connection = serverSocketChannel.accept();
+
+        int messages = receiveSingleMessage((typeId, buffer, offset, length) ->
+        {
+            assertThat(typeId, is(TcpManagerTypeId.ATTACH_COMPLETED));
+            assertThat(buffer.getLong(offset), is(attachId));
+        });
+        assertThat(messages, is(1));
+
+        messages = receiveSingleMessage((typeId, buffer, offset, length) ->
+        {
+            assertThat(typeId, is(TcpManagerTypeId.NEW_CONNECTION));
+            assertThat(buffer.getLong(offset), is(attachId));
+        });
+        assertThat(messages, is(1));
     }
 
     private int receiveSingleMessage(final MpscRingBufferReader.ReadHandler handler)

@@ -20,6 +20,8 @@ import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferWriter;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
@@ -42,7 +44,30 @@ public class TcpConnection
     private volatile boolean receiverClosed = false;
     private boolean closed = false;
 
-    // TODO: connect version of constructor
+    // connect version
+    public TcpConnection(
+        final long id,
+        final InetSocketAddress localAddress,
+        final MpscRingBufferWriter receiveWriter)
+    {
+        try
+        {
+            channel = SocketChannel.open();
+            this.id = id;
+            this.receiveWriter = receiveWriter;
+
+            channel.bind(localAddress);
+            channel.configureBlocking(false);
+            receiveByteBuffer = ByteBuffer.allocateDirect(MAX_RECEIVE_LENGTH).order(ByteOrder.nativeOrder());
+            atomicBuffer = new AtomicBuffer(receiveByteBuffer);
+
+            // connect() and management is done by caller
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
+        }
+    }
 
     // accepted version
     public TcpConnection(
@@ -160,6 +185,11 @@ public class TcpConnection
     public boolean isClosed()
     {
         return closed;
+    }
+
+    public MpscRingBufferWriter receiveWriter()
+    {
+        return receiveWriter;
     }
 
     public void informOfNewConnection()
