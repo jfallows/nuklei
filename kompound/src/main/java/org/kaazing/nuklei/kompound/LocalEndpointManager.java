@@ -76,7 +76,7 @@ public class LocalEndpointManager
             {
                 InetAddress[] interfaces = new InetAddress[1];
                 interfaces[0] = address.getAddress();
-                localEndpoint.tcpManagerProxy(tcpManagerProxy);
+                localEndpoint.tcpManagerProxy(tcpManagerProxy::write);
                 tcpManagerProxy.attach(address.getPort(), interfaces, localEndpoint.buffer());
             });
     }

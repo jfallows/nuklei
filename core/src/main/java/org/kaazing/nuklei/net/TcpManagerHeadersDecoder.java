@@ -19,6 +19,7 @@ package org.kaazing.nuklei.net;
 import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import org.kaazing.nuklei.function.Proxy;
 
 import java.nio.ByteOrder;
 
@@ -26,7 +27,7 @@ public class TcpManagerHeadersDecoder extends Flyweight
 {
     public static final int HEADER_LENGTH = BitUtil.SIZE_OF_LONG;
 
-    private TcpManagerProxy tcpManagerProxy;
+    private Proxy tcpManagerProxy;
 
     public TcpManagerHeadersDecoder(final ByteOrder byteOrder)
     {
@@ -53,7 +54,7 @@ public class TcpManagerHeadersDecoder extends Flyweight
         return HEADER_LENGTH;
     }
 
-    public void tcpManagerProxy(final TcpManagerProxy tcpManagerProxy)
+    public void tcpManagerProxy(final Proxy tcpManagerProxy)
     {
         this.tcpManagerProxy = tcpManagerProxy;
     }

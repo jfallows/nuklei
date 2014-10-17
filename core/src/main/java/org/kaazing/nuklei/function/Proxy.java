@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.kompound;
+package org.kaazing.nuklei.function;
 
 import org.kaazing.nuklei.concurrent.AtomicBuffer;
 

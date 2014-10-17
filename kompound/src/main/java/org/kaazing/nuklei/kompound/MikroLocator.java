@@ -16,6 +16,8 @@
 
 package org.kaazing.nuklei.kompound;
 
+import org.kaazing.nuklei.function.Proxy;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 
