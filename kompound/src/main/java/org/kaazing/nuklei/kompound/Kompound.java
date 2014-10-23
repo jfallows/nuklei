@@ -35,7 +35,7 @@ import java.util.Map;
 /**
  * Container for one or more Mikro services.
  */
-public class Kompound implements AutoCloseable
+public final class Kompound implements AutoCloseable
 {
     public static final int TCP_MANAGER_COMMAND_QUEUE_SIZE = 1024;
     public static final int TCP_MANAGER_SEND_BUFFER_SIZE = 64 * 1024 + MpscRingBuffer.STATE_TRAILER_SIZE;

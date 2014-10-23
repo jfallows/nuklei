@@ -352,7 +352,8 @@ public class HttpHeadersDecoder extends Flyweight implements Mikro
             final Coordinates coordinates = unmatchedHeaderList.get(i);
 
             if (coordinates.length() >= nameBuffer.capacity() &&
-                ProtocolUtil.compareMemory(buffer(), offset() + coordinates.offset(), nameBuffer, 0, nameBuffer.capacity()))
+                ProtocolUtil.compareMemory(
+                    buffer(), offset() + coordinates.offset(), nameBuffer, 0, nameBuffer.capacity()))
             {
                 unmatchedHeaderList.remove(i);
 
@@ -385,7 +386,8 @@ public class HttpHeadersDecoder extends Flyweight implements Mikro
             final Coordinates coordinates = unmatchedHeaderList.get(i);
 
             if (coordinates.length() >= nameBuffer.capacity() &&
-                ProtocolUtil.compareMemory(buffer(), offset() + coordinates.offset(), nameBuffer, 0, nameBuffer.capacity()))
+                ProtocolUtil.compareMemory(
+                    buffer(), offset() + coordinates.offset(), nameBuffer, 0, nameBuffer.capacity()))
             {
                 return coordinates;
             }

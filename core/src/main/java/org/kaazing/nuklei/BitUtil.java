@@ -75,7 +75,7 @@ public class BitUtil
                                                     '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 
     private static final byte[] FROM_HEX_DIGIT_TABLE;
-    
+
     static {
         FROM_HEX_DIGIT_TABLE = new byte[128];
         FROM_HEX_DIGIT_TABLE['0'] = 0x00;
@@ -172,13 +172,14 @@ public class BitUtil
      * @param buffer to convert from a hex representation (in Big Endian)
      * @return new byte array that is decimal representation of the passed array
      */
-    public static byte[] fromHexByteArray(final byte[] buffer) {
-        
+    public static byte[] fromHexByteArray(final byte[] buffer)
+    {
         final byte[] outputBuffer = new byte[buffer.length >> 1];
 
         for (int i = 0; i < buffer.length; i += 2)
         {
-            outputBuffer[i >> 1] = (byte) ((FROM_HEX_DIGIT_TABLE[buffer[i]] << 4) | FROM_HEX_DIGIT_TABLE[buffer[i + 1]]);
+            outputBuffer[i >> 1] =
+                (byte) ((FROM_HEX_DIGIT_TABLE[buffer[i]] << 4) | FROM_HEX_DIGIT_TABLE[buffer[i + 1]]);
         }
 
         return outputBuffer;
@@ -234,7 +235,8 @@ public class BitUtil
      * @param buffer to convert to a hex representation
      * @return new String holding the hex representation (in Big Endian) of the passed array
      */
-    public static String toHex(final byte[] buffer) {
+    public static String toHex(final byte[] buffer)
+    {
         return toHex(buffer, 0, buffer.length);
     }
 
@@ -262,7 +264,8 @@ public class BitUtil
      * @param capacity to set for the underlying buffer.
      * @return the modified {@link java.nio.ByteBuffer}
      */
-    public static ByteBuffer resetAddressAndCapacity(final ByteBuffer byteBuffer, final long address, final int capacity)
+    public static ByteBuffer resetAddressAndCapacity(
+        final ByteBuffer byteBuffer, final long address, final int capacity)
     {
         if (!byteBuffer.isDirect())
         {

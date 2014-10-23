@@ -73,27 +73,34 @@ public class ProtocolUtil
     }
 
     public static boolean compareCaseInsensitiveMemory(
-            final AtomicBuffer buffer,
-            final int index,
-            final AtomicBuffer lowerCaseValueBuffer,
-            final AtomicBuffer upperCaseValueBuffer,
-            final int valueIndex,
-            final int length) {
+        final AtomicBuffer buffer,
+        final int index,
+        final AtomicBuffer lowerCaseValueBuffer,
+        final AtomicBuffer upperCaseValueBuffer,
+        final int valueIndex,
+        final int length)
+    {
 
-        if (AtomicBuffer.BOUNDS_CHECK) {
-            if (index + length > buffer.capacity() || valueIndex + length > lowerCaseValueBuffer.capacity()) {
+        if (AtomicBuffer.BOUNDS_CHECK)
+        {
+            if (index + length > buffer.capacity() || valueIndex + length > lowerCaseValueBuffer.capacity())
+            {
                 throw new IndexOutOfBoundsException(
                         String.format("index=%d capacity=%d valueIndex=%d length=%d valueCapacity=%d",
                                 index, buffer.capacity(), valueIndex, length, lowerCaseValueBuffer.capacity()));
             }
         }
 
-        for (int i = 0; i < length; i++) {
+        for (int i = 0; i < length; i++)
+        {
             byte ch = buffer.getByte(index+i);
             byte lowerValCh = lowerCaseValueBuffer.getByte(valueIndex + i);
-            if (ch != lowerValCh) {
+
+            if (ch != lowerValCh)
+            {
                 byte upperValCh = upperCaseValueBuffer.getByte(valueIndex + i);
-                if (ch != upperValCh) {
+                if (ch != upperValCh)
+                {
                     return false;
                 }
             }

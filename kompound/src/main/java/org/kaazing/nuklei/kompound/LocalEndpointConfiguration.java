@@ -16,8 +16,6 @@
 
 package org.kaazing.nuklei.kompound;
 
-import org.kaazing.nuklei.protocol.http.HttpDispatcher;
-
 import java.io.File;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;

@@ -20,11 +20,10 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 @FunctionalInterface
 public interface AtomicBufferMutator<T>
 {
+    int mutate(Mutation mutation, AtomicBuffer buffer, T value);
 
-    public int mutate(Mutation mutation, AtomicBuffer buffer, T value);
-
-    public interface Mutation {
-
-        public int maxOffset(int maxLength);
+    public interface Mutation
+    {
+        int maxOffset(int maxLength);
     }
 }

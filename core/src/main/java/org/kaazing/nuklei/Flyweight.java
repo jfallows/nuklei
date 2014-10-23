@@ -31,8 +31,7 @@ public class Flyweight
     private int offset;
     private AtomicBuffer buffer;
     private Consumer<Flyweight> observer = (owner) -> {};  // NOP
-    
-    
+
     /**
      * Construct a flyweight with a given byte order assumed
      *
@@ -44,19 +43,23 @@ public class Flyweight
         this.offset = 0;
     }
 
-    protected ByteOrder byteOrder() {
+    protected ByteOrder byteOrder()
+    {
         return byteOrder;
     }
 
-    public int offset() {
+    public int offset()
+    {
         return offset;
     }
 
-    public int limit() {
+    public int limit()
+    {
         return offset;
     }
 
-    public AtomicBuffer buffer() {
+    public AtomicBuffer buffer()
+    {
         return buffer;
     }
 
@@ -79,7 +82,7 @@ public class Flyweight
         this.observer = observer;
         return this;
     }
-    
+
     public final void notifyChanged()
     {
         observer.accept(this);
@@ -106,7 +109,8 @@ public class Flyweight
      * @param byteOrder to encode with
      * @param value to encode represented as a 32-bit field
      */
-    public static void floatPut(final AtomicBuffer buffer, final int offset, final float value, final ByteOrder byteOrder)
+    public static void floatPut(
+        final AtomicBuffer buffer, final int offset, final float value, final ByteOrder byteOrder)
     {
         buffer.putFloat(offset, value, byteOrder);
     }
@@ -132,7 +136,8 @@ public class Flyweight
      * @param byteOrder to encode with
      * @param value to encode represented as a 64-bit field
      */
-    public static void doublePut(final AtomicBuffer buffer, final int offset, final double value, final ByteOrder byteOrder)
+    public static void doublePut(
+        final AtomicBuffer buffer, final int offset, final double value, final ByteOrder byteOrder)
     {
         buffer.putDouble(offset, value, byteOrder);
     }

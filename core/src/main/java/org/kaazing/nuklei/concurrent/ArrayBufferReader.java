@@ -30,5 +30,5 @@ public interface ArrayBufferReader<E>
      * @param limit to impose on the number of read messages
      * @return number of messages read
      */
-    public int read(final Consumer<E> handler, final int limit);
+    int read(final Consumer<E> handler, final int limit);
 }

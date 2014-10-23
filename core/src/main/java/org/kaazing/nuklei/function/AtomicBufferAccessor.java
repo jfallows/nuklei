@@ -20,7 +20,5 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 @FunctionalInterface
 public interface AtomicBufferAccessor<T>
 {
-
-    public T access(AtomicBuffer buffer, int offset, int size);
-
+    T access(AtomicBuffer buffer, int offset, int size);
 }

@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 /**
  * Nukleus that reads and processes messages
  */
-public class MessagingNukleus implements Nukleus
+public final class MessagingNukleus implements Nukleus
 {
     private static final RingBufferReader NULL_RING_BUFFER_READER = (handler, limit) -> 0;
     private static final ArrayBufferReader<Object> NULL_ARRAY_BUFFER_READER = (handler, limit) -> 0;
@@ -55,7 +55,8 @@ public class MessagingNukleus implements Nukleus
     {
         if (null == builder.ringBuffer && null == builder.arrayBuffer && null == builder.nioSelectorNukleus)
         {
-            throw new IllegalArgumentException("must specify either RingBuffer, ArrayBuffer, and/or NioSelector for Nukleus");
+            throw new IllegalArgumentException(
+                "must specify either RingBuffer, ArrayBuffer, and/or NioSelector for Nukleus");
         }
 
         if (null != builder.ringBuffer)
@@ -166,7 +167,8 @@ public class MessagingNukleus implements Nukleus
             return this;
         }
 
-        public MessagingNukleus build() {
+        public MessagingNukleus build()
+        {
             return new MessagingNukleus(this);
         }
     }

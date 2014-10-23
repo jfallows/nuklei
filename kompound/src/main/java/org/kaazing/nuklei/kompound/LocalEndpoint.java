@@ -37,7 +37,7 @@ import java.util.List;
  */
 public class LocalEndpoint
 {
-    private final static int MPSC_DEFAULT_READ_LIMIT = 100;
+    private static final int MPSC_DEFAULT_READ_LIMIT = 100;
 
     public enum Type
     {

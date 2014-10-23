@@ -73,7 +73,8 @@ public class TcpAcceptor
                 acceptor.configureBlocking(false);
 
                 acceptors[i] = new TcpInterfaceAcceptor(acceptor);
-                selectorNukleus.register(acceptors[i].acceptor(), SelectionKey.OP_ACCEPT, composeAcceptor(acceptors[i]));
+                selectorNukleus.register(
+                    acceptors[i].acceptor(), SelectionKey.OP_ACCEPT, composeAcceptor(acceptors[i]));
             }
         }
         catch (final Exception ex)
