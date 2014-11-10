@@ -19,12 +19,13 @@ package org.kaazing.nuklei.net;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.DedicatedNuklei;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferReader;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -51,12 +52,12 @@ public class TcpManagerTest
     private static final int MAGIC_PAYLOAD_INT = 8;
 
     private final MpscArrayBuffer<Object> managerCommandQueue = new MpscArrayBuffer<>(MANAGER_COMMAND_QUEUE_SIZE);
-    private final AtomicBuffer managerSendBuffer = new AtomicBuffer(ByteBuffer.allocate(MANAGER_SEND_BUFFER_SIZE));
+    private final AtomicBuffer managerSendBuffer = new UnsafeBuffer(ByteBuffer.allocate(MANAGER_SEND_BUFFER_SIZE));
 
-    private final AtomicBuffer receiveBuffer = new AtomicBuffer(ByteBuffer.allocate(RECEIVE_BUFFER_SIZE));
+    private final AtomicBuffer receiveBuffer = new UnsafeBuffer(ByteBuffer.allocate(RECEIVE_BUFFER_SIZE));
     private final MpscRingBufferReader receiver = new MpscRingBufferReader(receiveBuffer);
     private final ByteBuffer sendChannelBuffer = ByteBuffer.allocate(SEND_BUFFER_SIZE).order(ByteOrder.nativeOrder());
-    private final AtomicBuffer sendAtomicBuffer = new AtomicBuffer(ByteBuffer.allocate(SEND_BUFFER_SIZE));
+    private final AtomicBuffer sendAtomicBuffer = new UnsafeBuffer(ByteBuffer.allocate(SEND_BUFFER_SIZE));
     private final ByteBuffer receiveChannelBuffer = ByteBuffer.allocate(RECEIVE_BUFFER_SIZE).order(ByteOrder.nativeOrder());
 
     private TcpManager tcpManager;

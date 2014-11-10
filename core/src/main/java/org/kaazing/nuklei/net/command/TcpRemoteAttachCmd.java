@@ -16,7 +16,7 @@
 
 package org.kaazing.nuklei.net.command;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 
 import java.net.InetSocketAddress;
 

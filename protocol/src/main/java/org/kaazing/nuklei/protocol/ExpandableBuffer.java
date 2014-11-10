@@ -16,42 +16,44 @@
 
 package org.kaazing.nuklei.protocol;
 
-import org.kaazing.nuklei.BitUtil;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.util.Arrays;
 
 public class ExpandableBuffer
 {
-    private final AtomicBuffer atomicBuffer;
+    private final MutableDirectBuffer reassemblyBuffer;
 
     private byte[] byteBuffer;
 
     public ExpandableBuffer(final int initialCapacity)
     {
         byteBuffer = new byte[BitUtil.findNextPositivePowerOfTwo(initialCapacity)];
-        atomicBuffer = new AtomicBuffer(byteBuffer);
+        reassemblyBuffer = new UnsafeBuffer(byteBuffer);
     }
 
-    public AtomicBuffer atomicBuffer()
+    public MutableDirectBuffer atomicBuffer()
     {
-        return atomicBuffer;
+        return reassemblyBuffer;
     }
 
     public int capacity()
     {
-        return atomicBuffer.capacity();
+        return reassemblyBuffer.capacity();
     }
 
-    public void putBytes(final int index, final AtomicBuffer srcBuffer, final int srcIndex, final int length)
+    public void putBytes(final int index, final DirectBuffer srcBuffer, final int srcIndex, final int length)
     {
         if (index + length > byteBuffer.length)
         {
             final int newSize = BitUtil.findNextPositivePowerOfTwo(index + length);
             byteBuffer = Arrays.copyOf(byteBuffer, newSize);
-            atomicBuffer.wrap(byteBuffer);
+            reassemblyBuffer.wrap(byteBuffer);
         }
 
-        srcBuffer.getBytes(srcIndex, atomicBuffer, index, length);
+        srcBuffer.getBytes(srcIndex, reassemblyBuffer, index, length);
     }
 }

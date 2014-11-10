@@ -15,9 +15,10 @@
  */
 package org.kaazing.nuklei.concurrent.ringbuffer.mpsc;
 
-import org.kaazing.nuklei.BitUtil;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.RingBufferWriter;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 
 /**
  * Multiple Publisher, Single Consumer Ring Buffer Writer
@@ -59,12 +60,12 @@ public class MpscRingBufferWriter implements RingBufferWriter
     }
 
     /** {@inheritDoc} */
-    public boolean write(final int typeId, final AtomicBuffer buffer, final int offset, final int length)
+    public boolean write(final int typeId, final DirectBuffer buffer, final int offset, final int length)
     {
         MpscRingBuffer.checkMessageTypeId(typeId);
 
-        final int requiredCapacity = BitUtil.align(length + MpscRingBuffer.HEADER_LENGTH,
-                MpscRingBuffer.MESSAGE_ALIGNMENT);
+        final int requiredCapacity =
+            BitUtil.align(length + MpscRingBuffer.HEADER_LENGTH, MpscRingBuffer.MESSAGE_ALIGNMENT);
         final int messageIndex = claim(requiredCapacity);  // claim slot, padding if necessary
 
         if (INSUFFICIENT_CAPACITY == messageIndex)
@@ -113,7 +114,7 @@ public class MpscRingBufferWriter implements RingBufferWriter
                 padding = bufferEndSize;
             }
         }
-        while (!buffer.compareAndSwapLong(tailCounterOffset, tail, tail + requiredCapacity + padding));
+        while (!buffer.compareAndSetLong(tailCounterOffset, tail, tail + requiredCapacity + padding));
 
         if (0 < padding)
         {
@@ -146,7 +147,7 @@ public class MpscRingBufferWriter implements RingBufferWriter
         buffer.putInt(messageIndex + MpscRingBuffer.HEADER_MSG_TYPE_OFFSET, typeId);
     }
 
-    private void writeMsg(final int messageIndex, final AtomicBuffer srcBuffer, final int offset, final int length)
+    private void writeMsg(final int messageIndex, final DirectBuffer srcBuffer, final int offset, final int length)
     {
         buffer.putBytes(messageIndex + MpscRingBuffer.HEADER_LENGTH, srcBuffer, offset, length);
     }

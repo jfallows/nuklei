@@ -2,8 +2,8 @@ package org.kaazing.nuklei.function;
 
 import java.util.Objects;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.RingBufferReader.ReadHandler;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 @FunctionalInterface
 public interface StatefulReadHandler<T>
@@ -17,7 +17,8 @@ public interface StatefulReadHandler<T>
      * @param offset within the buffer where the message starts
      * @param length of the message in bytes
      */
-    void onMessage(final T state, final int typeId, final AtomicBuffer buffer, final int offset, final int length);
+    void onMessage(
+        final T state, final int typeId, final MutableDirectBuffer buffer, final int offset, final int length);
 
     default ReadHandler statefulBy(StateSupplier<T> stateful)
     {
@@ -32,6 +33,6 @@ public interface StatefulReadHandler<T>
     @FunctionalInterface
     public interface StateSupplier<T>
     {
-        T supply(int typeId, AtomicBuffer buffer, int offset, int length);
+        T supply(int typeId, MutableDirectBuffer buffer, int offset, int length);
     }
 }

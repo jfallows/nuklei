@@ -17,7 +17,7 @@ package org.kaazing.nuklei.function;
 
 import java.util.Objects;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 @FunctionalInterface
 public interface AlignedReadHandler<T> extends StatefulReadHandler<T>
@@ -32,7 +32,7 @@ public interface AlignedReadHandler<T> extends StatefulReadHandler<T>
         return (state, typeId, buffer, offset, length) ->
         {
 
-            AtomicBuffer replayBuffer = storage.supply(state);
+            MutableDirectBuffer replayBuffer = storage.supply(state);
             int dataOffset = data.supplyAsInt(typeId);
 
             // determine alignment boundary
@@ -102,7 +102,7 @@ public interface AlignedReadHandler<T> extends StatefulReadHandler<T>
     @FunctionalInterface
     public interface StorageSupplier<T>
     {
-        AtomicBuffer supply(T state);
+        MutableDirectBuffer supply(T state);
     }
 
     @FunctionalInterface
@@ -114,6 +114,6 @@ public interface AlignedReadHandler<T> extends StatefulReadHandler<T>
     @FunctionalInterface
     public interface AlignmentSupplier<T>
     {
-        int supply(T state, int typeId, AtomicBuffer buffer, int offset, int length);
+        int supply(T state, int typeId, MutableDirectBuffer buffer, int offset, int length);
     }
 }

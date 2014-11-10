@@ -16,12 +16,14 @@
 
 package org.kaazing.nuklei.protocol.http;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.function.Mikro;
 import org.kaazing.nuklei.net.TcpManagerHeadersDecoder;
 import org.kaazing.nuklei.net.TcpManagerTypeId;
 import org.kaazing.nuklei.protocol.Coordinates;
 import org.kaazing.nuklei.protocol.ProtocolUtil;
+import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -59,7 +61,7 @@ public class HttpDispatcher implements Mikro
     }
 
     public void onMessage(
-        final Object header, final int typeId, final AtomicBuffer buffer, final int offset, final int length)
+        final Object header, final int typeId, final MutableDirectBuffer buffer, final int offset, final int length)
     {
         if (TcpManagerTypeId.RECEIVED_DATA == typeId)
         {
@@ -136,7 +138,7 @@ public class HttpDispatcher implements Mikro
     }
 
     private static boolean match(
-        final HttpHeadersDecoder decoder, final HttpHeaderName name, final AtomicBuffer buffer)
+        final HttpHeadersDecoder decoder, final HttpHeaderName name, final DirectBuffer buffer)
     {
         final Coordinates coordinates = decoder.header(name);
 
@@ -147,14 +149,14 @@ public class HttpDispatcher implements Mikro
 
     private static class DispatchResource
     {
-        private final AtomicBuffer method;
-        private final AtomicBuffer path;
+        private final DirectBuffer method;
+        private final DirectBuffer path;
         private final Mikro handler;
 
         public DispatchResource(final byte[] method, final byte[] path, final Mikro handler)
         {
-            this.method = new AtomicBuffer(method);
-            this.path = new AtomicBuffer(path);
+            this.method = new UnsafeBuffer(method);
+            this.path = new UnsafeBuffer(path);
             this.handler = handler;
         }
     }

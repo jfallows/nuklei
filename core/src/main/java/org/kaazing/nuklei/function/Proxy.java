@@ -16,9 +16,9 @@
 
 package org.kaazing.nuklei.function;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public interface Proxy
 {
-    boolean write(final int typeId, final AtomicBuffer buffer, final int offset, final int length);
+    boolean write(final int typeId, final MutableDirectBuffer buffer, final int offset, final int length);
 }

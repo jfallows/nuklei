@@ -15,8 +15,7 @@
  */
 package org.kaazing.nuklei.concurrent;
 
-import org.kaazing.nuklei.BitUtil;
-import sun.misc.Unsafe;
+import static uk.co.real_logic.agrona.UnsafeAccess.UNSAFE;
 
 import java.util.function.Consumer;
 
@@ -80,7 +79,6 @@ class Padding5 extends HeadCache
  */
 public class MpscArrayBuffer<E> extends Padding5 implements ArrayBufferReader<E>
 {
-    private static final Unsafe UNSAFE = BitUtil.UNSAFE;
     private static final long TAIL_COUNTER_OFFSET;
     private static final long HEAD_COUNTER_OFFSET;
     private static final long ID_COUNTER_OFFSET;

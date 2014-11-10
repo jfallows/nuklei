@@ -18,7 +18,7 @@ package org.kaazing.nuklei;
 import java.nio.ByteOrder;
 import java.util.function.Consumer;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /**
  * Encapsulation of basic field operations and flyweight usage pattern
@@ -29,7 +29,7 @@ public class Flyweight
 {
     private final ByteOrder byteOrder;
     private int offset;
-    private AtomicBuffer buffer;
+    private MutableDirectBuffer buffer;
     private Consumer<Flyweight> observer = (owner) -> {};  // NOP
 
     /**
@@ -58,7 +58,7 @@ public class Flyweight
         return offset;
     }
 
-    public AtomicBuffer buffer()
+    public MutableDirectBuffer buffer()
     {
         return buffer;
     }
@@ -70,7 +70,7 @@ public class Flyweight
      * @param offset to start at
      * @return flyweight
      */
-    public Flyweight wrap(final AtomicBuffer buffer, final int offset)
+    public Flyweight wrap(final MutableDirectBuffer buffer, final int offset)
     {
         this.buffer = buffer;
         this.offset = offset;
@@ -96,7 +96,7 @@ public class Flyweight
      * @param byteOrder to decode with
      * @return float representation of the 32-bit field
      */
-    public static float floatGet(final AtomicBuffer buffer, final int offset, final ByteOrder byteOrder)
+    public static float floatGet(final MutableDirectBuffer buffer, final int offset, final ByteOrder byteOrder)
     {
         return buffer.getFloat(offset, byteOrder);
     }
@@ -110,7 +110,7 @@ public class Flyweight
      * @param value to encode represented as a 32-bit field
      */
     public static void floatPut(
-        final AtomicBuffer buffer, final int offset, final float value, final ByteOrder byteOrder)
+        final MutableDirectBuffer buffer, final int offset, final float value, final ByteOrder byteOrder)
     {
         buffer.putFloat(offset, value, byteOrder);
     }
@@ -123,7 +123,7 @@ public class Flyweight
      * @param byteOrder to decode with
      * @return double representation of the 64-bit field
      */
-    public static double doubleGet(final AtomicBuffer buffer, final int offset, final ByteOrder byteOrder)
+    public static double doubleGet(final MutableDirectBuffer buffer, final int offset, final ByteOrder byteOrder)
     {
         return buffer.getDouble(offset, byteOrder);
     }
@@ -137,7 +137,7 @@ public class Flyweight
      * @param value to encode represented as a 64-bit field
      */
     public static void doublePut(
-        final AtomicBuffer buffer, final int offset, final double value, final ByteOrder byteOrder)
+        final MutableDirectBuffer buffer, final int offset, final double value, final ByteOrder byteOrder)
     {
         buffer.putDouble(offset, value, byteOrder);
     }
@@ -149,7 +149,7 @@ public class Flyweight
      * @param offset to read from
      * @return short representation of the 8-bit unsigned value
      */
-    public static short uint8Get(final AtomicBuffer buffer, final int offset)
+    public static short uint8Get(final MutableDirectBuffer buffer, final int offset)
     {
         return (short)(buffer.getByte(offset) & 0xFF);
     }
@@ -161,7 +161,7 @@ public class Flyweight
      * @param offset to write at
      * @param value to encode represented as a short
      */
-    public static void uint8Put(final AtomicBuffer buffer, final int offset, final short value)
+    public static void uint8Put(final MutableDirectBuffer buffer, final int offset, final short value)
     {
         buffer.putByte(offset, (byte)value);
     }
@@ -173,7 +173,7 @@ public class Flyweight
      * @param offset to read from
      * @return byte representation of the 8-bit signed value
      */
-    public static byte int8Get(final AtomicBuffer buffer, final int offset)
+    public static byte int8Get(final MutableDirectBuffer buffer, final int offset)
     {
         return buffer.getByte(offset);
     }
@@ -185,7 +185,7 @@ public class Flyweight
      * @param offset to write at
      * @param value to encode represented as a byte
      */
-    public static void int8Put(final AtomicBuffer buffer, final int offset, final byte value)
+    public static void int8Put(final MutableDirectBuffer buffer, final int offset, final byte value)
     {
         buffer.putByte(offset, value);
     }
@@ -198,7 +198,7 @@ public class Flyweight
      * @param byteOrder to decode with
      * @return int representation of the 16-bit signed value
      */
-    public static int uint16Get(final AtomicBuffer buffer, final int offset, final ByteOrder byteOrder)
+    public static int uint16Get(final MutableDirectBuffer buffer, final int offset, final ByteOrder byteOrder)
     {
         return (int)(buffer.getShort(offset, byteOrder) & 0xFFFF);
     }
@@ -211,7 +211,7 @@ public class Flyweight
      * @param value to encode represented as an int
      * @param byteOrder to encode with
      */
-    public static void uint16Put(final AtomicBuffer buffer, final int offset, final int value,
+    public static void uint16Put(final MutableDirectBuffer buffer, final int offset, final int value,
                                  final ByteOrder byteOrder)
     {
         buffer.putShort(offset, (short)value, byteOrder);
@@ -225,7 +225,7 @@ public class Flyweight
      * @param byteOrder to decode with
      * @return short representation of the 16-bit signed value
      */
-    public static short int16Get(final AtomicBuffer buffer, final int offset, final ByteOrder byteOrder)
+    public static short int16Get(final MutableDirectBuffer buffer, final int offset, final ByteOrder byteOrder)
     {
         return buffer.getShort(offset, byteOrder);
     }
@@ -238,7 +238,7 @@ public class Flyweight
      * @param value to encode represented as a short
      * @param byteOrder to encode with
      */
-    public static void int16Put(final AtomicBuffer buffer, final int offset, final short value,
+    public static void int16Put(final MutableDirectBuffer buffer, final int offset, final short value,
                                 final ByteOrder byteOrder)
     {
         buffer.putShort(offset, value, byteOrder);
@@ -252,7 +252,7 @@ public class Flyweight
      * @param byteOrder to decode with
      * @return long representation of the 32-bit signed value
      */
-    public static long uint32Get(final AtomicBuffer buffer, final int offset, final ByteOrder byteOrder)
+    public static long uint32Get(final MutableDirectBuffer buffer, final int offset, final ByteOrder byteOrder)
     {
         return (long)(buffer.getInt(offset, byteOrder) & 0xFFFFFFFFL);
     }
@@ -265,7 +265,7 @@ public class Flyweight
      * @param value to encode represented as an long
      * @param byteOrder to encode with
      */
-    public static void uint32Put(final AtomicBuffer buffer, final int offset, final long value,
+    public static void uint32Put(final MutableDirectBuffer buffer, final int offset, final long value,
                                  final ByteOrder byteOrder)
     {
         buffer.putInt(offset, (int)value, byteOrder);
@@ -279,7 +279,7 @@ public class Flyweight
      * @param byteOrder to decode with
      * @return int representation of the 32-bit signed value
      */
-    public static int int32Get(final AtomicBuffer buffer, final int offset, final ByteOrder byteOrder)
+    public static int int32Get(final MutableDirectBuffer buffer, final int offset, final ByteOrder byteOrder)
     {
         return buffer.getInt(offset, byteOrder);
     }
@@ -292,7 +292,7 @@ public class Flyweight
      * @param value to encode represented as a int
      * @param byteOrder to encode with
      */
-    public static void int32Put(final AtomicBuffer buffer, final int offset, final int value,
+    public static void int32Put(final MutableDirectBuffer buffer, final int offset, final int value,
                                 final ByteOrder byteOrder)
     {
         buffer.putInt(offset, value, byteOrder);
@@ -306,7 +306,7 @@ public class Flyweight
      * @param byteOrder to decode with
      * @return long representation of the 64-bit signed value
      */
-    public static long int64Get(final AtomicBuffer buffer, final int offset, final ByteOrder byteOrder)
+    public static long int64Get(final MutableDirectBuffer buffer, final int offset, final ByteOrder byteOrder)
     {
         return buffer.getLong(offset, byteOrder);
     }
@@ -319,7 +319,7 @@ public class Flyweight
      * @param byteOrder to encode with
      * @param value to encode represented as a long
      */
-    public static void int64Put(final AtomicBuffer buffer, final int offset, final long value,
+    public static void int64Put(final MutableDirectBuffer buffer, final int offset, final long value,
                                 final ByteOrder byteOrder)
     {
         buffer.putLong(offset, value, byteOrder);
@@ -333,7 +333,7 @@ public class Flyweight
      * @param bitIndex bit index to read
      * @return true if the bit is set otherwise false.
      */
-    public static boolean bitSet(final AtomicBuffer buffer, final int offset, final int bitIndex)
+    public static boolean bitSet(final MutableDirectBuffer buffer, final int offset, final int bitIndex)
     {
         return 0 != (buffer.getByte(offset) & (1 << bitIndex));
     }
@@ -346,7 +346,8 @@ public class Flyweight
      * @param bitIndex bit index to set.
      * @param switchOn true sets bit to 1 and false sets it to 0.
      */
-    public static void bitSet(final AtomicBuffer buffer, final int offset, final int bitIndex, final boolean switchOn)
+    public static void bitSet(
+        final MutableDirectBuffer buffer, final int offset, final int bitIndex, final boolean switchOn)
     {
         byte bits = buffer.getByte(offset);
         bits = (byte)((switchOn ? bits | (1 << bitIndex) : bits & ~(1 << bitIndex)));

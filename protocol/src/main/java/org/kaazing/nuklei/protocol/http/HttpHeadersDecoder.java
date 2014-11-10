@@ -17,11 +17,13 @@
 package org.kaazing.nuklei.protocol.http;
 
 import org.kaazing.nuklei.Flyweight;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.function.Mikro;
 import org.kaazing.nuklei.protocol.Coordinates;
 import org.kaazing.nuklei.protocol.ExpandableBuffer;
 import org.kaazing.nuklei.protocol.ProtocolUtil;
+import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -49,7 +51,7 @@ public class HttpHeadersDecoder extends Flyweight implements Mikro
     private int limit;
     private State state;
     private Supplier<Coordinates> coordinatesSupplier;
-    final AtomicBuffer tmpHeaderBuffer = new AtomicBuffer(new byte[0]);
+    final DirectBuffer tmpHeaderBuffer = new UnsafeBuffer(new byte[0]);
     final ArrayList<Coordinates> unmatchedHeaderList = new ArrayList<>();
 
     public HttpHeadersDecoder(final Supplier<Coordinates> coordinatesSupplier)
@@ -117,7 +119,7 @@ public class HttpHeadersDecoder extends Flyweight implements Mikro
      * @param offset      to start filling in from
      * @return            number of bytes copied or 0 if header not found
      */
-    public int header(final HttpHeaderName name, final AtomicBuffer valueBuffer, final int offset)
+    public int header(final HttpHeaderName name, final MutableDirectBuffer valueBuffer, final int offset)
     {
         final Coordinates coordinates = standardHeaders.get(name);
 
@@ -138,7 +140,9 @@ public class HttpHeadersDecoder extends Flyweight implements Mikro
             }
         }
 
-        return buffer().getBytes(offset() + coordinates.offset(), valueBuffer, offset, coordinates.length());
+        buffer().getBytes(offset() + coordinates.offset(), valueBuffer, offset, coordinates.length());
+
+        return coordinates.length();
     }
 
     /**
@@ -151,7 +155,7 @@ public class HttpHeadersDecoder extends Flyweight implements Mikro
      * @param offset      to start filling in from
      * @return            number of bytes copied or 0 if header not found
      */
-    public int header(final byte[] name, final AtomicBuffer valueBuffer, final int offset)
+    public int header(final byte[] name, final MutableDirectBuffer valueBuffer, final int offset)
     {
         tmpHeaderBuffer.wrap(name);
         return header(tmpHeaderBuffer, valueBuffer, offset);
@@ -167,24 +171,26 @@ public class HttpHeadersDecoder extends Flyweight implements Mikro
      * @param offset      to start filling in from
      * @return            number of bytes copied or 0 if header not found
      */
-    public int header(final AtomicBuffer nameBuffer, final AtomicBuffer valueBuffer, final int offset)
+    public int header(final DirectBuffer nameBuffer, final MutableDirectBuffer valueBuffer, final int offset)
     {
         final Coordinates coordinates = matchHeader(nameBuffer);
 
         if (null != coordinates)
         {
-            return buffer().getBytes(
+            buffer().getBytes(
                 coordinates.offset() + nameBuffer.capacity(),
                 valueBuffer,
                 offset,
                 coordinates.length() - nameBuffer.capacity());
+
+            return coordinates.length() - nameBuffer.capacity();
         }
 
         return 0;
     }
 
     public void onMessage(
-        final Object header, final int typeId, final AtomicBuffer buffer, final int offset, final int length)
+        final Object header, final int typeId, final MutableDirectBuffer buffer, final int offset, final int length)
     {
         if (0 != limit)
         {
@@ -208,7 +214,7 @@ public class HttpHeadersDecoder extends Flyweight implements Mikro
 
     // TODO: HTTP responder needs to know connectionId, etc. So, have dispatcher set it when it resets decoder.
 
-    private HttpHeadersDecoder reset(final AtomicBuffer buffer, final int offset)
+    private HttpHeadersDecoder reset(final MutableDirectBuffer buffer, final int offset)
     {
         wrap(buffer, offset);
         cursor = 0;
@@ -344,8 +350,8 @@ public class HttpHeadersDecoder extends Flyweight implements Mikro
         return false;
     }
 
-    private Coordinates matchHeaderAndRemove(final AtomicBuffer nameBuffer, final AtomicBuffer lowerCaseBuffer,
-            final AtomicBuffer upperCaseBuffer)
+    private Coordinates matchHeaderAndRemove(final DirectBuffer nameBuffer, final DirectBuffer lowerCaseBuffer,
+            final DirectBuffer upperCaseBuffer)
     {
         for (int i = unmatchedHeaderList.size() - 1; i >= 0; i--)
         {
@@ -379,7 +385,7 @@ public class HttpHeadersDecoder extends Flyweight implements Mikro
         return null;
     }
 
-    private Coordinates matchHeader(final AtomicBuffer nameBuffer)
+    private Coordinates matchHeader(final DirectBuffer nameBuffer)
     {
         for (int i = unmatchedHeaderList.size() - 1; i >= 0; i--)
         {

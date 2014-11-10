@@ -16,8 +16,10 @@
 
 package org.kaazing.nuklei.protocol.http;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.protocol.ProtocolUtil;
+import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -35,26 +37,26 @@ public enum HttpHeaderName
     HOST("Host:"),
     CONTENT_LENGTH("Content-Length:");
 
-    private final AtomicBuffer buffer;
-    private final AtomicBuffer upperCaseBuffer;
-    private final AtomicBuffer lowerCaseBuffer;
+    private final MutableDirectBuffer buffer;
+    private final MutableDirectBuffer upperCaseBuffer;
+    private final MutableDirectBuffer lowerCaseBuffer;
 
     HttpHeaderName()
     {
-        lowerCaseBuffer = upperCaseBuffer = buffer = new AtomicBuffer(new byte[0]);
+        lowerCaseBuffer = upperCaseBuffer = buffer = new UnsafeBuffer(new byte[0]);
     }
 
     HttpHeaderName(final String name)
     {
         final byte[] bytesName = name.getBytes();
 
-        buffer = new AtomicBuffer(ByteBuffer.allocateDirect(bytesName.length));
+        buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(bytesName.length));
         buffer.putBytes(0, bytesName);
 
-        upperCaseBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(bytesName.length));
+        upperCaseBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(bytesName.length));
         upperCaseBuffer.putBytes(0, name.toUpperCase().getBytes());
 
-        lowerCaseBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(bytesName.length));
+        lowerCaseBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(bytesName.length));
         lowerCaseBuffer.putBytes(0, name.toLowerCase().getBytes());
     }
 
@@ -63,22 +65,22 @@ public enum HttpHeaderName
         return buffer.capacity();
     }
 
-    public AtomicBuffer buffer()
+    public MutableDirectBuffer buffer()
     {
         return buffer;
     }
 
-    public AtomicBuffer lowerCaseBuffer()
+    public MutableDirectBuffer lowerCaseBuffer()
     {
         return lowerCaseBuffer;
     }
 
-    public AtomicBuffer upperCaseBuffer()
+    public MutableDirectBuffer upperCaseBuffer()
     {
         return upperCaseBuffer;
     }
 
-    public static HttpHeaderName get(final AtomicBuffer buffer, final int offset)
+    public static HttpHeaderName get(final DirectBuffer buffer, final int offset)
     {
         for (final HttpHeaderName name : Singleton.STANDARD_NAMES)
         {

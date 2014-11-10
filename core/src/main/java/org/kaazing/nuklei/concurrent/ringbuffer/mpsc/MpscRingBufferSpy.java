@@ -15,8 +15,9 @@
  */
 package org.kaazing.nuklei.concurrent.ringbuffer.mpsc;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.RingBufferSpy;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 
 /**
  * Multiple Publisher, Single Consumer Ring Buffer Spy
@@ -47,7 +48,7 @@ public class MpscRingBufferSpy implements RingBufferSpy
     }
 
     /** {@inheritDoc} */
-    public int spy(final SpyHandler handler, final AtomicBuffer buffer, final int limit)
+    public int spy(final SpyHandler handler, final MutableDirectBuffer buffer, final int limit)
     {
         return 0;
     }

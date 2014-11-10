@@ -15,18 +15,19 @@
  */
 package org.kaazing.nuklei.concurrent.ringbuffer.mpsc;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-import static org.kaazing.nuklei.BitUtil.align;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
+import static uk.co.real_logic.agrona.BitUtil.align;
 
 /**
  * Test MpscRingBufferWriter in isolation
@@ -39,7 +40,7 @@ public class MpscRingBufferWriterTest
     private static final int HEAD_COUNTER_INDEX = CAPACITY + MpscRingBuffer.HEAD_RELATIVE_OFFSET;
     private static final int TAIL_COUNTER_INDEX = CAPACITY + MpscRingBuffer.TAIL_RELATIVE_OFFSET;
 
-    private final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
+    private final AtomicBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
 
     private final AtomicBuffer buffer = mock(AtomicBuffer.class);
     private MpscRingBufferWriter writer;
@@ -85,7 +86,7 @@ public class MpscRingBufferWriterTest
         assertFalse(writer.write(MSG_TYPE_ID, srcBuffer, 0, lengthToWrite));
 
         verify(buffer, never()).putInt(anyInt(), anyInt());
-        verify(buffer, never()).compareAndSwapLong(anyInt(), anyLong(), anyLong());
+        verify(buffer, never()).compareAndSetLong(anyInt(), anyLong(), anyLong());
         verify(buffer, never()).putIntOrdered(anyInt(), anyInt());
     }
 
@@ -103,7 +104,7 @@ public class MpscRingBufferWriterTest
         assertFalse(writer.write(MSG_TYPE_ID, srcBuffer, 0, lengthToWrite));
 
         verify(buffer, never()).putInt(anyInt(), anyInt());
-        verify(buffer, never()).compareAndSwapLong(anyInt(), anyLong(), anyLong());
+        verify(buffer, never()).compareAndSetLong(anyInt(), anyLong(), anyLong());
         verify(buffer, never()).putIntOrdered(anyInt(), anyInt());
     }
 
@@ -120,7 +121,7 @@ public class MpscRingBufferWriterTest
         assertFalse(writer.write(MSG_TYPE_ID, srcBuffer, 0, lengthToWrite));
 
         verify(buffer, never()).putInt(anyInt(), anyInt());
-        verify(buffer, never()).compareAndSwapLong(anyInt(), anyLong(), anyLong());
+        verify(buffer, never()).compareAndSetLong(anyInt(), anyLong(), anyLong());
         verify(buffer, never()).putIntOrdered(anyInt(), anyInt());
     }
 
@@ -135,13 +136,13 @@ public class MpscRingBufferWriterTest
 
         when(buffer.getLongVolatile(HEAD_COUNTER_INDEX)).thenReturn(head);
         when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn(tail);
-        when(buffer.compareAndSwapLong(TAIL_COUNTER_INDEX, tail, tail + alignedMessageLength)).thenReturn(true);
+        when(buffer.compareAndSetLong(TAIL_COUNTER_INDEX, tail, tail + alignedMessageLength)).thenReturn(true);
 
         assertTrue(writer.write(MSG_TYPE_ID, srcBuffer, 0, lengthToWrite));
 
         final InOrder inOrder = Mockito.inOrder(buffer);
 
-        inOrder.verify(buffer).compareAndSwapLong(TAIL_COUNTER_INDEX, tail, tail + alignedMessageLength);
+        inOrder.verify(buffer).compareAndSetLong(TAIL_COUNTER_INDEX, tail, tail + alignedMessageLength);
         inOrder.verify(buffer).putInt((int)tail + MpscRingBuffer.HEADER_MSG_TYPE_OFFSET, MSG_TYPE_ID);
         inOrder.verify(buffer).putBytes((int)tail + MpscRingBuffer.HEADER_LENGTH, srcBuffer, 0, lengthToWrite);
         inOrder.verify(buffer).putIntOrdered((int)tail + MpscRingBuffer.HEADER_MSG_LENGTH_OFFSET,
@@ -159,14 +160,14 @@ public class MpscRingBufferWriterTest
 
         when(buffer.getLongVolatile(HEAD_COUNTER_INDEX)).thenReturn(head);
         when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn(tail);
-        when(buffer.compareAndSwapLong(TAIL_COUNTER_INDEX, tail, tail + alignedMessageLength +
+        when(buffer.compareAndSetLong(TAIL_COUNTER_INDEX, tail, tail + alignedMessageLength +
                 MpscRingBuffer.MESSAGE_ALIGNMENT)).thenReturn(true);
 
         assertTrue(writer.write(MSG_TYPE_ID, srcBuffer, 0, lengthToWrite));
 
         final InOrder inOrder = Mockito.inOrder(buffer);
 
-        inOrder.verify(buffer).compareAndSwapLong(TAIL_COUNTER_INDEX, tail,
+        inOrder.verify(buffer).compareAndSetLong(TAIL_COUNTER_INDEX, tail,
                 tail + alignedMessageLength + MpscRingBuffer.MESSAGE_ALIGNMENT);
 
         inOrder.verify(buffer).putInt((int)tail + MpscRingBuffer.HEADER_MSG_TYPE_OFFSET,
@@ -191,14 +192,14 @@ public class MpscRingBufferWriterTest
 
         when(buffer.getLongVolatile(HEAD_COUNTER_INDEX)).thenReturn(head);
         when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn(tail);
-        when(buffer.compareAndSwapLong(TAIL_COUNTER_INDEX, tail, tail + alignedMessageLength +
+        when(buffer.compareAndSetLong(TAIL_COUNTER_INDEX, tail, tail + alignedMessageLength +
                 MpscRingBuffer.MESSAGE_ALIGNMENT)).thenReturn(true);
 
         assertTrue(writer.write(MSG_TYPE_ID, srcBuffer, 0, lengthToWrite));
 
         final InOrder inOrder = Mockito.inOrder(buffer);
 
-        inOrder.verify(buffer).compareAndSwapLong(TAIL_COUNTER_INDEX, tail,
+        inOrder.verify(buffer).compareAndSetLong(TAIL_COUNTER_INDEX, tail,
                 tail + alignedMessageLength + MpscRingBuffer.MESSAGE_ALIGNMENT);
 
         inOrder.verify(buffer).putInt((int)tail + MpscRingBuffer.HEADER_MSG_TYPE_OFFSET,

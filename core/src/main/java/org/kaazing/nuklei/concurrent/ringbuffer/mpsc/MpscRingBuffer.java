@@ -15,8 +15,8 @@
  */
 package org.kaazing.nuklei.concurrent.ringbuffer.mpsc;
 
-import org.kaazing.nuklei.BitUtil;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /**
  * Multiple Publisher, Single Consumer (MPSC) Ring Buffer constants and values shared by Readers, Writers, and Spies
@@ -54,7 +54,7 @@ public class MpscRingBuffer
     public static final int HEADER_MSG_SEQNUM_OFFSET = BitUtil.SIZE_OF_INT;
     public static final int HEADER_LENGTH = HEADER_MSG_SEQNUM_OFFSET + BitUtil.SIZE_OF_LONG;
 
-    public static void checkAtomicBufferCapacity(final AtomicBuffer buffer)
+    public static void checkAtomicBufferCapacity(final DirectBuffer buffer)
     {
         final int capacity = buffer.capacity() - STATE_TRAILER_SIZE;
 

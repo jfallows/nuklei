@@ -15,10 +15,10 @@
  */
 package org.kaazing.nuklei;
 
-import org.kaazing.nuklei.BitUtil;
-import org.kaazing.nuklei.Flyweight;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.junit.Test;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -43,7 +43,7 @@ public class FlyweightTest
     public final static int UINT8_OFFSET = BitUtil.SIZE_OF_INT + BitUtil.SIZE_OF_SHORT;
 
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(256);
-    private final AtomicBuffer aBuff = new AtomicBuffer(buffer);
+    private final MutableDirectBuffer aBuff = new UnsafeBuffer(buffer);
     private final ByteBuffer viewBuffer = buffer.duplicate();
     private final Flyweight flyweightBigEndian = new Flyweight(ByteOrder.BIG_ENDIAN);
     private final Flyweight flyweightLittleEndian = new Flyweight(ByteOrder.LITTLE_ENDIAN);

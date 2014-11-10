@@ -15,43 +15,40 @@
  */
 package org.kaazing.nuklei.function;
 
-import static org.kaazing.nuklei.BitUtil.SIZE_OF_LONG;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import org.junit.Test;
+import org.kaazing.nuklei.function.AlignedReadHandler.AlignmentSupplier;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 
-import org.junit.Test;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
-import org.kaazing.nuklei.function.AlignedReadHandler;
-import org.kaazing.nuklei.function.StatefulReadHandler;
-import org.kaazing.nuklei.function.AlignedReadHandler.AlignmentSupplier;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.*;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 @SuppressWarnings("unchecked")
 public class AlignedReadHandlerTest {
 
-    private final AlignmentSupplier<AtomicBuffer> alignment = (state, typeId, buffer, offset, length) -> {
+    private final AlignmentSupplier<MutableDirectBuffer> alignment = (state, typeId, buffer, offset, length) -> {
         return SIZE_OF_LONG + buffer.getInt(offset + SIZE_OF_LONG);
     };
     
     @Test
     public void shouldNotReassembleFrames() {
-        AtomicBuffer storageBuffer = new AtomicBuffer(ByteBuffer.allocate(40));
-        AtomicBuffer readBuffer = new AtomicBuffer(ByteBuffer.allocate(40));
+        MutableDirectBuffer storageBuffer = new UnsafeBuffer(ByteBuffer.allocate(40));
+        MutableDirectBuffer readBuffer = new UnsafeBuffer(ByteBuffer.allocate(40));
         readBuffer.putLong(0, 1L);
         readBuffer.putInt(SIZE_OF_LONG, 32);
 
-        final AlignedReadHandler<AtomicBuffer> handler = mock(AlignedReadHandler.class);
-        AlignedReadHandler<AtomicBuffer> wrapHandler = new AlignedReadHandler<AtomicBuffer>() {
+        final AlignedReadHandler<MutableDirectBuffer> handler = mock(AlignedReadHandler.class);
+        AlignedReadHandler<MutableDirectBuffer> wrapHandler = new AlignedReadHandler<MutableDirectBuffer>() {
             @Override
-            public void onMessage(AtomicBuffer state, int typeId, AtomicBuffer buffer, int offset, int length) {
+            public void onMessage(MutableDirectBuffer state, int typeId, MutableDirectBuffer buffer, int offset, int length) {
                 handler.onMessage(state, typeId, buffer, offset, length);
             }
         };
-        StatefulReadHandler<AtomicBuffer> readHandler = wrapHandler.alignedBy((typeId) -> SIZE_OF_LONG, (t) -> t, alignment);
+        StatefulReadHandler<MutableDirectBuffer> readHandler = wrapHandler.alignedBy((typeId) -> SIZE_OF_LONG, (t) -> t, alignment);
         readHandler.onMessage(storageBuffer, 0, readBuffer, 0, 40);
 
         verify(handler).onMessage(storageBuffer, 0, readBuffer, 0, 40);
@@ -59,19 +56,19 @@ public class AlignedReadHandlerTest {
 
     @Test
     public void shouldNotDeliverPartialFrames() {
-        AtomicBuffer storageBuffer = new AtomicBuffer(ByteBuffer.allocate(24));
-        AtomicBuffer readBuffer = new AtomicBuffer(ByteBuffer.allocate(24));
+        MutableDirectBuffer storageBuffer = new UnsafeBuffer(ByteBuffer.allocate(24));
+        MutableDirectBuffer readBuffer = new UnsafeBuffer(ByteBuffer.allocate(24));
         readBuffer.putLong(0, 1L);
         readBuffer.putInt(SIZE_OF_LONG, 32);
         
-        final AlignedReadHandler<AtomicBuffer> handler = mock(AlignedReadHandler.class);
-        AlignedReadHandler<AtomicBuffer> wrapHandler = new AlignedReadHandler<AtomicBuffer>() {
+        final AlignedReadHandler<MutableDirectBuffer> handler = mock(AlignedReadHandler.class);
+        AlignedReadHandler<MutableDirectBuffer> wrapHandler = new AlignedReadHandler<MutableDirectBuffer>() {
             @Override
-            public void onMessage(AtomicBuffer state, int typeId, AtomicBuffer buffer, int offset, int length) {
+            public void onMessage(MutableDirectBuffer state, int typeId, MutableDirectBuffer buffer, int offset, int length) {
                 handler.onMessage(state, typeId, buffer, offset, length);
             }
         };
-        StatefulReadHandler<AtomicBuffer> readHandler = wrapHandler.alignedBy((typeId) -> SIZE_OF_LONG, (t) -> t, alignment);
+        StatefulReadHandler<MutableDirectBuffer> readHandler = wrapHandler.alignedBy((typeId) -> SIZE_OF_LONG, (t) -> t, alignment);
         readHandler.onMessage(storageBuffer, 0, readBuffer, 0, 24);
 
         verify(handler, never()).onMessage(any(), anyInt(), any(), anyInt(), anyInt());
@@ -79,19 +76,19 @@ public class AlignedReadHandlerTest {
 
     @Test
     public void shouldDeliverAlignedFrames() {
-        AtomicBuffer storageBuffer = new AtomicBuffer(ByteBuffer.allocate(40));
-        AtomicBuffer readBuffer = new AtomicBuffer(ByteBuffer.allocate(64));
+        MutableDirectBuffer storageBuffer = new UnsafeBuffer(ByteBuffer.allocate(40));
+        MutableDirectBuffer readBuffer = new UnsafeBuffer(ByteBuffer.allocate(64));
         readBuffer.putLong(0, 1L);
         readBuffer.putInt(SIZE_OF_LONG, 32);
         
-        final AlignedReadHandler<AtomicBuffer> handler = mock(AlignedReadHandler.class);
-        AlignedReadHandler<AtomicBuffer> wrapHandler = new AlignedReadHandler<AtomicBuffer>() {
+        final AlignedReadHandler<MutableDirectBuffer> handler = mock(AlignedReadHandler.class);
+        AlignedReadHandler<MutableDirectBuffer> wrapHandler = new AlignedReadHandler<MutableDirectBuffer>() {
             @Override
-            public void onMessage(AtomicBuffer state, int typeId, AtomicBuffer buffer, int offset, int length) {
+            public void onMessage(MutableDirectBuffer state, int typeId, MutableDirectBuffer buffer, int offset, int length) {
                 handler.onMessage(state, typeId, buffer, offset, length);
             }
         };
-        StatefulReadHandler<AtomicBuffer> readHandler = wrapHandler.alignedBy((typeId) -> SIZE_OF_LONG, (t) -> t, alignment);
+        StatefulReadHandler<MutableDirectBuffer> readHandler = wrapHandler.alignedBy((typeId) -> SIZE_OF_LONG, (t) -> t, alignment);
         readHandler.onMessage(storageBuffer, 0, readBuffer, 0, 48);
 
         verify(handler).onMessage(storageBuffer, 0, readBuffer, 0, 40);
@@ -99,20 +96,20 @@ public class AlignedReadHandlerTest {
 
     @Test
     public void shouldDeliverReassembledFrames() {
-        AtomicBuffer storageBuffer = new AtomicBuffer(ByteBuffer.allocate(40));
-        AtomicBuffer readBuffer = new AtomicBuffer(ByteBuffer.allocate(48));
+        MutableDirectBuffer storageBuffer = new UnsafeBuffer(ByteBuffer.allocate(40));
+        MutableDirectBuffer readBuffer = new UnsafeBuffer(ByteBuffer.allocate(48));
         readBuffer.putLong(0, 1L);
         readBuffer.putInt(SIZE_OF_LONG, 32);
         readBuffer.putLong(16, 1L);
         
-        final AlignedReadHandler<AtomicBuffer> handler = mock(AlignedReadHandler.class);
-        AlignedReadHandler<AtomicBuffer> wrapHandler = new AlignedReadHandler<AtomicBuffer>() {
+        final AlignedReadHandler<MutableDirectBuffer> handler = mock(AlignedReadHandler.class);
+        AlignedReadHandler<MutableDirectBuffer> wrapHandler = new AlignedReadHandler<MutableDirectBuffer>() {
             @Override
-            public void onMessage(AtomicBuffer state, int typeId, AtomicBuffer buffer, int offset, int length) {
+            public void onMessage(MutableDirectBuffer state, int typeId, MutableDirectBuffer buffer, int offset, int length) {
                 handler.onMessage(state, typeId, buffer, offset, length);
             }
         };
-        StatefulReadHandler<AtomicBuffer> readHandler = wrapHandler.alignedBy((typeId) -> SIZE_OF_LONG, (t) -> t, alignment);
+        StatefulReadHandler<MutableDirectBuffer> readHandler = wrapHandler.alignedBy((typeId) -> SIZE_OF_LONG, (t) -> t, alignment);
         readHandler.onMessage(storageBuffer, 0, readBuffer, 0, 16);
         readHandler.onMessage(storageBuffer, 0, readBuffer, 16, 32);
 
@@ -121,21 +118,21 @@ public class AlignedReadHandlerTest {
 
     @Test
     public void shouldDeliverAlignedAndReassembledFrames() {
-        AtomicBuffer storageBuffer = new AtomicBuffer(ByteBuffer.allocate(40));
-        AtomicBuffer readBuffer = new AtomicBuffer(ByteBuffer.allocate(80));
+        MutableDirectBuffer storageBuffer = new UnsafeBuffer(ByteBuffer.allocate(40));
+        MutableDirectBuffer readBuffer = new UnsafeBuffer(ByteBuffer.allocate(80));
         readBuffer.putLong(0, 1L);
         readBuffer.putInt(SIZE_OF_LONG, 32);
         readBuffer.putInt(SIZE_OF_LONG + 32, 32);
         readBuffer.putLong(64, 1L);
 
-        final AlignedReadHandler<AtomicBuffer> handler = mock(AlignedReadHandler.class);
-        AlignedReadHandler<AtomicBuffer> wrapHandler = new AlignedReadHandler<AtomicBuffer>() {
+        final AlignedReadHandler<MutableDirectBuffer> handler = mock(AlignedReadHandler.class);
+        AlignedReadHandler<MutableDirectBuffer> wrapHandler = new AlignedReadHandler<MutableDirectBuffer>() {
             @Override
-            public void onMessage(AtomicBuffer state, int typeId, AtomicBuffer buffer, int offset, int length) {
+            public void onMessage(MutableDirectBuffer state, int typeId, MutableDirectBuffer buffer, int offset, int length) {
                 handler.onMessage(state, typeId, buffer, offset, length);
             }
         };
-        StatefulReadHandler<AtomicBuffer> readHandler = wrapHandler.alignedBy((typeId) -> SIZE_OF_LONG, (t) -> t, alignment);
+        StatefulReadHandler<MutableDirectBuffer> readHandler = wrapHandler.alignedBy((typeId) -> SIZE_OF_LONG, (t) -> t, alignment);
         readHandler.onMessage(storageBuffer, 0, readBuffer, 0, 64);
         readHandler.onMessage(storageBuffer, 0, readBuffer, 64, 16);
         

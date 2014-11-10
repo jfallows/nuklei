@@ -15,14 +15,16 @@
  */
 package org.kaazing.nuklei.concurrent.ringbuffer.mpsc;
 
-import org.kaazing.nuklei.BitUtil;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.RingBufferReader;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CyclicBarrier;
@@ -74,7 +76,7 @@ public class MpscRingBufferConcurrencyTest
         final CyclicBarrier goBarrier = new CyclicBarrier(numGenerators);
 
         final AtomicBuffer atomicBuffer =
-                new AtomicBuffer(ByteBuffer.allocateDirect(capacity + MpscRingBuffer.STATE_TRAILER_SIZE));
+                new UnsafeBuffer(ByteBuffer.allocateDirect(capacity + MpscRingBuffer.STATE_TRAILER_SIZE));
 
         final Runnable generatorRun = () ->
         {
@@ -124,7 +126,7 @@ public class MpscRingBufferConcurrencyTest
         final CyclicBarrier goBarrier = new CyclicBarrier(numWriters);
 
         final AtomicBuffer atomicBuffer =
-                new AtomicBuffer(ByteBuffer.allocateDirect(capacity + MpscRingBuffer.STATE_TRAILER_SIZE));
+                new UnsafeBuffer(ByteBuffer.allocateDirect(capacity + MpscRingBuffer.STATE_TRAILER_SIZE));
 
         final MpscRingBufferReader reader = new MpscRingBufferReader(atomicBuffer);
 
@@ -169,7 +171,7 @@ public class MpscRingBufferConcurrencyTest
         private final MpscRingBufferWriter writer;
         private final int id;
         private final int messages;
-        private final AtomicBuffer srcBuffer;
+        private final MutableDirectBuffer srcBuffer;
 
         public Writer(final AtomicBuffer buffer, final CyclicBarrier goBarrier, final int id, final int messages)
         {
@@ -177,7 +179,7 @@ public class MpscRingBufferConcurrencyTest
             this.writer = new MpscRingBufferWriter(buffer);
             this.id = id;
             this.messages = messages;
-            this.srcBuffer = new AtomicBuffer(new byte[MESSAGE_LENGTH]);
+            this.srcBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
         }
 
         public void run()

@@ -15,12 +15,12 @@
  */
 package org.kaazing.nuklei.function;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 @FunctionalInterface
 public interface AtomicBufferMutator<T>
 {
-    int mutate(Mutation mutation, AtomicBuffer buffer, T value);
+    int mutate(Mutation mutation, MutableDirectBuffer buffer, T value);
 
     public interface Mutation
     {

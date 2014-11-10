@@ -16,9 +16,10 @@
 
 package org.kaazing.nuklei.net;
 
-import org.kaazing.nuklei.BitUtil;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferWriter;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -36,8 +37,8 @@ public class TcpConnection
     private final MpscRingBufferWriter receiveWriter;
     private final long id;
     private final ByteBuffer receiveByteBuffer;
-    private final AtomicBuffer atomicBuffer;
-    private final AtomicBuffer informBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(BitUtil.SIZE_OF_LONG));
+    private final MutableDirectBuffer atomicBuffer;
+    private final MutableDirectBuffer informBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BitUtil.SIZE_OF_LONG));
 
     // TODO: these will false share most likely
     private volatile boolean senderClosed = false;
@@ -59,7 +60,7 @@ public class TcpConnection
             channel.bind(localAddress);
             channel.configureBlocking(false);
             receiveByteBuffer = ByteBuffer.allocateDirect(MAX_RECEIVE_LENGTH).order(ByteOrder.nativeOrder());
-            atomicBuffer = new AtomicBuffer(receiveByteBuffer);
+            atomicBuffer = new UnsafeBuffer(receiveByteBuffer);
 
             // connect() and management is done by caller
         }
@@ -80,7 +81,7 @@ public class TcpConnection
 
         this.receiveWriter = receiveWriter;
         receiveByteBuffer = ByteBuffer.allocateDirect(MAX_RECEIVE_LENGTH).order(ByteOrder.nativeOrder());
-        atomicBuffer = new AtomicBuffer(receiveByteBuffer);
+        atomicBuffer = new UnsafeBuffer(receiveByteBuffer);
     }
 
     public SocketChannel channel()

@@ -25,8 +25,8 @@
     <scm>
         <url>https://github.com/kaazing/nuklei.git</url>
         <connection>scm:git:https://github.com/kaazing/nuklei.git</connection>
-      <tag>nuklei-parent-0.1</tag>
-  </scm>
+        <tag>nuklei-parent-0.1</tag>
+    </scm>
 
     <developers>
         <developer>

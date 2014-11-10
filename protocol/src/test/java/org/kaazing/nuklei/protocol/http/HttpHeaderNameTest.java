@@ -17,7 +17,8 @@
 package org.kaazing.nuklei.protocol.http;
 
 import org.junit.Test;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static org.junit.Assert.assertEquals;
 
@@ -26,7 +27,7 @@ public class HttpHeaderNameTest {
     @Test
     public void matchMixedCaseHeader() throws Exception {
         final String request = "GET /path\r\nHosT: www.example.com\r\nCoNtEnt-lEngth: 123\r\n\r\n";
-        AtomicBuffer buf = new AtomicBuffer(request.getBytes("UTF-8"));
+        MutableDirectBuffer buf = new UnsafeBuffer(request.getBytes("UTF-8"));
 
         HttpHeaderName host = HttpHeaderName.get(buf, request.indexOf("HosT"));
         assertEquals(HttpHeaderName.HOST, host);

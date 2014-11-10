@@ -17,7 +17,6 @@
 package org.kaazing.nuklei.kompound;
 
 import org.kaazing.nuklei.DedicatedNuklei;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBuffer;
 import org.kaazing.nuklei.function.Mikro;
@@ -26,6 +25,8 @@ import org.kaazing.nuklei.kompound.cmd.StopCmd;
 import org.kaazing.nuklei.net.TcpManager;
 import org.kaazing.nuklei.net.TcpManagerProxy;
 import org.kaazing.nuklei.net.TcpManagerTypeId;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -41,10 +42,10 @@ public final class Kompound implements AutoCloseable
     public static final int TCP_MANAGER_SEND_BUFFER_SIZE = 64 * 1024 + MpscRingBuffer.STATE_TRAILER_SIZE;
     public static final int MIKRO_RECEIVE_BUFFER_SIZE = 64 * 1024 + MpscRingBuffer.STATE_TRAILER_SIZE;
 
-    private static final AtomicBuffer NULL_BUFFER = new AtomicBuffer(new byte[0]);
+    private static final AtomicBuffer NULL_BUFFER = new UnsafeBuffer(new byte[0]);
 
     private final MpscArrayBuffer<Object> managerCommandQueue = new MpscArrayBuffer<>(TCP_MANAGER_COMMAND_QUEUE_SIZE);
-    private final AtomicBuffer managerSendBuffer = new AtomicBuffer(ByteBuffer.allocate(TCP_MANAGER_SEND_BUFFER_SIZE));
+    private final AtomicBuffer managerSendBuffer = new UnsafeBuffer(ByteBuffer.allocate(TCP_MANAGER_SEND_BUFFER_SIZE));
     private final TcpManager tcpManager;
     private final TcpManagerProxy tcpManagerProxy;
     private final MikroLocator mikroLocator;

@@ -16,8 +16,9 @@
 
 package org.kaazing.nuklei.protocol;
 
-import org.kaazing.nuklei.BitUtil;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Utility functions for handling protocol parsing
@@ -25,13 +26,13 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 public class ProtocolUtil
 {
     public static boolean compareMemory(
-        final AtomicBuffer buffer,
+        final DirectBuffer buffer,
         final int index,
-        final AtomicBuffer valueBuffer,
+        final DirectBuffer valueBuffer,
         final int valueIndex,
         final int length)
     {
-        if (AtomicBuffer.BOUNDS_CHECK)
+        if (UnsafeBuffer.SHOULD_BOUNDS_CHECK)
         {
             if (index + length > buffer.capacity() || valueIndex + length > valueBuffer.capacity())
             {
@@ -73,15 +74,15 @@ public class ProtocolUtil
     }
 
     public static boolean compareCaseInsensitiveMemory(
-        final AtomicBuffer buffer,
+        final DirectBuffer buffer,
         final int index,
-        final AtomicBuffer lowerCaseValueBuffer,
-        final AtomicBuffer upperCaseValueBuffer,
+        final DirectBuffer lowerCaseValueBuffer,
+        final DirectBuffer upperCaseValueBuffer,
         final int valueIndex,
         final int length)
     {
 
-        if (AtomicBuffer.BOUNDS_CHECK)
+        if (UnsafeBuffer.SHOULD_BOUNDS_CHECK)
         {
             if (index + length > buffer.capacity() || valueIndex + length > lowerCaseValueBuffer.capacity())
             {
@@ -110,7 +111,7 @@ public class ProtocolUtil
     }
 
     public static int findNextOccurrence(
-        final AtomicBuffer buffer,
+        final DirectBuffer buffer,
         final int index,
         final byte[] substr,
         final int length)
@@ -139,7 +140,7 @@ public class ProtocolUtil
         return result;
     }
 
-    public static int leadingCount(final AtomicBuffer buffer, final int index, final byte[] delim, final int length)
+    public static int leadingCount(final DirectBuffer buffer, final int index, final byte[] delim, final int length)
     {
         for (int i = 0; i < length; i++)
         {

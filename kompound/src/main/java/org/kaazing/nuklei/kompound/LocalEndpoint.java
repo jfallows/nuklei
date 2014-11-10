@@ -18,12 +18,14 @@ package org.kaazing.nuklei.kompound;
 
 import org.kaazing.nuklei.MessagingNukleus;
 import org.kaazing.nuklei.Nukleus;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferReader;
 import org.kaazing.nuklei.function.Mikro;
 import org.kaazing.nuklei.function.Proxy;
 import org.kaazing.nuklei.net.TcpManagerHeadersDecoder;
 import org.kaazing.nuklei.protocol.http.HttpDispatcher;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -61,12 +63,12 @@ public class LocalEndpoint
 
         if (null != localEndpointConfiguration.file())
         {
-            // TODO: use IoUtils from Aeron to create empty file, map, etc. and create AtomicBuffer
-            buffer = new AtomicBuffer(ByteBuffer.allocateDirect(Kompound.MIKRO_RECEIVE_BUFFER_SIZE));
+            // TODO: use IoUtils from Agrona to create empty file, map, etc. and create AtomicBuffer
+            buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(Kompound.MIKRO_RECEIVE_BUFFER_SIZE));
         }
         else
         {
-            buffer = new AtomicBuffer(ByteBuffer.allocateDirect(Kompound.MIKRO_RECEIVE_BUFFER_SIZE));
+            buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(Kompound.MIKRO_RECEIVE_BUFFER_SIZE));
         }
 
         tcpManagerHeadersDecoder = new TcpManagerHeadersDecoder(ByteOrder.nativeOrder());
@@ -132,7 +134,7 @@ public class LocalEndpoint
         tcpManagerHeadersDecoder.tcpManagerProxy(tcpManagerProxy);
     }
 
-    private void onTcpMessage(final int typeId, final AtomicBuffer buffer, final int offset, final int length)
+    private void onTcpMessage(final int typeId, final MutableDirectBuffer buffer, final int offset, final int length)
     {
         tcpManagerHeadersDecoder.wrap(buffer, offset);
         tcpManagerHeadersDecoder.tcpManagerProxy(tcpManagerProxy);
@@ -144,7 +146,7 @@ public class LocalEndpoint
             length - tcpManagerHeadersDecoder.length());
     }
 
-    private void onHttpMessage(final int typeId, final AtomicBuffer buffer, final int offset, final int length)
+    private void onHttpMessage(final int typeId, final MutableDirectBuffer buffer, final int offset, final int length)
     {
         tcpManagerHeadersDecoder.wrap(buffer, offset);
         httpDispatcher.onMessage(

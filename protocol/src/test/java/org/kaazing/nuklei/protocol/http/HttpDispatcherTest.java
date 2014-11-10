@@ -16,12 +16,12 @@
 
 package org.kaazing.nuklei.protocol.http;
 
-import org.junit.Ignore;
 import org.junit.Test;
-import org.kaazing.nuklei.BitUtil;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.net.TcpManagerHeadersDecoder;
 import org.kaazing.nuklei.net.TcpManagerTypeId;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteOrder;
 
@@ -43,11 +43,11 @@ public class HttpDispatcherTest
     private static final String CONTENT_LENGTH_HEADER_NAME = "Content-Length";
 
     private final HttpDispatcher dispatcher = new HttpDispatcher();
-    private final AtomicBuffer buffer = new AtomicBuffer(new byte[4096]);
+    private final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private TcpManagerHeadersDecoder tcpManagerHeadersDecoder = new TcpManagerHeadersDecoder(ByteOrder.nativeOrder());
 
     private final byte[] bytes = new byte[256];
-    private final AtomicBuffer atomicBuffer = new AtomicBuffer(bytes);
+    private final MutableDirectBuffer atomicBuffer = new UnsafeBuffer(bytes);
 
     private final int[] received = new int[1];
 

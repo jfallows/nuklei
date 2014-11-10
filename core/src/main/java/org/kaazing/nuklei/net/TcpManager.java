@@ -16,17 +16,19 @@
 
 package org.kaazing.nuklei.net;
 
-import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.MessagingNukleus;
 import org.kaazing.nuklei.NioSelectorNukleus;
 import org.kaazing.nuklei.Nuklei;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferWriter;
 import org.kaazing.nuklei.net.command.TcpCloseConnectionCmd;
 import org.kaazing.nuklei.net.command.TcpDetachCmd;
 import org.kaazing.nuklei.net.command.TcpLocalAttachCmd;
 import org.kaazing.nuklei.net.command.TcpRemoteAttachCmd;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -53,7 +55,7 @@ public class TcpManager
     private final TcpSender tcpSender;
     private final Map<Long, TcpAcceptor> localAttachesByIdMap;
     private final Map<Long, TcpConnection> remoteAttachesByIdMap;
-    private final AtomicBuffer informingBuffer;
+    private final MutableDirectBuffer informingBuffer;
 
     public TcpManager(final MpscArrayBuffer<Object> commandQueue, final AtomicBuffer sendBuffer)
     {
@@ -90,7 +92,7 @@ public class TcpManager
 
             localAttachesByIdMap = new HashMap<>();
             remoteAttachesByIdMap = new HashMap<>();
-            informingBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(BitUtil.SIZE_OF_LONG));
+            informingBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BitUtil.SIZE_OF_LONG));
         }
         catch (final Exception ex)
         {

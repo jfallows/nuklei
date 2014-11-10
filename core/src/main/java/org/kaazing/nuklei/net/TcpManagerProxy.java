@@ -16,14 +16,16 @@
 
 package org.kaazing.nuklei.net;
 
-import org.kaazing.nuklei.BitUtil;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferWriter;
 import org.kaazing.nuklei.net.command.TcpCloseConnectionCmd;
 import org.kaazing.nuklei.net.command.TcpDetachCmd;
 import org.kaazing.nuklei.net.command.TcpLocalAttachCmd;
 import org.kaazing.nuklei.net.command.TcpRemoteAttachCmd;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -38,7 +40,7 @@ public class TcpManagerProxy
     private final AtomicBuffer sendBuffer;
     private final MpscRingBufferWriter sendWriter;
     private final ThreadLocal<AtomicBuffer> threadLocalBuffer = ThreadLocal.withInitial(
-        () -> new AtomicBuffer(ByteBuffer.allocateDirect(BitUtil.SIZE_OF_LONG)));
+        () -> new UnsafeBuffer(ByteBuffer.allocateDirect(BitUtil.SIZE_OF_LONG)));
 
     public TcpManagerProxy(final MpscArrayBuffer<Object> commandQueue, final AtomicBuffer sendBuffer)
     {
@@ -143,7 +145,7 @@ public class TcpManagerProxy
      * @param length of the event contents in bytes
      * @return success or failure
      */
-    public boolean write(final int typeId, final AtomicBuffer buffer, final int offset, final int length)
+    public boolean write(final int typeId, final DirectBuffer buffer, final int offset, final int length)
     {
         return sendWriter.write(typeId, buffer, offset, length);
     }

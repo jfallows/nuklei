@@ -19,14 +19,14 @@ package org.kaazing.nuklei.kompound;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
-import org.kaazing.nuklei.function.Mikro;
 import org.kaazing.nuklei.kompound.cmd.StartCmd;
 import org.kaazing.nuklei.kompound.cmd.StopCmd;
 import org.kaazing.nuklei.net.TcpManagerHeadersDecoder;
 import org.kaazing.nuklei.net.TcpManagerTypeId;
 import org.kaazing.robot.junit.annotation.Robotic;
 import org.kaazing.robot.junit.rules.RobotRule;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -137,7 +137,7 @@ public class KompoundTcpIT
 
                         case TcpManagerTypeId.RECEIVED_DATA:
                             final TcpManagerHeadersDecoder decoder = (TcpManagerHeadersDecoder) header;
-                            final AtomicBuffer echoBuffer = new AtomicBuffer(new byte[decoder.length() + length]);
+                            final MutableDirectBuffer echoBuffer = new UnsafeBuffer(new byte[decoder.length() + length]);
 
                             echoBuffer.putBytes(decoder.length(), buffer, offset, length);
                             decoder.respond(echoBuffer, decoder.length(), length);

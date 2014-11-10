@@ -16,10 +16,10 @@
 package org.kaazing.nuklei;
 
 import org.kaazing.nuklei.concurrent.ArrayBufferReader;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.RingBufferReader;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferReader;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 
 import java.util.function.Consumer;
 
