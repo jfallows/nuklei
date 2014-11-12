@@ -15,10 +15,10 @@
  */
 package org.kaazing.nuklei.amqp_1_0.connection;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public interface ConnectionFactory<C, S, L> {
 
-    Connection<C, S, L> newConnection(long id, AtomicBuffer reassemblyBuffer);
+    Connection<C, S, L> newConnection(long id, MutableDirectBuffer reassemblyBuffer);
 
 }

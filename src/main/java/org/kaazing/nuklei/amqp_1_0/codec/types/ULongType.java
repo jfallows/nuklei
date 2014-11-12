@@ -21,10 +21,11 @@ import java.util.function.Consumer;
 import java.util.function.LongFunction;
 import java.util.function.ToLongFunction;
 
-import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.FlyweightBE;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.6 "ulong"
@@ -32,10 +33,10 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 public final class ULongType extends Type {
 
     private static final int OFFSET_KIND = 0;
-    private static final int SIZEOF_KIND = BitUtil.SIZE_OF_UINT8;
+    private static final int SIZEOF_KIND = BitUtil.SIZE_OF_BYTE;
 
     private static final int OFFSET_VALUE = OFFSET_KIND + SIZEOF_KIND;
-    private static final int SIZEOF_VALUE_MAX = BitUtil.SIZE_OF_INT64;
+    private static final int SIZEOF_VALUE_MAX = BitUtil.SIZE_OF_LONG;
     
     static final int SIZEOF_ULONG_MAX = SIZEOF_KIND + SIZEOF_VALUE_MAX;
 
@@ -55,7 +56,7 @@ public final class ULongType extends Type {
     }
 
     @Override
-    public ULongType wrap(AtomicBuffer buffer, int offset) {
+    public ULongType wrap(MutableDirectBuffer buffer, int offset) {
         super.wrap(buffer, offset);
         return this;
     }
@@ -142,7 +143,7 @@ public final class ULongType extends Type {
         }
 
         @Override
-        public Descriptor wrap(AtomicBuffer buffer, int offset) {
+        public Descriptor wrap(MutableDirectBuffer buffer, int offset) {
             super.wrap(buffer, offset);
 
             code.wrap(buffer, offset + OFFSET_CODE);

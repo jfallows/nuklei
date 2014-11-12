@@ -17,9 +17,10 @@ package org.kaazing.nuklei.amqp_1_0.codec.types;
 
 import java.util.function.Consumer;
 
-import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.Flyweight;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.7 "byte"
@@ -27,7 +28,7 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 public final class ByteType extends Type {
 
     private static final int OFFSET_KIND = 0;
-    private static final int SIZEOF_KIND = BitUtil.SIZE_OF_UINT8;
+    private static final int SIZEOF_KIND = BitUtil.SIZE_OF_BYTE;
 
     private static final int OFFSET_VALUE = OFFSET_KIND + SIZEOF_KIND;
     private static final int SIZEOF_VALUE = 1;
@@ -48,7 +49,7 @@ public final class ByteType extends Type {
     }
 
     @Override
-    public ByteType wrap(AtomicBuffer buffer, int offset) {
+    public ByteType wrap(MutableDirectBuffer buffer, int offset) {
         super.wrap(buffer, offset);
         return this;
     }

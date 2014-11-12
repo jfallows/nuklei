@@ -35,7 +35,9 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.kaazing.nuklei.Flyweight;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 @RunWith(Theories.class)
 public class Decimal64TypeTest {
@@ -48,8 +50,8 @@ public class Decimal64TypeTest {
     @DataPoint
     public static final int NON_ZERO_OFFSET = new Random().nextInt(BUFFER_CAPACITY - SIZEOF_INT_MAX - 1) + 1;
 
-    private final AtomicBuffer buffer = new AtomicBuffer(new byte[BUFFER_CAPACITY]);
-    
+    private final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
+
     @Theory
     @Ignore("until decimal64 format implemented")
     public void shouldEncode(int offset) {

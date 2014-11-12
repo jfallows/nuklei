@@ -20,7 +20,8 @@ import java.util.function.LongFunction;
 import java.util.function.ToLongFunction;
 
 import org.kaazing.nuklei.Flyweight;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.4 "Composite Type Representation"
@@ -34,7 +35,7 @@ public class CompositeType extends ListType {
     }
 
     @Override
-    public CompositeType wrap(AtomicBuffer buffer, int offset) {
+    public CompositeType wrap(MutableDirectBuffer buffer, int offset) {
         super.wrap(buffer, offset);
         return this;
     }
@@ -66,7 +67,7 @@ public class CompositeType extends ListType {
         }
 
         @Override
-        public Described wrap(AtomicBuffer buffer, int offset) {
+        public Described wrap(MutableDirectBuffer buffer, int offset) {
             super.wrap(buffer, offset);
             return this;
         }

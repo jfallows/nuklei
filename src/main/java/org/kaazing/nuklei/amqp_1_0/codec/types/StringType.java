@@ -19,13 +19,14 @@ import static java.lang.Integer.highestOneBit;
 
 import java.util.function.Consumer;
 
-import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.FlyweightBE;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.function.AtomicBufferAccessor;
 import org.kaazing.nuklei.function.AtomicBufferMutator;
 import org.kaazing.nuklei.function.AtomicBufferMutator.Mutation;
+
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.20 "string"
@@ -52,7 +53,7 @@ public final class StringType extends Type {
     }
 
     @Override
-    public StringType wrap(AtomicBuffer buffer, int offset) {
+    public StringType wrap(MutableDirectBuffer buffer, int offset) {
         super.wrap(buffer, offset);
         nullable.wrap(buffer, offset);
         length.wrap(buffer, offset);
@@ -105,7 +106,7 @@ public final class StringType extends Type {
     private static final class Length extends FlyweightBE {
 
         private static final int OFFSET_LENGTH_KIND = 0;
-        private static final int SIZEOF_LENGTH_KIND = BitUtil.SIZE_OF_UINT8;
+        private static final int SIZEOF_LENGTH_KIND = BitUtil.SIZE_OF_BYTE;
         private static final int OFFSET_LENGTH = OFFSET_LENGTH_KIND + SIZEOF_LENGTH_KIND;
         
         private static final short WIDTH_KIND_1 = 0xa1;
@@ -114,7 +115,7 @@ public final class StringType extends Type {
         private final Mutation maxOffset = (value) -> { max(value); return limit(); };
 
         @Override
-        public Length wrap(AtomicBuffer buffer, int offset) {
+        public Length wrap(MutableDirectBuffer buffer, int offset) {
             super.wrap(buffer, offset);
             return this;
         }

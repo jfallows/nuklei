@@ -18,9 +18,10 @@ package org.kaazing.nuklei.amqp_1_0.codec.types;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.Flyweight;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.18 "uuid"
@@ -28,13 +29,13 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 public final class UuidType extends Type {
 
     private static final int OFFSET_KIND = 0;
-    private static final int SIZEOF_KIND = BitUtil.SIZE_OF_UINT8;
+    private static final int SIZEOF_KIND = BitUtil.SIZE_OF_BYTE;
 
     private static final int OFFSET_MSB = OFFSET_KIND + SIZEOF_KIND;
-    private static final int SIZEOF_MSB = BitUtil.SIZE_OF_INT64;
+    private static final int SIZEOF_MSB = BitUtil.SIZE_OF_LONG;
     
     private static final int OFFSET_LSB = OFFSET_MSB + SIZEOF_MSB;
-    private static final int SIZEOF_LSB = BitUtil.SIZE_OF_INT64;
+    private static final int SIZEOF_LSB = BitUtil.SIZE_OF_LONG;
     
     static final int SIZEOF_UUID = SIZEOF_KIND + SIZEOF_MSB + SIZEOF_LSB;
 
@@ -52,7 +53,7 @@ public final class UuidType extends Type {
     }
 
     @Override
-    public UuidType wrap(AtomicBuffer buffer, int offset) {
+    public UuidType wrap(MutableDirectBuffer buffer, int offset) {
         super.wrap(buffer, offset);
         return this;
     }

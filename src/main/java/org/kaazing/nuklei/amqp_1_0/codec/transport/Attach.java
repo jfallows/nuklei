@@ -32,9 +32,10 @@ import org.kaazing.nuklei.amqp_1_0.codec.types.StringType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UByteType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UIntType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.ULongType;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.function.AtomicBufferAccessor;
 import org.kaazing.nuklei.function.AtomicBufferMutator;
+
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 2.7.3 "Attach"
@@ -89,7 +90,7 @@ public final class Attach extends CompositeType {
     }
 
     @Override
-    public Attach wrap(AtomicBuffer buffer, int offset) {
+    public Attach wrap(MutableDirectBuffer buffer, int offset) {
         super.wrap(buffer, offset);
         return this;
     }

@@ -32,7 +32,9 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.kaazing.nuklei.Flyweight;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 @RunWith(Theories.class)
 public class ShortTypeTest {
@@ -45,8 +47,8 @@ public class ShortTypeTest {
     @DataPoint
     public static final int NON_ZERO_OFFSET = new Random().nextInt(BUFFER_CAPACITY - SIZEOF_SHORT - 1) + 1;
 
-    private final AtomicBuffer buffer = new AtomicBuffer(new byte[BUFFER_CAPACITY]);
-    
+    private final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
+
     @Theory
     public void shouldEncode(int offset) {
         ShortType shortType = new ShortType();

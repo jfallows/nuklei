@@ -23,7 +23,8 @@ import org.kaazing.nuklei.amqp_1_0.codec.messaging.DeliveryState;
 import org.kaazing.nuklei.amqp_1_0.codec.types.BooleanType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.CompositeType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UIntType;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 2.7.6 "Disposition"
@@ -60,7 +61,7 @@ public final class Disposition extends CompositeType {
     }
 
     @Override
-    public Disposition wrap(AtomicBuffer buffer, int offset) {
+    public Disposition wrap(MutableDirectBuffer buffer, int offset) {
         super.wrap(buffer, offset);
         return this;
     }

@@ -17,9 +17,10 @@ package org.kaazing.nuklei.amqp_1_0.codec.messaging;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.function.AtomicBufferAccessor;
 import org.kaazing.nuklei.function.AtomicBufferMutator;
+
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 3.5.7 "Standard Distribution Mode"
@@ -27,7 +28,7 @@ import org.kaazing.nuklei.function.AtomicBufferMutator;
 public enum DistributionMode {
     MOVE, COPY;
 
-    public static final AtomicBufferAccessor<DistributionMode> READ = (AtomicBuffer buffer, int offset, int size) -> {
+    public static final AtomicBufferAccessor<DistributionMode> READ = (MutableDirectBuffer buffer, int offset, int size) -> {
         switch (buffer.getByte(offset)) {
         case 'm':
             // TODO: verify "move" matches entirely 
@@ -49,7 +50,7 @@ public enum DistributionMode {
     public static final AtomicBufferMutator<DistributionMode> WRITE = new AtomicBufferMutator<DistributionMode>() {
 
         @Override
-        public int mutate(org.kaazing.nuklei.function.AtomicBufferMutator.Mutation mutation, AtomicBuffer buffer, DistributionMode policy) {
+        public int mutate(org.kaazing.nuklei.function.AtomicBufferMutator.Mutation mutation, MutableDirectBuffer buffer, DistributionMode policy) {
             switch (policy) {
             case MOVE:
                 int moveOffset = mutation.maxOffset(MOVE_LENGTH);

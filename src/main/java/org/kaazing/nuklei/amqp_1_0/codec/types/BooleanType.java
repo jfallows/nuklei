@@ -17,11 +17,12 @@ package org.kaazing.nuklei.amqp_1_0.codec.types;
 
 import java.util.function.Consumer;
 
-import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.Flyweight;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.function.BooleanFunction;
 import org.kaazing.nuklei.function.ToBooleanFunction;
+
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.2 "boolean"
@@ -29,10 +30,10 @@ import org.kaazing.nuklei.function.ToBooleanFunction;
 public final class BooleanType extends Type {
 
     private static final int OFFSET_KIND = 0;
-    private static final int SIZEOF_KIND = BitUtil.SIZE_OF_UINT8;
+    private static final int SIZEOF_KIND = BitUtil.SIZE_OF_BYTE;
 
     private static final int OFFSET_VALUE = OFFSET_KIND + SIZEOF_KIND;
-    private static final int SIZEOF_VALUE_MAX = BitUtil.SIZE_OF_UINT8;
+    private static final int SIZEOF_VALUE_MAX = BitUtil.SIZE_OF_BYTE;
 
     static final int SIZEOF_BOOLEAN_MAX = SIZEOF_KIND + SIZEOF_VALUE_MAX;
     
@@ -55,7 +56,7 @@ public final class BooleanType extends Type {
     }
 
     @Override
-    public BooleanType wrap(AtomicBuffer buffer, int offset) {
+    public BooleanType wrap(MutableDirectBuffer buffer, int offset) {
         super.wrap(buffer, offset);
         return this;
     }

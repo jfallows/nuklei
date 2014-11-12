@@ -15,8 +15,9 @@
  */
 package org.kaazing.nuklei.amqp_1_0.sender;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.net.TcpManagerProxy;
+
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 
 public final class TcpSenderFactory {
     

@@ -15,25 +15,27 @@
  */
 package org.kaazing.nuklei.amqp_1_0.connection;
 
-import static org.kaazing.nuklei.BitUtil.SIZE_OF_INT32;
-import static org.kaazing.nuklei.BitUtil.SIZE_OF_LONG;
 import static org.kaazing.nuklei.FlyweightBE.int32Get;
 import static org.kaazing.nuklei.net.TcpManagerTypeId.EOF;
 import static org.kaazing.nuklei.net.TcpManagerTypeId.NEW_CONNECTION;
 import static org.kaazing.nuklei.net.TcpManagerTypeId.RECEIVED_DATA;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.amqp_1_0.codec.transport.Frame;
 import org.kaazing.nuklei.amqp_1_0.codec.transport.Header;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.RingBufferReader.ReadHandler;
 import org.kaazing.nuklei.function.AlignedReadHandler;
 import org.kaazing.nuklei.function.AlignedReadHandler.DataOffsetSupplier;
 import org.kaazing.nuklei.function.StatefulReadHandler;
+
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public final class ConnectionReadHandler<C, S, L> implements ReadHandler {
 
@@ -58,17 +60,17 @@ public final class ConnectionReadHandler<C, S, L> implements ReadHandler {
     }
 
     @Override
-    public void onMessage(int typeId, AtomicBuffer buffer, int offset, int length) {
+    public void onMessage(int typeId, MutableDirectBuffer buffer, int offset, int length) {
         readHandler.onMessage(typeId, buffer, offset, length);
     }
 
-    private static <C, S, L> int alignLength(Connection<C, S, L> connection, int typeId, AtomicBuffer buffer, int offset, int length)  {
+    private static <C, S, L> int alignLength(Connection<C, S, L> connection, int typeId, MutableDirectBuffer buffer, int offset, int length)  {
         switch (typeId) {
         case RECEIVED_DATA:
             switch (connection.state) {
             case START:
             case HEADER_SENT:
-                if (length >= SIZE_OF_LONG + Header.SIZEOF_HEADER + SIZE_OF_INT32) {
+                if (length >= SIZE_OF_LONG + Header.SIZEOF_HEADER + SIZE_OF_INT) {
                     return SIZE_OF_LONG + Header.SIZEOF_HEADER + int32Get(buffer, offset + SIZE_OF_LONG + 8);
                 }
                 return SIZE_OF_LONG + Header.SIZEOF_HEADER;
@@ -80,7 +82,7 @@ public final class ConnectionReadHandler<C, S, L> implements ReadHandler {
         }
     }
     
-    private void readAligned(Connection<C, S, L> connection, int typeId, AtomicBuffer buffer, int offset, int length)  {
+    private void readAligned(Connection<C, S, L> connection, int typeId, MutableDirectBuffer buffer, int offset, int length)  {
         if (connection == null) {
             return;
         }
@@ -117,11 +119,11 @@ public final class ConnectionReadHandler<C, S, L> implements ReadHandler {
         }
     }
     
-    private Connection<C, S, L> connectionLifecycle(int typeId, AtomicBuffer buffer, int offset, int length)  {
+    private Connection<C, S, L> connectionLifecycle(int typeId, MutableDirectBuffer buffer, int offset, int length)  {
         switch (typeId) {
         case NEW_CONNECTION:
             long newConnectionID = buffer.getLong(offset);
-            AtomicBuffer reassemblyBuffer = new AtomicBuffer(ByteBuffer.allocate(8192));
+            MutableDirectBuffer reassemblyBuffer = new UnsafeBuffer(ByteBuffer.allocate(8192));
             Connection<C, S, L> newConnection = connectionFactory.newConnection(newConnectionID, reassemblyBuffer);
             statesByConnectionID.put(newConnectionID, newConnection);
             return newConnection;

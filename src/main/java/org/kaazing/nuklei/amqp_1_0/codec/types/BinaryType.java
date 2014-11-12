@@ -19,11 +19,12 @@ import static java.lang.Integer.highestOneBit;
 
 import java.util.function.Consumer;
 
-import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.Flyweight;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.function.AtomicBufferAccessor;
 import org.kaazing.nuklei.function.AtomicBufferMutator;
+
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.19 "binary"
@@ -31,10 +32,10 @@ import org.kaazing.nuklei.function.AtomicBufferMutator;
 public final class BinaryType extends Type {
 
     private static final int OFFSET_LENGTH_KIND = 0;
-    private static final int SIZEOF_LENGTH_KIND = BitUtil.SIZE_OF_UINT8;
+    private static final int SIZEOF_LENGTH_KIND = BitUtil.SIZE_OF_BYTE;
 
     private static final int OFFSET_LENGTH = OFFSET_LENGTH_KIND + SIZEOF_LENGTH_KIND;
-    static final int SIZEOF_LENGTH_MAX = BitUtil.SIZE_OF_UINT32;
+    static final int SIZEOF_LENGTH_MAX = BitUtil.SIZE_OF_INT;
 
     private static final short WIDTH_KIND_1 = 0xa0;
     private static final short WIDTH_KIND_4 = 0xb0;
@@ -51,7 +52,7 @@ public final class BinaryType extends Type {
     }
 
     @Override
-    public BinaryType wrap(AtomicBuffer buffer, int offset) {
+    public BinaryType wrap(MutableDirectBuffer buffer, int offset) {
         super.wrap(buffer, offset);
         return this;
     }
@@ -129,9 +130,9 @@ public final class BinaryType extends Type {
 
         switch (widthKind()) {
         case WIDTH_KIND_1:
-            return offset() + OFFSET_LENGTH + BitUtil.SIZE_OF_UINT8;
+            return offset() + OFFSET_LENGTH + BitUtil.SIZE_OF_BYTE;
         case WIDTH_KIND_4:
-            return offset() + OFFSET_LENGTH + BitUtil.SIZE_OF_UINT32;
+            return offset() + OFFSET_LENGTH + BitUtil.SIZE_OF_INT;
         default:
             throw new IllegalStateException();
         }

@@ -37,8 +37,10 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.amqp_1_0.codec.types.Type.Kind;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.function.AtomicBufferMutator;
+
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 @RunWith(Theories.class)
 public class DynamicTypeTest {
@@ -52,8 +54,8 @@ public class DynamicTypeTest {
     @DataPoint
     public static final int NON_ZERO_OFFSET = new Random().nextInt(BUFFER_CAPACITY - 256) + 1;
 
-    private final AtomicBuffer buffer = new AtomicBuffer(new byte[BUFFER_CAPACITY]);
-    
+    private final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
+
     @Theory
     public void shouldDecodeDynamicAsArray1(int offset) {
         ArrayType arrayType = new ArrayType();

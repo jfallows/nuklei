@@ -23,7 +23,8 @@ import org.kaazing.nuklei.amqp_1_0.codec.types.ArrayType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.CompositeType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UIntType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UShortType;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 2.7.2 "Begin"
@@ -66,7 +67,7 @@ public final class Begin extends CompositeType {
     }
 
     @Override
-    public Begin wrap(AtomicBuffer buffer, int offset) {
+    public Begin wrap(MutableDirectBuffer buffer, int offset) {
         super.wrap(buffer, offset);
         return this;
     }

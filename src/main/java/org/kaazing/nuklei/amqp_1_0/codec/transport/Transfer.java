@@ -25,9 +25,10 @@ import org.kaazing.nuklei.amqp_1_0.codec.types.BooleanType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.CompositeType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UByteType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UIntType;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.function.AtomicBufferAccessor;
 import org.kaazing.nuklei.function.AtomicBufferMutator;
+
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 2.7.5 "Transfer"
@@ -76,7 +77,7 @@ public final class Transfer extends CompositeType {
     }
 
     @Override
-    public Transfer wrap(AtomicBuffer buffer, int offset) {
+    public Transfer wrap(MutableDirectBuffer buffer, int offset) {
         super.wrap(buffer, offset);
         return this;
     }

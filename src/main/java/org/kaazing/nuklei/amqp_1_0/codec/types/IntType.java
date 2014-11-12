@@ -19,9 +19,10 @@ import static java.lang.Long.highestOneBit;
 
 import java.util.function.Consumer;
 
-import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.Flyweight;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.9 "int"
@@ -29,10 +30,10 @@ import org.kaazing.nuklei.concurrent.AtomicBuffer;
 public final class IntType extends Type {
 
     private static final int OFFSET_KIND = 0;
-    private static final int SIZEOF_KIND = BitUtil.SIZE_OF_UINT8;
+    private static final int SIZEOF_KIND = BitUtil.SIZE_OF_BYTE;
 
     private static final int OFFSET_VALUE = OFFSET_KIND + SIZEOF_KIND;
-    private static final int SIZEOF_VALUE_MAX = BitUtil.SIZE_OF_INT32;
+    private static final int SIZEOF_VALUE_MAX = BitUtil.SIZE_OF_INT;
 
     static final int SIZEOF_INT_MAX = SIZEOF_KIND + SIZEOF_VALUE_MAX;
     
@@ -51,7 +52,7 @@ public final class IntType extends Type {
     }
 
     @Override
-    public IntType wrap(AtomicBuffer buffer, int offset) {
+    public IntType wrap(MutableDirectBuffer buffer, int offset) {
         super.wrap(buffer, offset);
         return this;
     }

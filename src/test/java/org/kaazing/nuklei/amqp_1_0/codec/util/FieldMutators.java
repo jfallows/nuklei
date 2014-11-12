@@ -20,8 +20,9 @@ import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.function.AtomicBufferMutator;
+
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public class FieldMutators {
 
@@ -31,10 +32,10 @@ public class FieldMutators {
             private final int maxBytesPerChar = (int) encoder.maxBytesPerChar();
     
             @Override
-            public int mutate(Mutation mutation, AtomicBuffer buffer, String value) {
+            public int mutate(Mutation mutation, MutableDirectBuffer buffer, String value) {
                 int offset = mutation.maxOffset(value.length() * maxBytesPerChar);
                 ByteBuffer buf = buffer.byteBuffer();
-                ByteBuffer out = buf != null ? buf.duplicate() : ByteBuffer.wrap(buffer.array());
+                ByteBuffer out = buf != null ? buf.duplicate() : ByteBuffer.wrap(buffer.byteArray());
                 out.position(offset);
                 encoder.reset();
                 encoder.encode(CharBuffer.wrap(value), out, true);

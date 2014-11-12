@@ -21,7 +21,8 @@ import org.kaazing.nuklei.FlyweightBE;
 import org.kaazing.nuklei.amqp_1_0.codec.messaging.Performative;
 import org.kaazing.nuklei.amqp_1_0.codec.types.DynamicType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.ULongType;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public final class Frame extends FlyweightBE {
 
@@ -56,7 +57,7 @@ public final class Frame extends FlyweightBE {
     }
 
     @Override
-    public Frame wrap(AtomicBuffer buffer, int offset) {
+    public Frame wrap(MutableDirectBuffer buffer, int offset) {
         super.wrap(buffer, offset);
         return this;
     }

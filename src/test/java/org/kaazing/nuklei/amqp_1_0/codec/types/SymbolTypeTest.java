@@ -20,8 +20,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.kaazing.nuklei.Flyweight.uint8Get;
 import static org.kaazing.nuklei.FlyweightBE.int32Get;
-import static org.kaazing.nuklei.amqp_1_0.codec.util.FieldMutators.newMutator;
 import static org.kaazing.nuklei.amqp_1_0.codec.util.FieldAccessors.newAccessor;
+import static org.kaazing.nuklei.amqp_1_0.codec.util.FieldMutators.newMutator;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -35,9 +35,11 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.kaazing.nuklei.Flyweight;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
-import org.kaazing.nuklei.function.AtomicBufferMutator;
 import org.kaazing.nuklei.function.AtomicBufferAccessor;
+import org.kaazing.nuklei.function.AtomicBufferMutator;
+
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 @RunWith(Theories.class)
 public class SymbolTypeTest {
@@ -52,8 +54,8 @@ public class SymbolTypeTest {
     @DataPoint
     public static final int NON_ZERO_OFFSET = new Random().nextInt(BUFFER_CAPACITY - 256) + 1;
 
-    private final AtomicBuffer buffer = new AtomicBuffer(new byte[BUFFER_CAPACITY]);
-    
+    private final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
+
     @Theory
     public void shouldEncode1(int offset) {
         SymbolType symbolType = new SymbolType();

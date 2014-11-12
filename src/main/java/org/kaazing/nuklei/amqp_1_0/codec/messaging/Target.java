@@ -24,9 +24,10 @@ import org.kaazing.nuklei.amqp_1_0.codec.types.ListType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.StringType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.SymbolType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UIntType;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.function.AtomicBufferAccessor;
 import org.kaazing.nuklei.function.AtomicBufferMutator;
+
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 3.5.3 "Source"
@@ -66,7 +67,7 @@ public final class Target extends ListType {
     }
 
     @Override
-    public Target wrap(AtomicBuffer buffer, int offset) {
+    public Target wrap(MutableDirectBuffer buffer, int offset) {
         super.wrap(buffer, offset);
         return this;
     }

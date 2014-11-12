@@ -31,7 +31,8 @@ import org.kaazing.nuklei.amqp_1_0.codec.transport.Flow;
 import org.kaazing.nuklei.amqp_1_0.codec.transport.Frame;
 import org.kaazing.nuklei.amqp_1_0.function.FrameConsumer;
 import org.kaazing.nuklei.amqp_1_0.sender.Sender;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class SessionStateMachineTest {
 
@@ -39,7 +40,7 @@ public class SessionStateMachineTest {
     private final SessionStateMachine<Void, Void> stateMachine = new SessionStateMachine<>(sessionHooks);
     private final Session<Void, Void> session = new Session<>(stateMachine, mock(Sender.class));
 
-    private final Frame frame = Frame.LOCAL_REF.get().wrap(new AtomicBuffer(new byte[64]), 0);
+    private final Frame frame = Frame.LOCAL_REF.get().wrap(new UnsafeBuffer(new byte[64]), 0);
     private final Begin begin = Begin.LOCAL_REF.get();
     private final Flow flow = Flow.LOCAL_REF.get();
     private final Disposition disposition = Disposition.LOCAL_REF.get();

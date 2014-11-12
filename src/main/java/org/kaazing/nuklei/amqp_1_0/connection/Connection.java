@@ -24,12 +24,13 @@ import org.kaazing.nuklei.amqp_1_0.codec.transport.Header;
 import org.kaazing.nuklei.amqp_1_0.codec.transport.Open;
 import org.kaazing.nuklei.amqp_1_0.sender.Sender;
 import org.kaazing.nuklei.amqp_1_0.session.Session;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public class Connection<C, S, L> {
     
     public final Sender sender;
-    public final AtomicBuffer reassemblyBuffer;
+    public final MutableDirectBuffer reassemblyBuffer;
     public final ConnectionStateMachine<C, S, L> stateMachine;
     public final Map<Integer, Session<S, L>> sessions;
     
@@ -39,7 +40,7 @@ public class Connection<C, S, L> {
     public C parameter;
     public ConnectionState state;
 
-    public Connection(ConnectionStateMachine<C, S, L> stateMachine, Sender sender, AtomicBuffer reassemblyBuffer) {
+    public Connection(ConnectionStateMachine<C, S, L> stateMachine, Sender sender, MutableDirectBuffer reassemblyBuffer) {
         this.stateMachine = stateMachine;
         this.sender = sender;
         this.reassemblyBuffer = reassemblyBuffer;

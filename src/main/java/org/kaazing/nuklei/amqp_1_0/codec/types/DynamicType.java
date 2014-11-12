@@ -18,7 +18,8 @@ package org.kaazing.nuklei.amqp_1_0.codec.types;
 import java.util.function.Consumer;
 
 import org.kaazing.nuklei.Flyweight;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public class DynamicType extends Type {
 
@@ -141,7 +142,7 @@ public class DynamicType extends Type {
     }
 
     @Override
-    public DynamicType wrap(AtomicBuffer buffer, int offset) {
+    public DynamicType wrap(MutableDirectBuffer buffer, int offset) {
         super.wrap(buffer, offset);
         return this;
     }
