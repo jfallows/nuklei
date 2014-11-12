@@ -22,7 +22,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>uk.co.real_logic</groupId>
+            <groupId>uk.co.real-logic</groupId>
             <artifactId>Agrona</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
