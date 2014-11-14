@@ -67,7 +67,6 @@ public class TcpManagerHeadersDecoder extends Flyweight
      * @param offset within the buffer to start the response from
      * @param length of the response in bytes
      */
-    @Override
     public void respond(final MutableDirectBuffer buffer, final int offset, final int length)
     {
         if (HEADER_LENGTH > offset)
