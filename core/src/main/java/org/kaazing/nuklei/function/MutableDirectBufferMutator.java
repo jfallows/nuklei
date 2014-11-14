@@ -18,7 +18,7 @@ package org.kaazing.nuklei.function;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 @FunctionalInterface
-public interface AtomicBufferMutator<T>
+public interface MutableDirectBufferMutator<T>
 {
     int mutate(Mutation mutation, MutableDirectBuffer buffer, T value);
 

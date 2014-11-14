@@ -15,10 +15,10 @@
  */
 package org.kaazing.nuklei.function;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 @FunctionalInterface
-public interface AtomicBufferAccessor<T>
+public interface DirectBufferAccessor<T>
 {
-    T access(MutableDirectBuffer buffer, int offset, int size);
+    T access(DirectBuffer buffer, int offset, int size);
 }

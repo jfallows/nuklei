@@ -16,12 +16,13 @@
 
 package org.kaazing.nuklei.net;
 
+import java.nio.ByteOrder;
+
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.function.Proxy;
+
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
-
-import java.nio.ByteOrder;
 
 public class TcpManagerHeadersDecoder extends Flyweight
 {
@@ -66,6 +67,7 @@ public class TcpManagerHeadersDecoder extends Flyweight
      * @param offset within the buffer to start the response from
      * @param length of the response in bytes
      */
+    @Override
     public void respond(final MutableDirectBuffer buffer, final int offset, final int length)
     {
         if (HEADER_LENGTH > offset)
@@ -77,4 +79,5 @@ public class TcpManagerHeadersDecoder extends Flyweight
         buffer.putLong(offset - HEADER_LENGTH, connectionId());
         tcpManagerProxy.write(TcpManagerTypeId.SEND_DATA, buffer, offset - HEADER_LENGTH, length + HEADER_LENGTH);
     }
+
 }

@@ -20,29 +20,27 @@ import java.util.Objects;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 @FunctionalInterface
-public interface AlignedReadHandler<T> extends StatefulReadHandler<T>
+public interface AlignedMikro<T> extends StatefulMikro<T>
 {
 
-    default StatefulReadHandler<T> alignedBy(
-        DataOffsetSupplier data, StorageSupplier<T> storage, AlignmentSupplier<T> alignment)
+    default StatefulMikro<T> alignedBy(StorageSupplier<T> storage, AlignmentSupplier<T> alignment)
     {
         Objects.requireNonNull(storage);
         int replayOffset[] = { 0 };
         int replayLimit[] = { 0 };
-        return (state, typeId, buffer, offset, length) ->
+        return (state, header, typeId, buffer, offset, length) ->
         {
 
             MutableDirectBuffer replayBuffer = storage.supply(state);
-            int dataOffset = data.supplyAsInt(typeId);
 
             // determine alignment boundary
             if (replayOffset[0] != replayLimit[0])
             {
-                int newReplayOffset = replayOffset[0] + length - dataOffset;
+                int newReplayOffset = replayOffset[0] + length;
                 if (newReplayOffset < replayLimit[0])
                 {
                     // retain partial frame for re-assembly
-                    replayBuffer.putBytes(replayOffset[0], buffer, offset + dataOffset, length - dataOffset);
+                    replayBuffer.putBytes(replayOffset[0], buffer, offset, length);
                     replayOffset[0] = newReplayOffset;
                     // no remaining data to process
                     return;
@@ -51,12 +49,12 @@ public interface AlignedReadHandler<T> extends StatefulReadHandler<T>
                 {
                     // complete the re-assembled frame
                     replayBuffer.putBytes(
-                        replayOffset[0], buffer, offset + dataOffset, replayLimit[0] - replayOffset[0]);
-                    onMessage(state, typeId, replayBuffer, 0, replayLimit[0]);
+                        replayOffset[0], buffer, offset, replayLimit[0] - replayOffset[0]);
+                    onMessage(state, header, typeId, replayBuffer, 0, replayLimit[0]);
 
                     // update offset and length for remaining processing
-                    offset += replayLimit[0] - replayOffset[0] + dataOffset;
-                    length -= replayLimit[0] - replayOffset[0] + dataOffset;
+                    offset += replayLimit[0] - replayOffset[0];
+                    length -= replayLimit[0] - replayOffset[0];
                     replayOffset[0] = replayLimit[0] = 0;
 
                     // no remaining data to process
@@ -67,25 +65,24 @@ public interface AlignedReadHandler<T> extends StatefulReadHandler<T>
                 }
             }
 
-            int alignedLength = alignment.supply(state, typeId, buffer, offset, length);
+            int alignedLength = alignment.supply(state, header, typeId, buffer, offset, length);
             if (alignedLength == length)
             {
                 // propagate aligned frame(s)
-                onMessage(state, typeId, buffer, offset, length);
+                onMessage(state, header, typeId, buffer, offset, length);
             }
             else if (alignedLength < length)
             {
                 // propagate aligned frame(s)
-                onMessage(state, typeId, buffer, offset, alignedLength);
+                onMessage(state, header, typeId, buffer, offset, alignedLength);
 
                 // retain partial frame for re-assembly
-                replayBuffer.putBytes(replayOffset[0], buffer, offset, dataOffset);
                 offset += alignedLength;
                 length -= alignedLength;
-                replayBuffer.putBytes(replayOffset[0] + dataOffset, buffer, offset, length);
+                replayBuffer.putBytes(replayOffset[0], buffer, offset, length);
 
-                replayOffset[0] += length + dataOffset;
-                replayLimit[0] = alignment.supply(state, typeId, replayBuffer, 0, replayOffset[0]);
+                replayOffset[0] += length;
+                replayLimit[0] = alignment.supply(state, header, typeId, replayBuffer, 0, replayOffset[0]);
             }
             else
             {
@@ -106,14 +103,8 @@ public interface AlignedReadHandler<T> extends StatefulReadHandler<T>
     }
 
     @FunctionalInterface
-    public interface DataOffsetSupplier
-    {
-        int supplyAsInt(int typeId);
-    }
-
-    @FunctionalInterface
     public interface AlignmentSupplier<T>
     {
-        int supply(T state, int typeId, MutableDirectBuffer buffer, int offset, int length);
+        int supply(T state, Object header, int typeId, MutableDirectBuffer buffer, int offset, int length);
     }
 }
