@@ -15,9 +15,6 @@
  */
 package org.kaazing.nuklei.amqp_1_0.connection;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.kaazing.nuklei.amqp_1_0.codec.transport.Close;
 import org.kaazing.nuklei.amqp_1_0.codec.transport.Frame;
 import org.kaazing.nuklei.amqp_1_0.codec.transport.Header;
@@ -26,13 +23,14 @@ import org.kaazing.nuklei.amqp_1_0.sender.Sender;
 import org.kaazing.nuklei.amqp_1_0.session.Session;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 
 public class Connection<C, S, L> {
     
     public final Sender sender;
     public final MutableDirectBuffer reassemblyBuffer;
     public final ConnectionStateMachine<C, S, L> stateMachine;
-    public final Map<Integer, Session<S, L>> sessions;
+    public final Int2ObjectHashMap<Session<S, L>> sessions;
     
     public long headerSent;
     public long headerReceived;
@@ -44,7 +42,7 @@ public class Connection<C, S, L> {
         this.stateMachine = stateMachine;
         this.sender = sender;
         this.reassemblyBuffer = reassemblyBuffer;
-        this.sessions = new HashMap<>();
+        this.sessions = new Int2ObjectHashMap<>();
     }
 
     public void send(Header header) {

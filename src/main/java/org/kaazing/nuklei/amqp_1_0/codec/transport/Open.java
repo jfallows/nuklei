@@ -24,8 +24,8 @@ import org.kaazing.nuklei.amqp_1_0.codec.types.CompositeType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.StringType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UIntType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UShortType;
-import org.kaazing.nuklei.function.AtomicBufferAccessor;
-import org.kaazing.nuklei.function.AtomicBufferMutator;
+import org.kaazing.nuklei.function.DirectBufferAccessor;
+import org.kaazing.nuklei.function.MutableDirectBufferMutator;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
@@ -97,12 +97,12 @@ public final class Open extends CompositeType {
         return this;
     }
     
-    public <T> Open setContainerId(AtomicBufferMutator<T> mutator, T value) {
+    public <T> Open setContainerId(MutableDirectBufferMutator<T> mutator, T value) {
         containerId().set(mutator, value);
         return this;
     }
     
-    public <T> T getContainerId(AtomicBufferAccessor<T> accessor) {
+    public <T> T getContainerId(DirectBufferAccessor<T> accessor) {
         return containerId().get(accessor);
     }
 
@@ -111,12 +111,12 @@ public final class Open extends CompositeType {
         return this;
     }
     
-    public <T> Open setHostname(AtomicBufferMutator<T> mutator, T value) {
+    public <T> Open setHostname(MutableDirectBufferMutator<T> mutator, T value) {
         hostname().set(mutator, value);
         return this;
     }
     
-    public <T> T getHostname(AtomicBufferAccessor<T> accessor) {
+    public <T> T getHostname(DirectBufferAccessor<T> accessor) {
         return hostname().get(accessor);
     }
 

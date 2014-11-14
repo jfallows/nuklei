@@ -24,8 +24,8 @@ import org.kaazing.nuklei.amqp_1_0.codec.types.ListType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.StringType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.SymbolType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UIntType;
-import org.kaazing.nuklei.function.AtomicBufferAccessor;
-import org.kaazing.nuklei.function.AtomicBufferMutator;
+import org.kaazing.nuklei.function.DirectBufferAccessor;
+import org.kaazing.nuklei.function.MutableDirectBufferMutator;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
@@ -89,12 +89,12 @@ public final class Target extends ListType {
         return this;
     }
     
-    public <T> Target setAddress(AtomicBufferMutator<T> mutator, T value) {
+    public <T> Target setAddress(MutableDirectBufferMutator<T> mutator, T value) {
         address().set(mutator, value);
         return this;
     }
     
-    public <T> T getAddress(AtomicBufferAccessor<T> accessor) {
+    public <T> T getAddress(DirectBufferAccessor<T> accessor) {
         return address().get(accessor);
     }
 

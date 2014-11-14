@@ -20,18 +20,18 @@ import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 
-import org.kaazing.nuklei.function.AtomicBufferAccessor;
+import org.kaazing.nuklei.function.DirectBufferAccessor;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 public class FieldAccessors {
 
-    public static final AtomicBufferAccessor<String> newAccessor(final Charset charset) {
-        return new AtomicBufferAccessor<String>() {
+    public static final DirectBufferAccessor<String> newAccessor(final Charset charset) {
+        return new DirectBufferAccessor<String>() {
             private final CharsetDecoder decoder = charset.newDecoder();
     
             @Override
-            public String access(MutableDirectBuffer buffer, int offset, int size) {
+            public String access(DirectBuffer buffer, int offset, int size) {
                 ByteBuffer buf = buffer.byteBuffer();
                 ByteBuffer in = buf != null ? buf.duplicate() : ByteBuffer.wrap(buffer.byteArray());
                 in.position(offset);

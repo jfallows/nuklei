@@ -17,9 +17,10 @@ package org.kaazing.nuklei.amqp_1_0.codec.messaging;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
-import org.kaazing.nuklei.function.AtomicBufferAccessor;
-import org.kaazing.nuklei.function.AtomicBufferMutator;
+import org.kaazing.nuklei.function.DirectBufferAccessor;
+import org.kaazing.nuklei.function.MutableDirectBufferMutator;
 
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /*
@@ -28,7 +29,7 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 public enum TerminusExpiryPolicy {
     LINK_DETACH, SESSION_END, CONNECTION_CLOSE, NEVER;
 
-    public static final AtomicBufferAccessor<TerminusExpiryPolicy> READ = (MutableDirectBuffer buffer, int offset, int size) -> {
+    public static final DirectBufferAccessor<TerminusExpiryPolicy> READ = (DirectBuffer buffer, int offset, int size) -> {
         switch (buffer.getByte(offset)) {
         case 'l':
             // TODO: verify "link-detach" matches entirely 
@@ -57,10 +58,10 @@ public enum TerminusExpiryPolicy {
     private static final int CONNECTION_CLOSE_LENGTH = CONNECTION_CLOSE_BYTES.length;
     private static final int NEVER_LENGTH = NEVER_BYTES.length;
 
-    public static final AtomicBufferMutator<TerminusExpiryPolicy> WRITE = new AtomicBufferMutator<TerminusExpiryPolicy>() {
+    public static final MutableDirectBufferMutator<TerminusExpiryPolicy> WRITE = new MutableDirectBufferMutator<TerminusExpiryPolicy>() {
 
         @Override
-        public int mutate(org.kaazing.nuklei.function.AtomicBufferMutator.Mutation mutation, MutableDirectBuffer buffer, TerminusExpiryPolicy policy) {
+        public int mutate(org.kaazing.nuklei.function.MutableDirectBufferMutator.Mutation mutation, MutableDirectBuffer buffer, TerminusExpiryPolicy policy) {
             switch (policy) {
             case LINK_DETACH:
                 buffer.putBytes(mutation.maxOffset(LINK_DETACH_LENGTH), LINK_DETACH_BYTES);

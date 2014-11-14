@@ -25,8 +25,8 @@ import org.kaazing.nuklei.amqp_1_0.codec.types.BooleanType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.CompositeType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UByteType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UIntType;
-import org.kaazing.nuklei.function.AtomicBufferAccessor;
-import org.kaazing.nuklei.function.AtomicBufferMutator;
+import org.kaazing.nuklei.function.DirectBufferAccessor;
+import org.kaazing.nuklei.function.MutableDirectBufferMutator;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
@@ -113,12 +113,12 @@ public final class Transfer extends CompositeType {
     }
     
 
-    public <T> Transfer setDeliveryTag(AtomicBufferMutator<T> mutator, T value) {
+    public <T> Transfer setDeliveryTag(MutableDirectBufferMutator<T> mutator, T value) {
         deliveryTag().set(mutator, value);
         return this;
     }
     
-    public <T> T getDeliveryTag(AtomicBufferAccessor<T> accessor) {
+    public <T> T getDeliveryTag(DirectBufferAccessor<T> accessor) {
         return deliveryTag().get(accessor);
     }
 

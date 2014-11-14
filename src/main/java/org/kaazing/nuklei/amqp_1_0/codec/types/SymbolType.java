@@ -21,9 +21,9 @@ import java.util.function.Consumer;
 
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.FlyweightBE;
-import org.kaazing.nuklei.function.AtomicBufferAccessor;
-import org.kaazing.nuklei.function.AtomicBufferMutator;
-import org.kaazing.nuklei.function.AtomicBufferMutator.Mutation;
+import org.kaazing.nuklei.function.DirectBufferAccessor;
+import org.kaazing.nuklei.function.MutableDirectBufferMutator;
+import org.kaazing.nuklei.function.MutableDirectBufferMutator.Mutation;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
@@ -56,11 +56,11 @@ public final class SymbolType extends Type {
         length.wrap(buffer, offset);
         return this;
     }
-    public <T> T get(AtomicBufferAccessor<T> accessor) {
+    public <T> T get(DirectBufferAccessor<T> accessor) {
         return accessor.access(buffer(), length.limit(), length.get());
     }
     
-    public <T> SymbolType set(AtomicBufferMutator<T> mutator, T value) {
+    public <T> SymbolType set(MutableDirectBufferMutator<T> mutator, T value) {
         length.set(mutator.mutate(length.maxOffset(), buffer(), value));
         notifyChanged();
         return this;
@@ -197,7 +197,7 @@ public final class SymbolType extends Type {
             return this;
         }
 
-        public <T> T get(AtomicBufferAccessor<T> accessor) {
+        public <T> T get(DirectBufferAccessor<T> accessor) {
             return code.get(accessor);
         }
 

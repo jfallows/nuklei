@@ -37,7 +37,7 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.amqp_1_0.codec.types.Type.Kind;
-import org.kaazing.nuklei.function.AtomicBufferMutator;
+import org.kaazing.nuklei.function.MutableDirectBufferMutator;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -46,7 +46,7 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 public class DynamicTypeTest {
 
     private static final int BUFFER_CAPACITY = 512;
-    private static final AtomicBufferMutator<String> WRITE_UTF_8 = newMutator(UTF_8);
+    private static final MutableDirectBufferMutator<String> WRITE_UTF_8 = newMutator(UTF_8);
 
     @DataPoint
     public static final int ZERO_OFFSET = 0;

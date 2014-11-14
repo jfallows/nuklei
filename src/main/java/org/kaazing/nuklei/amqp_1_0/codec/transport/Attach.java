@@ -32,8 +32,8 @@ import org.kaazing.nuklei.amqp_1_0.codec.types.StringType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UByteType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UIntType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.ULongType;
-import org.kaazing.nuklei.function.AtomicBufferAccessor;
-import org.kaazing.nuklei.function.AtomicBufferMutator;
+import org.kaazing.nuklei.function.DirectBufferAccessor;
+import org.kaazing.nuklei.function.MutableDirectBufferMutator;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
@@ -112,12 +112,12 @@ public final class Attach extends CompositeType {
         return this;
     }
     
-    public <T> Attach setName(AtomicBufferMutator<T> mutator, T value) {
+    public <T> Attach setName(MutableDirectBufferMutator<T> mutator, T value) {
         name().set(mutator, value);
         return this;
     }
     
-    public <T> T getName(AtomicBufferAccessor<T> accessor) {
+    public <T> T getName(DirectBufferAccessor<T> accessor) {
         return name().get(accessor);
     }
 

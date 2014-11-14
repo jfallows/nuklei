@@ -20,8 +20,8 @@ import static java.lang.Integer.highestOneBit;
 import java.util.function.Consumer;
 
 import org.kaazing.nuklei.Flyweight;
-import org.kaazing.nuklei.function.AtomicBufferAccessor;
-import org.kaazing.nuklei.function.AtomicBufferMutator;
+import org.kaazing.nuklei.function.DirectBufferAccessor;
+import org.kaazing.nuklei.function.MutableDirectBufferMutator;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
@@ -57,7 +57,7 @@ public final class BinaryType extends Type {
         return this;
     }
 
-    public <T> T get(AtomicBufferAccessor<T> accessor) {
+    public <T> T get(DirectBufferAccessor<T> accessor) {
 
         switch (widthKind()) {
         case WIDTH_KIND_1:
@@ -69,7 +69,7 @@ public final class BinaryType extends Type {
         }
     }
     
-    public <T> BinaryType set(AtomicBufferMutator<T> mutator, T value) {
+    public <T> BinaryType set(MutableDirectBufferMutator<T> mutator, T value) {
         length(mutator.mutate((length) -> { maxLength(length); return lengthLimit(); }, buffer(), value));
         notifyChanged();
         return this;

@@ -15,21 +15,49 @@
  */
 package org.kaazing.nuklei.amqp_1_0.sender;
 
-import org.kaazing.nuklei.net.TcpManagerProxy;
+import org.kaazing.nuklei.Flyweight;
+import org.kaazing.nuklei.net.TcpManagerHeadersDecoder;
 
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public final class TcpSenderFactory {
-    
-    private final TcpManagerProxy transport;
-    private final AtomicBuffer sendBuffer;
+public final class TcpSenderFactory implements SenderFactory {
 
-    public TcpSenderFactory(TcpManagerProxy transport, AtomicBuffer sendBuffer) {
-        this.transport = transport;
+    private final MutableDirectBuffer sendBuffer;
+
+    public TcpSenderFactory(MutableDirectBuffer sendBuffer) {
         this.sendBuffer = sendBuffer;
     }
 
-    public TcpSender newSender(long id) {
-        return new TcpSender(transport, sendBuffer, id);
+    public Sender newSender(Object headers) {
+        TcpManagerHeadersDecoder tcpHeaders = (TcpManagerHeadersDecoder) headers;
+        return new TcpSender(tcpHeaders, sendBuffer);
+    }
+
+    private static final class TcpSender implements Sender {
+        
+        private final TcpManagerHeadersDecoder tcpHeaders;
+        private final MutableDirectBuffer sendBuffer;
+        private final int sendBufferOffset;
+
+        public TcpSender(TcpManagerHeadersDecoder tcpHeaders, MutableDirectBuffer sendBuffer) {
+            this.tcpHeaders = tcpHeaders;
+
+            this.sendBuffer = sendBuffer;
+            this.sendBufferOffset = tcpHeaders.length();
+        }
+
+        public <T extends Flyweight> T wrap(T flyweight) {
+            flyweight.wrap(sendBuffer, sendBufferOffset);
+            return flyweight;
+        }
+
+        public void send(int limit) {
+            tcpHeaders.respond(sendBuffer, sendBufferOffset, limit - sendBufferOffset);
+        }
+
+        public void close(boolean immediately) {
+            throw new UnsupportedOperationException();
+            // TODO: tcpHeaders.closeConnection(id, immediately);
+        }
     }
 }

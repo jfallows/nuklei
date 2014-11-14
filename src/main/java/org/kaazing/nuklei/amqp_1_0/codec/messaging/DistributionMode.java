@@ -17,9 +17,10 @@ package org.kaazing.nuklei.amqp_1_0.codec.messaging;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
-import org.kaazing.nuklei.function.AtomicBufferAccessor;
-import org.kaazing.nuklei.function.AtomicBufferMutator;
+import org.kaazing.nuklei.function.DirectBufferAccessor;
+import org.kaazing.nuklei.function.MutableDirectBufferMutator;
 
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /*
@@ -28,7 +29,7 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 public enum DistributionMode {
     MOVE, COPY;
 
-    public static final AtomicBufferAccessor<DistributionMode> READ = (MutableDirectBuffer buffer, int offset, int size) -> {
+    public static final DirectBufferAccessor<DistributionMode> READ = (DirectBuffer buffer, int offset, int size) -> {
         switch (buffer.getByte(offset)) {
         case 'm':
             // TODO: verify "move" matches entirely 
@@ -47,10 +48,10 @@ public enum DistributionMode {
     private static final int MOVE_LENGTH = MOVE_BYTES.length;
     private static final int COPY_LENGTH = COPY_BYTES.length;
 
-    public static final AtomicBufferMutator<DistributionMode> WRITE = new AtomicBufferMutator<DistributionMode>() {
+    public static final MutableDirectBufferMutator<DistributionMode> WRITE = new MutableDirectBufferMutator<DistributionMode>() {
 
         @Override
-        public int mutate(org.kaazing.nuklei.function.AtomicBufferMutator.Mutation mutation, MutableDirectBuffer buffer, DistributionMode policy) {
+        public int mutate(org.kaazing.nuklei.function.MutableDirectBufferMutator.Mutation mutation, MutableDirectBuffer buffer, DistributionMode policy) {
             switch (policy) {
             case MOVE:
                 int moveOffset = mutation.maxOffset(MOVE_LENGTH);

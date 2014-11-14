@@ -13,14 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.amqp_1_0.connection;
+package org.kaazing.nuklei.amqp_1_0.sender;
 
-import org.kaazing.nuklei.amqp_1_0.sender.Sender;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+public interface SenderFactory {
 
-public interface ConnectionFactory<C, S, L> {
-
-    Connection<C, S, L> newConnection(Sender sender, MutableDirectBuffer reassemblyBuffer);
+    Sender newSender(Object headers);
 
 }

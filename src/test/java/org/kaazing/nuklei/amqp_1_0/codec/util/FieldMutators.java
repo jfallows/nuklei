@@ -20,14 +20,14 @@ import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 
-import org.kaazing.nuklei.function.AtomicBufferMutator;
+import org.kaazing.nuklei.function.MutableDirectBufferMutator;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public class FieldMutators {
 
-    public static final AtomicBufferMutator<String> newMutator(final Charset charset) {
-        return new AtomicBufferMutator<String>() {
+    public static final MutableDirectBufferMutator<String> newMutator(final Charset charset) {
+        return new MutableDirectBufferMutator<String>() {
             private final CharsetEncoder encoder = charset.newEncoder();
             private final int maxBytesPerChar = (int) encoder.maxBytesPerChar();
     
