@@ -9,9 +9,7 @@
 
     <name>Nuklei Parent</name>
     <url>https://github.com/kaazing/nuklei.git</url>
-    <description>
-        Micro-services toolkit
-    </description>
+    <description>Micro-services toolkit</description>
 
     <licenses>
         <license>
