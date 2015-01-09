@@ -1,4 +1,4 @@
-# Nuklei
+# Nuklei [![TravisCI](https://travis-ci.org/nuklei-io/nuklei.svg?branch=develop)](https://travis-ci.org/nuklei-io/nuklei)
 
 An experiment in connecting services in various languages via composable standard protocols.
 
