@@ -32,15 +32,15 @@ public class MpscRingBuffer
      * ID (long) = 8 bytes (padded to CACHE_LINE_SIZE)
      */
     public static final int TAIL_RELATIVE_OFFSET = 0;
-    public static final int HEAD_RELATIVE_OFFSET = BitUtil.CACHE_LINE_SIZE;
-    public static final int ID_RELATIVE_OFFSET = 2 * BitUtil.CACHE_LINE_SIZE;
-    public static final int STATE_TRAILER_SIZE = 3 * BitUtil.CACHE_LINE_SIZE;
+    public static final int HEAD_RELATIVE_OFFSET = BitUtil.CACHE_LINE_LENGTH;
+    public static final int ID_RELATIVE_OFFSET = 2 * BitUtil.CACHE_LINE_LENGTH;
+    public static final int STATE_TRAILER_SIZE = 3 * BitUtil.CACHE_LINE_LENGTH;
 
     /* padding message */
     public static final int PADDING_MSG_TYPE_ID = -1;
 
     /* alignment for each message */
-    public static final int MESSAGE_ALIGNMENT = BitUtil.CACHE_LINE_SIZE;
+    public static final int MESSAGE_ALIGNMENT = BitUtil.CACHE_LINE_LENGTH;
 
     /*
      * Message Header

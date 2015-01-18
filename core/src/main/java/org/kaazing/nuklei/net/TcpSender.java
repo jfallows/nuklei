@@ -58,7 +58,8 @@ public class TcpSender
 
         messagingNukleus = builder.build();
         connectionsByIdMap = new HashMap<>();
-        sendByteBuffer = sendBuffer.duplicateByteBuffer();
+        byte[] sendByteArray = sendBuffer.byteArray();
+        sendByteBuffer = (sendByteArray != null) ? ByteBuffer.wrap(sendByteArray) : sendBuffer.byteBuffer().duplicate();
         sendByteBuffer.clear();
     }
 
