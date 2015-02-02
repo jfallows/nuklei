@@ -21,21 +21,20 @@
     <parent>
         <groupId>org.kaazing</groupId>
         <artifactId>nuklei-parent</artifactId>
-        <version>0.1.2-SNAPSHOT</version>
+        <version>develop-SNAPSHOT</version>
     </parent>
 
     <artifactId>nuklei-kompound</artifactId>
     <packaging>jar</packaging>
 
     <name>Nuklei Kompound</name>
-    <description>
-        Kompound container.
-    </description>
+    <description>Kompound container</description>
+    <url>https://github.com/kaazing/nuklei.git</url>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.build.resourceEncoding>UTF-8</project.build.resourceEncoding>
-    </properties>
+    <scm>
+        <url>https://github.com/kaazing/nuklei.git</url>
+        <connection>scm:git:https://github.com/kaazing/nuklei.git</connection>
+    </scm>
 
     <dependencies>
         <dependency>
@@ -57,7 +56,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.11</version>
+            <version>4.12</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -68,8 +67,8 @@
         </dependency>
         <dependency>
             <groupId>org.kaazing</groupId>
-            <artifactId>robot.junit</artifactId>
-            <version>[0.0.0.12,1.0.0.0]</version>
+            <artifactId>k3po.junit</artifactId>
+            <version>2.0.0-alpha-3</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -78,23 +77,7 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -106,8 +89,8 @@
             </plugin>
             <plugin>
                 <groupId>org.kaazing</groupId>
-                <artifactId>robot-maven-plugin</artifactId>
-                <version>0.0.0.12</version>
+                <artifactId>k3po-maven-plugin</artifactId>
+                <version>2.0.0-alpha-8</version>
                 <configuration>
                     <skipTests>${skipITs}</skipTests>
                 </configuration>
@@ -121,8 +104,8 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <version>2.17</version>
                 <configuration>
                     <skipTests>${skipITs}</skipTests>
                 </configuration>

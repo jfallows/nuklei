@@ -5,20 +5,20 @@
     <parent>
         <groupId>org.kaazing</groupId>
         <artifactId>nuklei-parent</artifactId>
-        <version>0.1.2-SNAPSHOT</version>
+        <version>develop-SNAPSHOT</version>
     </parent>
 
     <artifactId>nuklei-benchmarks</artifactId>
     <packaging>jar</packaging>
 
     <name>Nuklei Benchmarks</name>
-    <description>
-        Benchmarks for components.
-    </description>
+    <description>Benchmarks for components</description>
+    <url>https://github.com/kaazing/nuklei.git</url>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
+    <scm>
+        <url>https://github.com/kaazing/nuklei.git</url>
+        <connection>scm:git:https://github.com/kaazing/nuklei.git</connection>
+    </scm>
 
     <dependencies>
         <dependency>
@@ -38,17 +38,8 @@
             <scope>provided</scope>
         </dependency>
     </dependencies>
-
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -70,16 +61,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-            </plugin>
-
         </plugins>
     </build>
-
 </project>

@@ -2,54 +2,38 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.kaazing</groupId>
+    <parent>
+        <groupId>org.kaazing</groupId>
+        <artifactId>community</artifactId>
+        <version>2.10</version>
+    </parent>
+
     <artifactId>nuklei-parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.1.2-SNAPSHOT</version>
+    <version>develop-SNAPSHOT</version>
 
     <name>Nuklei Parent</name>
-    <url>https://github.com/kaazing/nuklei.git</url>
     <description>Micro-services toolkit</description>
-
-    <licenses>
-        <license>
-            <name>The Apache Software License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
-    <inceptionYear>2014</inceptionYear>
+    <url>https://github.com/kaazing/nuklei.git</url>
 
     <scm>
         <url>https://github.com/kaazing/nuklei.git</url>
         <connection>scm:git:https://github.com/kaazing/nuklei.git</connection>
-        <tag>nuklei-parent-0.1</tag>
     </scm>
 
-    <developers>
-        <developer>
-            <name>Kaazing Corporation</name>
-            <url>https://github.com/kaazing</url>
-            <organization>Kaazing Corporation</organization>
-            <organizationUrl>http://kaazing.org</organizationUrl>
-        </developer>
-    </developers>
-
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.build.resourceEncoding>UTF-8</project.build.resourceEncoding>
-    </properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <require.java.version>1.8+</require.java.version>
+        <require.maven.version>3.0.4+</require.maven.version>
+        <checkstyle.config.location>../config/checkstyle/checkstyle.xml</checkstyle.config.location>
 
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
+        <doctitle><![CDATA[<h1>Nuklei</h1>]]></doctitle>
+        <bottom><![CDATA[<i>Copyright &#169; 2014 Kaazing Corporation. All Rights Reserved.</i>]]></bottom>
+
+        <!-- animal sniffer does not yet support Java8, see MANIMALSNIFFER-45 -->
+        <animal.sniffer.skip>true</animal.sniffer.skip>
+    </properties>
 
     <modules>
         <module>core</module>
@@ -63,34 +47,8 @@
             <plugins>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-enforcer-plugin</artifactId>
-                    <version>1.3.1</version>
-                    <executions>
-                        <execution>
-                            <id>enforce-tools</id>
-                            <goals>
-                                <goal>enforce</goal>
-                            </goals>
-                            <configuration>
-                                <rules>
-                                    <requireJavaVersion>
-                                        <version>[1.8.0,)</version>
-                                    </requireJavaVersion>
-                                    <requireMavenVersion>
-                                        <version>[3.0.4,)</version>
-                                    </requireMavenVersion>
-                                </rules>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.1</version>
                     <configuration>
-                        <source>1.8</source>
-                        <target>1.8</target>
                         <fork>true</fork>
                         <compilerArgument>-XDignore.symbol.file</compilerArgument>
                     </configuration>
@@ -98,7 +56,6 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-checkstyle-plugin</artifactId>
-                    <version>2.12</version>
                     <dependencies>
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
@@ -106,99 +63,8 @@
                             <version>5.9</version>
                         </dependency>
                     </dependencies>
-                    <executions>
-                        <execution>
-                            <id>validate</id>
-                            <phase>validate</phase>
-                            <configuration>
-                                <configLocation>../config/checkstyle/checkstyle.xml</configLocation>
-                                <encoding>UTF-8</encoding>
-                                <consoleOutput>true</consoleOutput>
-                            </configuration>
-                            <goals>
-                                <goal>check</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>2.9.1</version>
-                    <executions>
-                        <execution>
-                            <id>attach-javadocs</id>
-                            <goals>
-                                <goal>jar</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                    <configuration>
-                        <doctitle><![CDATA[<h1>Nuklei</h1>]]></doctitle>
-                        <bottom><![CDATA[<i>Copyright &#169; 2014 Kaazing Corporation. All Rights Reserved.</i>]]></bottom>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-source-plugin</artifactId>
-                    <version>2.2.1</version>
-                    <executions>
-                        <execution>
-                            <id>attach-sources</id>
-                            <goals>
-                                <goal>jar-no-fork</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>org.sonatype.plugins</groupId>
-                    <artifactId>nexus-staging-maven-plugin</artifactId>
-                    <version>1.6.2</version>
-                    <extensions>true</extensions>
-                    <configuration>
-                        <serverId>ossrh</serverId>
-                        <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                        <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-release-plugin</artifactId>
-                    <version>2.5</version>
-                    <configuration>
-                        <autoVersionSubmodules>true</autoVersionSubmodules>
-                        <useReleaseProfile>false</useReleaseProfile>
-                        <releaseProfiles>release</releaseProfiles>
-                        <goals>deploy</goals>
-                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
     </build>
-
-    <profiles>
-        <profile>
-            <id>release</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.5</version>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
-
 </project>

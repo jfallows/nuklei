@@ -29,23 +29,28 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 @SuppressWarnings("unchecked")
-public class AlignedMikroTest {
+public class AlignedMikroTest
+{
 
     private final AlignmentSupplier<MutableDirectBuffer> alignment = (state, header, typeId, buffer, offset, length) -> {
         return buffer.getInt(offset);
     };
 
     @Test
-    public void shouldNotReassembleFrames() {
+    public void shouldNotReassembleFrames()
+    {
         MutableDirectBuffer storageBuffer = new UnsafeBuffer(ByteBuffer.allocate(40));
         MutableDirectBuffer readBuffer = new UnsafeBuffer(ByteBuffer.allocate(40));
         readBuffer.putLong(0, 1L);
         readBuffer.putInt(SIZE_OF_LONG, 32);
 
         final AlignedMikro<MutableDirectBuffer> handler = mock(AlignedMikro.class);
-        AlignedMikro<MutableDirectBuffer> wrapHandler = new AlignedMikro<MutableDirectBuffer>() {
+        AlignedMikro<MutableDirectBuffer> wrapHandler = new AlignedMikro<MutableDirectBuffer>()
+        {
             @Override
-            public void onMessage(MutableDirectBuffer state, Object header, int typeId, MutableDirectBuffer buffer, int offset, int length) {
+            public void onMessage(
+                    MutableDirectBuffer state, Object header, int typeId, MutableDirectBuffer buffer, int offset, int length)
+            {
                 handler.onMessage(state, null, typeId, buffer, offset, length);
             }
         };
@@ -56,16 +61,20 @@ public class AlignedMikroTest {
     }
 
     @Test
-    public void shouldNotDeliverPartialFrames() {
+    public void shouldNotDeliverPartialFrames()
+    {
         MutableDirectBuffer storageBuffer = new UnsafeBuffer(ByteBuffer.allocate(24));
         MutableDirectBuffer readBuffer = new UnsafeBuffer(ByteBuffer.allocate(24));
         readBuffer.putLong(0, 1L);
         readBuffer.putInt(SIZE_OF_LONG, 32);
-        
+
         final AlignedMikro<MutableDirectBuffer> handler = mock(AlignedMikro.class);
-        AlignedMikro<MutableDirectBuffer> wrapHandler = new AlignedMikro<MutableDirectBuffer>() {
+        AlignedMikro<MutableDirectBuffer> wrapHandler = new AlignedMikro<MutableDirectBuffer>()
+        {
             @Override
-            public void onMessage(MutableDirectBuffer state, Object header, int typeId, MutableDirectBuffer buffer, int offset, int length) {
+            public void onMessage(
+                    MutableDirectBuffer state, Object header, int typeId, MutableDirectBuffer buffer, int offset, int length)
+            {
                 handler.onMessage(state, null, typeId, buffer, offset, length);
             }
         };
@@ -76,16 +85,20 @@ public class AlignedMikroTest {
     }
 
     @Test
-    public void shouldDeliverAlignedFrames() {
+    public void shouldDeliverAlignedFrames()
+    {
         MutableDirectBuffer storageBuffer = new UnsafeBuffer(ByteBuffer.allocate(40));
         MutableDirectBuffer readBuffer = new UnsafeBuffer(ByteBuffer.allocate(64));
         readBuffer.putLong(0, 1L);
         readBuffer.putInt(SIZE_OF_LONG, 32);
-        
+
         final AlignedMikro<MutableDirectBuffer> handler = mock(AlignedMikro.class);
-        AlignedMikro<MutableDirectBuffer> wrapHandler = new AlignedMikro<MutableDirectBuffer>() {
+        AlignedMikro<MutableDirectBuffer> wrapHandler = new AlignedMikro<MutableDirectBuffer>()
+        {
             @Override
-            public void onMessage(MutableDirectBuffer state, Object header, int typeId, MutableDirectBuffer buffer, int offset, int length) {
+            public void onMessage(
+                    MutableDirectBuffer state, Object header, int typeId, MutableDirectBuffer buffer, int offset, int length)
+            {
                 handler.onMessage(state, null, typeId, buffer, offset, length);
             }
         };
@@ -96,17 +109,21 @@ public class AlignedMikroTest {
     }
 
     @Test
-    public void shouldDeliverReassembledFrames() {
+    public void shouldDeliverReassembledFrames()
+    {
         MutableDirectBuffer storageBuffer = new UnsafeBuffer(ByteBuffer.allocate(40));
         MutableDirectBuffer readBuffer = new UnsafeBuffer(ByteBuffer.allocate(48));
         readBuffer.putLong(0, 1L);
         readBuffer.putInt(SIZE_OF_LONG, 32);
         readBuffer.putLong(16, 1L);
-        
+
         final AlignedMikro<MutableDirectBuffer> handler = mock(AlignedMikro.class);
-        AlignedMikro<MutableDirectBuffer> wrapHandler = new AlignedMikro<MutableDirectBuffer>() {
+        AlignedMikro<MutableDirectBuffer> wrapHandler = new AlignedMikro<MutableDirectBuffer>()
+        {
             @Override
-            public void onMessage(MutableDirectBuffer state, Object header, int typeId, MutableDirectBuffer buffer, int offset, int length) {
+            public void onMessage(
+                    MutableDirectBuffer state, Object header, int typeId, MutableDirectBuffer buffer, int offset, int length)
+            {
                 handler.onMessage(state, null, typeId, buffer, offset, length);
             }
         };
@@ -118,7 +135,8 @@ public class AlignedMikroTest {
     }
 
     @Test
-    public void shouldDeliverAlignedAndReassembledFrames() {
+    public void shouldDeliverAlignedAndReassembledFrames()
+    {
         MutableDirectBuffer storageBuffer = new UnsafeBuffer(ByteBuffer.allocate(40));
         MutableDirectBuffer readBuffer = new UnsafeBuffer(ByteBuffer.allocate(80));
         readBuffer.putLong(0, 1L);
@@ -127,16 +145,19 @@ public class AlignedMikroTest {
         readBuffer.putLong(64, 1L);
 
         final AlignedMikro<MutableDirectBuffer> handler = mock(AlignedMikro.class);
-        AlignedMikro<MutableDirectBuffer> wrapHandler = new AlignedMikro<MutableDirectBuffer>() {
+        AlignedMikro<MutableDirectBuffer> wrapHandler = new AlignedMikro<MutableDirectBuffer>()
+        {
             @Override
-            public void onMessage(MutableDirectBuffer state, Object header, int typeId, MutableDirectBuffer buffer, int offset, int length) {
+            public void onMessage(
+                    MutableDirectBuffer state, Object header, int typeId, MutableDirectBuffer buffer, int offset, int length)
+            {
                 handler.onMessage(state, null, typeId, buffer, offset, length);
             }
         };
         StatefulMikro<MutableDirectBuffer> mikro = wrapHandler.alignedBy((t) -> t, alignment);
         mikro.onMessage(storageBuffer, null, 0, readBuffer, SIZE_OF_LONG, 56);
         mikro.onMessage(storageBuffer, null, 0, readBuffer, 72, 8);
-        
+
         verify(handler).onMessage(storageBuffer, null, 0, readBuffer, SIZE_OF_LONG, 32);
         verify(handler).onMessage(storageBuffer, null, 0, storageBuffer, 0, 32);
     }

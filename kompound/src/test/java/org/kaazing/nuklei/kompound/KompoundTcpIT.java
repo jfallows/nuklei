@@ -16,30 +16,40 @@
 
 package org.kaazing.nuklei.kompound;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static junit.framework.TestCase.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+import static org.junit.rules.RuleChain.outerRule;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.DisableOnDebug;
+import org.junit.rules.TestRule;
+import org.junit.rules.Timeout;
+import org.kaazing.k3po.junit.annotation.Specification;
+import org.kaazing.k3po.junit.rules.K3poRule;
 import org.kaazing.nuklei.kompound.cmd.StartCmd;
 import org.kaazing.nuklei.kompound.cmd.StopCmd;
 import org.kaazing.nuklei.net.TcpManagerHeadersDecoder;
 import org.kaazing.nuklei.net.TcpManagerTypeId;
-import org.kaazing.robot.junit.annotation.Robotic;
-import org.kaazing.robot.junit.rules.RobotRule;
+
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static junit.framework.TestCase.assertTrue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 
 public class KompoundTcpIT
 {
     public static final String URI = "tcp://localhost:9876";
 
+    private final K3poRule k3po = new K3poRule().setScriptRoot("org/kaazing/k3po/scripts/nuklei/kompound");
+
+    private final TestRule timeout = new DisableOnDebug(new Timeout(1, SECONDS));
+
     @Rule
-    public RobotRule robot = new RobotRule().setScriptRoot("org/kaazing/robot/scripts/nuklei/kompound");
+    public final TestRule chain = outerRule(k3po).around(timeout);
 
     final AtomicBoolean attached = new AtomicBoolean(false);
 
@@ -89,8 +99,8 @@ public class KompoundTcpIT
         assertTrue(stopped.get());
     }
 
-    @Robotic(script = "ConnectAndWrite")
-    @Test(timeout = 1000)
+    @Test
+    @Specification("ConnectAndWrite")
     public void shouldAllowConnectionAndSendOfDataFromClient() throws Exception
     {
         final String message = "hello world";
@@ -115,13 +125,13 @@ public class KompoundTcpIT
 
         kompound = Kompound.startUp(builder);
         waitToBeAttached();
-        robot.join();
+        k3po.join();
 
         assertThat(data, is(message.getBytes()));
     }
 
-    @Robotic(script = "ConnectWriteRead")
-    @Test(timeout = 1000)
+    @Test
+    @Specification("ConnectWriteRead")
     public void shouldConnectWriteReadFromClient() throws Exception
     {
         final Kompound.Builder builder = new Kompound.Builder()
@@ -147,7 +157,7 @@ public class KompoundTcpIT
 
         kompound = Kompound.startUp(builder);
         waitToBeAttached();
-        robot.join();
+        k3po.join();
     }
 
     private void waitToBeAttached() throws Exception
