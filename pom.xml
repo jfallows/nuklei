@@ -10,7 +10,7 @@
 
     <artifactId>nuklei-parent</artifactId>
     <packaging>pom</packaging>
-    <version>develop-SNAPSHOT</version>
+    <version>0.2</version>
 
     <name>Nuklei Parent</name>
     <description>Micro-services toolkit</description>
