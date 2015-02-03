@@ -22,10 +22,12 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static org.junit.Assert.assertEquals;
 
-public class HttpHeaderNameTest {
+public class HttpHeaderNameTest
+{
 
     @Test
-    public void matchMixedCaseHeader() throws Exception {
+    public void matchMixedCaseHeader() throws Exception
+    {
         final String request = "GET /path\r\nHosT: www.example.com\r\nCoNtEnt-lEngth: 123\r\n\r\n";
         MutableDirectBuffer buf = new UnsafeBuffer(request.getBytes("UTF-8"));
 
