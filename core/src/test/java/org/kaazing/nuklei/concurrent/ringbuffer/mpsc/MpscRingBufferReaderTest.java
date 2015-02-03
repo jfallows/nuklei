@@ -15,12 +15,12 @@
  */
 package org.kaazing.nuklei.concurrent.ringbuffer.mpsc;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.RingBufferReader;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;

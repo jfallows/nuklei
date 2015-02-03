@@ -15,7 +15,7 @@
  */
 package org.kaazing.nuklei.concurrent.ringbuffer;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /**
  * Spy Interface for a Ring Buffer
@@ -36,16 +36,16 @@ public interface RingBufferSpy
          * @param offset within the buffer where the message starts
          * @param length of the message in bytes
          */
-        void onMessage(final int typeId, final AtomicBuffer buffer, final int offset, final int length);
+        void onMessage(final int typeId, final MutableDirectBuffer buffer, final int offset, final int length);
     }
 
     /**
      * Spy on messages in ring buffer up to a limit of number of messages. Does not block.
      *
      * @param handler to call for all spied messages
-     * @param buffer to copy messages into and return in {@link SpyHandler#onMessage(int, AtomicBuffer, int, int)}
+     * @param buffer to copy messages into and return in {@link SpyHandler#onMessage(int, MutableDirectBuffer, int, int)}
      * @param limit to impose on the number of spied messages
      * @return number of messages spied
      */
-    int spy(final SpyHandler handler, final AtomicBuffer buffer, final int limit);
+    int spy(final SpyHandler handler, final MutableDirectBuffer buffer, final int limit);
 }

@@ -64,41 +64,47 @@ public class NioSelectorNukleus implements Nukleus
      * @param channel for interest
      * @param ops interested in
      * @param handler to call when ready
-     * @throws Exception
      */
-    public void register(final SelectableChannel channel, final int ops, final IntSupplier handler) throws Exception
+    public void register(final SelectableChannel channel, final int ops, final IntSupplier handler)
     {
-        SelectionKey key = channel.keyFor(selector);
-        DispatchHandler dispatchHandler;
+        try
+        {
+            SelectionKey key = channel.keyFor(selector);
+            DispatchHandler dispatchHandler;
 
-        if (null == key)
-        {
-            dispatchHandler = new DispatchHandler();
-            key = channel.register(selector, ops);
-            key.attach(dispatchHandler);
-        }
-        else
-        {
-            dispatchHandler = (DispatchHandler)key.attachment();
-        }
+            if (null == key)
+            {
+                dispatchHandler = new DispatchHandler();
+                key = channel.register(selector, ops);
+                key.attach(dispatchHandler);
+            }
+            else
+            {
+                dispatchHandler = (DispatchHandler) key.attachment();
+            }
 
-        key.interestOps(key.interestOps() | ops);
+            key.interestOps(key.interestOps() | ops);
 
-        if ((ops & SelectionKey.OP_CONNECT) != 0)
-        {
-            dispatchHandler.dispatcher(DISPATCH_CONNECT, handler);
+            if ((ops & SelectionKey.OP_CONNECT) != 0)
+            {
+                dispatchHandler.dispatcher(DISPATCH_CONNECT, handler);
+            }
+            else if ((ops & SelectionKey.OP_ACCEPT) != 0)
+            {
+                dispatchHandler.dispatcher(DISPATCH_ACCEPT, handler);
+            }
+            else if ((ops & SelectionKey.OP_READ) != 0)
+            {
+                dispatchHandler.dispatcher(DISPATCH_READ, handler);
+            }
+            else if ((ops & SelectionKey.OP_WRITE) != 0)
+            {
+                dispatchHandler.dispatcher(DISPATCH_WRITE, handler);
+            }
         }
-        else if ((ops & SelectionKey.OP_ACCEPT) != 0)
+        catch (final Exception ex)
         {
-            dispatchHandler.dispatcher(DISPATCH_ACCEPT, handler);
-        }
-        else if ((ops & SelectionKey.OP_READ) != 0)
-        {
-            dispatchHandler.dispatcher(DISPATCH_READ, handler);
-        }
-        else if ((ops & SelectionKey.OP_WRITE) != 0)
-        {
-            dispatchHandler.dispatcher(DISPATCH_WRITE, handler);
+            throw new RuntimeException(ex);
         }
     }
 

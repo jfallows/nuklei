@@ -15,10 +15,10 @@
  */
 package org.kaazing.nuklei;
 
-import org.kaazing.nuklei.BitUtil;
-import org.kaazing.nuklei.Flyweight;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.junit.Test;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -31,19 +31,19 @@ import static org.junit.Assert.assertTrue;
 
 public class FlyweightTest
 {
-    public final static long UINT32_VALUE = 0xdeadbeefL;
-    public final static int UINT16_VALUE = 0xceec;
-    public final static short UINT8_VALUE = 0xcc;
-    public final static byte[] BIG_ENDIAN_BYTE =    { (byte)0xde, (byte)0xad, (byte)0xbe, (byte)0xef,
+    public static final long UINT32_VALUE = 0xdeadbeefL;
+    public static final int UINT16_VALUE = 0xceec;
+    public static final short UINT8_VALUE = 0xcc;
+    public static final byte[] BIG_ENDIAN_BYTE =    { (byte)0xde, (byte)0xad, (byte)0xbe, (byte)0xef,
                                                       (byte)0xce, (byte)0xec, (byte)0xcc };
-    public final static byte[] LITTLE_ENDIAN_BYTE = { (byte)0xef, (byte)0xbe, (byte)0xad, (byte)0xde,
+    public static final byte[] LITTLE_ENDIAN_BYTE = { (byte)0xef, (byte)0xbe, (byte)0xad, (byte)0xde,
                                                       (byte)0xec, (byte)0xce, (byte)0xcc };
-    public final static int UINT32_OFFSET = 0;
-    public final static int UINT16_OFFSET = BitUtil.SIZE_OF_INT;
-    public final static int UINT8_OFFSET = BitUtil.SIZE_OF_INT + BitUtil.SIZE_OF_SHORT;
+    public static final int UINT32_OFFSET = 0;
+    public static final int UINT16_OFFSET = BitUtil.SIZE_OF_INT;
+    public static final int UINT8_OFFSET = BitUtil.SIZE_OF_INT + BitUtil.SIZE_OF_SHORT;
 
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(256);
-    private final AtomicBuffer aBuff = new AtomicBuffer(buffer);
+    private final MutableDirectBuffer aBuff = new UnsafeBuffer(buffer);
     private final ByteBuffer viewBuffer = buffer.duplicate();
     private final Flyweight flyweightBigEndian = new Flyweight(ByteOrder.BIG_ENDIAN);
     private final Flyweight flyweightLittleEndian = new Flyweight(ByteOrder.LITTLE_ENDIAN);

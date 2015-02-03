@@ -16,10 +16,13 @@
 
 package org.kaazing.nuklei.net;
 
-import org.kaazing.nuklei.BitUtil;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferWriter;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
@@ -34,15 +37,38 @@ public class TcpConnection
     private final MpscRingBufferWriter receiveWriter;
     private final long id;
     private final ByteBuffer receiveByteBuffer;
-    private final AtomicBuffer atomicBuffer;
-    private final AtomicBuffer informBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(BitUtil.SIZE_OF_LONG));
+    private final MutableDirectBuffer atomicBuffer;
+    private final MutableDirectBuffer informBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BitUtil.SIZE_OF_LONG));
 
     // TODO: these will false share most likely
     private volatile boolean senderClosed = false;
     private volatile boolean receiverClosed = false;
     private boolean closed = false;
 
-    // TODO: connect version of constructor
+    // connect version
+    public TcpConnection(
+        final long id,
+        final InetSocketAddress localAddress,
+        final MpscRingBufferWriter receiveWriter)
+    {
+        try
+        {
+            channel = SocketChannel.open();
+            this.id = id;
+            this.receiveWriter = receiveWriter;
+
+            channel.bind(localAddress);
+            channel.configureBlocking(false);
+            receiveByteBuffer = ByteBuffer.allocateDirect(MAX_RECEIVE_LENGTH).order(ByteOrder.nativeOrder());
+            atomicBuffer = new UnsafeBuffer(receiveByteBuffer);
+
+            // connect() and management is done by caller
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
+        }
+    }
 
     // accepted version
     public TcpConnection(
@@ -55,7 +81,7 @@ public class TcpConnection
 
         this.receiveWriter = receiveWriter;
         receiveByteBuffer = ByteBuffer.allocateDirect(MAX_RECEIVE_LENGTH).order(ByteOrder.nativeOrder());
-        atomicBuffer = new AtomicBuffer(receiveByteBuffer);
+        atomicBuffer = new UnsafeBuffer(receiveByteBuffer);
     }
 
     public SocketChannel channel()
@@ -160,6 +186,11 @@ public class TcpConnection
     public boolean isClosed()
     {
         return closed;
+    }
+
+    public MpscRingBufferWriter receiveWriter()
+    {
+        return receiveWriter;
     }
 
     public void informOfNewConnection()

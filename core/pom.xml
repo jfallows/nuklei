@@ -5,22 +5,27 @@
     <parent>
         <groupId>org.kaazing</groupId>
         <artifactId>nuklei-parent</artifactId>
-        <version>0.1.2-SNAPSHOT</version>
+        <version>0.2</version>
     </parent>
 
     <artifactId>nuklei-core</artifactId>
     <packaging>jar</packaging>
 
     <name>Nuklei Core</name>
-    <description>
-        Core components.
-    </description>
+    <description>Core components</description>
+    <url>https://github.com/kaazing/nuklei.git</url>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
+    <scm>
+        <url>https://github.com/kaazing/nuklei.git</url>
+        <connection>scm:git:https://github.com/kaazing/nuklei.git</connection>
+    </scm>
 
     <dependencies>
+        <dependency>
+            <groupId>uk.co.real-logic</groupId>
+            <artifactId>Agrona</artifactId>
+            <version>0.1</version>
+        </dependency>
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-all</artifactId>
@@ -49,19 +54,7 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

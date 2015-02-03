@@ -22,6 +22,7 @@ package org.kaazing.nuklei.net;
 public class TcpManagerTypeId
 {
     /** events */
+    public static final int NONE = 0;
     public static final int NEW_CONNECTION = 1;
     public static final int RECEIVED_DATA = 2;
     public static final int ATTACH_COMPLETED = 3;

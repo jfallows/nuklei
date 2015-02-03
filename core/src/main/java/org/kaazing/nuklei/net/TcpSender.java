@@ -16,13 +16,14 @@
 
 package org.kaazing.nuklei.net;
 
-import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.MessagingNukleus;
 import org.kaazing.nuklei.NioSelectorNukleus;
 import org.kaazing.nuklei.Nuklei;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
 import org.kaazing.nuklei.net.command.TcpCloseConnectionCmd;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -57,7 +58,8 @@ public class TcpSender
 
         messagingNukleus = builder.build();
         connectionsByIdMap = new HashMap<>();
-        sendByteBuffer = sendBuffer.duplicateByteBuffer();
+        byte[] sendByteArray = sendBuffer.byteArray();
+        sendByteBuffer = (sendByteArray != null) ? ByteBuffer.wrap(sendByteArray) : sendBuffer.byteBuffer().duplicate();
         sendByteBuffer.clear();
     }
 
@@ -93,7 +95,7 @@ public class TcpSender
         }
     }
 
-    private void sendHandler(final int typeId, final AtomicBuffer buffer, final int offset, final int length)
+    private void sendHandler(final int typeId, final MutableDirectBuffer buffer, final int offset, final int length)
     {
         if (TcpManagerTypeId.SEND_DATA == typeId)
         {

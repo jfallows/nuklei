@@ -16,30 +16,40 @@
 
 package org.kaazing.nuklei.kompound;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.kaazing.nuklei.BitUtil;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
-import org.kaazing.nuklei.kompound.cmd.StartCmd;
-import org.kaazing.nuklei.kompound.cmd.StopCmd;
-import org.kaazing.nuklei.net.TcpManagerTypeId;
-import org.kaazing.nuklei.net.TcpSender;
-import org.kaazing.robot.junit.annotation.Robotic;
-import org.kaazing.robot.junit.rules.RobotRule;
-
-import java.util.concurrent.atomic.AtomicBoolean;
-
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.junit.rules.RuleChain.outerRule;
 
-public class KompoundIT
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.DisableOnDebug;
+import org.junit.rules.TestRule;
+import org.junit.rules.Timeout;
+import org.kaazing.k3po.junit.annotation.Specification;
+import org.kaazing.k3po.junit.rules.K3poRule;
+import org.kaazing.nuklei.kompound.cmd.StartCmd;
+import org.kaazing.nuklei.kompound.cmd.StopCmd;
+import org.kaazing.nuklei.net.TcpManagerHeadersDecoder;
+import org.kaazing.nuklei.net.TcpManagerTypeId;
+
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+
+public class KompoundTcpIT
 {
     public static final String URI = "tcp://localhost:9876";
 
+    private final K3poRule k3po = new K3poRule().setScriptRoot("org/kaazing/k3po/scripts/nuklei/kompound");
+
+    private final TestRule timeout = new DisableOnDebug(new Timeout(1, SECONDS));
+
     @Rule
-    public RobotRule robot = new RobotRule().setScriptRoot("org/kaazing/robot/scripts/nuklei/kompound");
+    public final TestRule chain = outerRule(k3po).around(timeout);
 
     final AtomicBoolean attached = new AtomicBoolean(false);
 
@@ -63,27 +73,19 @@ public class KompoundIT
         final Kompound.Builder builder = new Kompound.Builder()
             .service(
                 URI,
-                new Mikro()
+                (header, typeId, buffer, offset, length) ->
                 {
-                    public void onCommand(final Object command)
+                    if (header instanceof StartCmd)
                     {
-                        if (command instanceof StartCmd)
-                        {
-                            started.lazySet(true);
-                        }
-                        else if (command instanceof StopCmd)
-                        {
-                            stopped.lazySet(true);
-                        }
+                        started.lazySet(true);
                     }
-
-                    public int onAvailable(final int typeId, final AtomicBuffer buffer, final int offset, final int length)
+                    else if (header instanceof StopCmd)
                     {
-                        if (TcpManagerTypeId.ATTACH_COMPLETED == typeId)
-                        {
-                            attached.lazySet(true);
-                        }
-                        return 0;
+                        stopped.lazySet(true);
+                    }
+                    else if (TcpManagerTypeId.ATTACH_COMPLETED == typeId)
+                    {
+                        attached.lazySet(true);
                     }
                 });
 
@@ -97,8 +99,8 @@ public class KompoundIT
         assertTrue(stopped.get());
     }
 
-    @Robotic(script = "ConnectAndWrite")
-    @Test(timeout = 1000)
+    @Test
+    @Specification("ConnectAndWrite")
     public void shouldAllowConnectionAndSendOfDataFromClient() throws Exception
     {
         final String message = "hello world";
@@ -107,7 +109,7 @@ public class KompoundIT
         final Kompound.Builder builder = new Kompound.Builder()
             .service(
                 URI,
-                (typeId, buffer, offset, length) ->
+                (header, typeId, buffer, offset, length) ->
                 {
                     switch (typeId)
                     {
@@ -116,59 +118,46 @@ public class KompoundIT
                             break;
 
                         case TcpManagerTypeId.RECEIVED_DATA:
-                            buffer.getBytes(offset + BitUtil.SIZE_OF_LONG, data);
+                            buffer.getBytes(offset, data);
                             break;
                     }
-                    return 0;
                 });
 
         kompound = Kompound.startUp(builder);
         waitToBeAttached();
-        robot.join();
+        k3po.join();
 
         assertThat(data, is(message.getBytes()));
     }
 
-    @Robotic(script = "ConnectWriteRead")
-    @Test(timeout = 1000)
+    @Test
+    @Specification("ConnectWriteRead")
     public void shouldConnectWriteReadFromClient() throws Exception
     {
         final Kompound.Builder builder = new Kompound.Builder()
             .service(
                 URI,
-                new Mikro()
+                (header, typeId, buffer, offset, length) ->
                 {
-                    Proxy sendFunc;
-
-                    public void onCommand(final Object command)
+                    switch (typeId)
                     {
-                        if (command instanceof StartCmd)
-                        {
-                            sendFunc = ((StartCmd) command).sendFunc();
-                        }
-                    }
+                        case TcpManagerTypeId.ATTACH_COMPLETED:
+                            attached.lazySet(true);
+                            break;
 
-                    public int onAvailable(
-                        final int typeId, final AtomicBuffer buffer, final int offset, final int length)
-                    {
-                        switch (typeId)
-                        {
-                            case TcpManagerTypeId.ATTACH_COMPLETED:
-                                attached.lazySet(true);
-                                break;
+                        case TcpManagerTypeId.RECEIVED_DATA:
+                            final TcpManagerHeadersDecoder decoder = (TcpManagerHeadersDecoder) header;
+                            final MutableDirectBuffer echoBuffer = new UnsafeBuffer(new byte[decoder.length() + length]);
 
-                            case TcpManagerTypeId.RECEIVED_DATA:
-                                // straight echo of connection id and data
-                                sendFunc.write(TcpManagerTypeId.SEND_DATA, buffer, offset, length);
-                                break;
-                        }
-                        return 0;
+                            echoBuffer.putBytes(decoder.length(), buffer, offset, length);
+                            decoder.respond(echoBuffer, decoder.length(), length);
+                            break;
                     }
                 });
 
         kompound = Kompound.startUp(builder);
         waitToBeAttached();
-        robot.join();
+        k3po.join();
     }
 
     private void waitToBeAttached() throws Exception

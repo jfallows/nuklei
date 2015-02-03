@@ -16,42 +16,59 @@
 
 package org.kaazing.nuklei.kompound;
 
+import java.io.File;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.Map;
 
 /**
  * Endpoint configuration for a Mikro.
+ *
+ * This holds all the configuration options, etc. for composition
  */
 public class LocalEndpointConfiguration
 {
+    private final Map<String, Object> configurationMap;
     private InetSocketAddress localAddress;
     private String scheme;
+    private String schemeSpecificPart;
     private String userInfo;
     private String path;
     private String query;
     private String fragment;
+    private LocalEndpoint.Type endpointType;
+    private File file;
+    private boolean requiresHttpDispatcher = false;
 
     public LocalEndpointConfiguration(final String uri, final Map<String, Object> configurationMap)
     {
-        parseUri(uri);
+        this.configurationMap = configurationMap;
+        // TODO: TCP could set a name in the configurationMap to expose
+        parseUri(uri, configurationMap);
     }
 
-    public void parseUri(final String uriAsString)
+    public void parseUri(final String uriAsString, final Map<String, Object> configurationMap)
     {
         try
         {
             final URI uri = new URI(uriAsString);
             scheme = uri.getScheme();
 
-            if ("tcp".equals(scheme))
+            switch (scheme)
             {
-                handleUriAsTcp(uri);
-            }
-            else if ("http".equals(scheme))
-            {
-                handleUriAsHttp(uri);
+                case "tcp":
+                    handleUriAsTcp(uri, configurationMap);
+                    break;
+                case "http":
+                    handleUriAsHttp(uri, configurationMap);
+                    break;
+                case "shmem":
+                    handleUriAsShMem(uri, configurationMap);
+                    break;
+                default:
+                    throw new IllegalArgumentException("unknown scheme: " + scheme);
             }
         }
         catch (final Exception ex)
@@ -61,14 +78,29 @@ public class LocalEndpointConfiguration
         }
     }
 
+    public Map<String, Object> configurationMap()
+    {
+        return configurationMap;
+    }
+
     public InetSocketAddress localAddress()
     {
         return localAddress;
     }
 
+    public File file()
+    {
+        return file;
+    }
+
     public String scheme()
     {
         return scheme;
+    }
+
+    public String schemeSpecificPart()
+    {
+        return schemeSpecificPart;
     }
 
     public String userInfo()
@@ -81,6 +113,12 @@ public class LocalEndpointConfiguration
         return path;
     }
 
+    public String method()
+    {
+        // TODO: config may change this
+        return "GET";
+    }
+
     public String query()
     {
         return query;
@@ -91,21 +129,55 @@ public class LocalEndpointConfiguration
         return fragment;
     }
 
-    private void handleUriAsTcp(final URI uri) throws Exception
+    public LocalEndpoint.Type endpointType()
     {
-        final String host = uri.getHost();
-        final int port = uri.getPort();
-
-        localAddress = new InetSocketAddress(InetAddress.getByName(host), port);
+        return endpointType;
     }
 
-    private void handleUriAsHttp(final URI uri) throws Exception
+    public boolean requiresHttpDispatcher()
     {
+        return requiresHttpDispatcher;
+    }
+
+    public static boolean checkCompatibility(
+        final LocalEndpointConfiguration lhs, final LocalEndpointConfiguration rhs)
+    {
+        // TODO: finish. If not compatible, throw IllegalArgumentException
+        return true;
+    }
+
+    private void handleUriAsTcp(final URI uri, final Map<String, Object> configurationMap)
+    {
+        try
+        {
+            final String host = uri.getHost();
+            final int port = uri.getPort();
+
+            localAddress = new InetSocketAddress(InetAddress.getByName(host), port);
+            endpointType = LocalEndpoint.Type.TCP;
+        }
+        catch (final UnknownHostException ex)
+        {
+            throw new IllegalArgumentException(ex);
+        }
+    }
+
+    private void handleUriAsHttp(final URI uri, final Map<String, Object> configurationMap)
+    {
+        requiresHttpDispatcher = true;
         userInfo = uri.getUserInfo();
         path = uri.getPath();
         query = uri.getQuery();
         fragment = uri.getFragment();
 
-        handleUriAsTcp(uri);
+        // TODO: if configurationMap specifies this runs over something else, then call that. If not, assume TCP.
+        handleUriAsTcp(uri, configurationMap);
+    }
+
+    private void handleUriAsShMem(final URI uri, final Map<String, Object> configurationMap)
+    {
+        schemeSpecificPart = uri.getSchemeSpecificPart();
+        file = new File(schemeSpecificPart);
+        endpointType = LocalEndpoint.Type.SHMEM;
     }
 }

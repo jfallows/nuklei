@@ -15,7 +15,7 @@
  */
 package org.kaazing.nuklei.concurrent.ringbuffer;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /**
  * Reader Interface for a Ring Buffer
@@ -36,7 +36,7 @@ public interface RingBufferReader
          * @param offset within the buffer where the message starts
          * @param length of the message in bytes
          */
-        void onMessage(final int typeId, final AtomicBuffer buffer, final int offset, final int length);
+        void onMessage(final int typeId, final MutableDirectBuffer buffer, final int offset, final int length);
     }
 
     /**

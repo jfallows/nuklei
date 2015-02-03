@@ -15,13 +15,13 @@
  */
 package org.kaazing.nuklei.jmh;
 
-import org.kaazing.nuklei.BitUtil;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferReader;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferWriter;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Control;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
@@ -42,21 +42,21 @@ public class MpscRingBufferBasic
 {
     private static final int MSG_TYPE_ID = 101;
     private static final Integer VALUE = 102;
-    private static final ThreadLocal<ReaderMarker> marker = new ThreadLocal<>();
+    private static final ThreadLocal<ReaderMarker> MARKER = new ThreadLocal<>();
 
-    private final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocateDirect(64*1024 + MpscRingBuffer.STATE_TRAILER_SIZE));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(64*1024 + MpscRingBuffer.STATE_TRAILER_SIZE));
     private final MpscRingBufferWriter writer = new MpscRingBufferWriter(buffer);
     private final MpscRingBufferReader reader = new MpscRingBufferReader(buffer);
     private final MpscRingBufferReader.ReadHandler handler = (typeId, buffer, index, length) -> {};
 
-    private final AtomicBuffer srcBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(BitUtil.SIZE_OF_INT));
+    private final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BitUtil.SIZE_OF_INT));
 
     @State(Scope.Thread)
     public static class ReaderMarker
     {
         public ReaderMarker()
         {
-            marker.set(this);
+            MARKER.set(this);
         }
     }
 
@@ -70,7 +70,7 @@ public class MpscRingBufferBasic
     public void emptyBuffer()
     {
         // used to indicate reader
-        if (null == marker.get())
+        if (null == MARKER.get())
         {
             return;
         }

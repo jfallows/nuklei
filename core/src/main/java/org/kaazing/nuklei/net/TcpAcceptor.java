@@ -17,7 +17,6 @@
 package org.kaazing.nuklei.net;
 
 import org.kaazing.nuklei.NioSelectorNukleus;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferWriter;
 
@@ -61,7 +60,8 @@ public class TcpAcceptor
 
         try
         {
-            if (interfaces.length == 0) {
+            if (interfaces.length == 0)
+            {
                 interfaces = WILDCARD_ADDRESS;
             }
             acceptors = new TcpInterfaceAcceptor[interfaces.length];
@@ -73,7 +73,8 @@ public class TcpAcceptor
                 acceptor.configureBlocking(false);
 
                 acceptors[i] = new TcpInterfaceAcceptor(acceptor);
-                selectorNukleus.register(acceptors[i].acceptor(), SelectionKey.OP_ACCEPT, composeAcceptor(acceptors[i]));
+                selectorNukleus.register(
+                    acceptors[i].acceptor(), SelectionKey.OP_ACCEPT, composeAcceptor(acceptors[i]));
             }
         }
         catch (final Exception ex)

@@ -15,10 +15,10 @@
  */
 package org.kaazing.nuklei.concurrent.ringbuffer.mpsc;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.RingBufferReader;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 
-import static org.kaazing.nuklei.BitUtil.align;
+import static uk.co.real_logic.agrona.BitUtil.align;
 
 /**
  * Multiple Publisher, Single Consumer Ring Buffer Reader

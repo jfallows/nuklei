@@ -16,6 +16,8 @@
 
 package org.kaazing.nuklei.kompound;
 
+import org.kaazing.nuklei.function.Proxy;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -40,7 +42,9 @@ public class MikroLocator
 
         if (null != service)
         {
-            return service.proxy();
+            // TODO: replace with better
+//            return service.proxy();
+            return null;
         }
         else
         {

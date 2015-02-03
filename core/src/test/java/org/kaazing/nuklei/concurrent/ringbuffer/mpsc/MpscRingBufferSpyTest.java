@@ -15,8 +15,8 @@
  */
 package org.kaazing.nuklei.concurrent.ringbuffer.mpsc;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.junit.Before;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

@@ -15,8 +15,8 @@
  */
 package org.kaazing.nuklei.concurrent.ringbuffer.mpsc;
 
-import org.kaazing.nuklei.BitUtil;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /**
  * Multiple Publisher, Single Consumer (MPSC) Ring Buffer constants and values shared by Readers, Writers, and Spies
@@ -32,15 +32,15 @@ public class MpscRingBuffer
      * ID (long) = 8 bytes (padded to CACHE_LINE_SIZE)
      */
     public static final int TAIL_RELATIVE_OFFSET = 0;
-    public static final int HEAD_RELATIVE_OFFSET = BitUtil.CACHE_LINE_SIZE;
-    public static final int ID_RELATIVE_OFFSET = 2 * BitUtil.CACHE_LINE_SIZE;
-    public static final int STATE_TRAILER_SIZE = 3 * BitUtil.CACHE_LINE_SIZE;
+    public static final int HEAD_RELATIVE_OFFSET = BitUtil.CACHE_LINE_LENGTH;
+    public static final int ID_RELATIVE_OFFSET = 2 * BitUtil.CACHE_LINE_LENGTH;
+    public static final int STATE_TRAILER_SIZE = 3 * BitUtil.CACHE_LINE_LENGTH;
 
     /* padding message */
     public static final int PADDING_MSG_TYPE_ID = -1;
 
     /* alignment for each message */
-    public static final int MESSAGE_ALIGNMENT = BitUtil.CACHE_LINE_SIZE;
+    public static final int MESSAGE_ALIGNMENT = BitUtil.CACHE_LINE_LENGTH;
 
     /*
      * Message Header
@@ -54,7 +54,7 @@ public class MpscRingBuffer
     public static final int HEADER_MSG_SEQNUM_OFFSET = BitUtil.SIZE_OF_INT;
     public static final int HEADER_LENGTH = HEADER_MSG_SEQNUM_OFFSET + BitUtil.SIZE_OF_LONG;
 
-    public static void checkAtomicBufferCapacity(final AtomicBuffer buffer)
+    public static void checkAtomicBufferCapacity(final DirectBuffer buffer)
     {
         final int capacity = buffer.capacity() - STATE_TRAILER_SIZE;
 

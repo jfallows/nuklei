@@ -14,18 +14,13 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.kompound;
+package org.kaazing.nuklei.function;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-/**
- */
 @FunctionalInterface
 public interface Mikro
 {
-    default void onCommand(final Object command)
-    {
-    }
-
-    int onAvailable(final int typeId, final AtomicBuffer buffer, final int offset, final int length);
+    void onMessage(
+        final Object header, final int typeId, final MutableDirectBuffer buffer, final int offset, final int length);
 }

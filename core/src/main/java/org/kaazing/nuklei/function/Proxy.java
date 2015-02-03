@@ -13,18 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.kaazing.nuklei.function;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-@FunctionalInterface
-public interface AtomicBufferMutator<T>
+public interface Proxy
 {
-
-    public int mutate(Mutation mutation, AtomicBuffer buffer, T value);
-
-    public interface Mutation {
-        
-        public int maxOffset(int maxLength);
-    }
+    boolean write(final int typeId, final MutableDirectBuffer buffer, final int offset, final int length);
 }

@@ -17,13 +17,16 @@
 package org.kaazing.nuklei.kompound;
 
 import org.kaazing.nuklei.DedicatedNuklei;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBuffer;
+import org.kaazing.nuklei.function.Mikro;
 import org.kaazing.nuklei.kompound.cmd.StartCmd;
 import org.kaazing.nuklei.kompound.cmd.StopCmd;
 import org.kaazing.nuklei.net.TcpManager;
 import org.kaazing.nuklei.net.TcpManagerProxy;
+import org.kaazing.nuklei.net.TcpManagerTypeId;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -33,14 +36,16 @@ import java.util.Map;
 /**
  * Container for one or more Mikro services.
  */
-public class Kompound implements AutoCloseable
+public final class Kompound implements AutoCloseable
 {
-    private static final int TCP_MANAGER_COMMAND_QUEUE_SIZE = 1024;
-    private static final int TCP_MANAGER_SEND_BUFFER_SIZE = 64 * 1024 + MpscRingBuffer.STATE_TRAILER_SIZE;
-    private static final int MIKRO_RECEIVE_BUFFER_SIZE = 64 * 1024 + MpscRingBuffer.STATE_TRAILER_SIZE;
+    public static final int TCP_MANAGER_COMMAND_QUEUE_SIZE = 1024;
+    public static final int TCP_MANAGER_SEND_BUFFER_SIZE = 64 * 1024 + MpscRingBuffer.STATE_TRAILER_SIZE;
+    public static final int MIKRO_RECEIVE_BUFFER_SIZE = 64 * 1024 + MpscRingBuffer.STATE_TRAILER_SIZE;
+
+    private static final AtomicBuffer NULL_BUFFER = new UnsafeBuffer(new byte[0]);
 
     private final MpscArrayBuffer<Object> managerCommandQueue = new MpscArrayBuffer<>(TCP_MANAGER_COMMAND_QUEUE_SIZE);
-    private final AtomicBuffer managerSendBuffer = new AtomicBuffer(ByteBuffer.allocate(TCP_MANAGER_SEND_BUFFER_SIZE));
+    private final AtomicBuffer managerSendBuffer = new UnsafeBuffer(ByteBuffer.allocate(TCP_MANAGER_SEND_BUFFER_SIZE));
     private final TcpManager tcpManager;
     private final TcpManagerProxy tcpManagerProxy;
     private final MikroLocator mikroLocator;
@@ -53,15 +58,41 @@ public class Kompound implements AutoCloseable
      * Start a Kompound as a standalone process.
      *
      * @param args command line arguments
+     * @throws Exception if error on setup
+     *
      */
     public static void main(final String[] args) throws Exception
     {
-        try (final Kompound theKompound = Kompound.startUp())
+        try (final Kompound theKompound = Kompound.startUp(args))
         {
             while (true)
             {
-                Thread.sleep(1000); // actually see about grabbing SIGINT and graceful shutdown
+                Thread.sleep(1000); // TODO: actually see about grabbing SIGINT and graceful shutdown
             }
+        }
+    }
+
+    public static Kompound startUp(final String[] args)
+    {
+        try
+        {
+            final Builder builder = new Builder();
+
+            for (int i = 0; i < args.length; i += 2)
+            {
+                final Object service = Class.forName(args[i + 1]).newInstance();
+
+                if (service instanceof Mikro)
+                {
+                    builder.service(args[i], (Mikro) service);
+                }
+            }
+
+            return builder.build();
+        }
+        catch (final Exception ex)
+        {
+            throw new RuntimeException(ex);
         }
     }
 
@@ -98,49 +129,57 @@ public class Kompound implements AutoCloseable
         serviceList.forEach(
             (mikroService) ->
             {
-                mikroService.mikro().onCommand(stopCmd);
+                mikroService.mikro().onMessage(stopCmd, TcpManagerTypeId.NONE, NULL_BUFFER, 0, NULL_BUFFER.capacity());
             });
     }
 
     private Kompound(final Builder builder)
     {
         serviceList = builder.serviceList;
-        tcpManager = new TcpManager(managerCommandQueue, managerSendBuffer);
-        tcpManagerProxy = new TcpManagerProxy(managerCommandQueue, managerSendBuffer);
-        mikroLocator = new MikroLocator(serviceList);
-        tcpManagerNuklei = new DedicatedNuklei("tcp-manager");
+        localEndpointManager = new LocalEndpointManager();
         mikroNuklei = new DedicatedNuklei("mikros");
-        localEndpointManager = new LocalEndpointManager(tcpManagerProxy);
+        mikroLocator = new MikroLocator(serviceList);
 
-        tcpManager.launch(tcpManagerNuklei);
+        if (builder.numTcpServices > 0)
+        {
+            tcpManager = new TcpManager(managerCommandQueue, managerSendBuffer);
+            tcpManagerProxy = new TcpManagerProxy(managerCommandQueue, managerSendBuffer);
+            tcpManagerNuklei = new DedicatedNuklei("tcp-manager");
+
+            tcpManager.launch(tcpManagerNuklei);
+        }
+        else
+        {
+            tcpManager = null;
+            tcpManagerProxy = null;
+            tcpManagerNuklei = null;
+        }
 
         final StartCmd startCmd = new StartCmd();
 
+        // add endpoints, which might do checks.
+        serviceList.forEach(localEndpointManager::addEndpoint);
+
+        // reach here then configuration and URIs, etc. should all be good. So, inform mikros of start.
         serviceList.forEach(
             (mikroService) ->
             {
-                startCmd.reset(
-                    mikroLocator,
-                    (typeId, buffer, offset, length) ->
-                    {
-                        // TODO: change TcpManagerProxy.send to take a typeId so that it is symmetric with recv/read
-                        tcpManagerProxy.send(buffer, offset, length);
-                        return true;
-                    },
-                    mikroService.configurationMap());
-                // call onCommand() directly instead of going through a queue so it occurs ordered correctly
-                mikroService.mikro().onCommand(startCmd);
+                startCmd.reset(mikroLocator, mikroService.configurationMap());
 
-                localEndpointManager.addEndpoint(mikroService);
-
-                // spin up this mikro service now
-                mikroNuklei.spinUp(mikroService.nukleus());
+                // call directly instead of going through a queue so it occurs ordered correctly
+                mikroService.mikro().onMessage(startCmd, TcpManagerTypeId.NONE, NULL_BUFFER, 0, NULL_BUFFER.capacity());
             });
+
+        // do attaches
+        localEndpointManager.doLocalAttaches(tcpManagerProxy);
+
+        localEndpointManager.doSpinUp(mikroNuklei);
     }
 
     public static class Builder
     {
         public ArrayList<MikroService> serviceList = new ArrayList<>();
+        public int numTcpServices = 0;
 
         public Builder service(final String uri, final Mikro mikro)
         {
@@ -150,8 +189,14 @@ public class Kompound implements AutoCloseable
         public Builder service(
             final String uri, final Mikro mikro, final Map<String, Object> configurationMap)
         {
-            final AtomicBuffer receiveBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(MIKRO_RECEIVE_BUFFER_SIZE));
-            serviceList.add(new MikroService(uri, mikro, receiveBuffer, configurationMap));
+            final MikroService mikroService = new MikroService(uri, mikro, configurationMap);
+            serviceList.add(mikroService);
+
+            if (mikroService.localEndpointConfiguration().endpointType() == LocalEndpoint.Type.TCP)
+            {
+                numTcpServices++;
+            }
+
             return this;
         }
 

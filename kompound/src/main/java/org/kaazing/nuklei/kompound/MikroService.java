@@ -16,47 +16,31 @@
 
 package org.kaazing.nuklei.kompound;
 
-import org.kaazing.nuklei.MessagingNukleus;
-import org.kaazing.nuklei.Nukleus;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
-import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferWriter;
+import org.kaazing.nuklei.function.Mikro;
 
 import java.util.Map;
+import java.util.Objects;
 
 /**
- * Wrapper around a Mikro that is used for holding queues and buffers, etc.
+ * Wrapper around a Mikro that is used for holding configuration, etc.
  */
 public class MikroService
 {
-    private final static int MPSC_DEFAULT_READ_LIMIT = 100;
-
     private final String uri;
     private final Mikro mikro;
-    private final AtomicBuffer receiveBuffer;
-    private final MpscRingBufferWriter ringBufferWriter;
-    private final Map<String, Object> configurationMap;
-    private final MessagingNukleus nukleus;
     private final LocalEndpointConfiguration localEndpointConfiguration;
 
     public MikroService(
         final String uri,
         final Mikro mikro,
-        final AtomicBuffer receiveBuffer,
         final Map<String, Object> configurationMap)
     {
+        Objects.requireNonNull(configurationMap);
+
         this.uri = uri;
         this.mikro = mikro;
-        this.receiveBuffer = receiveBuffer;
-        this.configurationMap = configurationMap;
 
         localEndpointConfiguration = new LocalEndpointConfiguration(uri, configurationMap);
-
-        ringBufferWriter = new MpscRingBufferWriter(receiveBuffer);
-
-        final MessagingNukleus.Builder builder = new MessagingNukleus.Builder()
-            .mpscRingBuffer(receiveBuffer, mikro::onAvailable, MPSC_DEFAULT_READ_LIMIT);
-
-        nukleus = builder.build();
     }
 
     public String uri()
@@ -71,22 +55,7 @@ public class MikroService
 
     public Map<String, Object> configurationMap()
     {
-        return configurationMap;
-    }
-
-    public Proxy proxy()
-    {
-        return ringBufferWriter::write;
-    }
-
-    public AtomicBuffer receiveBuffer()
-    {
-        return receiveBuffer;
-    }
-
-    public Nukleus nukleus()
-    {
-        return nukleus;
+        return localEndpointConfiguration.configurationMap();
     }
 
     public LocalEndpointConfiguration localEndpointConfiguration()

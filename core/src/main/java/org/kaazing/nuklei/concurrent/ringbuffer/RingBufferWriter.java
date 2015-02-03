@@ -15,7 +15,7 @@
  */
 package org.kaazing.nuklei.concurrent.ringbuffer;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /**
  * Writer Interface for a Ring Buffer
@@ -31,5 +31,5 @@ public interface RingBufferWriter
      * @param length of the message in bytes
      * @return whether write was successful or not. If not successful, should be retried.
      */
-    boolean write(final int typeId, final AtomicBuffer buffer, final int offset, final int length);
+    boolean write(final int typeId, final DirectBuffer buffer, final int offset, final int length);
 }

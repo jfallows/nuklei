@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.kaazing.nuklei.function;
 
-package org.kaazing.nuklei.kompound;
+import uk.co.real_logic.agrona.DirectBuffer;
 
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
-
-public interface Proxy
+@FunctionalInterface
+public interface DirectBufferAccessor<T>
 {
-    boolean write(final int typeId, final AtomicBuffer buffer, final int offset, final int length);
+    T access(DirectBuffer buffer, int offset, int size);
 }

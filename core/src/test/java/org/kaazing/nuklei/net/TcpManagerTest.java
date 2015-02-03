@@ -19,17 +19,19 @@ package org.kaazing.nuklei.net;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.DedicatedNuklei;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferReader;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.function.Consumer;
 
@@ -45,16 +47,17 @@ public class TcpManagerTest
     private static final int MANAGER_SEND_BUFFER_SIZE = 64*1024 + MpscRingBuffer.STATE_TRAILER_SIZE;
     private static final int RECEIVE_BUFFER_SIZE = 64*1024 + MpscRingBuffer.STATE_TRAILER_SIZE;
     private static final int PORT = 40134;
+    private static final int CONNECT_PORT = 40134;
     private static final int SEND_BUFFER_SIZE = 1024;
     private static final int MAGIC_PAYLOAD_INT = 8;
 
     private final MpscArrayBuffer<Object> managerCommandQueue = new MpscArrayBuffer<>(MANAGER_COMMAND_QUEUE_SIZE);
-    private final AtomicBuffer managerSendBuffer = new AtomicBuffer(ByteBuffer.allocate(MANAGER_SEND_BUFFER_SIZE));
+    private final AtomicBuffer managerSendBuffer = new UnsafeBuffer(ByteBuffer.allocate(MANAGER_SEND_BUFFER_SIZE));
 
-    private final AtomicBuffer receiveBuffer = new AtomicBuffer(ByteBuffer.allocate(RECEIVE_BUFFER_SIZE));
+    private final AtomicBuffer receiveBuffer = new UnsafeBuffer(ByteBuffer.allocate(RECEIVE_BUFFER_SIZE));
     private final MpscRingBufferReader receiver = new MpscRingBufferReader(receiveBuffer);
     private final ByteBuffer sendChannelBuffer = ByteBuffer.allocate(SEND_BUFFER_SIZE).order(ByteOrder.nativeOrder());
-    private final AtomicBuffer sendAtomicBuffer = new AtomicBuffer(ByteBuffer.allocate(SEND_BUFFER_SIZE));
+    private final AtomicBuffer sendAtomicBuffer = new UnsafeBuffer(ByteBuffer.allocate(SEND_BUFFER_SIZE));
     private final ByteBuffer receiveChannelBuffer = ByteBuffer.allocate(RECEIVE_BUFFER_SIZE).order(ByteOrder.nativeOrder());
 
     private TcpManager tcpManager;
@@ -62,6 +65,7 @@ public class TcpManagerTest
     private DedicatedNuklei dedicatedNuklei;
     private SocketChannel senderChannel;
     private SocketChannel receiverChannel;
+    private ServerSocketChannel serverSocketChannel;
 
     @Before
     public void setUp() throws Exception
@@ -92,6 +96,11 @@ public class TcpManagerTest
         if (null != receiverChannel)
         {
             receiverChannel.close();
+        }
+
+        if (null != serverSocketChannel)
+        {
+            serverSocketChannel.close();
         }
     }
 
@@ -261,6 +270,34 @@ public class TcpManagerTest
 
         messages = receiveSingleMessage(receiverChannel, (buffer) -> {});
         assertThat(messages, is(-1));
+    }
+
+    @Test(timeout = 1000)
+    public void shouldConnectOut() throws Exception
+    {
+        tcpManager.launch(dedicatedNuklei);
+
+        serverSocketChannel = ServerSocketChannel.open();
+        serverSocketChannel.bind(new InetSocketAddress(CONNECT_PORT));
+
+        long attachId = tcpManagerProxy.attach(
+            0, InetAddress.getByName("0.0.0.0"), CONNECT_PORT, InetAddress.getLoopbackAddress(), receiveBuffer);
+
+        final SocketChannel connection = serverSocketChannel.accept();
+
+        int messages = receiveSingleMessage((typeId, buffer, offset, length) ->
+        {
+            assertThat(typeId, is(TcpManagerTypeId.ATTACH_COMPLETED));
+            assertThat(buffer.getLong(offset), is(attachId));
+        });
+        assertThat(messages, is(1));
+
+        messages = receiveSingleMessage((typeId, buffer, offset, length) ->
+        {
+            assertThat(typeId, is(TcpManagerTypeId.NEW_CONNECTION));
+            assertThat(buffer.getLong(offset), is(attachId));
+        });
+        assertThat(messages, is(1));
     }
 
     private int receiveSingleMessage(final MpscRingBufferReader.ReadHandler handler)

@@ -16,21 +16,27 @@
 
 package org.kaazing.nuklei.net;
 
-import org.kaazing.nuklei.BitUtil;
 import org.kaazing.nuklei.MessagingNukleus;
 import org.kaazing.nuklei.NioSelectorNukleus;
 import org.kaazing.nuklei.Nuklei;
-import org.kaazing.nuklei.concurrent.AtomicBuffer;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferWriter;
 import org.kaazing.nuklei.net.command.TcpCloseConnectionCmd;
 import org.kaazing.nuklei.net.command.TcpDetachCmd;
 import org.kaazing.nuklei.net.command.TcpLocalAttachCmd;
+import org.kaazing.nuklei.net.command.TcpRemoteAttachCmd;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.IntSupplier;
 
 /**
  */
@@ -48,7 +54,8 @@ public class TcpManager
     private final TcpReceiver tcpReceiver;
     private final TcpSender tcpSender;
     private final Map<Long, TcpAcceptor> localAttachesByIdMap;
-    private final AtomicBuffer informingBuffer;
+    private final Map<Long, TcpConnection> remoteAttachesByIdMap;
+    private final MutableDirectBuffer informingBuffer;
 
     public TcpManager(final MpscArrayBuffer<Object> commandQueue, final AtomicBuffer sendBuffer)
     {
@@ -84,7 +91,8 @@ public class TcpManager
                     tcpReceiverCommandQueue);
 
             localAttachesByIdMap = new HashMap<>();
-            informingBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(BitUtil.SIZE_OF_LONG));
+            remoteAttachesByIdMap = new HashMap<>();
+            informingBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BitUtil.SIZE_OF_LONG));
         }
         catch (final Exception ex)
         {
@@ -133,13 +141,45 @@ public class TcpManager
             localAttachesByIdMap.put(cmd.id(), acceptor);
             informOfAttachStatus(receiveWriter, TcpManagerTypeId.ATTACH_COMPLETED, cmd.id());
         }
+        else if (obj instanceof TcpRemoteAttachCmd)
+        {
+            final TcpRemoteAttachCmd cmd = (TcpRemoteAttachCmd) obj;
+
+            final MpscRingBufferWriter receiverWriter = new MpscRingBufferWriter(cmd.receiveBuffer());
+
+            final TcpConnection connection = new TcpConnection(
+                cmd.id(),
+                cmd.localAddress(),
+                receiverWriter);
+
+            remoteAttachesByIdMap.put(cmd.id(), connection);
+            try
+            {
+                if (connection.channel().connect(cmd.remoteAddress()))
+                {
+                    onConnect(connection);
+                }
+                else
+                {
+                    acceptNioSelectorNukleus.register(
+                        connection.channel(), SelectionKey.OP_CONNECT, composeConnector(connection));
+                }
+            }
+            catch (final IOException ex)
+            {
+                throw new RuntimeException(ex);
+            }
+        }
         else if (obj instanceof TcpDetachCmd)
         {
             final TcpDetachCmd cmd = (TcpDetachCmd) obj;
             final TcpAcceptor acceptor = localAttachesByIdMap.remove(cmd.id());
 
-            acceptor.close();
-            informOfAttachStatus(acceptor.receiveWriter(), TcpManagerTypeId.DETACH_COMPLETED, acceptor.id());
+            if (null != acceptor)
+            {
+                acceptor.close();
+                informOfAttachStatus(acceptor.receiveWriter(), TcpManagerTypeId.DETACH_COMPLETED, acceptor.id());
+            }
         }
         else if (obj instanceof TcpCloseConnectionCmd)
         {
@@ -178,4 +218,35 @@ public class TcpManager
             throw new IllegalStateException("could not write to receive buffer");
         }
     }
+
+    private IntSupplier composeConnector(final TcpConnection connection)
+    {
+        return () -> onConnect(connection);
+    }
+
+    private int onConnect(final TcpConnection connection)
+    {
+        try
+        {
+            connection.channel().finishConnect();
+            informOfAttachStatus(connection.receiveWriter(), TcpManagerTypeId.ATTACH_COMPLETED, connection.id());
+
+            // pass transport off to other nukleus' to process.
+            // First to sender then will be passed to receiver
+            if (!tcpSenderCommandQueue.write(connection))
+            {
+                throw new IllegalStateException("could not write to command queue");
+            }
+
+            // remove from the map, treated as a normal connection hereafter
+            remoteAttachesByIdMap.remove(connection.id());
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
+        }
+
+        return 1;
+    }
+
 }
