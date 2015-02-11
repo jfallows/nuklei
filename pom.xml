@@ -39,7 +39,7 @@
         <module>core</module>
         <module>benchmarks</module>
         <module>kompound</module>
-        <module>protocol</module>
+        <module>protocol/http</module>
     </modules>
 
     <build>

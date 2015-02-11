@@ -26,17 +26,21 @@
         <version>develop-SNAPSHOT</version>
     </parent>
 
-    <artifactId>nuklei-protocol</artifactId>
+    <artifactId>nuklei-http</artifactId>
     <packaging>jar</packaging>
 
-    <name>Nuklei Protocol</name>
-    <description>Various protocol implementations designed to work with Kompound containers and Nuklei</description>
+    <name>Nuklei HTTP</name>
+    <description>HTTP protocol implementation designed to work with Kompound containers and Nuklei</description>
     <url>https://github.com/kaazing/nuklei.git</url>
 
     <scm>
         <url>https://github.com/kaazing/nuklei.git</url>
         <connection>scm:git:https://github.com/kaazing/nuklei.git</connection>
     </scm>
+
+    <properties>
+        <checkstyle.config.location>../../config/checkstyle/checkstyle.xml</checkstyle.config.location>
+    </properties>
 
     <dependencies>
         <dependency>
