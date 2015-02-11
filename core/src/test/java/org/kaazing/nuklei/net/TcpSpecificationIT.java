@@ -15,6 +15,7 @@
  */
 package org.kaazing.nuklei.net;
 
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -24,10 +25,10 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.nio.charset.Charset;
 
+import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.DisableOnDebug;
@@ -40,6 +41,7 @@ import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferReader;
 
+import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -85,117 +87,165 @@ public class TcpSpecificationIT
         dedicatedNuklei = new DedicatedNuklei("TCP-manager-dedicated");
     }
 
+    @After
+    public void tearDown() throws Exception
+    {
+        if (dedicatedNuklei != null)
+        {
+            dedicatedNuklei.stop();
+        }
+
+        if (tcpManager != null)
+        {
+            tcpManager.close();
+        }
+    }
+
     @Test
     @Specification("establish.connection/tcp.client")
     public void establishConnectionFromClient() throws Exception
     {
-//        final AtomicBoolean isListening = new AtomicBoolean(false);
-//        Thread testThread = new Thread(new Runnable()
-//        {
-//            @Override
-//            public void run()
-//            {
-                // Start a listener, expect the client to connect
-                tcpManager.launch(dedicatedNuklei);
+        k3po.start();
 
-                long attachId = tcpManagerProxy.attach(PORT, new InetAddress[0], receiveBuffer);
+        // Start a listener, expect the client to connect
+        tcpManager.launch(dedicatedNuklei);
 
-                // Expect the port to be properly bound
-                expectMessage(TcpManagerTypeId.ATTACH_COMPLETED, attachId);
+        long attachId = tcpManagerProxy.attach(PORT, new InetAddress[0], receiveBuffer);
 
-//                isListening.lazySet(true); // to indicate the port is now bound
+        // Expect the port to be properly bound
+        expectMessage(TcpManagerTypeId.ATTACH_COMPLETED, attachId);
 
-                // Expect the client to connect
-                expectMessage(TcpManagerTypeId.NEW_CONNECTION, null);
-//            }
-//        },
-//        "establishConnectionFromClient-thread");
-//
-//        testThread.start();
-//
-//        while (!isListening.get())
-//        {
-//            Thread.yield(); // busy spin to give test thread a chance to bind
-//        }
+        // Expect the client to connect
+        expectMessage(TcpManagerTypeId.NEW_CONNECTION, (Long)null);
 
-        k3po.join();
+        k3po.finish();
     }
 
-    @Test @Ignore
+    @Test
     @Specification("establish.connection/tcp.server")
     public void establishConnectionToServer() throws Exception
     {
-//        Thread testThread = new Thread(new Runnable()
-//        {
-//            @Override
-//            public void run()
-//            {
-                // configure the manager to connect to the expected server port
-                try
-                {
-                    tcpManager.launch(dedicatedNuklei);
+        k3po.start();
 
-                    long attachId = tcpManagerProxy.attach(
-                            0, InetAddress.getByName("0.0.0.0"), CONNECT_PORT, InetAddress.getLoopbackAddress(), receiveBuffer);
-
-                    // Expect the connection to succeed as an attach/new connection
-                    expectMessage(TcpManagerTypeId.ATTACH_COMPLETED, attachId);
-                    expectMessage(TcpManagerTypeId.NEW_CONNECTION, attachId);
-
-                    tcpManagerProxy.detach(attachId);
-                }
-                catch (UnknownHostException ex)
-                {
-                    throw new RuntimeException("Error getting address for localhost", ex);
-                }
-//            }
-//        },
-//        "establishConnectionToServer-thread");
-//
-//        testThread.start();
-
-        k3po.join();
-
-//        testThread.join();
-    }
-
-    @Test @Ignore
-    @Specification("bidirectional.data/tcp.server")
-    public void bidirectionalDataFromClient() throws Exception
-    {
-        final AtomicBoolean isListening = new AtomicBoolean(false);
-        Thread testThread = new Thread(new Runnable()
+        // configure the manager to connect to the expected server port
+        try
         {
-            @Override
-            public void run()
-            {
-                // Start a listener, expect the client to connect
-                tcpManager.launch(dedicatedNuklei);
+            tcpManager.launch(dedicatedNuklei);
 
-                long attachId = tcpManagerProxy.attach(PORT, new InetAddress[0], receiveBuffer);
+            long attachId = tcpManagerProxy.attach(
+                    0, InetAddress.getByName("0.0.0.0"), CONNECT_PORT, InetAddress.getLoopbackAddress(), receiveBuffer);
 
-                // Expect the port to be properly bound
-                expectMessage(TcpManagerTypeId.ATTACH_COMPLETED, attachId);
-
-                isListening.lazySet(true); // to indicate the port is now bound
-
-                // Expect the client to connect
-                expectMessage(TcpManagerTypeId.NEW_CONNECTION, null);
-            }
-        },
-        "establishConnectionFromClient-thread");
-
-        testThread.start();
-
-        while (!isListening.get())
+            // Expect the connection to succeed as an attach/new connection
+            expectMessage(TcpManagerTypeId.ATTACH_COMPLETED, attachId);
+            expectMessage(TcpManagerTypeId.NEW_CONNECTION, attachId);
+        }
+        catch (UnknownHostException ex)
         {
-            Thread.yield(); // busy spin to give test thread a chance to bind
+            throw new RuntimeException("Error getting address for localhost", ex);
         }
 
-        k3po.join();
+        k3po.finish();
+    }
+
+    @Test
+    @Specification("bidirectional.data/tcp.client")
+    public void bidirectionDataFlowWithClient() throws Exception
+    {
+        k3po.start();
+
+        // Start a listener, expect the client to connect
+        tcpManager.launch(dedicatedNuklei);
+
+        long attachId = tcpManagerProxy.attach(PORT, new InetAddress[0], receiveBuffer);
+
+        // Expect the port to be properly bound
+        expectMessage(TcpManagerTypeId.ATTACH_COMPLETED, attachId);
+
+        // Expect the client to connect
+        long[] connectionId = new long[1];
+        expectMessage(TcpManagerTypeId.NEW_CONNECTION, connectionId);
+
+        // as per rupert script, receive "client data 1"
+        expectMessage(TcpManagerTypeId.RECEIVED_DATA, connectionId[0], "client data 1");
+
+        // as per rupert script, send "server data 1"
+        byte[] toSend = "server data 1".getBytes(Charset.forName("UTF-8"));
+        sendAtomicBuffer.putLong(0, connectionId[0]); // set connection ID
+        sendAtomicBuffer.putBytes(BitUtil.SIZE_OF_LONG, toSend);
+        tcpManagerProxy.send(sendAtomicBuffer, 0, BitUtil.SIZE_OF_LONG + toSend.length);
+
+        // as per rupert script, receive "client data 2"
+        expectMessage(TcpManagerTypeId.RECEIVED_DATA, connectionId[0], "client data 2");
+
+        // as per rupert script, send "server data 2"
+        toSend = "server data 2".getBytes(Charset.forName("UTF-8"));
+        sendAtomicBuffer.putLong(0, connectionId[0]); // set connection ID
+        sendAtomicBuffer.putBytes(BitUtil.SIZE_OF_LONG, toSend);
+        tcpManagerProxy.send(sendAtomicBuffer, 0, BitUtil.SIZE_OF_LONG + toSend.length);
+
+        k3po.finish();
+    }
+
+    @Test
+    @Specification("bidirectional.data/tcp.server")
+    public void bidirectionDataFlowWithServer() throws Exception
+    {
+        k3po.start();
+
+        // configure the manager to connect to the expected server port
+        try
+        {
+            tcpManager.launch(dedicatedNuklei);
+
+            long attachId = tcpManagerProxy.attach(
+                    0, InetAddress.getByName("0.0.0.0"), CONNECT_PORT, InetAddress.getLoopbackAddress(), receiveBuffer);
+
+            // Expect the connection to succeed as an attach/new connection
+            expectMessage(TcpManagerTypeId.ATTACH_COMPLETED, attachId);
+            expectMessage(TcpManagerTypeId.NEW_CONNECTION, attachId);
+
+            // as per rupert script, send "client data 1"
+            byte[] toSend = "client data 1".getBytes(Charset.forName("UTF-8"));
+            sendAtomicBuffer.putLong(0, attachId); // set connection ID
+            sendAtomicBuffer.putBytes(BitUtil.SIZE_OF_LONG, toSend);
+            tcpManagerProxy.send(sendAtomicBuffer, 0, BitUtil.SIZE_OF_LONG + toSend.length);
+
+            // as per rupert script, receive "server data 1"
+            expectMessage(TcpManagerTypeId.RECEIVED_DATA, attachId, "server data 1");
+
+            // as per rupert script, send "client data 2"
+            toSend = "client data 2".getBytes(Charset.forName("UTF-8"));
+            sendAtomicBuffer.putLong(0, attachId); // set connection ID
+            sendAtomicBuffer.putBytes(BitUtil.SIZE_OF_LONG, toSend);
+            tcpManagerProxy.send(sendAtomicBuffer, 0, BitUtil.SIZE_OF_LONG + toSend.length);
+
+            // receive "server data 2"
+            expectMessage(TcpManagerTypeId.RECEIVED_DATA, attachId, "server data 2");
+        }
+        catch (UnknownHostException ex)
+        {
+            throw new RuntimeException("Error getting address for localhost", ex);
+        }
+
+        k3po.finish();
     }
 
     private void expectMessage(int messageType, Long expectedAttachId)
+    {
+        expectMessage(messageType, expectedAttachId, null, null);
+    }
+
+    private void expectMessage(int messageType, long[] connectionId)
+    {
+        expectMessage(messageType, null, connectionId, null);
+    }
+
+    private void expectMessage(int messageType, Long expectedAttachId, String message)
+    {
+        expectMessage(messageType, expectedAttachId, null, message);
+    }
+
+    private void expectMessage(int messageType, Long expectedAttachId, long[] connectionId, String message)
     {
         int messages = readOneMessage((typeId, buffer, offset, length) ->
         {
@@ -204,18 +254,37 @@ public class TcpSpecificationIT
             {
                 assertThat(buffer.getLong(offset), is(expectedAttachId));
             }
+            else if (connectionId != null)
+            {
+                connectionId[0] = buffer.getLong(offset);
+            }
+
+            if (message != null)
+            {
+                byte[] receivedMessageBytes = new byte[length - BitUtil.SIZE_OF_LONG];
+                buffer.getBytes(offset + BitUtil.SIZE_OF_LONG, receivedMessageBytes, 0, length - BitUtil.SIZE_OF_LONG);
+                String receivedMessage = new String(receivedMessageBytes);
+                assertThat(format("Received: '%s' which does not match expected message: '%s'", receivedMessage, message),
+                        message.equals(receivedMessage));
+            }
         });
         assertThat(messages, is(1));
     }
 
     private int readOneMessage(final MpscRingBufferReader.ReadHandler handler)
     {
-        int messages;
-
-        while ((messages = receiver.read(handler, 1)) == 0)
+        try
         {
-            Thread.yield();
+            int messages;
+            while ((messages = receiver.read(handler, 1)) == 0)
+            {
+                Thread.yield();
+            }
+            return messages;
         }
-        return messages;
+        catch (Exception ex)
+        {
+            throw new RuntimeException("Exception in readOneMessage", ex);
+        }
     }
 }
