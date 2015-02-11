@@ -44,7 +44,7 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>nuklei-protocol</artifactId>
+            <artifactId>nuklei-http</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
