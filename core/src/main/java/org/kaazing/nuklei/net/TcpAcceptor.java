@@ -20,6 +20,7 @@ import org.kaazing.nuklei.NioSelectorNukleus;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferWriter;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
@@ -99,6 +100,16 @@ public class TcpAcceptor
         {
             selectorNukleus.cancel(acceptor.acceptor(), SelectionKey.OP_ACCEPT);
             acceptor.close();
+        }
+        try
+        {
+            // Call select(Now) so canceled selector keys are removed from the selector. This is
+            // necessary on some platforms (Windows) to allow the ServerSocketChannel to be fully unbound.
+            selectorNukleus.selector.selectNow();
+        }
+        catch (IOException e)
+        {
+            // Nothing useful we can do here
         }
     }
 
