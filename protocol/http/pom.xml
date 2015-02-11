@@ -24,6 +24,7 @@
         <groupId>org.kaazing</groupId>
         <artifactId>nuklei-parent</artifactId>
         <version>develop-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <artifactId>nuklei-http</artifactId>
