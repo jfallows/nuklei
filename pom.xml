@@ -40,6 +40,7 @@
         <module>benchmarks</module>
         <module>kompound</module>
         <module>protocol/http</module>
+        <module>protocol/ws</module>
     </modules>
 
     <build>
