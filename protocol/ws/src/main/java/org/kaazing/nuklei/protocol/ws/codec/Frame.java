@@ -46,7 +46,7 @@ public final class Frame extends FlyweightBE
     public Frame wrap(MutableDirectBuffer buffer, int offset)
     {
         super.wrap(buffer, offset);
-        validateFirstByte();
+        validate();
         return this;
     }
 
@@ -60,14 +60,27 @@ public final class Frame extends FlyweightBE
         return OpCode.fromInt(byte0() & OP_CODE_MASK);
     }
 
-    public long getLength()
+    public int getLength()
     {
-        int length1 = uint8Get(buffer(), offset() + LENGTH_OFFSET);
-        if (length1 < 126)
+        int offset = offset() + LENGTH_OFFSET;
+        int length = uint8Get(buffer(), offset) & LENGTH_BYTE_1_MASK;
+
+        switch (length)
         {
-            return length1;
+        case 126:
+            return uint8Get(buffer(), offset + 1) << 8 | uint8Get(buffer(), offset + 2);
+        case 127:
+            return uint8Get(buffer(), offset + 1) << 56 |
+                   uint8Get(buffer(), offset + 2) << 48 |
+                   uint8Get(buffer(), offset + 3) << 40 |
+                   uint8Get(buffer(), offset + 4) << 32 |
+                   uint8Get(buffer(), offset + 5) << 24 |
+                   uint8Get(buffer(), offset + 6) << 16 |
+                   uint8Get(buffer(), offset + 7) << 8  |
+                   uint8Get(buffer(), offset + 8);
+        default:
+            return length;
         }
-        return -1; // TODO: implement the rest
     }
 
     public int byte0()
@@ -75,7 +88,13 @@ public final class Frame extends FlyweightBE
         return uint8Get(buffer(), offset());
     }
 
-    private void validateFirstByte()
+    private static void protocolError(String message)
+    {
+        // TODO: generalized protocol error handling
+        throw new IllegalArgumentException(message);
+    }
+
+    private void validate()
     {
         if ((byte0() & RSV_BITS_MASK) != 0)
         {
@@ -83,41 +102,41 @@ public final class Frame extends FlyweightBE
         }
         OpCode opcode = getOpCode();
 
-        // TODO: per connection state to know if previous frame had its fin bit set
-        boolean prevDataFin = false;
-
-        switch (opcode)
-        {
-        case CONTINUATION:
-            if (prevDataFin)
-            {
-                protocolError("Not expecting CONTINUATION frame");
-            }
-            break;
-
-        case TEXT:
-        case BINARY:
-            if (!prevDataFin)
-            {
-                protocolError("Expecting CONTINUATION frame, but got " + opcode + " frame");
-            }
-            break;
-
-        case PING:
-        case PONG:
-        case CLOSE:
-            if (!isFin())
-            {
-                protocolError("Expected FIN for " + opcode + " frame");
-            }
-            break;
-        }
-    }
-
-    private static void protocolError(String message)
-    {
-        // TODO: generalized protocol error handling
-        throw new IllegalArgumentException(message);
+        // TODO: State machine should validate against maximumWsMessageSize, boolean previousFrameFin, boolean fromClient,
+        // to achieve the following:
+//        switch (opcode)
+//        {
+//        case CONTINUATION:
+//            if (previousFrameFin)
+//            {
+//                protocolError("Not expecting CONTINUATION frame");
+//            }
+//            break;
+//
+//        case TEXT:
+//        case BINARY:
+//            if (!previousFrameFin)
+//            {
+//                protocolError("Expecting CONTINUATION frame, but got " + opcode + " frame");
+//            }
+//            boolean masked = (byte0() & MASKED_MASK) != 0;
+//            if (fromClient && !masked) {
+//                protocolError("WebSocket frame from client must be masked");
+//            }
+//            if (!fromClient && masked) {
+//                protocolError("WebSocket frame from server must not be masked");
+//            }
+//            break;
+//
+//        case PING:
+//        case PONG:
+//        case CLOSE:
+//            if (!isFin())
+//            {
+//                protocolError("Expected FIN for " + opcode + " frame");
+//            }
+//            break;
+//        }
     }
 
 }
