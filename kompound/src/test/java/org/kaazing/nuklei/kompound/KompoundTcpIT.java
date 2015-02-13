@@ -22,6 +22,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.rules.RuleChain.outerRule;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
@@ -34,8 +35,8 @@ import org.kaazing.k3po.junit.annotation.Specification;
 import org.kaazing.k3po.junit.rules.K3poRule;
 import org.kaazing.nuklei.kompound.cmd.StartCmd;
 import org.kaazing.nuklei.kompound.cmd.StopCmd;
-import org.kaazing.nuklei.net.TcpManagerHeadersDecoder;
-import org.kaazing.nuklei.net.TcpManagerTypeId;
+import org.kaazing.nuklei.protocol.tcp.TcpManagerHeadersDecoder;
+import org.kaazing.nuklei.protocol.tcp.TcpManagerTypeId;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -105,6 +106,7 @@ public class KompoundTcpIT
     {
         final String message = "hello world";
         final byte[] data = new byte[message.length()];
+        CountDownLatch dataLatch = new CountDownLatch(1);
 
         final Kompound.Builder builder = new Kompound.Builder()
             .service(
@@ -119,6 +121,7 @@ public class KompoundTcpIT
 
                         case TcpManagerTypeId.RECEIVED_DATA:
                             buffer.getBytes(offset, data);
+                            dataLatch.countDown();
                             break;
                     }
                 });
@@ -126,6 +129,8 @@ public class KompoundTcpIT
         kompound = Kompound.startUp(builder);
         waitToBeAttached();
         k3po.join();
+
+        dataLatch.await();
 
         assertThat(data, is(message.getBytes()));
     }

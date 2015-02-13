@@ -39,6 +39,7 @@
         <module>core</module>
         <module>benchmarks</module>
         <module>kompound</module>
+        <module>protocol/tcp</module>
         <module>protocol/http</module>
     </modules>
 

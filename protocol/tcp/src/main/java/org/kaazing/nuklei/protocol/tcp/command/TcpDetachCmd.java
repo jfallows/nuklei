@@ -14,26 +14,21 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.net.command;
+package org.kaazing.nuklei.protocol.tcp.command;
 
-public class TcpCloseConnectionCmd
+/**
+ */
+public class TcpDetachCmd
 {
-    private final long connectionId;
-    private final boolean immediate;
+    private final long id;
 
-    public TcpCloseConnectionCmd(final long connectionId, final boolean immediate)
+    public TcpDetachCmd(final long id)
     {
-        this.connectionId = connectionId;
-        this.immediate = immediate;
+        this.id = id;
     }
 
-    public long connectionId()
+    public long id()
     {
-        return connectionId;
-    }
-
-    public boolean isImmediate()
-    {
-        return immediate;
+        return id;
     }
 }

@@ -16,17 +16,18 @@
 
 package org.kaazing.nuklei.protocol.http;
 
-import org.junit.Test;
-import org.kaazing.nuklei.net.TcpManagerHeadersDecoder;
-import org.kaazing.nuklei.net.TcpManagerTypeId;
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 
 import java.nio.ByteOrder;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
+import org.junit.Test;
+import org.kaazing.nuklei.protocol.tcp.TcpManagerHeadersDecoder;
+import org.kaazing.nuklei.protocol.tcp.TcpManagerTypeId;
+
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class HttpDispatcherTest
 {

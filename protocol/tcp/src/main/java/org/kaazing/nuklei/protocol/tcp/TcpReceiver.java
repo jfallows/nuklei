@@ -14,53 +14,46 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.net;
+package org.kaazing.nuklei.protocol.tcp;
+
+import java.nio.channels.SelectionKey;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.kaazing.nuklei.MessagingNukleus;
 import org.kaazing.nuklei.NioSelectorNukleus;
 import org.kaazing.nuklei.Nuklei;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
-import org.kaazing.nuklei.net.command.TcpCloseConnectionCmd;
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-
-import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
+import org.kaazing.nuklei.protocol.tcp.command.TcpCloseConnectionCmd;
 
 /**
  */
-public class TcpSender
+public class TcpReceiver
 {
     private static final int MPSC_READ_LIMIT = 10;
 
     private final MessagingNukleus messagingNukleus;
+    private final NioSelectorNukleus selectorNukleus;
     private final Map<Long, TcpConnection> connectionsByIdMap;
-    private final ByteBuffer sendByteBuffer;
     private final MpscArrayBuffer<Object> tcpManagerCommandQueue;
-    private final MpscArrayBuffer<Object> tcpReceiverCommandQueue;
+    private final MpscArrayBuffer<Object> tcpSenderCommandQueue;
 
-    public TcpSender(
+    public TcpReceiver(
         final MpscArrayBuffer<Object> commandQueue,
-        final AtomicBuffer sendBuffer,
         final NioSelectorNukleus selectorNukleus,
         final MpscArrayBuffer<Object> tcpManagerCommandQueue,
-        final MpscArrayBuffer<Object> tcpReceiverCommandQueue)
+        final MpscArrayBuffer<Object> tcpSenderCommandQueue)
     {
         final MessagingNukleus.Builder builder = new MessagingNukleus.Builder()
             .nioSelector(selectorNukleus)
-            .mpscRingBuffer(sendBuffer, this::sendHandler, MPSC_READ_LIMIT)
             .mpscArrayBuffer(commandQueue, this::commandHandler, MPSC_READ_LIMIT);
 
+        this.selectorNukleus = selectorNukleus;
         this.tcpManagerCommandQueue = tcpManagerCommandQueue;
-        this.tcpReceiverCommandQueue = tcpReceiverCommandQueue;
+        this.tcpSenderCommandQueue = tcpSenderCommandQueue;
 
         messagingNukleus = builder.build();
         connectionsByIdMap = new HashMap<>();
-        byte[] sendByteArray = sendBuffer.byteArray();
-        sendByteBuffer = (sendByteArray != null) ? ByteBuffer.wrap(sendByteArray) : sendBuffer.byteBuffer().duplicate();
-        sendByteBuffer.clear();
     }
 
     public void launch(final Nuklei nuklei)
@@ -74,12 +67,16 @@ public class TcpSender
         {
             final TcpConnection connection = (TcpConnection)obj;
 
-            connectionsByIdMap.put(connection.id(), connection);
-
-            // pass on to receiver so it can hook things up also
-            if (!tcpReceiverCommandQueue.write(connection))
+            try
             {
-                throw new IllegalStateException("could not write to command queue");
+                selectorNukleus.register(connection.channel(), SelectionKey.OP_READ, connection::onReadable);
+                connectionsByIdMap.put(connection.id(), connection);
+
+                connection.informOfNewConnection();
+            }
+            catch (final Exception ex)
+            {
+                ex.printStackTrace(); // TODO: temp
             }
         }
         else if (obj instanceof TcpCloseConnectionCmd)
@@ -89,34 +86,8 @@ public class TcpSender
 
             if (null != connection)
             {
-                connection.senderClosed();
-                informTcpManagerOfClose(connection);
-            }
-        }
-    }
-
-    private void sendHandler(final int typeId, final MutableDirectBuffer buffer, final int offset, final int length)
-    {
-        if (TcpManagerTypeId.SEND_DATA == typeId)
-        {
-            final TcpConnection connection = connectionsByIdMap.get(buffer.getLong(offset));
-
-            final int messageOffset = offset + BitUtil.SIZE_OF_LONG;
-            sendByteBuffer.limit(messageOffset + length - BitUtil.SIZE_OF_LONG);
-            sendByteBuffer.position(messageOffset);
-
-            if (null != connection)
-            {
-                connection.send(sendByteBuffer);
-            }
-        }
-        else if (TcpManagerTypeId.CLOSE_CONNECTION == typeId)
-        {
-            final TcpConnection connection = connectionsByIdMap.remove(buffer.getLong(offset));
-
-            if (null != connection)
-            {
-                connection.senderClosed();
+                selectorNukleus.cancel(connection.channel(), SelectionKey.OP_READ);
+                connection.receiverClosed();
                 informTcpManagerOfClose(connection);
             }
         }
