@@ -6,6 +6,7 @@
         <groupId>org.kaazing</groupId>
         <artifactId>nuklei-parent</artifactId>
         <version>develop-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <artifactId>nuklei-tcp</artifactId>
@@ -68,7 +69,7 @@
         <dependency>
             <groupId>org.kaazing</groupId>
             <artifactId>specification.tcp</artifactId>
-            <version>develop-SNAPSHOT</version>
+            <version>1.0.0-alpha-1</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
