@@ -35,8 +35,8 @@ import org.kaazing.k3po.junit.annotation.Specification;
 import org.kaazing.k3po.junit.rules.K3poRule;
 import org.kaazing.nuklei.kompound.cmd.StartCmd;
 import org.kaazing.nuklei.kompound.cmd.StopCmd;
-import org.kaazing.nuklei.net.TcpManagerHeadersDecoder;
-import org.kaazing.nuklei.net.TcpManagerTypeId;
+import org.kaazing.nuklei.protocol.tcp.TcpManagerHeadersDecoder;
+import org.kaazing.nuklei.protocol.tcp.TcpManagerTypeId;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;

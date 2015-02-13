@@ -14,22 +14,26 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.net;
+package org.kaazing.nuklei.protocol.tcp.command;
 
-/**
- * Events and commands for the TCP Manager
- */
-public class TcpManagerTypeId
+public class TcpCloseConnectionCmd
 {
-    /** events */
-    public static final int NONE = 0;
-    public static final int NEW_CONNECTION = 1;
-    public static final int RECEIVED_DATA = 2;
-    public static final int ATTACH_COMPLETED = 3;
-    public static final int DETACH_COMPLETED = 4;
-    public static final int EOF = 5;
+    private final long connectionId;
+    private final boolean immediate;
 
-    /** commands */
-    public static final int SEND_DATA = 6;
-    public static final int CLOSE_CONNECTION = 7;
+    public TcpCloseConnectionCmd(final long connectionId, final boolean immediate)
+    {
+        this.connectionId = connectionId;
+        this.immediate = immediate;
+    }
+
+    public long connectionId()
+    {
+        return connectionId;
+    }
+
+    public boolean isImmediate()
+    {
+        return immediate;
+    }
 }

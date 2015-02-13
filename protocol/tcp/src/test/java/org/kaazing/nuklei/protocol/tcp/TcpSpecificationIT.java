@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.net;
+package org.kaazing.nuklei.protocol.tcp;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;

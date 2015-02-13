@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.net;
+package org.kaazing.nuklei.protocol.tcp;
 
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferWriter;
 import uk.co.real_logic.agrona.BitUtil;
