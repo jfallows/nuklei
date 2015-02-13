@@ -18,6 +18,7 @@ package org.kaazing.nuklei.function;
 import org.junit.Test;
 import org.kaazing.nuklei.function.AlignedMikro.AlignmentSupplier;
 
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -49,7 +50,7 @@ public class AlignedMikroTest
         {
             @Override
             public void onMessage(
-                    MutableDirectBuffer state, Object header, int typeId, MutableDirectBuffer buffer, int offset, int length)
+                    MutableDirectBuffer state, Object header, int typeId, DirectBuffer buffer, int offset, int length)
             {
                 handler.onMessage(state, null, typeId, buffer, offset, length);
             }
@@ -73,7 +74,7 @@ public class AlignedMikroTest
         {
             @Override
             public void onMessage(
-                    MutableDirectBuffer state, Object header, int typeId, MutableDirectBuffer buffer, int offset, int length)
+                    MutableDirectBuffer state, Object header, int typeId, DirectBuffer buffer, int offset, int length)
             {
                 handler.onMessage(state, null, typeId, buffer, offset, length);
             }
@@ -97,7 +98,7 @@ public class AlignedMikroTest
         {
             @Override
             public void onMessage(
-                    MutableDirectBuffer state, Object header, int typeId, MutableDirectBuffer buffer, int offset, int length)
+                    MutableDirectBuffer state, Object header, int typeId, DirectBuffer buffer, int offset, int length)
             {
                 handler.onMessage(state, null, typeId, buffer, offset, length);
             }
@@ -122,7 +123,7 @@ public class AlignedMikroTest
         {
             @Override
             public void onMessage(
-                    MutableDirectBuffer state, Object header, int typeId, MutableDirectBuffer buffer, int offset, int length)
+                    MutableDirectBuffer state, Object header, int typeId, DirectBuffer buffer, int offset, int length)
             {
                 handler.onMessage(state, null, typeId, buffer, offset, length);
             }
@@ -149,7 +150,7 @@ public class AlignedMikroTest
         {
             @Override
             public void onMessage(
-                    MutableDirectBuffer state, Object header, int typeId, MutableDirectBuffer buffer, int offset, int length)
+                    MutableDirectBuffer state, Object header, int typeId, DirectBuffer buffer, int offset, int length)
             {
                 handler.onMessage(state, null, typeId, buffer, offset, length);
             }

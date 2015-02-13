@@ -22,6 +22,7 @@ import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.function.Proxy;
 
 import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public class TcpManagerHeadersDecoder extends Flyweight
@@ -78,5 +79,13 @@ public class TcpManagerHeadersDecoder extends Flyweight
         buffer.putLong(offset - HEADER_LENGTH, connectionId());
         tcpManagerProxy.write(TcpManagerTypeId.SEND_DATA, buffer, offset - HEADER_LENGTH, length + HEADER_LENGTH);
     }
+
+    @Override
+    public Flyweight wrap(final DirectBuffer buffer, final int offset)
+    {
+        return super.wrap(buffer, offset);
+    }
+
+
 
 }

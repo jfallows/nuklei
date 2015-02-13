@@ -16,18 +16,23 @@
 
 package org.kaazing.nuklei.protocol.http;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.function.Supplier;
+import java.util.stream.IntStream;
+
 import org.kaazing.nuklei.function.Mikro;
 import org.kaazing.nuklei.net.TcpManagerHeadersDecoder;
 import org.kaazing.nuklei.net.TcpManagerTypeId;
 import org.kaazing.nuklei.protocol.Coordinates;
 import org.kaazing.nuklei.protocol.ProtocolUtil;
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-import java.util.*;
-import java.util.function.Supplier;
-import java.util.stream.IntStream;
+import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 /**
  */
@@ -61,7 +66,7 @@ public class HttpDispatcher implements Mikro
     }
 
     public void onMessage(
-        final Object header, final int typeId, final MutableDirectBuffer buffer, final int offset, final int length)
+        final Object header, final int typeId, final DirectBuffer buffer, final int offset, final int length)
     {
         if (TcpManagerTypeId.RECEIVED_DATA == typeId)
         {
