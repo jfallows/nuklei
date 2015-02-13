@@ -21,7 +21,6 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.MessagingNukleus;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferReader;
@@ -135,7 +134,7 @@ public class LocalEndpoint
         this.tcpManagerProxy = tcpManagerProxy;
         tcpManagerHeadersDecoder.tcpManagerProxy(tcpManagerProxy);
     }
-    
+
     private void onTcpMessage(final int typeId, final DirectBuffer buffer, final int offset, final int length)
     {
         tcpManagerHeadersDecoder.wrap(buffer, offset);
