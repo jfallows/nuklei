@@ -24,7 +24,6 @@ import static org.junit.rules.RuleChain.outerRule;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.HashSet;
@@ -61,16 +60,13 @@ public class TcpSpecificationIT
     private static final int PORT = 8080;
     private static final int CONNECT_PORT = 8080;
     private static final int SEND_BUFFER_SIZE = 1024;
-    private static final int MAGIC_PAYLOAD_INT = 8;
 
     private final MpscArrayBuffer<Object> managerCommandQueue = new MpscArrayBuffer<>(MANAGER_COMMAND_QUEUE_SIZE);
     private final AtomicBuffer managerSendBuffer = new UnsafeBuffer(ByteBuffer.allocate(MANAGER_SEND_BUFFER_SIZE));
 
     private final AtomicBuffer receiveBuffer = new UnsafeBuffer(ByteBuffer.allocate(RECEIVE_BUFFER_SIZE));
     private final MpscRingBufferReader receiver = new MpscRingBufferReader(receiveBuffer);
-    private final ByteBuffer sendChannelBuffer = ByteBuffer.allocate(SEND_BUFFER_SIZE).order(ByteOrder.nativeOrder());
     private final AtomicBuffer sendAtomicBuffer = new UnsafeBuffer(ByteBuffer.allocate(SEND_BUFFER_SIZE));
-    private final ByteBuffer receiveChannelBuffer = ByteBuffer.allocate(RECEIVE_BUFFER_SIZE).order(ByteOrder.nativeOrder());
 
     private TcpManager tcpManager;
     private TcpManagerProxy tcpManagerProxy;
@@ -260,6 +256,8 @@ public class TcpSpecificationIT
     @Specification("client.close/tcp.server")
     public void shouldConnectThenClose() throws Exception
     {
+        k3po.start();
+
         // configure the manager to connect to the expected server port
         try
         {
@@ -434,6 +432,109 @@ public class TcpSpecificationIT
             tcpManagerProxy.closeConnection(attachId1, true);
             tcpManagerProxy.closeConnection(attachId2, true);
             tcpManagerProxy.closeConnection(attachId3, true);
+        }
+        catch (UnknownHostException ex)
+        {
+            throw new RuntimeException("Error getting address for localhost", ex);
+        }
+
+        k3po.finish();
+    }
+
+    @Test
+    @Specification("server.close/tcp.client")
+    public void shouldCloseConnectionToClient() throws Exception
+    {
+        // Start a listener, expect the client to connect
+        tcpManager.launch(dedicatedNuklei);
+
+        long attachId = tcpManagerProxy.attach(PORT, new InetAddress[0], receiveBuffer);
+
+        // Expect the port to be properly bound
+        expectMessage(TcpManagerTypeId.ATTACH_COMPLETED, attachId);
+
+        // start k3po so connects happen
+        k3po.start();
+
+        // Expect the client to connect
+        long[] connectionId = new long[1];
+        expectMessage(TcpManagerTypeId.NEW_CONNECTION, connectionId);
+
+        tcpManagerProxy.closeConnection(connectionId[0], true);
+
+        k3po.finish();
+    }
+
+    @Test
+    @Specification("server.close/tcp.server")
+    public void shouldReceiveCloseFromServer() throws Exception
+    {
+        // configure the manager to connect to the expected server port
+        try
+        {
+            tcpManager.launch(dedicatedNuklei);
+
+            long attachId = tcpManagerProxy.attach(
+                    0, InetAddress.getByName("0.0.0.0"), CONNECT_PORT, InetAddress.getLoopbackAddress(), receiveBuffer);
+
+            // Expect the connection to succeed as an attach/new connection
+            expectMessage(TcpManagerTypeId.ATTACH_COMPLETED, attachId);
+            expectMessage(TcpManagerTypeId.NEW_CONNECTION, attachId);
+            expectMessage(TcpManagerTypeId.EOF, attachId);
+        }
+        catch (UnknownHostException ex)
+        {
+            throw new RuntimeException("Error getting address for localhost", ex);
+        }
+
+        k3po.finish();
+    }
+
+    @Test
+    @Specification("server.sent.data/tcp.client")
+    public void shouldSendDataToClient() throws Exception
+    {
+        // Start a listener, expect the client to connect
+        tcpManager.launch(dedicatedNuklei);
+
+        long attachId = tcpManagerProxy.attach(PORT, new InetAddress[0], receiveBuffer);
+
+        // Expect the port to be properly bound
+        expectMessage(TcpManagerTypeId.ATTACH_COMPLETED, attachId);
+
+        // start k3po so connects happen
+        k3po.start();
+
+        // Expect the client to connect
+        long[] connectionId = new long[1];
+        expectMessage(TcpManagerTypeId.NEW_CONNECTION, connectionId);
+
+        // as per rupert script, send "server data"
+        byte[] toSend = "server data".getBytes(Charset.forName("UTF-8"));
+        sendAtomicBuffer.putLong(0, connectionId[0]); // set connection ID
+        sendAtomicBuffer.putBytes(BitUtil.SIZE_OF_LONG, toSend);
+        tcpManagerProxy.send(sendAtomicBuffer, 0, BitUtil.SIZE_OF_LONG + toSend.length);
+
+        k3po.finish();
+    }
+
+    @Test
+    @Specification("server.sent.data/tcp.server")
+    public void shouldReceiveDataFromServer() throws Exception
+    {
+        // configure the manager to connect to the expected server port
+        try
+        {
+            tcpManager.launch(dedicatedNuklei);
+            long attachId = tcpManagerProxy.attach(
+                    0, InetAddress.getByName("0.0.0.0"), CONNECT_PORT, InetAddress.getLoopbackAddress(), receiveBuffer);
+
+            // Expect the connection to succeed as an attach/new connection
+            expectMessage(TcpManagerTypeId.ATTACH_COMPLETED, attachId);
+            expectMessage(TcpManagerTypeId.NEW_CONNECTION, attachId);
+
+            // as per rupert script, expect "server data"
+            expectMessage(TcpManagerTypeId.RECEIVED_DATA, attachId, "server data");
         }
         catch (UnknownHostException ex)
         {
