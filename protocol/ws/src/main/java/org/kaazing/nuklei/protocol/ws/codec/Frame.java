@@ -15,11 +15,13 @@
  */
 package org.kaazing.nuklei.protocol.ws.codec;
 
+import java.net.ProtocolException;
+
 import org.kaazing.nuklei.FlyweightBE;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
-public final class Frame extends FlyweightBE
+public class Frame extends FlyweightBE
 {
 
     public static final ThreadLocal<Frame> LOCAL_REF = new ThreadLocal<Frame>()
@@ -38,21 +40,40 @@ public final class Frame extends FlyweightBE
     private static final byte LENGTH_BYTE_1_MASK = 0b01111111;
     private static final int LENGTH_OFFSET = 1;
 
-    private Frame()
+    private final Close close = new Close();
+
+    Frame()
     {
+    }
+
+    public Frame wrap(DirectBuffer buffer, int offset) throws ProtocolException
+    {
+        validate();
+        switch(getOpCode()) {
+        case BINARY:
+            //return data.wrap(buffer, offset);
+            break;
+        case CLOSE:
+            return close.wrap(buffer, offset);
+        case CONTINUATION:
+            break;
+        case PING:
+            break;
+        case PONG:
+            break;
+        case TEXT:
+            break;
+        default:
+            break;
+        }
+        return this; // TODO: remove this
     }
 
     @Override
-    public Frame wrap(MutableDirectBuffer buffer, int offset)
+    protected Frame wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
-        validate();
+        super.wrap(buffer, offset, false);
         return this;
-    }
-
-    public boolean isFin()
-    {
-        return (byte0() & FIN_MASK) != 0;
     }
 
     public OpCode getOpCode()
@@ -83,60 +104,55 @@ public final class Frame extends FlyweightBE
         }
     }
 
-    public int byte0()
+    public boolean isFin()
+    {
+        return (byte0() & FIN_MASK) != 0;
+    }
+
+    public boolean isMasked()
+    {
+        return (byte0() & MASKED_MASK) != 0;
+    }
+
+    private int byte0()
     {
         return uint8Get(buffer(), offset());
     }
 
-    private static void protocolError(String message)
+    private static void protocolError(String message) throws ProtocolException
     {
         // TODO: generalized protocol error handling
-        throw new IllegalArgumentException(message);
+        throw new ProtocolException(message);
     }
 
-    private void validate()
+    /**
+     * TODO: state machine should validate the following:
+     * <li> If this is a Continuation frame: previous frame's fin must not have been set
+     * <li> If this is not a Continuation frame: previous frame's fin must have been set
+     * <li> If from client (presumably this is always the case): must be masked (and vice versa)
+     * <li> If from server: must not be masked (and vice versa)
+     */
+    private void validate() throws ProtocolException
     {
         if ((byte0() & RSV_BITS_MASK) != 0)
         {
             protocolError("Reserved bits are set in first byte");
         }
-        OpCode opcode = getOpCode();
 
-        // TODO: State machine should validate against maximumWsMessageSize, boolean previousFrameFin, boolean fromClient,
-        // to achieve the following:
-//        switch (opcode)
-//        {
-//        case CONTINUATION:
-//            if (previousFrameFin)
-//            {
-//                protocolError("Not expecting CONTINUATION frame");
-//            }
-//            break;
-//
-//        case TEXT:
-//        case BINARY:
-//            if (!previousFrameFin)
-//            {
-//                protocolError("Expecting CONTINUATION frame, but got " + opcode + " frame");
-//            }
-//            boolean masked = (byte0() & MASKED_MASK) != 0;
-//            if (fromClient && !masked) {
-//                protocolError("WebSocket frame from client must be masked");
-//            }
-//            if (!fromClient && masked) {
-//                protocolError("WebSocket frame from server must not be masked");
-//            }
-//            break;
-//
-//        case PING:
-//        case PONG:
-//        case CLOSE:
-//            if (!isFin())
-//            {
-//                protocolError("Expected FIN for " + opcode + " frame");
-//            }
-//            break;
-//        }
+        OpCode opcode = getOpCode();
+        switch (opcode)
+        {
+        case PING:
+        case PONG:
+        case CLOSE:
+            if (!isFin())
+            {
+                protocolError("Expected FIN for " + opcode + " frame");
+            }
+            break;
+        default:
+            break;
+        }
     }
 
 }
