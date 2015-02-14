@@ -80,10 +80,9 @@ public class TcpManagerHeadersDecoder extends Flyweight
         tcpManagerProxy.write(TcpManagerTypeId.SEND_DATA, buffer, offset - HEADER_LENGTH, length + HEADER_LENGTH);
     }
 
-    @Override
     public Flyweight wrap(final DirectBuffer buffer, final int offset)
     {
-        return super.wrap(buffer, offset);
+        return super.wrap(buffer, offset, false);
     }
 
 

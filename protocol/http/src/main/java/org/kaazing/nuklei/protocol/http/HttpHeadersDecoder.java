@@ -69,6 +69,11 @@ public class HttpHeadersDecoder extends Flyweight implements Mikro
         }
     }
 
+    public HttpHeadersDecoder wrap(final DirectBuffer buffer, final int offset)
+    {
+        return (HttpHeadersDecoder) super.wrap(buffer, offset, false);
+    }
+
     public boolean isDecoded()
     {
         return (State.BODY == state);

@@ -71,15 +71,14 @@ public class Flyweight
 
     /**
      * Wrap a flyweight to use a specific buffer starting at a given offset.
-     * The flyweight will be mutable only if the given buffer is mutable
      * @param buffer to use
      * @param offset to start at
+     * @param whether the flyweight is to be mutable
      * @return flyweight
      */
-    protected Flyweight wrap(final DirectBuffer buffer, final int offset)
+    protected final Flyweight wrap(final DirectBuffer buffer, final int offset, boolean mutable)
     {
-        this.storage = buffer instanceof MutableDirectBuffer ? new MutableStorage((MutableDirectBuffer)buffer) :
-            new ImmutableStorage(buffer);
+        this.storage = mutable ? new MutableStorage((MutableDirectBuffer)buffer) : new ImmutableStorage(buffer);
         this.offset = offset;
         return this;
     }
