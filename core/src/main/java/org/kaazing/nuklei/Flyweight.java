@@ -76,7 +76,7 @@ public class Flyweight
      * @param whether the flyweight is to be mutable
      * @return flyweight
      */
-    protected final Flyweight wrap(final DirectBuffer buffer, final int offset, boolean mutable)
+    protected Flyweight wrap(final DirectBuffer buffer, final int offset, boolean mutable)
     {
         this.storage = mutable ? new MutableStorage((MutableDirectBuffer)buffer) : new ImmutableStorage(buffer);
         this.offset = offset;
