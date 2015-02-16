@@ -49,7 +49,8 @@ public class Frame extends FlyweightBE
     public Frame wrap(DirectBuffer buffer, int offset) throws ProtocolException
     {
         validate();
-        switch(getOpCode()) {
+        switch(getOpCode())
+        {
         case BINARY:
             //return data.wrap(buffer, offset);
             break;

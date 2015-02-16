@@ -31,7 +31,8 @@ public final class Close extends Frame
         }
     };
 
-    Close() {
+    Close()
+    {
 
     }
 

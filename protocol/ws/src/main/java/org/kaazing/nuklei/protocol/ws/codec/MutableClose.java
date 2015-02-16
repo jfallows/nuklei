@@ -29,7 +29,8 @@ public final class MutableClose extends Frame
         }
     };
 
-    private MutableClose() {
+    private MutableClose()
+    {
 
     }
 
