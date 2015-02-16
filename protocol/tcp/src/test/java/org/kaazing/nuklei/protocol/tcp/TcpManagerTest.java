@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.net;
+package org.kaazing.nuklei.protocol.tcp;
 
 import org.junit.After;
 import org.junit.Before;

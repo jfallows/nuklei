@@ -14,31 +14,29 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.net.command;
+package org.kaazing.nuklei.protocol.tcp.command;
 
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 
-public class TcpLocalAttachCmd
+public class TcpRemoteAttachCmd
 {
-    private final int port;
     private final long id;
-    private final InetAddress[] addresses;
+    private final InetSocketAddress localAddress;
+    private final InetSocketAddress remoteAddress;
     private final AtomicBuffer receiveBuffer;
 
-    public TcpLocalAttachCmd(
-        final int port, final long id, final InetAddress[] addresses, final AtomicBuffer receiveBuffer)
+    public TcpRemoteAttachCmd(
+        final long id,
+        final InetSocketAddress localAddress,
+        final InetSocketAddress remoteAddress,
+        final AtomicBuffer receiveBuffer)
     {
-        this.port = port;
         this.id = id;
-        this.addresses = addresses;
+        this.localAddress = localAddress;
+        this.remoteAddress = remoteAddress;
         this.receiveBuffer = receiveBuffer;
-    }
-
-    public int port()
-    {
-        return port;
     }
 
     public long id()
@@ -46,9 +44,14 @@ public class TcpLocalAttachCmd
         return id;
     }
 
-    public InetAddress[] addresses()
+    public InetSocketAddress localAddress()
     {
-        return addresses;
+        return localAddress;
+    }
+
+    public InetSocketAddress remoteAddress()
+    {
+        return remoteAddress;
     }
 
     public AtomicBuffer receiveBuffer()
