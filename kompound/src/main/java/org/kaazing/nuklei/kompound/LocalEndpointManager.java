@@ -16,15 +16,15 @@
 
 package org.kaazing.nuklei.kompound;
 
-import org.kaazing.nuklei.DedicatedNuklei;
-import org.kaazing.nuklei.net.TcpManagerProxy;
-
 import java.io.File;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+
+import org.kaazing.nuklei.DedicatedNuklei;
+import org.kaazing.nuklei.protocol.tcp.TcpManagerProxy;
 
 /**
  * Local endpoint manager for Kompound

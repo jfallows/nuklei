@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.net;
+package org.kaazing.nuklei.protocol.tcp;
 
 import java.nio.ByteOrder;
 

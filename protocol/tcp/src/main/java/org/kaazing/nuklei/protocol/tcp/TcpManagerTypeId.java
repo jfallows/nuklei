@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.net.command;
+package org.kaazing.nuklei.protocol.tcp;
 
 /**
+ * Events and commands for the TCP Manager
  */
-public class TcpDetachCmd
+public class TcpManagerTypeId
 {
-    private final long id;
+    /** events */
+    public static final int NONE = 0;
+    public static final int NEW_CONNECTION = 1;
+    public static final int RECEIVED_DATA = 2;
+    public static final int ATTACH_COMPLETED = 3;
+    public static final int DETACH_COMPLETED = 4;
+    public static final int EOF = 5;
 
-    public TcpDetachCmd(final long id)
-    {
-        this.id = id;
-    }
-
-    public long id()
-    {
-        return id;
-    }
+    /** commands */
+    public static final int SEND_DATA = 6;
+    public static final int CLOSE_CONNECTION = 7;
 }

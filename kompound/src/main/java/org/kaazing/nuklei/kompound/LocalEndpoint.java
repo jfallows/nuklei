@@ -26,8 +26,8 @@ import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBufferReader;
 import org.kaazing.nuklei.function.Mikro;
 import org.kaazing.nuklei.function.Proxy;
-import org.kaazing.nuklei.net.TcpManagerHeadersDecoder;
 import org.kaazing.nuklei.protocol.http.HttpDispatcher;
+import org.kaazing.nuklei.protocol.tcp.TcpManagerHeadersDecoder;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;

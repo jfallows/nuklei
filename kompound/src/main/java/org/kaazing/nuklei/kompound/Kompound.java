@@ -16,22 +16,23 @@
 
 package org.kaazing.nuklei.kompound;
 
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.kaazing.nuklei.DedicatedNuklei;
 import org.kaazing.nuklei.concurrent.MpscArrayBuffer;
 import org.kaazing.nuklei.concurrent.ringbuffer.mpsc.MpscRingBuffer;
 import org.kaazing.nuklei.function.Mikro;
 import org.kaazing.nuklei.kompound.cmd.StartCmd;
 import org.kaazing.nuklei.kompound.cmd.StopCmd;
-import org.kaazing.nuklei.net.TcpManager;
-import org.kaazing.nuklei.net.TcpManagerProxy;
-import org.kaazing.nuklei.net.TcpManagerTypeId;
+import org.kaazing.nuklei.protocol.tcp.TcpManager;
+import org.kaazing.nuklei.protocol.tcp.TcpManagerProxy;
+import org.kaazing.nuklei.protocol.tcp.TcpManagerTypeId;
+
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Container for one or more Mikro services.
