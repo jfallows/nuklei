@@ -24,7 +24,11 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /**
  * Encapsulation of basic field operations and flyweight usage pattern
  *
- * All flyweights are intended to be direct subclasses.
+ * All flyweights are intended to be direct subclasses, with
+ * a wrap(final DirectBuffer buffer, final int offset) method calling
+ * super.wrap(buffer, offset, false) so they are immutable.
+ * A mutable flyweight should extend the immutable version, and provide
+ * a wrap method that calls super.wrap(buffer, offset, true).
  */
 public class Flyweight
 {
@@ -71,6 +75,9 @@ public class Flyweight
 
     /**
      * Wrap a flyweight to use a specific buffer starting at a given offset.
+     * Immutable flyweights should provide a public wrap(buffer, offset) method
+     * calling super.wrap(buffer, offset, false). A mutable subclass can then
+     * override this to call super.wrap(buffer, offset, true).
      * @param buffer to use
      * @param offset to start at
      * @param whether the flyweight is to be mutable
