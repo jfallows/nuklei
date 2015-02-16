@@ -32,7 +32,6 @@ import org.kaazing.nuklei.protocol.tcp.TcpManagerHeadersDecoder;
 import org.kaazing.nuklei.protocol.tcp.TcpManagerTypeId;
 
 import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 /**
@@ -67,7 +66,7 @@ public class HttpDispatcher implements Mikro
     }
 
     public void onMessage(
-        final Object header, final int typeId, final MutableDirectBuffer buffer, final int offset, final int length)
+        final Object header, final int typeId, final DirectBuffer buffer, final int offset, final int length)
     {
         if (TcpManagerTypeId.RECEIVED_DATA == typeId)
         {

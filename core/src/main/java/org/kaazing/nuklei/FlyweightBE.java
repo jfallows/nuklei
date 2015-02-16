@@ -15,8 +15,8 @@
  */
 package org.kaazing.nuklei;
 
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
-
 import static java.nio.ByteOrder.BIG_ENDIAN;
 
 /**
@@ -39,7 +39,7 @@ public class FlyweightBE extends Flyweight
      * @param offset to read from
      * @return float representation of the 32-bit field
      */
-    public static float floatGet(final MutableDirectBuffer buffer, final int offset)
+    public static float floatGet(final DirectBuffer buffer, final int offset)
     {
         return buffer.getFloat(offset, BIG_ENDIAN);
     }
@@ -63,7 +63,7 @@ public class FlyweightBE extends Flyweight
      * @param offset to read from
      * @return double representation of the 64-bit field
      */
-    public static double doubleGet(final MutableDirectBuffer buffer, final int offset)
+    public static double doubleGet(final DirectBuffer buffer, final int offset)
     {
         return buffer.getDouble(offset, BIG_ENDIAN);
     }
@@ -87,7 +87,7 @@ public class FlyweightBE extends Flyweight
      * @param offset to read from
      * @return int representation of the 16-bit signed value
      */
-    public static int uint16Get(final MutableDirectBuffer buffer, final int offset)
+    public static int uint16Get(final DirectBuffer buffer, final int offset)
     {
         return (int)(buffer.getShort(offset, BIG_ENDIAN) & 0xFFFF);
     }
@@ -111,7 +111,7 @@ public class FlyweightBE extends Flyweight
      * @param offset to read from
      * @return short representation of the 16-bit signed value
      */
-    public static short int16Get(final MutableDirectBuffer buffer, final int offset)
+    public static short int16Get(final DirectBuffer buffer, final int offset)
     {
         return buffer.getShort(offset, BIG_ENDIAN);
     }
@@ -135,7 +135,7 @@ public class FlyweightBE extends Flyweight
      * @param offset to read from
      * @return long representation of the 32-bit signed value
      */
-    public static long uint32Get(final MutableDirectBuffer buffer, final int offset)
+    public static long uint32Get(final DirectBuffer buffer, final int offset)
     {
         return (long)(buffer.getInt(offset, BIG_ENDIAN) & 0xFFFFFFFFL);
     }
@@ -159,7 +159,7 @@ public class FlyweightBE extends Flyweight
      * @param offset to read from
      * @return int representation of the 32-bit signed value
      */
-    public static int int32Get(final MutableDirectBuffer buffer, final int offset)
+    public static int int32Get(final DirectBuffer buffer, final int offset)
     {
         return buffer.getInt(offset, BIG_ENDIAN);
     }
@@ -183,7 +183,7 @@ public class FlyweightBE extends Flyweight
      * @param offset to read from
      * @return long representation of the 64-bit signed value
      */
-    public static long int64Get(final MutableDirectBuffer buffer, final int offset)
+    public static long int64Get(final DirectBuffer buffer, final int offset)
     {
         return buffer.getLong(offset, BIG_ENDIAN);
     }

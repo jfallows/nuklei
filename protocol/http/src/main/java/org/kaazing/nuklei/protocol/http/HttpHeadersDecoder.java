@@ -69,6 +69,11 @@ public class HttpHeadersDecoder extends Flyweight implements Mikro
         }
     }
 
+    public HttpHeadersDecoder wrap(final DirectBuffer buffer, final int offset)
+    {
+        return (HttpHeadersDecoder) super.wrap(buffer, offset, false);
+    }
+
     public boolean isDecoded()
     {
         return (State.BODY == state);
@@ -190,7 +195,7 @@ public class HttpHeadersDecoder extends Flyweight implements Mikro
     }
 
     public void onMessage(
-        final Object header, final int typeId, final MutableDirectBuffer buffer, final int offset, final int length)
+        final Object header, final int typeId, final DirectBuffer buffer, final int offset, final int length)
     {
         if (0 != limit)
         {
@@ -214,7 +219,7 @@ public class HttpHeadersDecoder extends Flyweight implements Mikro
 
     // TODO: HTTP responder needs to know connectionId, etc. So, have dispatcher set it when it resets decoder.
 
-    private HttpHeadersDecoder reset(final MutableDirectBuffer buffer, final int offset)
+    private HttpHeadersDecoder reset(final DirectBuffer buffer, final int offset)
     {
         wrap(buffer, offset);
         cursor = 0;

@@ -16,7 +16,9 @@
 package org.kaazing.nuklei;
 
 import org.junit.Test;
+
 import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -27,6 +29,8 @@ import java.util.stream.IntStream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class FlyweightTest
@@ -49,11 +53,34 @@ public class FlyweightTest
     private final Flyweight flyweightLittleEndian = new Flyweight(ByteOrder.LITTLE_ENDIAN);
 
     @Test
+    public void immutableShouldAllowReadAccess()
+    {
+        flyweightLittleEndian.wrap(aBuff, 0, false);
+        assertNotNull(flyweightLittleEndian.buffer());
+    }
+
+    @Test(expected = java.lang.UnsupportedOperationException.class)
+    public void immutableShouldForbidWriteAccess()
+    {
+        flyweightBigEndian.wrap(aBuff, 0, false);
+        flyweightBigEndian.mutableBuffer();
+    }
+
+    @Test
+    public void mutableShouldAllowReadAndWriteAccess()
+    {
+        flyweightBigEndian.wrap(aBuff, 0, true);
+        MutableDirectBuffer mutable = flyweightBigEndian.mutableBuffer();
+        DirectBuffer buffer = flyweightBigEndian.buffer();
+        assertSame(mutable, buffer);
+    }
+
+    @Test
     public void shouldEncodeUIntBigEndianCorrectly()
     {
         final Flyweight flyweight = flyweightBigEndian;
 
-        flyweight.wrap(aBuff, 0);
+        flyweight.wrap(aBuff, 0, false);
         Flyweight.uint32Put(aBuff, UINT32_OFFSET, UINT32_VALUE, ByteOrder.BIG_ENDIAN);
         Flyweight.uint16Put(aBuff, UINT16_OFFSET, UINT16_VALUE, ByteOrder.BIG_ENDIAN);
         Flyweight.uint8Put(aBuff, UINT8_OFFSET, UINT8_VALUE);
@@ -72,7 +99,7 @@ public class FlyweightTest
     {
         final Flyweight flyweight = flyweightLittleEndian;
 
-        flyweight.wrap(aBuff, 0);
+        flyweight.wrap(aBuff, 0, false);
         Flyweight.uint32Put(aBuff, UINT32_OFFSET, UINT32_VALUE, ByteOrder.LITTLE_ENDIAN);
         Flyweight.uint16Put(aBuff, UINT16_OFFSET, UINT16_VALUE, ByteOrder.LITTLE_ENDIAN);
         Flyweight.uint8Put(aBuff, UINT8_OFFSET, UINT8_VALUE);
@@ -93,7 +120,7 @@ public class FlyweightTest
 
         IntStream.range(0, 7).forEach(i -> viewBuffer.put(i, BIG_ENDIAN_BYTE[i]));
 
-        flyweight.wrap(aBuff, 0);
+        flyweight.wrap(aBuff, 0, false);
         assertThat(Long.valueOf(Flyweight.uint32Get(aBuff, UINT32_OFFSET, ByteOrder.BIG_ENDIAN)), is(UINT32_VALUE));
         assertThat(Integer.valueOf(Flyweight.uint16Get(aBuff, UINT16_OFFSET, ByteOrder.BIG_ENDIAN)), is(UINT16_VALUE));
         assertThat(Short.valueOf(Flyweight.uint8Get(aBuff, UINT8_OFFSET)), is(UINT8_VALUE));
@@ -106,7 +133,7 @@ public class FlyweightTest
 
         IntStream.range(0, 7).forEach(i -> viewBuffer.put(i, LITTLE_ENDIAN_BYTE[i]));
 
-        flyweight.wrap(aBuff, 0);
+        flyweight.wrap(aBuff, 0, false);
         assertThat(Long.valueOf(Flyweight.uint32Get(aBuff, UINT32_OFFSET, ByteOrder.LITTLE_ENDIAN)), is(UINT32_VALUE));
         assertThat(Integer.valueOf(Flyweight.uint16Get(aBuff, UINT16_OFFSET, ByteOrder.LITTLE_ENDIAN)),
                    is(UINT16_VALUE));
