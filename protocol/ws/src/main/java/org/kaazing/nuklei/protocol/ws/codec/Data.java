@@ -15,48 +15,29 @@
  */
 package org.kaazing.nuklei.protocol.ws.codec;
 
-import static java.lang.String.format;
-
 import java.net.ProtocolException;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 
-public class Close extends ControlFrame
+public class Data extends Frame
 {
+    private final int maxWsMessageSize;
 
-    Close()
+    Data(int maxWsMessageSize)
     {
-
+        this.maxWsMessageSize = maxWsMessageSize;
     }
 
-    public Close wrap(DirectBuffer buffer, int offset) throws ProtocolException
+    public Data wrap(DirectBuffer buffer, int offset) throws ProtocolException
     {
         super.wrap(buffer, offset, false);
         return this;
     }
 
-    public int getStatusCode()
-    {
-        if (getLength() < 2)
-        {
-            return 1005; // RFC 6455 section 7.4.1
-        }
-        return getPayload().buffer().getShort(getPayload().offset());
-    }
-
     @Override
-    protected void validate() throws ProtocolException
+    protected int getMaxPayloadLength()
     {
-        super.validate();
-        if (getLength() == 1)
-        {
-            protocolError("Invalid Close frame payload: length=1");
-        }
-        if (getLength() >= 2 && (getStatusCode() == 1005 || getStatusCode() == 1006))
-        {
-            protocolError(format("Illegal Close status code %d", getStatusCode()));
-        }
-        // TODO: check reason (payload 3rd byte to end) is valid UTF-8
+        return maxWsMessageSize;
     }
 
 }

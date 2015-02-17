@@ -15,28 +15,21 @@
  */
 package org.kaazing.nuklei.protocol.ws.codec;
 
+import java.net.ProtocolException;
+
 import uk.co.real_logic.agrona.DirectBuffer;
 
-public final class MutableClose extends Close
+public final class Pong extends ControlFrame
 {
 
-    public static final ThreadLocal<MutableClose> LOCAL_REF = new ThreadLocal<MutableClose>()
-    {
-        @Override
-        protected MutableClose initialValue()
-        {
-            return new MutableClose();
-        }
-    };
-
-    private MutableClose()
+    Pong()
     {
 
     }
 
-    public MutableClose wrap(DirectBuffer buffer, int offset)
+    public Pong wrap(DirectBuffer buffer, int offset) throws ProtocolException
     {
-        super.wrap(buffer, offset, true);
+        super.wrap(buffer, offset, false);
         return this;
     }
 
