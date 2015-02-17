@@ -29,7 +29,7 @@ import org.kaazing.nuklei.function.Proxy;
 import org.kaazing.nuklei.protocol.http.HttpDispatcher;
 import org.kaazing.nuklei.protocol.tcp.TcpManagerHeadersDecoder;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -135,7 +135,7 @@ public class LocalEndpoint
         tcpManagerHeadersDecoder.tcpManagerProxy(tcpManagerProxy);
     }
 
-    private void onTcpMessage(final int typeId, final MutableDirectBuffer buffer, final int offset, final int length)
+    private void onTcpMessage(final int typeId, final DirectBuffer buffer, final int offset, final int length)
     {
         tcpManagerHeadersDecoder.wrap(buffer, offset);
         tcpManagerHeadersDecoder.tcpManagerProxy(tcpManagerProxy);
@@ -147,7 +147,7 @@ public class LocalEndpoint
             length - tcpManagerHeadersDecoder.length());
     }
 
-    private void onHttpMessage(final int typeId, final MutableDirectBuffer buffer, final int offset, final int length)
+    private void onHttpMessage(final int typeId, final DirectBuffer buffer, final int offset, final int length)
     {
         tcpManagerHeadersDecoder.wrap(buffer, offset);
         httpDispatcher.onMessage(

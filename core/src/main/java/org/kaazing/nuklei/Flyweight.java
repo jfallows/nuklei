@@ -18,18 +18,23 @@ package org.kaazing.nuklei;
 import java.nio.ByteOrder;
 import java.util.function.Consumer;
 
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /**
  * Encapsulation of basic field operations and flyweight usage pattern
  *
- * All flyweights are intended to be direct subclasses.
+ * All flyweights are intended to be direct subclasses, with
+ * a wrap(final DirectBuffer buffer, final int offset) method calling
+ * super.wrap(buffer, offset, false) so they are immutable.
+ * A mutable flyweight should extend the immutable version, and provide
+ * a wrap method that calls super.wrap(buffer, offset, true).
  */
 public class Flyweight
 {
     private final ByteOrder byteOrder;
     private int offset;
-    private MutableDirectBuffer buffer;
+    private Storage storage;
     private Consumer<Flyweight> observer = (owner) -> {};  // NOP
 
     /**
@@ -58,26 +63,34 @@ public class Flyweight
         return offset;
     }
 
-    public MutableDirectBuffer buffer()
+    public DirectBuffer buffer()
     {
-        return buffer;
+        return storage.buffer();
+    }
+
+    public MutableDirectBuffer mutableBuffer()
+    {
+        return storage.mutableBuffer();
     }
 
     /**
      * Wrap a flyweight to use a specific buffer starting at a given offset.
-     *
+     * Immutable flyweights should provide a public wrap(buffer, offset) method
+     * calling super.wrap(buffer, offset, false). A mutable subclass can then
+     * override this to call super.wrap(buffer, offset, true).
      * @param buffer to use
      * @param offset to start at
+     * @param whether the flyweight is to be mutable
      * @return flyweight
      */
-    public Flyweight wrap(final MutableDirectBuffer buffer, final int offset)
+    protected Flyweight wrap(final DirectBuffer buffer, final int offset, boolean mutable)
     {
-        this.buffer = buffer;
+        this.storage = mutable ? new MutableStorage((MutableDirectBuffer)buffer) : new ImmutableStorage(buffer);
         this.offset = offset;
         return this;
     }
 
-    public Flyweight watch(Consumer<Flyweight> observer)
+    protected Flyweight watch(Consumer<Flyweight> observer)
     {
         this.observer = observer;
         return this;
@@ -96,7 +109,7 @@ public class Flyweight
      * @param byteOrder to decode with
      * @return float representation of the 32-bit field
      */
-    public static float floatGet(final MutableDirectBuffer buffer, final int offset, final ByteOrder byteOrder)
+    public static float floatGet(final DirectBuffer buffer, final int offset, final ByteOrder byteOrder)
     {
         return buffer.getFloat(offset, byteOrder);
     }
@@ -123,7 +136,7 @@ public class Flyweight
      * @param byteOrder to decode with
      * @return double representation of the 64-bit field
      */
-    public static double doubleGet(final MutableDirectBuffer buffer, final int offset, final ByteOrder byteOrder)
+    public static double doubleGet(final DirectBuffer buffer, final int offset, final ByteOrder byteOrder)
     {
         return buffer.getDouble(offset, byteOrder);
     }
@@ -149,7 +162,7 @@ public class Flyweight
      * @param offset to read from
      * @return short representation of the 8-bit unsigned value
      */
-    public static short uint8Get(final MutableDirectBuffer buffer, final int offset)
+    public static short uint8Get(final DirectBuffer buffer, final int offset)
     {
         return (short)(buffer.getByte(offset) & 0xFF);
     }
@@ -173,7 +186,7 @@ public class Flyweight
      * @param offset to read from
      * @return byte representation of the 8-bit signed value
      */
-    public static byte int8Get(final MutableDirectBuffer buffer, final int offset)
+    public static byte int8Get(final DirectBuffer buffer, final int offset)
     {
         return buffer.getByte(offset);
     }
@@ -198,7 +211,7 @@ public class Flyweight
      * @param byteOrder to decode with
      * @return int representation of the 16-bit signed value
      */
-    public static int uint16Get(final MutableDirectBuffer buffer, final int offset, final ByteOrder byteOrder)
+    public static int uint16Get(final DirectBuffer buffer, final int offset, final ByteOrder byteOrder)
     {
         return (int)(buffer.getShort(offset, byteOrder) & 0xFFFF);
     }
@@ -225,7 +238,7 @@ public class Flyweight
      * @param byteOrder to decode with
      * @return short representation of the 16-bit signed value
      */
-    public static short int16Get(final MutableDirectBuffer buffer, final int offset, final ByteOrder byteOrder)
+    public static short int16Get(final DirectBuffer buffer, final int offset, final ByteOrder byteOrder)
     {
         return buffer.getShort(offset, byteOrder);
     }
@@ -252,7 +265,7 @@ public class Flyweight
      * @param byteOrder to decode with
      * @return long representation of the 32-bit signed value
      */
-    public static long uint32Get(final MutableDirectBuffer buffer, final int offset, final ByteOrder byteOrder)
+    public static long uint32Get(final DirectBuffer buffer, final int offset, final ByteOrder byteOrder)
     {
         return (long)(buffer.getInt(offset, byteOrder) & 0xFFFFFFFFL);
     }
@@ -279,7 +292,7 @@ public class Flyweight
      * @param byteOrder to decode with
      * @return int representation of the 32-bit signed value
      */
-    public static int int32Get(final MutableDirectBuffer buffer, final int offset, final ByteOrder byteOrder)
+    public static int int32Get(final DirectBuffer buffer, final int offset, final ByteOrder byteOrder)
     {
         return buffer.getInt(offset, byteOrder);
     }
@@ -306,7 +319,7 @@ public class Flyweight
      * @param byteOrder to decode with
      * @return long representation of the 64-bit signed value
      */
-    public static long int64Get(final MutableDirectBuffer buffer, final int offset, final ByteOrder byteOrder)
+    public static long int64Get(final DirectBuffer buffer, final int offset, final ByteOrder byteOrder)
     {
         return buffer.getLong(offset, byteOrder);
     }
@@ -353,4 +366,57 @@ public class Flyweight
         bits = (byte)((switchOn ? bits | (1 << bitIndex) : bits & ~(1 << bitIndex)));
         buffer.putByte(offset, bits);
     }
+
+    private interface Storage
+    {
+        DirectBuffer buffer();
+
+        MutableDirectBuffer mutableBuffer();
+    }
+
+    private static final class ImmutableStorage implements Storage
+    {
+        DirectBuffer buffer;
+
+        ImmutableStorage(DirectBuffer buffer)
+        {
+            this.buffer = buffer;
+        }
+
+        @Override
+        public DirectBuffer buffer()
+        {
+            return buffer;
+        }
+
+        @Override
+        public MutableDirectBuffer mutableBuffer()
+        {
+            throw new UnsupportedOperationException("Flyweight is immutable");
+        }
+    }
+
+    private static final class MutableStorage implements Storage
+    {
+        MutableDirectBuffer buffer;
+
+        MutableStorage(MutableDirectBuffer buffer)
+        {
+            this.buffer = buffer;
+        }
+
+        @Override
+        public DirectBuffer buffer()
+        {
+            return buffer;
+        }
+
+        @Override
+        public MutableDirectBuffer mutableBuffer()
+        {
+            return buffer;
+        }
+    }
+
+
 }

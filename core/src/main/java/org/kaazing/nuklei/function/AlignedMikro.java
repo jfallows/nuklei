@@ -17,6 +17,7 @@ package org.kaazing.nuklei.function;
 
 import java.util.Objects;
 
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 @FunctionalInterface
@@ -105,6 +106,6 @@ public interface AlignedMikro<T> extends StatefulMikro<T>
     @FunctionalInterface
     public interface AlignmentSupplier<T>
     {
-        int supply(T state, Object header, int typeId, MutableDirectBuffer buffer, int offset, int length);
+        int supply(T state, Object header, int typeId, DirectBuffer buffer, int offset, int length);
     }
 }

@@ -16,11 +16,11 @@
 
 package org.kaazing.nuklei.function;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 @FunctionalInterface
 public interface Mikro
 {
     void onMessage(
-        final Object header, final int typeId, final MutableDirectBuffer buffer, final int offset, final int length);
+        final Object header, final int typeId, final DirectBuffer buffer, final int offset, final int length);
 }
