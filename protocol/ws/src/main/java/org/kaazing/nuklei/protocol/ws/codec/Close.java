@@ -44,6 +44,19 @@ public class Close extends ControlFrame
         return getPayload().buffer().getShort(getPayload().offset());
     }
 
+    /**
+     * WARNING: use of this method causes garbage collection
+     * @return
+     */
+    public String getReason()
+    {
+        if (getLength() < 3)
+        {
+            return null;
+        }
+        return getPayload().buffer().getStringWithoutLengthUtf8(getPayload().offset() + 2, getLength() - 2);
+    }
+
     @Override
     protected void validate() throws ProtocolException
     {

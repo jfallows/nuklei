@@ -67,6 +67,10 @@ public abstract class Frame extends FlyweightBE
 
     public Payload getPayload()
     {
+        if (getLength() == 0)
+        {
+            return null;
+        }
         if (payload.buffer() != null)
         {
             return payload;
@@ -91,7 +95,7 @@ public abstract class Frame extends FlyweightBE
 
     public boolean isFin()
     {
-        return (byte0() & FIN_MASK) != 0;
+        return (uint8Get(buffer(), offset()) & FIN_MASK) != 0;
     }
 
     public boolean isMasked()
@@ -199,7 +203,7 @@ public abstract class Frame extends FlyweightBE
         }
         int dataOffset = getDataOffset();
         int maskOffset = dataOffset - 4;
-        for (int i = 0; i < dataOffset; i++)
+        for (int i = 0; i < getLength(); i++)
         {
             byte unmasked = (byte) (buffer().getByte(dataOffset + i) ^ buffer().getByte(maskOffset + i % 4) & 0xFF);
             unmaskedPayload.setMemory(i, 1, unmasked);
