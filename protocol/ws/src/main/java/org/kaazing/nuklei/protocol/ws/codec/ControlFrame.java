@@ -43,10 +43,6 @@ public abstract class ControlFrame extends Frame
         {
             protocolError(format("Expected FIN for %s frame", getOpCode()));
         }
-        if (getLength() > 125)
-        {
-            protocolError(format("%s frame payload exceeds 125 bytes", getOpCode()));
-        }
     }
 
     @Override

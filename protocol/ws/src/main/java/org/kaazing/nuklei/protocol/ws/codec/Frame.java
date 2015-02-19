@@ -15,6 +15,8 @@
  */
 package org.kaazing.nuklei.protocol.ws.codec;
 
+import static java.lang.String.format;
+
 import java.net.ProtocolException;
 
 import org.kaazing.nuklei.Flyweight;
@@ -33,6 +35,7 @@ public abstract class Frame extends FlyweightBE
     private static final byte MASKED_MASK = (byte) 0b10000000;
     private static final byte LENGTH_BYTE_1_MASK = 0b01111111;
     private static final int LENGTH_OFFSET = 1;
+    private static final int MASK_OFFSET = 1;
 
     private MutableDirectBuffer unmaskedPayload;
     private final Payload payload = new Payload();
@@ -54,12 +57,9 @@ public abstract class Frame extends FlyweightBE
         switch (length)
         {
         case 126:
-            return uint8Get(buffer(), offset + 1) << 8 | uint8Get(buffer(), offset + 2);
+            return uint16Get(buffer(), offset + 1);
         case 127:
-            return uint8Get(buffer(), offset + 1) << 56 | uint8Get(buffer(), offset + 2) << 48
-                    | uint8Get(buffer(), offset + 3) << 40 | uint8Get(buffer(), offset + 4) << 32
-                    | uint8Get(buffer(), offset + 5) << 24 | uint8Get(buffer(), offset + 6) << 16
-                    | uint8Get(buffer(), offset + 7) << 8 | uint8Get(buffer(), offset + 8);
+            return (int) int64Get(buffer(), offset + 1);
         default:
             return length;
         }
@@ -95,12 +95,12 @@ public abstract class Frame extends FlyweightBE
 
     public boolean isFin()
     {
-        return (uint8Get(buffer(), offset()) & FIN_MASK) != 0;
+        return (byte0() & FIN_MASK) != 0;
     }
 
     public boolean isMasked()
     {
-        return (byte0() & MASKED_MASK) != 0;
+        return (uint8Get(buffer(), offset() + MASK_OFFSET) & MASKED_MASK) != 0;
     }
 
     protected static class Payload
@@ -165,6 +165,9 @@ public abstract class Frame extends FlyweightBE
         if ((byte0() & RSV_BITS_MASK) != 0)
         {
             protocolError("Reserved bits are set in first byte");
+        }
+        if (getLength() > getMaxPayloadLength()) {
+            protocolError(format("%s frame payload exceeds %d bytes", getOpCode(), getMaxPayloadLength()));
         }
     }
 

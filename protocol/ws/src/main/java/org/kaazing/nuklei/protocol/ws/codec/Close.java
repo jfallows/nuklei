@@ -41,7 +41,7 @@ public class Close extends ControlFrame
         {
             return 1005; // RFC 6455 section 7.4.1
         }
-        return getPayload().buffer().getShort(getPayload().offset());
+        return uint16Get(getPayload().buffer(), getPayload().offset());
     }
 
     /**
