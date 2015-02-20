@@ -19,6 +19,7 @@ import static java.lang.String.format;
 
 import java.net.ProtocolException;
 
+import org.kaazing.nuklei.ErrorHandler;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.FlyweightBE;
 
@@ -147,7 +148,7 @@ public abstract class Frame extends FlyweightBE
     /**
      * TODO: state machine should validate the following: <li>If this is a Continuation frame: previous frame's fin must
      * not have been set <li>If this is not a Continuation frame: previous frame's fin must have been set <li>If from
-     * client (presumably this is always the case): must be masked (and vice versa) <li>If from server: must not be
+     * client: must be masked (and vice versa) <li>If from server: must not be
      * masked (and vice versa)
      */
     @Override
@@ -160,14 +161,15 @@ public abstract class Frame extends FlyweightBE
 
     protected abstract int getMaxPayloadLength();
 
-    protected void validate() throws ProtocolException
+    @Override
+    public void validate(ErrorHandler errorHandler)
     {
         if ((byte0() & RSV_BITS_MASK) != 0)
         {
-            protocolError("Reserved bits are set in first byte");
+            errorHandler.handleError("Reserved bits are set in first byte");
         }
         if (getLength() > getMaxPayloadLength()) {
-            protocolError(format("%s frame payload exceeds %d bytes", getOpCode(), getMaxPayloadLength()));
+            errorHandler.handleError(format("%s frame payload exceeds %d bytes", getOpCode(), getMaxPayloadLength()));
         }
     }
 
@@ -176,7 +178,7 @@ public abstract class Frame extends FlyweightBE
         return uint8Get(buffer(), offset());
     }
 
-    private int getDataOffset()
+    protected int getDataOffset()
     {
         int offset = offset() + LENGTH_OFFSET + 1;
         int lengthByte1 = uint8Get(buffer(), offset) & LENGTH_BYTE_1_MASK;

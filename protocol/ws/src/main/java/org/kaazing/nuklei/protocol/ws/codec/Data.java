@@ -15,7 +15,8 @@
  */
 package org.kaazing.nuklei.protocol.ws.codec;
 
-import java.net.ProtocolException;
+import org.kaazing.nuklei.ErrorHandler;
+import org.kaazing.nuklei.util.Utf8Util;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 
@@ -28,7 +29,14 @@ public class Data extends Frame
         this.maxWsMessageSize = maxWsMessageSize;
     }
 
-    public Data wrap(DirectBuffer buffer, int offset) throws ProtocolException
+    @Override
+    public void validate(ErrorHandler errorHandler)
+    {
+        super.validate(errorHandler);
+        Utf8Util.validateBytesUTF8(buffer(), offset() + getDataOffset(), getLength(), errorHandler);
+    }
+
+    public Data wrap(DirectBuffer buffer, int offset)
     {
         super.wrap(buffer, offset, false);
         return this;

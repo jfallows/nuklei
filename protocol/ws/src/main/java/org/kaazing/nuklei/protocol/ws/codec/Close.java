@@ -19,6 +19,8 @@ import static java.lang.String.format;
 
 import java.net.ProtocolException;
 
+import org.kaazing.nuklei.ErrorHandler;
+
 import uk.co.real_logic.agrona.DirectBuffer;
 
 public class Close extends ControlFrame
@@ -58,16 +60,16 @@ public class Close extends ControlFrame
     }
 
     @Override
-    protected void validate() throws ProtocolException
+    public void validate(ErrorHandler errorHandler)
     {
-        super.validate();
+        super.validate(errorHandler);
         if (getLength() == 1)
         {
-            protocolError("Invalid Close frame payload: length=1");
+            errorHandler.handleError("Invalid Close frame payload: length=1");
         }
         if (getLength() >= 2 && (getStatusCode() == 1005 || getStatusCode() == 1006))
         {
-            protocolError(format("Illegal Close status code %d", getStatusCode()));
+            errorHandler.handleError(format("Illegal Close status code %d", getStatusCode()));
         }
         // TODO: check reason (payload 3rd byte to end) is valid UTF-8
     }

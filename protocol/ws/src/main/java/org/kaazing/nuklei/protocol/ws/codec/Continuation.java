@@ -15,8 +15,6 @@
  */
 package org.kaazing.nuklei.protocol.ws.codec;
 
-import java.net.ProtocolException;
-
 import uk.co.real_logic.agrona.DirectBuffer;
 
 public final class Continuation extends Data
@@ -27,7 +25,7 @@ public final class Continuation extends Data
             super(maxWsMessageSize);
     }
 
-    public Continuation wrap(DirectBuffer buffer, int offset) throws ProtocolException
+    public Continuation wrap(DirectBuffer buffer, int offset)
     {
         super.wrap(buffer, offset, false);
         return this;

@@ -19,6 +19,8 @@ import static java.lang.String.format;
 
 import java.net.ProtocolException;
 
+import org.kaazing.nuklei.ErrorHandler;
+
 import uk.co.real_logic.agrona.DirectBuffer;
 
 public abstract class ControlFrame extends Frame
@@ -36,12 +38,12 @@ public abstract class ControlFrame extends Frame
     }
 
     @Override
-    protected void validate() throws ProtocolException
+    public void validate(ErrorHandler errorHandler)
     {
-        super.validate();
+        super.validate(errorHandler);
         if (!isFin())
         {
-            protocolError(format("Expected FIN for %s frame", getOpCode()));
+            errorHandler.handleError(format("Expected FIN for %s frame", getOpCode()));
         }
     }
 

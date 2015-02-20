@@ -73,6 +73,11 @@ public class Flyweight
         return storage.mutableBuffer();
     }
 
+    public void validate(ErrorHandler errorHandler)
+    {
+
+    }
+
     /**
      * Wrap a flyweight to use a specific buffer starting at a given offset.
      * Immutable flyweights should provide a public wrap(buffer, offset) method

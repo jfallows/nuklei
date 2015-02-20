@@ -62,7 +62,6 @@ public class FrameFactory extends FlyweightBE
             Frame.protocolError(null);
             break;
         }
-        frame.validate();
         return frame;
     }
 
