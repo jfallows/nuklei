@@ -29,7 +29,6 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public abstract class Frame extends FlyweightBE
 {
-
     private static final byte FIN_MASK = (byte) 0b10000000;
     private static final byte RSV_BITS_MASK = 0b01110000;
     private static final byte OP_CODE_MASK = 0x0F;
@@ -148,8 +147,7 @@ public abstract class Frame extends FlyweightBE
     /**
      * TODO: state machine should validate the following: <li>If this is a Continuation frame: previous frame's fin must
      * not have been set <li>If this is not a Continuation frame: previous frame's fin must have been set <li>If from
-     * client: must be masked (and vice versa) <li>If from server: must not be
-     * masked (and vice versa)
+     * client: must be masked (and vice versa) <li>If from server: must not be masked (and vice versa)
      */
     @Override
     protected Flyweight wrap(final DirectBuffer buffer, final int offset, boolean mutable)
@@ -168,7 +166,8 @@ public abstract class Frame extends FlyweightBE
         {
             errorHandler.handleError("Reserved bits are set in first byte");
         }
-        if (getLength() > getMaxPayloadLength()) {
+        if (getLength() > getMaxPayloadLength())
+        {
             errorHandler.handleError(format("%s frame payload exceeds %d bytes", getOpCode(), getMaxPayloadLength()));
         }
     }

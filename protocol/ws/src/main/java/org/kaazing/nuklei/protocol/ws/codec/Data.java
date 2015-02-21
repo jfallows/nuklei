@@ -33,7 +33,7 @@ public class Data extends Frame
     public void validate(ErrorHandler errorHandler)
     {
         super.validate(errorHandler);
-        Utf8Util.validateBytesUTF8(buffer(), offset() + getDataOffset(), getLength(), errorHandler);
+        Utf8Util.validateUTF8(buffer(), offset() + getDataOffset(), getLength(), errorHandler);
     }
 
     public Data wrap(DirectBuffer buffer, int offset)

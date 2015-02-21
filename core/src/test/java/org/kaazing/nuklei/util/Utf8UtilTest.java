@@ -16,14 +16,20 @@
 
 package org.kaazing.nuklei.util;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.kaazing.nuklei.util.Utf8Util.initialDecodeUTF8;
 import static org.kaazing.nuklei.util.Utf8Util.remainingBytesUTF8;
 import static org.kaazing.nuklei.util.Utf8Util.remainingDecodeUTF8;
+import static uk.co.real_logic.agrona.BitUtil.fromHex;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.junit.Test;
+
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class Utf8UtilTest
 {
@@ -55,7 +61,6 @@ public class Utf8UtilTest
             }
         }
     }
-
 
     public void shouldDecode4ByteChar() throws Exception
     {
@@ -95,4 +100,203 @@ public class Utf8UtilTest
         int bytesOffset = 0;
         initialDecodeUTF8(remainingBytes, bytes[bytesOffset++]);
     }
+
+    @Test
+    public void validateUTF8ShouldAcceptValidUTF8() throws Exception
+    {
+        ByteBuffer bytes = ByteBuffer.allocate(1000);
+        int offset = 7;
+        bytes.position(offset);
+        bytes.put("e acute (0xE9 or 0x11101001): ".getBytes(UTF_8));
+        bytes.put((byte) 0b11000011).put((byte) 0b10101001);
+        bytes.put(", Euro sign: ".getBytes(UTF_8));
+        bytes.put(fromHex("e282ac"));
+        bytes.put(", Hwair: ".getBytes(UTF_8));
+        bytes.put(fromHex("f0908d88"));
+        bytes.limit(bytes.position());
+        bytes.position(offset);
+        MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+        int result = Utf8Util.validateUTF8(buffer, offset, bytes.limit() - offset, (message) ->
+        {
+            System.out.println(message);
+        });
+        assertEquals(0, result);
+    }
+
+    @Test
+    public void validateUTF8ShouldRejectByteC0() throws Exception
+    {
+        ByteBuffer bytes = ByteBuffer.allocate(1000);
+        int offset = 0;
+        bytes.position(offset);
+        bytes.put((byte) 0xC0);
+        bytes.limit(bytes.position());
+        bytes.position(offset);
+        MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+        int result = Utf8Util.validateUTF8(buffer, offset, bytes.limit() - offset, (message) ->
+        {
+            System.out.println(message);
+        });
+        assertEquals(-1, result);
+    }
+
+    @Test
+    public void validateUTF8ShouldRejectByteC1() throws Exception
+    {
+        ByteBuffer bytes = ByteBuffer.allocate(1000);
+        int offset = 0;
+        bytes.position(offset);
+        bytes.put((byte) 0xC1);
+        bytes.limit(bytes.position());
+        bytes.position(offset);
+        MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+        int result = Utf8Util.validateUTF8(buffer, offset, bytes.limit() - offset, (message) ->
+        {
+            System.out.println(message);
+        });
+        assertEquals(-1, result);
+    }
+
+    @Test
+    // This is actually same as reject C1 but it's a more realistic case
+    public void validateUTF8ShouldRejectOverwide2ByteCharacter() throws Exception
+    {
+        ByteBuffer bytes = ByteBuffer.allocate(1000);
+        int offset = 17;
+        bytes.position(offset);
+        bytes.put("Invalid over wide character P (0x50 = 0b101000): ".getBytes(UTF_8));
+        bytes.put((byte) 0b11000001).put((byte) 0b1001000);
+        bytes.limit(bytes.position());
+        bytes.position(offset);
+        MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+        int result = Utf8Util.validateUTF8(buffer, offset, bytes.limit() - offset, (message) ->
+        {
+            System.out.println(message);
+        });
+        assertEquals(-1, result);
+    }
+
+    @Test
+    public void validateUTF8ShouldRejectOverwide3ByteCharacter() throws Exception
+    {
+        ByteBuffer bytes = ByteBuffer.allocate(1000);
+        int offset = 17;
+        bytes.position(offset);
+        bytes.put("Invalid over wide U+11Cx (0b100011100) Hangul (Korean) character): ".getBytes(UTF_8));
+        bytes.put((byte) 0b11100000);
+        bytes.put((byte) 0b10000100);
+        bytes.put((byte) 0b10011100);
+        bytes.limit(bytes.position());
+        bytes.position(offset);
+        MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+        int result = Utf8Util.validateUTF8(buffer, offset, bytes.limit() - offset, (message) ->
+        {
+            System.out.println(message);
+        });
+        assertEquals(-1, result);
+    }
+
+    @Test
+    // This is actually same as reject C1 but it's a more realistic case
+    public void validateUTF8ShouldRejectOverwide4ByteCharacter() throws Exception
+    {
+        ByteBuffer bytes = ByteBuffer.allocate(1000);
+        int offset = 17;
+        bytes.position(offset);
+        bytes.put("Invalid over wide Euro character 0xf08282ac): ".getBytes(UTF_8));
+        bytes.put(fromHex("f08282ac"));
+        bytes.limit(bytes.position());
+        bytes.position(offset);
+        MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+        int result = Utf8Util.validateUTF8(buffer, offset, bytes.limit() - offset, (message) ->
+        {
+            System.out.println(message);
+        });
+        assertEquals(-1, result);
+    }
+
+    @Test
+    public void validateUTF8ShouldRejectInvalidContinuationByte() throws Exception
+    {
+        ByteBuffer bytes = ByteBuffer.allocate(1000);
+        int offset = 0;
+        bytes.position(offset);
+        bytes.put((byte) 0b11000011);
+        bytes.put((byte) 0b11001001);
+        bytes.limit(bytes.position());
+        bytes.position(offset);
+        MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+        int result = Utf8Util.validateUTF8(buffer, offset, bytes.limit() - offset, (message) ->
+        {
+            System.out.println(message);
+        });
+        assertEquals(-1, result);
+    }
+
+    @Test
+    public void validateUTF8ShouldRejectCodePointOver0x10FFFF() throws Exception
+    {
+        ByteBuffer bytes = ByteBuffer.allocate(1000);
+        int offset = 7;
+        bytes.position(offset);
+        bytes.put("Invalid 5 byte character: ".getBytes(UTF_8));
+        bytes.put((byte) 0b11110100);
+        bytes.put((byte) 0b10011111);
+        bytes.put((byte) 0b10111111);
+        bytes.put((byte) 0b10111111);
+        bytes.limit(bytes.position());
+        bytes.position(offset);
+        MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+        int result = Utf8Util.validateUTF8(buffer, offset, bytes.limit() - offset, (message) ->
+        {
+            System.out.println(message);
+        });
+        assertEquals(-1, result);
+    }
+
+    @Test
+    public void validateUTF8ShouldReject5byteCharacter() throws Exception
+    {
+        ByteBuffer bytes = ByteBuffer.allocate(1000);
+        int offset = 7;
+        bytes.position(offset);
+        bytes.put("Invalid 5 byte character: ".getBytes(UTF_8));
+        bytes.put((byte) 0b11111011);
+        bytes.put((byte) 0b11000001);
+        bytes.put((byte) 0b10000001);
+        bytes.put((byte) 0b10000001);
+        bytes.put((byte) 0b10000001);
+        bytes.limit(bytes.position());
+        bytes.position(offset);
+        MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+        int result = Utf8Util.validateUTF8(buffer, offset, bytes.limit() - offset, (message) ->
+        {
+            System.out.println(message);
+        });
+        assertEquals(-1, result);
+    }
+
+    @Test
+    public void validateUTF8ShouldReject6byteCharacter() throws Exception
+    {
+        ByteBuffer bytes = ByteBuffer.allocate(1000);
+        int offset = 7;
+        bytes.position(offset);
+        bytes.put("Invalid 6 byte character: ".getBytes(UTF_8));
+        bytes.put((byte) 0b11111101);
+        bytes.put((byte) 0b11000001);
+        bytes.put((byte) 0b10000001);
+        bytes.put((byte) 0b10000001);
+        bytes.put((byte) 0b10000001);
+        bytes.put((byte) 0b10000001);
+        bytes.limit(bytes.position());
+        bytes.position(offset);
+        MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+        int result = Utf8Util.validateUTF8(buffer, offset, bytes.limit() - offset, (message) ->
+        {
+            System.out.println(message);
+        });
+        assertEquals(-1, result);
+    }
+
 }
