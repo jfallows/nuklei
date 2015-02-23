@@ -33,21 +33,23 @@ public class CloseTest extends FrameTest
     public void shouldDecodeWithEmptyPayload(int offset, boolean masked) throws Exception
     {
         buffer.putBytes(offset, fromHex("88"));
-        putLengthMaskAndPayload(buffer, offset + 1, null, masked);
+        putLengthMaskAndHexPayload(buffer, offset + 1, null, masked);
         Frame frame = frameFactory.wrap(buffer, offset);
         assertEquals(OpCode.CLOSE, frame.getOpCode());
-        assertNull(frame.getPayload());
+        Payload payload = frame.getPayload();
+        assertEquals(payload.offset(), payload.limit());
         Close close = (Close) frame;
         assertEquals(0, close.getLength());
         assertEquals(1005, close.getStatusCode());
-        assertNull(close.getReason());
+        Payload reason = close.getReason();
+        assertEquals(reason.offset(), reason.limit());
     }
 
     @Theory
     public void shouldDecodeWithStatusCode1000(int offset, boolean masked) throws Exception
     {
         buffer.putBytes(offset, fromHex("88"));
-        putLengthMaskAndPayload(buffer, offset + 1, "03e8", masked);
+        putLengthMaskAndHexPayload(buffer, offset + 1, "03e8", masked);
         Frame frame = frameFactory.wrap(buffer, offset);
         assertEquals(OpCode.CLOSE, frame.getOpCode());
         byte[] payloadBytes = new byte[2];
@@ -57,7 +59,8 @@ public class CloseTest extends FrameTest
         Close close = (Close) frame;
         assertEquals(2, close.getLength());
         assertEquals(1000, close.getStatusCode());
-        assertNull(close.getReason());
+        Payload reason = close.getReason();
+        assertEquals(reason.offset(), reason.limit());
     }
 
     @Theory
@@ -65,7 +68,7 @@ public class CloseTest extends FrameTest
     {
         buffer.putBytes(offset, fromHex("88"));
         String reasonString = "Something bad happened";
-        putLengthMaskAndPayload(buffer, offset + 1,
+        putLengthMaskAndHexPayload(buffer, offset + 1,
                 "0" + Integer.toHexString(1001) + toHex(reasonString.getBytes(UTF_8)), masked);
         Frame frame = frameFactory.wrap(buffer, offset);
         assertEquals(OpCode.CLOSE, frame.getOpCode());
@@ -87,7 +90,7 @@ public class CloseTest extends FrameTest
     public void shouldRejectCloseFrameWithLength1(int offset, boolean masked) throws Exception
     {
         buffer.putBytes(offset, fromHex("88"));
-        putLengthMaskAndPayload(buffer, offset + 1, "01", masked);
+        putLengthMaskAndHexPayload(buffer, offset + 1, "01", masked);
         try
         {
             Close frame = (Close) frameFactory.wrap(buffer, offset);
@@ -123,7 +126,7 @@ public class CloseTest extends FrameTest
     public void shouldRejectCloseFrameWithStatusCode1023(int offset, boolean masked) throws Exception
     {
         buffer.putBytes(offset, fromHex("88"));
-        putLengthMaskAndPayload(buffer, offset + 1, "0" + Integer.toHexString(1023), masked);
+        putLengthMaskAndHexPayload(buffer, offset + 1, "0" + Integer.toHexString(1023), masked);
         Close close = (Close) frameFactory.wrap(buffer, offset);
         try
         {
@@ -141,7 +144,7 @@ public class CloseTest extends FrameTest
     public void shouldRejectCloseFrameWithStatusCodeFFFF(int offset, boolean masked) throws Exception
     {
         buffer.putBytes(offset, fromHex("88"));
-        putLengthMaskAndPayload(buffer, offset + 1, "ffff", masked);
+        putLengthMaskAndHexPayload(buffer, offset + 1, "ffff", masked);
         Close close = (Close) frameFactory.wrap(buffer, offset);
         try
         {
@@ -161,7 +164,7 @@ public class CloseTest extends FrameTest
         String validMultibyteCharEuroSign = "e282ac";
         String invalidUTF8 = toHex("valid text".getBytes(UTF_8)) + validMultibyteCharEuroSign + "ff";
         buffer.putBytes(offset, fromHex("88"));
-        putLengthMaskAndPayload(buffer, offset + 1, "03ff" + invalidUTF8, masked);
+        putLengthMaskAndHexPayload(buffer, offset + 1, "03ff" + invalidUTF8, masked);
         Close frame = (Close) frameFactory.wrap(buffer, offset);
         try
         {

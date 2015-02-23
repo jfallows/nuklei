@@ -31,14 +31,15 @@ public class Data extends Frame
     @Override
     public Payload getPayload()
     {
+        Payload payload = super.getPayload();
         if (getOpCode() == OpCode.TEXT)
         {
-            Utf8Util.validateUTF8(buffer(), offset() + getDataOffset(), getLength(), (message) ->
+            Utf8Util.validateUTF8(payload.buffer(), payload.offset(), getLength(), (message) ->
             {
                 protocolError(message);
             });
         }
-        return super.getPayload();
+        return payload;
     }
 
     public Data wrap(DirectBuffer buffer, int offset)

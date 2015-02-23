@@ -75,15 +75,16 @@ public class Close extends ControlFrame
 
     Payload getReason(boolean mutable)
     {
-        if (getLength() < 3)
+        Payload payload = getPayload();
+        if (getLength() < 2)
         {
-            return null;
+            // return empty reason (TODO: fix this for mutable case)
+            return reason.wrap(payload.buffer(), payload.offset(), payload.offset(), false);
         }
         if (reason.buffer() != null)
         {
             return reason;
         }
-        Payload payload = getPayload();
         reason.wrap(payload.buffer(), payload.offset() + 2, payload.limit(), mutable);
         Utf8Util.validateUTF8(reason.buffer(), reason.offset(), reason.limit() - reason.offset(), (message) ->
         {

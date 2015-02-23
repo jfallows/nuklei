@@ -154,10 +154,6 @@ public abstract class Frame extends FlyweightBE
 
     Payload getPayload(boolean mutable)
     {
-        if (getLength() == 0)
-        {
-            return null;
-        }
         if (payload.buffer() != null)
         {
             return payload;

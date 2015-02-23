@@ -45,27 +45,36 @@ public abstract class FrameTest
     public static final boolean UNMASKED = false;
 
     protected final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
-    protected final FrameFactory frameFactory = new FrameFactory(20);
+    protected final FrameFactory frameFactory = new FrameFactory(0xFFFF);
 
-    protected static void putLengthMaskAndPayload(MutableDirectBuffer buffer,
+    protected static void putLengthMaskAndHexPayload(MutableDirectBuffer buffer,
                                                   int offset,
                                                   String hexPayload,
                                                   boolean masked)
     {
         byte[] unmasked = hexPayload == null ? new byte[0] : fromHex(hexPayload);
-        offset += putLengthAndMaskBit(buffer, offset, unmasked.length, masked);
+        putLengthMaskAndPayload(buffer, offset, unmasked, masked);
+    }
+
+
+    protected static void putLengthMaskAndPayload(MutableDirectBuffer buffer,
+                                                     int offset,
+                                                     byte[] unmaskedPayload,
+                                                     boolean masked)
+    {
+        offset += putLengthAndMaskBit(buffer, offset, unmaskedPayload.length, masked);
         if (!masked)
         {
-            buffer.putBytes(offset, unmasked);
+            buffer.putBytes(offset, unmaskedPayload);
             return;
         }
         int mask = new Random().nextInt(Integer.MAX_VALUE);
         buffer.putInt(offset, mask, BIG_ENDIAN);
         offset += 4;
-        for (int i = 0; i < unmasked.length; i++)
+        for (int i = 0; i < unmaskedPayload.length; i++)
         {
             byte maskByte = (byte) (mask >> (8 * (3 - i % 4)) & 0x000000FF);
-            buffer.putByte(offset + i, (byte) (unmasked[i] ^ maskByte));
+            buffer.putByte(offset + i, (byte) (unmaskedPayload[i] ^ maskByte));
         }
     }
 
