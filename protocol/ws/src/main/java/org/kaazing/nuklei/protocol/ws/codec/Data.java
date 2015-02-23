@@ -19,6 +19,24 @@ import org.kaazing.nuklei.util.Utf8Util;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 
+/**
+ * This flyweight represents a WebSocket Text or Binary frame. No validation of valid UTF8 content
+ * for the Text case is done by this class, because it is not practical given that a text message
+ * may be split between different frames so a multibyte UTF-8 character may be split between frames.
+ * Callers should validate the payload of Text frames and any following Continuation frames
+ * using the methods provided in org.kaazing.nuklei.util.Utf8Util, as in the following code example:
+ * <pre>
+ *      Payload payload = super.getPayload();
+ *      if (getOpCode() == OpCode.TEXT)
+ *      {
+ *          incompleteBytes = Utf8Util.validateUTF8(payload.buffer(), payload.offset(), getLength(), (message) ->
+ *          {
+ *              protocolError(message);
+ *          });
+ *      }
+ * </pre>
+ *
+ */
 public class Data extends Frame
 {
     private final int maxWsMessageSize;

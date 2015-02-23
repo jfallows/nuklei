@@ -109,38 +109,6 @@ public class DataTest extends FrameTest
     }
 
     @Theory
-    public void shouldRejectTextWithInvalidUTF8(int offset, boolean masked, Fin fin) throws Exception
-    {
-        buffer.putBytes(offset, fromHex(fin == Fin.SET ? "81" : "01"));
-        ByteBuffer bytes = ByteBuffer.allocate(1000);
-        bytes.put("e acute (0xE9 or 0x11101001): ".getBytes(UTF_8));
-        bytes.put((byte) 0b11000011).put((byte) 0b10101001);
-        bytes.put(", invalid: ".getBytes(UTF_8));
-        bytes.put(fromHex("ff"));
-        bytes.put(", Euro sign: ".getBytes(UTF_8));
-        bytes.put(fromHex("e282ac"));
-        bytes.limit(bytes.position());
-        bytes.position(0);
-        byte[] inputPayload = new byte[bytes.remaining()];
-        bytes.get(inputPayload);
-        putLengthMaskAndPayload(buffer, offset + 1, inputPayload, masked);
-        Frame frame = frameFactory.wrap(buffer, offset);
-        assertEquals(OpCode.TEXT, frame.getOpCode());
-        Data data = (Data) frame;
-        assertEquals(inputPayload.length, data.getLength());
-        assertEquals(fin == Fin.SET, data.isFin());
-        try
-        {
-            data.getPayload();
-        }
-        catch(ProtocolException e)
-        {
-            return;
-        }
-        fail("Exception was not thrown");
-    }
-
-    @Theory
     public void shouldRejectTextExceedingMaximumLength(int offset, boolean masked, Fin fin) throws Exception
     {
         buffer.putBytes(offset, fromHex(fin == Fin.SET ? "81" : "01"));
