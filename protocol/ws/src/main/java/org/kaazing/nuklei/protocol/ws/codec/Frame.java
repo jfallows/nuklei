@@ -17,9 +17,6 @@ package org.kaazing.nuklei.protocol.ws.codec;
 
 import static java.lang.String.format;
 
-import java.net.ProtocolException;
-
-import org.kaazing.nuklei.ErrorHandler;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.FlyweightBE;
 
@@ -67,30 +64,7 @@ public abstract class Frame extends FlyweightBE
 
     public Payload getPayload()
     {
-        if (getLength() == 0)
-        {
-            return null;
-        }
-        if (payload.buffer() != null)
-        {
-            return payload;
-        }
-        if (!isMasked())
-        {
-            payload.setBuffer(buffer());
-            payload.setOffset(getDataOffset());
-        }
-        else
-        {
-            if (unmaskedPayload == null)
-            {
-                unmaskedPayload = new UnsafeBuffer(new byte[getMaxPayloadLength()]);
-            }
-            unmask(unmaskedPayload);
-            payload.setBuffer(unmaskedPayload);
-            payload.setOffset(0);
-        }
-        return payload;
+        return getPayload(false);
     }
 
     public boolean isFin()
@@ -103,45 +77,36 @@ public abstract class Frame extends FlyweightBE
         return (uint8Get(buffer(), offset() + MASK_OFFSET) & MASKED_MASK) != 0;
     }
 
-    protected static class Payload
+    public int limit()
     {
-        private int offset;
-        private DirectBuffer buffer;
-
-        Payload()
-        {
-        }
-
-        public int offset()
-        {
-            return offset;
-        }
-
-        public DirectBuffer buffer()
-        {
-            return buffer;
-        }
-
-        void setBuffer(DirectBuffer buffer)
-        {
-            this.buffer = buffer;
-        }
-
-        void setOffset(int offset)
-        {
-            this.offset = offset;
-        }
+        return getDataOffset() + getLength();
     }
 
-    static OpCode getOpCode(DirectBuffer buffer, int offset)
+    // TODO: move this to state machine
+    public void validate()
     {
-        return OpCode.fromInt(uint8Get(buffer, offset) & OP_CODE_MASK);
+        if ((byte0() & RSV_BITS_MASK) != 0)
+        {
+            protocolError("Reserved bits are set in first byte");
+        }
+        validateLength();
     }
 
-    static void protocolError(String message) throws ProtocolException
+    public static class Payload extends FlyweightBE
     {
-        // TODO: generalized protocol error handling
-        throw new ProtocolException(message);
+        private int limit;
+
+        protected Payload wrap(DirectBuffer buffer, int offset, int limit, boolean mutable)
+        {
+            super.wrap(buffer, offset, false);
+            this.limit = limit;
+            return this;
+        }
+
+        public int limit()
+        {
+            return limit;
+        }
     }
 
     /**
@@ -153,31 +118,12 @@ public abstract class Frame extends FlyweightBE
     protected Flyweight wrap(final DirectBuffer buffer, final int offset, boolean mutable)
     {
         super.wrap(buffer, offset, mutable);
-        payload.setBuffer(null);
+        validateLength(); // this must be done before unmasking payload, doing here for consistent behavior
+        payload.wrap(null, offset, 0, mutable);
         return this;
     }
 
-    protected abstract int getMaxPayloadLength();
-
-    @Override
-    public void validate(ErrorHandler errorHandler)
-    {
-        if ((byte0() & RSV_BITS_MASK) != 0)
-        {
-            errorHandler.handleError("Reserved bits are set in first byte");
-        }
-        if (getLength() > getMaxPayloadLength())
-        {
-            errorHandler.handleError(format("%s frame payload exceeds %d bytes", getOpCode(), getMaxPayloadLength()));
-        }
-    }
-
-    private int byte0()
-    {
-        return uint8Get(buffer(), offset());
-    }
-
-    protected int getDataOffset()
+    int getDataOffset()
     {
         int offset = offset() + LENGTH_OFFSET + 1;
         int lengthByte1 = uint8Get(buffer(), offset) & LENGTH_BYTE_1_MASK;
@@ -199,6 +145,49 @@ public abstract class Frame extends FlyweightBE
         return offset;
     }
 
+    abstract int getMaxPayloadLength();
+
+    static OpCode getOpCode(DirectBuffer buffer, int offset)
+    {
+        return OpCode.fromInt(uint8Get(buffer, offset) & OP_CODE_MASK);
+    }
+
+    Payload getPayload(boolean mutable)
+    {
+        if (getLength() == 0)
+        {
+            return null;
+        }
+        if (payload.buffer() != null)
+        {
+            return payload;
+        }
+        if (!isMasked())
+        {
+            payload.wrap(buffer(), getDataOffset(), limit(), false);
+        }
+        else
+        {
+            if (unmaskedPayload == null)
+            {
+                unmaskedPayload = new UnsafeBuffer(new byte[getMaxPayloadLength()]);
+            }
+            unmask(unmaskedPayload);
+            payload.wrap(unmaskedPayload, 0, getLength(), false);
+        }
+        return payload;
+    }
+
+    static void protocolError(String message) throws ProtocolException
+    {
+        throw new ProtocolException(message);
+    }
+
+    private int byte0()
+    {
+        return uint8Get(buffer(), offset());
+    }
+
     private void unmask(MutableDirectBuffer unmaskedPayload)
     {
         if (!isMasked())
@@ -211,6 +200,14 @@ public abstract class Frame extends FlyweightBE
         {
             byte unmasked = (byte) (buffer().getByte(dataOffset + i) ^ buffer().getByte(maskOffset + i % 4) & 0xFF);
             unmaskedPayload.setMemory(i, 1, unmasked);
+        }
+    }
+
+    private void validateLength()
+    {
+        if (getLength() > getMaxPayloadLength())
+        {
+            protocolError(format("%s frame payload exceeds %d bytes", getOpCode(), getMaxPayloadLength()));
         }
     }
 

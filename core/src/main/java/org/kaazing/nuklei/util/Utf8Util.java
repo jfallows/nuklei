@@ -174,17 +174,18 @@ public final class Utf8Util
         for (int index = 0; index < length; index++)
         {
             byte leadingByte = buffer.getByte(offset + index);
-            if ((leadingByte & 0xc0) == 0x80)
-            {
-                return INVALID_UTF8;
-            }
             final int expectedLen;
             int codePoint;
             if ((leadingByte & 0b10000000) == 0b00000000)
             {
                 continue;
             }
-            else if ((leadingByte & 0b11100000) == 0b11000000)
+            if ((leadingByte & 0xff) > 0xf4)
+            {
+                errorHandler.handleError(format("Invalid leading byte: %x", leadingByte));
+                return INVALID_UTF8;
+            }
+            if ((leadingByte & 0b11100000) == 0b11000000)
             {
                 expectedLen = 2;
                 codePoint = (leadingByte & 0b00011111);

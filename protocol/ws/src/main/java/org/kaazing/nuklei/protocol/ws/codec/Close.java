@@ -19,12 +19,13 @@ import static java.lang.String.format;
 
 import java.net.ProtocolException;
 
-import org.kaazing.nuklei.ErrorHandler;
+import org.kaazing.nuklei.util.Utf8Util;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 
 public class Close extends ControlFrame
 {
+    private final Payload reason = new Payload();
 
     Close()
     {
@@ -33,7 +34,7 @@ public class Close extends ControlFrame
 
     public Close wrap(DirectBuffer buffer, int offset) throws ProtocolException
     {
-        super.wrap(buffer, offset, false);
+        wrap(buffer, offset, false);
         return this;
     }
 
@@ -43,35 +44,60 @@ public class Close extends ControlFrame
         {
             return 1005; // RFC 6455 section 7.4.1
         }
-        return uint16Get(getPayload().buffer(), getPayload().offset());
+        int status = uint16Get(getPayload().buffer(), getPayload().offset());
+        validateStatusCode(status);
+        return status;
     }
 
-    /**
-     * WARNING: use of this method causes garbage collection
-     * @return
-     */
-    public String getReason()
+    @Override
+    public int getLength()
+    {
+        int length = super.getLength();
+        if (length == 1)
+        {
+            protocolError("Invalid Close frame, payload length cannot be 1");
+        }
+        return length;
+    }
+
+    public Payload getReason()
+    {
+        return getReason(false);
+    }
+
+    @Override
+    protected Close wrap(final DirectBuffer buffer, final int offset, boolean mutable)
+    {
+        super.wrap(buffer, offset, mutable);
+        reason.wrap(null, offset, 0, mutable);
+        return this;
+    }
+
+    Payload getReason(boolean mutable)
     {
         if (getLength() < 3)
         {
             return null;
         }
-        return getPayload().buffer().getStringWithoutLengthUtf8(getPayload().offset() + 2, getLength() - 2);
+        if (reason.buffer() != null)
+        {
+            return reason;
+        }
+        Payload payload = getPayload();
+        reason.wrap(payload.buffer(), payload.offset() + 2, payload.limit(), mutable);
+        Utf8Util.validateUTF8(reason.buffer(), reason.offset(), reason.limit() - reason.offset(), (message) ->
+        {
+            protocolError(message);
+        });
+        return reason;
     }
 
-    @Override
-    public void validate(ErrorHandler errorHandler)
+    private static void validateStatusCode(int status)
     {
-        super.validate(errorHandler);
-        if (getLength() == 1)
+        if (status < 999 || status == 1005 || (status > 1014 && status < 3000) || status > 4999)
         {
-            errorHandler.handleError("Invalid Close frame payload: length=1");
+            protocolError(format("Invalid Close frame status code %d", status));
         }
-        if (getLength() >= 2 && (getStatusCode() == 1005 || getStatusCode() == 1006))
-        {
-            errorHandler.handleError(format("Illegal Close status code %d", getStatusCode()));
-        }
-        // TODO: check reason (payload 3rd byte to end) is valid UTF-8
     }
 
 }

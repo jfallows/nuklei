@@ -15,33 +15,18 @@
  */
 package org.kaazing.nuklei.protocol.ws.codec;
 
-import static java.lang.String.format;
-
-import uk.co.real_logic.agrona.DirectBuffer;
-
-public abstract class ControlFrame extends Frame
+public class ProtocolException extends RuntimeException
 {
+    private static final long serialVersionUID = 3902177250408409104L;
 
-    ControlFrame()
+    public ProtocolException(String message)
     {
-
+        super(message);
     }
 
-    @Override
-    protected ControlFrame wrap(DirectBuffer buffer, int offset, boolean mutable)
+    public ProtocolException(String message, Throwable cause)
     {
-        super.wrap(buffer, offset, mutable);
-        if (!isFin())
-        {
-            protocolError(format("Expected FIN for %s frame", getOpCode()));
-        }
-        return this;
-    }
-
-    @Override
-    protected int getMaxPayloadLength()
-    {
-        return 125;
+        super(message, cause);
     }
 
 }

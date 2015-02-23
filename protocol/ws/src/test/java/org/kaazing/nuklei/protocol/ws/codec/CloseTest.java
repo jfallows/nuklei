@@ -23,8 +23,6 @@ import static org.junit.Assert.fail;
 import static uk.co.real_logic.agrona.BitUtil.fromHex;
 import static uk.co.real_logic.agrona.BitUtil.toHex;
 
-import java.net.ProtocolException;
-
 import org.junit.experimental.theories.Theory;
 import org.kaazing.nuklei.protocol.ws.codec.Frame.Payload;
 
@@ -66,17 +64,23 @@ public class CloseTest extends FrameTest
     public void shouldDecodeWithStatusCodeAndReason(int offset, boolean masked) throws Exception
     {
         buffer.putBytes(offset, fromHex("88"));
-        String reason = "Something bad happened";
-        putLengthMaskAndPayload(buffer, offset + 1, "03ff" + toHex(reason.getBytes(UTF_8)), masked);
+        String reasonString = "Something bad happened";
+        putLengthMaskAndPayload(buffer, offset + 1,
+                "0" + Integer.toHexString(1001) + toHex(reasonString.getBytes(UTF_8)), masked);
         Frame frame = frameFactory.wrap(buffer, offset);
         assertEquals(OpCode.CLOSE, frame.getOpCode());
+        assertEquals(frame.offset(), offset);
+        assertEquals(offset + 2 + (masked ? 4 : 0), frame.getLength(), frame.limit());
         byte[] payloadBytes = new byte[2];
         Payload payload = frame.getPayload();
         payload.buffer().getBytes(payload.offset(), payloadBytes);
         Close close = (Close) frame;
-        assertEquals(2 + reason.length(), close.getLength());
-        assertEquals(1023, close.getStatusCode());
-        assertEquals(reason, close.getReason());
+        assertEquals(2 + reasonString.length(), close.getLength());
+        assertEquals(1001, close.getStatusCode());
+        Payload reason = close.getReason();
+        assertEquals(reasonString.length(), reason.limit() - reason.offset());
+        String reasonResult = new String(reason.buffer().byteArray(), reason.offset(), reason.limit() - reason.offset());
+        assertEquals(reasonString, reasonResult);
     }
 
     @Theory
@@ -86,10 +90,12 @@ public class CloseTest extends FrameTest
         putLengthMaskAndPayload(buffer, offset + 1, "01", masked);
         try
         {
-            frameFactory.wrap(buffer, offset);
+            Close frame = (Close) frameFactory.wrap(buffer, offset);
+            frame.getLength();
         }
         catch (ProtocolException e)
         {
+            System.out.println(e);
             return;
         }
         fail("Exception exception was not thrown");
@@ -102,10 +108,48 @@ public class CloseTest extends FrameTest
         putLengthAndMaskBit(buffer, offset + 1, 126, masked);
         try
         {
-            frameFactory.wrap(buffer, offset);
+            Close frame = (Close) frameFactory.wrap(buffer, offset);
+            frame.getPayload();
         }
         catch (ProtocolException e)
         {
+            System.out.println(e);
+            return;
+        }
+        fail("Exception exception was not thrown");
+    }
+
+    @Theory
+    public void shouldRejectCloseFrameWithStatusCode1023(int offset, boolean masked) throws Exception
+    {
+        buffer.putBytes(offset, fromHex("88"));
+        putLengthMaskAndPayload(buffer, offset + 1, "0" + Integer.toHexString(1023), masked);
+        Close close = (Close) frameFactory.wrap(buffer, offset);
+        try
+        {
+            close.getStatusCode();
+        }
+        catch (ProtocolException e)
+        {
+            System.out.println(e);
+            return;
+        }
+        fail("Exception exception was not thrown");
+    }
+
+    @Theory
+    public void shouldRejectCloseFrameWithStatusCodeFFFF(int offset, boolean masked) throws Exception
+    {
+        buffer.putBytes(offset, fromHex("88"));
+        putLengthMaskAndPayload(buffer, offset + 1, "ffff", masked);
+        Close close = (Close) frameFactory.wrap(buffer, offset);
+        try
+        {
+            close.getStatusCode();
+        }
+        catch (ProtocolException e)
+        {
+            System.out.println(e);
             return;
         }
         fail("Exception exception was not thrown");
@@ -114,18 +158,19 @@ public class CloseTest extends FrameTest
     @Theory
     public void shouldRejectCloseFrameWithReasonNotValidUTF8(int offset, boolean masked) throws Exception
     {
-        buffer.putBytes(offset, fromHex("88"));
         String validMultibyteCharEuroSign = "e282ac";
         String invalidUTF8 = toHex("valid text".getBytes(UTF_8)) + validMultibyteCharEuroSign + "ff";
+        buffer.putBytes(offset, fromHex("88"));
         putLengthMaskAndPayload(buffer, offset + 1, "03ff" + invalidUTF8, masked);
+        Close frame = (Close) frameFactory.wrap(buffer, offset);
         try
         {
-            frameFactory.wrap(buffer, offset);
+            frame.getReason();
         }
         catch (ProtocolException e)
         {
             return;
         }
-        fail("Exception exception was not thrown");
+        fail("Exception was not thrown");
     }
 }

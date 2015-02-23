@@ -15,7 +15,6 @@
  */
 package org.kaazing.nuklei.protocol.ws.codec;
 
-import org.kaazing.nuklei.ErrorHandler;
 import org.kaazing.nuklei.util.Utf8Util;
 
 import uk.co.real_logic.agrona.DirectBuffer;
@@ -30,10 +29,16 @@ public class Data extends Frame
     }
 
     @Override
-    public void validate(ErrorHandler errorHandler)
+    public Payload getPayload()
     {
-        super.validate(errorHandler);
-        Utf8Util.validateUTF8(buffer(), offset() + getDataOffset(), getLength(), errorHandler);
+        if (getOpCode() == OpCode.TEXT)
+        {
+            Utf8Util.validateUTF8(buffer(), offset() + getDataOffset(), getLength(), (message) ->
+            {
+                protocolError(message);
+            });
+        }
+        return super.getPayload();
     }
 
     public Data wrap(DirectBuffer buffer, int offset)

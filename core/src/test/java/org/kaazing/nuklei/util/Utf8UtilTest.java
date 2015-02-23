@@ -158,6 +158,40 @@ public class Utf8UtilTest
     }
 
     @Test
+    public void validateUTF8ShouldAcceptLeadingBytef4() throws Exception
+    {
+        ByteBuffer bytes = ByteBuffer.allocate(1000);
+        int offset = 0;
+        bytes.position(offset);
+        bytes.put((byte) 0xf4);
+        bytes.limit(bytes.position());
+        bytes.position(offset);
+        MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+        int result = Utf8Util.validateUTF8(buffer, offset, bytes.limit() - offset, (message) ->
+        {
+            System.out.println(message);
+        });
+        assertEquals(1, result); // incomplete character, only 1 byte present
+    }
+
+    @Test
+    public void validateUTF8ShouldRejectLeadingByteGTf4() throws Exception
+    {
+        ByteBuffer bytes = ByteBuffer.allocate(1000);
+        int offset = 0;
+        bytes.position(offset);
+        bytes.put((byte) 0xf5);
+        bytes.limit(bytes.position());
+        bytes.position(offset);
+        MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+        int result = Utf8Util.validateUTF8(buffer, offset, bytes.limit() - offset, (message) ->
+        {
+            System.out.println(message);
+        });
+        assertEquals(-1, result);
+    }
+
+    @Test
     // This is actually same as reject C1 but it's a more realistic case
     public void validateUTF8ShouldRejectOverwide2ByteCharacter() throws Exception
     {
@@ -297,6 +331,68 @@ public class Utf8UtilTest
             System.out.println(message);
         });
         assertEquals(-1, result);
+    }
+
+    @Test
+    public void validateUTF8ShouldReturnIncompleteCharacterByteCount1() throws Exception
+    {
+        ByteBuffer bytes = ByteBuffer.allocate(1000);
+        int offset = 7;
+        bytes.position(offset);
+        bytes.put("e acute (0xE9 or 0x11101001): ".getBytes(UTF_8));
+        bytes.put((byte) 0b11000011).put((byte) 0b10101001);
+        bytes.put(", Euro sign: ".getBytes(UTF_8));
+        bytes.put(fromHex("e2")); // missing final 82ac
+        bytes.limit(bytes.position());
+        bytes.position(offset);
+        MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+        int result = Utf8Util.validateUTF8(buffer, offset, bytes.limit() - offset, (message) ->
+        {
+            System.out.println(message);
+        });
+        assertEquals(1, result);
+    }
+
+    @Test
+    public void validateUTF8ShouldReturnIncompleteCharacterByteCount2() throws Exception
+    {
+        ByteBuffer bytes = ByteBuffer.allocate(1000);
+        int offset = 7;
+        bytes.position(offset);
+        bytes.put("e acute (0xE9 or 0x11101001): ".getBytes(UTF_8));
+        bytes.put((byte) 0b11000011).put((byte) 0b10101001);
+        bytes.put(", Euro sign: ".getBytes(UTF_8));
+        bytes.put(fromHex("e282")); // missing final ac
+        bytes.limit(bytes.position());
+        bytes.position(offset);
+        MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+        int result = Utf8Util.validateUTF8(buffer, offset, bytes.limit() - offset, (message) ->
+        {
+            System.out.println(message);
+        });
+        assertEquals(2, result);
+    }
+
+    @Test
+    public void validateUTF8ShouldReturnIncompleteCharacterByteCount3() throws Exception
+    {
+        ByteBuffer bytes = ByteBuffer.allocate(1000);
+        int offset = 7;
+        bytes.position(offset);
+        bytes.put("e acute (0xE9 or 0x11101001): ".getBytes(UTF_8));
+        bytes.put((byte) 0b11000011).put((byte) 0b10101001);
+        bytes.put(", Euro sign: ".getBytes(UTF_8));
+        bytes.put(fromHex("e282ac"));
+        bytes.put(", Hwair: ".getBytes(UTF_8));
+        bytes.put(fromHex("f0908d")); // final 88 missing
+        bytes.limit(bytes.position());
+        bytes.position(offset);
+        MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+        int result = Utf8Util.validateUTF8(buffer, offset, bytes.limit() - offset, (message) ->
+        {
+            System.out.println(message);
+        });
+        assertEquals(3, result);
     }
 
 }

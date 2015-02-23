@@ -15,6 +15,8 @@
  */
 package org.kaazing.nuklei.protocol.ws.codec;
 
+import static java.lang.String.format;
+
 public enum OpCode
 {
 
@@ -37,7 +39,7 @@ public enum OpCode
         case 0x0A:
             return PONG;
         default:
-            return null;
+            throw new ProtocolException(format("Unrecognized WebSocket OpCode %x", value));
         }
     };
 
@@ -58,7 +60,7 @@ public enum OpCode
         case PONG:
             return 0x0A;
         default:
-            throw new IllegalStateException();
+            throw new ProtocolException(format("Unrecognised OpCode %s", value));
         }
     };
 

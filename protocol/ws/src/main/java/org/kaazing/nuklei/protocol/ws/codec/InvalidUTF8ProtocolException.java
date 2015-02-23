@@ -15,33 +15,22 @@
  */
 package org.kaazing.nuklei.protocol.ws.codec;
 
-import static java.lang.String.format;
-
-import uk.co.real_logic.agrona.DirectBuffer;
-
-public abstract class ControlFrame extends Frame
+/**
+ * This variant of WsProtocolException is needed so we can send the correct close status code of 1007 if we get a Text
+ * frame containing invalid UTF-8 (see RFC-6455 section 7.4.1).
+ */
+public class InvalidUTF8ProtocolException extends ProtocolException
 {
+    private static final long serialVersionUID = 4905969734515008256L;
 
-    ControlFrame()
+    public InvalidUTF8ProtocolException(String message)
     {
-
+        super(message);
     }
 
-    @Override
-    protected ControlFrame wrap(DirectBuffer buffer, int offset, boolean mutable)
+    public InvalidUTF8ProtocolException(String message, Throwable cause)
     {
-        super.wrap(buffer, offset, mutable);
-        if (!isFin())
-        {
-            protocolError(format("Expected FIN for %s frame", getOpCode()));
-        }
-        return this;
-    }
-
-    @Override
-    protected int getMaxPayloadLength()
-    {
-        return 125;
+        super(message, cause);
     }
 
 }
