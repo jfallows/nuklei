@@ -86,6 +86,23 @@ public class CloseTest extends FrameTest
     }
 
     @Theory
+    public void shouldRejectCloseFrameWithFinNotSet(int offset, boolean masked) throws Exception
+    {
+        buffer.putBytes(offset, fromHex("08"));
+        putLengthMaskAndHexPayload(buffer, offset + 1, null, masked);
+        try
+        {
+            frameFactory.wrap(buffer, offset);
+        }
+        catch (ProtocolException e)
+        {
+            System.out.println(e);
+            return;
+        }
+        fail("Exception exception was not thrown");
+    }
+
+    @Theory
     public void shouldRejectCloseFrameWithLength1(int offset, boolean masked) throws Exception
     {
         buffer.putBytes(offset, fromHex("88"));
