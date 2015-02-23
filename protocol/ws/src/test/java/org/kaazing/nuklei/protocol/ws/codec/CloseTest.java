@@ -18,7 +18,6 @@ package org.kaazing.nuklei.protocol.ws.codec;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static uk.co.real_logic.agrona.BitUtil.fromHex;
 import static uk.co.real_logic.agrona.BitUtil.toHex;

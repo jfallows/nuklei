@@ -30,13 +30,14 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 @RunWith(Theories.class)
 public abstract class FrameTest
 {
-    private static final int BUFFER_CAPACITY = 1024;
+    private static final int BUFFER_CAPACITY = 64 * 1024;
+    private static final int WS_MAX_MESSAGE_SIZE = 20 * 1024;
 
     @DataPoint
     public static final int ZERO_OFFSET = 0;
 
     @DataPoint
-    public static final int NON_ZERO_OFFSET = new Random().nextInt(BUFFER_CAPACITY - 512) + 1;
+    public static final int NON_ZERO_OFFSET = new Random().nextInt(BUFFER_CAPACITY - WS_MAX_MESSAGE_SIZE);
 
     @DataPoint
     public static final boolean MASKED = true;
@@ -45,7 +46,7 @@ public abstract class FrameTest
     public static final boolean UNMASKED = false;
 
     protected final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
-    protected final FrameFactory frameFactory = new FrameFactory(0xFFFF);
+    protected final FrameFactory frameFactory = new FrameFactory(WS_MAX_MESSAGE_SIZE);
 
     protected static void putLengthMaskAndHexPayload(MutableDirectBuffer buffer,
                                                   int offset,
@@ -58,9 +59,9 @@ public abstract class FrameTest
 
 
     protected static void putLengthMaskAndPayload(MutableDirectBuffer buffer,
-                                                     int offset,
-                                                     byte[] unmaskedPayload,
-                                                     boolean masked)
+                                                  int offset,
+                                                  byte[] unmaskedPayload,
+                                                  boolean masked)
     {
         offset += putLengthAndMaskBit(buffer, offset, unmaskedPayload.length, masked);
         if (!masked)
@@ -88,8 +89,8 @@ public abstract class FrameTest
         else if (length <= 0xFFFF)
         {
             buffer.putByte(offset, (byte) (126 | (masked ? 0x80 : 0x00)));
-            buffer.putByte(offset + 1, (byte) (length >> 8 | 0xFF));
-            buffer.putByte(offset + 2, (byte) (length | 0xFF));
+            buffer.putByte(offset + 1, (byte) (length >> 8 & 0xFF));
+            buffer.putByte(offset + 2, (byte) (length & 0xFF));
             return 3;
         }
         else

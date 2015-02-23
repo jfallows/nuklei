@@ -125,8 +125,9 @@ public abstract class Frame extends FlyweightBE
 
     int getDataOffset()
     {
-        int offset = offset() + LENGTH_OFFSET + 1;
+        int offset = offset() + LENGTH_OFFSET;
         int lengthByte1 = uint8Get(buffer(), offset) & LENGTH_BYTE_1_MASK;
+        offset += 1;
         switch (lengthByte1)
         {
         case 126:
