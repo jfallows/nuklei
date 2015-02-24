@@ -166,8 +166,9 @@ public final class Utf8Util
      * @param buffer
      * @param offset Position where the byte sequence to be validated starts
      * @param length Number of bytes to validate
-     * @return 0: byte sequence is a complete sequence of valid UTF-8 characters N=1, 2 or 3: byte sequence is valid
-     * UTF-8 but the last N bytes are an incomplete UTF-8 character INVALID_UTF8 (-1): byte sequence is not valid UTF-8
+     * @return <li>0: byte sequence is a complete sequence of valid UTF-8 characters
+     *         <li>N=1, 2 or 3: byte sequence is valid UTF-8 but the last N bytes are an incomplete UTF-8 character
+     *         <li>INVALID_UTF8 (-1): byte sequence is not valid UTF-8
      */
     public static int validateUTF8(DirectBuffer buffer, int offset, int length, ErrorHandler errorHandler)
     {
