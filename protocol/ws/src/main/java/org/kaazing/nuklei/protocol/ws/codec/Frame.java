@@ -187,26 +187,39 @@ public abstract class Frame extends FlyweightBE
 
     private void unmask(MutableDirectBuffer unmaskedPayload)
     {
-        if (!isMasked())
-        {
-            return;
-        }
         int dataOffset = getDataOffset();
         int maskOffset = dataOffset - 4;
         int mask = int32Get(buffer(), maskOffset);
+        applyMask(mask, buffer(), dataOffset, unmaskedPayload, 0, getLength());
+    }
+
+    /**
+     * This method can be used to mask or unmask WebSocket payload. Bytes are copied from source to target
+     * applying the mask.
+     * @param mask    Mask to apply
+     * @param source  Read bytes from here
+     * @param sourceOffset  Offset to start reading bytes
+     * @param target  Where to write the bytes with mask applied
+     * @param targetOffset  Offset to write bytes
+     * @param length  Number of bytes to process
+     */
+    private static void applyMask(int mask, DirectBuffer source, int sourceOffset, MutableDirectBuffer target,
+            int targetOffset, int length)
+    {
+        int dataOffset = sourceOffset;
         // xor a 32bit word at a time as long as possible then do remaining 0, 1, 2 or 3 bytes
         int i;
-        for (i = 0; i+4 < getLength(); i+=4)
+        for (i = 0; i+4 < length; i+=4)
         {
-            int unmasked = int32Get(buffer(), dataOffset + i) ^ mask;
-            int32Put(unmaskedPayload, i, unmasked);
+            int unmasked = int32Get(source, dataOffset + i) ^ mask;
+            int32Put(target, i, unmasked);
         }
-        for (; i < getLength(); i++)
+        for (; i < length; i++)
         {
             int shiftBytes = 3 - (i & 0x03);
             byte maskByte = (byte) (mask >> (8 * shiftBytes) & 0xFF);
-            byte unmasked = (byte) (buffer().getByte(dataOffset + i) ^ (maskByte));
-            unmaskedPayload.setMemory(i, 1, unmasked);
+            byte unmasked = (byte) (source.getByte(dataOffset + i) ^ (maskByte));
+            target.setMemory(i, 1, unmasked);
         }
     }
 
