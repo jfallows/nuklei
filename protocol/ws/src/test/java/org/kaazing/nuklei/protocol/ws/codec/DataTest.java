@@ -18,11 +18,13 @@ package org.kaazing.nuklei.protocol.ws.codec;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static uk.co.real_logic.agrona.BitUtil.fromHex;
 
 import java.nio.ByteBuffer;
 
+import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theory;
 import org.kaazing.nuklei.protocol.ws.codec.Frame.Payload;
@@ -148,6 +150,78 @@ public class DataTest extends FrameTest
         assertEquals(payload.offset(), payload.limit());
         assertEquals(0, data.getLength());
         assertEquals(fin == Fin.SET, data.isFin());
+    }
+
+    @Test
+    public void shouldUnmask0Remaining() throws Exception
+    {
+        buffer.putBytes(0, fromHex("82")); // fin, binary
+        buffer.putBytes(1, fromHex("84")); // masked, length=4
+        buffer.putBytes(2, fromHex("01020384")); // mask
+        buffer.putBytes(6, fromHex("FF00FF00")); // masked payload
+        Frame frame = frameFactory.wrap(buffer, 0);
+        assertEquals(OpCode.BINARY, frame.getOpCode());
+        Payload payload = frame.getPayload();
+        byte[] payloadBytes = new byte[payload.limit() - payload.offset()];
+        payload.buffer().getBytes(payload.offset(), payloadBytes);
+        assertArrayEquals(fromHex("FE02FC84"), payloadBytes);
+        Data data = (Data) frame;
+        assertEquals(4, data.getLength());
+        assertTrue(data.isFin());
+    }
+
+    @Test
+    public void shouldUnmask1Remaining() throws Exception
+    {
+        buffer.putBytes(0, fromHex("82")); // fin, binary
+        buffer.putBytes(1, fromHex("85")); // masked, length=5
+        buffer.putBytes(2, fromHex("01020384")); // mask
+        buffer.putBytes(6, fromHex("FF00FF00FE")); // masked payload
+        Frame frame = frameFactory.wrap(buffer, 0);
+        assertEquals(OpCode.BINARY, frame.getOpCode());
+        Payload payload = frame.getPayload();
+        byte[] payloadBytes = new byte[payload.limit() - payload.offset()];
+        payload.buffer().getBytes(payload.offset(), payloadBytes);
+        assertArrayEquals(fromHex("FE02FC84FF"), payloadBytes);
+        Data data = (Data) frame;
+        assertEquals(5, data.getLength());
+        assertTrue(data.isFin());
+    }
+
+    @Test
+    public void shouldUnmask2Remaining() throws Exception
+    {
+        buffer.putBytes(0, fromHex("82")); // fin, binary
+        buffer.putBytes(1, fromHex("86")); // masked, length=6
+        buffer.putBytes(2, fromHex("01020384")); // mask
+        buffer.putBytes(6, fromHex("FF00FF00FE65")); // masked payload
+        Frame frame = frameFactory.wrap(buffer, 0);
+        assertEquals(OpCode.BINARY, frame.getOpCode());
+        Payload payload = frame.getPayload();
+        byte[] payloadBytes = new byte[payload.limit() - payload.offset()];
+        payload.buffer().getBytes(payload.offset(), payloadBytes);
+        assertArrayEquals(fromHex("FE02FC84FF67"), payloadBytes);
+        Data data = (Data) frame;
+        assertEquals(6, data.getLength());
+        assertTrue(data.isFin());
+    }
+
+    @Test
+    public void shouldUnmask3Remaining() throws Exception
+    {
+        buffer.putBytes(0, fromHex("82")); // fin, binary
+        buffer.putBytes(1, fromHex("87")); // masked, length=7
+        buffer.putBytes(2, fromHex("01020384")); // mask
+        buffer.putBytes(6, fromHex("FF00FF00FE6596")); // masked payload
+        Frame frame = frameFactory.wrap(buffer, 0);
+        assertEquals(OpCode.BINARY, frame.getOpCode());
+        Payload payload = frame.getPayload();
+        byte[] payloadBytes = new byte[payload.limit() - payload.offset()];
+        payload.buffer().getBytes(payload.offset(), payloadBytes);
+        assertArrayEquals(fromHex("FE02FC84FF6795"), payloadBytes);
+        Data data = (Data) frame;
+        assertEquals(7, data.getLength());
+        assertTrue(data.isFin());
     }
 
     @Theory

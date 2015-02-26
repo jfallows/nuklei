@@ -193,9 +193,19 @@ public abstract class Frame extends FlyweightBE
         }
         int dataOffset = getDataOffset();
         int maskOffset = dataOffset - 4;
-        for (int i = 0; i < getLength(); i++)
+        int mask = int32Get(buffer(), maskOffset);
+        // xor a 32bit word at a time as long as possible then do remaining 0, 1, 2 or 3 bytes
+        int i;
+        for (i = 0; i+4 < getLength(); i+=4)
         {
-            byte unmasked = (byte) (buffer().getByte(dataOffset + i) ^ buffer().getByte(maskOffset + i % 4) & 0xFF);
+            int unmasked = int32Get(buffer(), dataOffset + i) ^ mask;
+            int32Put(unmaskedPayload, i, unmasked);
+        }
+        for (; i < getLength(); i++)
+        {
+            int shiftBytes = 3 - (i & 0x03);
+            byte maskByte = (byte) (mask >> (8 * shiftBytes) & 0xFF);
+            byte unmasked = (byte) (buffer().getByte(dataOffset + i) ^ (maskByte));
             unmaskedPayload.setMemory(i, 1, unmasked);
         }
     }
