@@ -29,6 +29,7 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
  * super.wrap(buffer, offset, false) so they are immutable.
  * A mutable flyweight should extend the immutable version, and provide
  * a wrap method that calls super.wrap(buffer, offset, true).
+ * The underlying data for a flyweight is from offset() inclusive to limit() exclusive.
  */
 public class Flyweight
 {
@@ -53,11 +54,17 @@ public class Flyweight
         return byteOrder;
     }
 
+    /**
+     * @return Byte index where the data for this flyweight starts
+     */
     public int offset()
     {
         return offset;
     }
 
+    /**
+     * @return Byte index of the byte immediately following the data for this flyweight
+     */
     public int limit()
     {
         return offset;
