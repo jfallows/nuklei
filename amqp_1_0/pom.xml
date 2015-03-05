@@ -1,0 +1,55 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.kaazing</groupId>
+        <artifactId>community</artifactId>
+        <version>2.10</version>
+    </parent>
+
+    <artifactId>nuklei.amqp_1_0</artifactId>
+    <packaging>jar</packaging>
+    <version>develop-SNAPSHOT</version>
+
+    <name>Nuklei AMQP 1.0 support</name>
+    <url>http://github.com/kaazing/nuklei.amqp_1_0</url>
+    <description>AMQP 1.0 support, including codec flyweights and state machine</description>
+
+    <scm>
+        <url>https://github.com/kaazing/nuklei.amqp_1_0.git</url>
+        <connection>scm:git:https://github.com/kaazing/nuklei.amqp_1_0.git</connection>
+    </scm>
+
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <require.java.version>1.8+</require.java.version>
+        <require.maven.version>3.0.4+</require.maven.version>
+
+        <!-- animal sniffer does not yet support Java8, see MANIMALSNIFFER-45 -->
+        <animal.sniffer.skip>true</animal.sniffer.skip>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.kaazing</groupId>
+            <artifactId>nuklei-core</artifactId>
+            <version>[0.2,1.0)</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>1.9.5</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>
+
