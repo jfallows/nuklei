@@ -42,6 +42,7 @@
         <module>protocol/tcp</module>
         <module>protocol/http</module>
         <module>protocol/ws</module>
+        <module>protocol/amqp-1.0</module>
     </modules>
 
     <build>
