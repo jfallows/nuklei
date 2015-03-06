@@ -17,7 +17,7 @@ package org.kaazing.nuklei.amqp_1_0.codec.transport;
 
 import org.kaazing.nuklei.FlyweightBE;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 public final class Header extends FlyweightBE {
 
@@ -54,7 +54,7 @@ public final class Header extends FlyweightBE {
     }
 
     @Override
-    public Header wrap(MutableDirectBuffer buffer, int offset) {
+    public Header wrap(DirectBuffer buffer, int offset) {
         super.wrap(buffer, offset);
         return this;
     }

@@ -27,15 +27,19 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 3.4 "Delivery State"
  */
-public enum DeliveryState {
+public enum DeliveryState
+{
 
     RECEIVED, ACCEPTED, REJECTED, RELEASED, MODIFIED, DECLARED;
 
-    public static final LongFunction<DeliveryState> READ = new LongFunction<DeliveryState>() {
+    public static final LongFunction<DeliveryState> READ = new LongFunction<DeliveryState>()
+    {
 
         @Override
-        public DeliveryState apply(long value) {
-            switch ((int) value) {
+        public DeliveryState apply(long value)
+        {
+            switch ((int) value)
+            {
             case 0x23:
                 return RECEIVED;
             case 0x24:
@@ -53,11 +57,13 @@ public enum DeliveryState {
             }
         }
     };
-    
-    public static final ToLongFunction<DeliveryState> WRITE = new ToLongFunction<DeliveryState>() {
+
+    public static final ToLongFunction<DeliveryState> WRITE = new ToLongFunction<DeliveryState>()
+    {
 
         @Override
-        public long applyAsLong(DeliveryState value) {
+        public long applyAsLong(DeliveryState value)
+        {
             switch (value) {
             case RECEIVED:
                 return 0x23;
@@ -78,26 +84,31 @@ public enum DeliveryState {
         
     };
 
-    public static final class Described extends CompositeType.Described {
+    public static final class Described extends CompositeType.Described
+    {
 
         @Override
-        public Described watch(Consumer<Flyweight> notifier) {
+        public Described watch(Consumer<Flyweight> notifier)
+        {
             super.watch(notifier);
             return this;
         }
     
         @Override
-        public Described wrap(MutableDirectBuffer buffer, int offset) {
+        public Described wrap(MutableDirectBuffer buffer, int offset)
+        {
             super.wrap(buffer, offset);
             return this;
         }
 
-        public Described setDeliveryState(DeliveryState value) {
+        public Described setDeliveryState(DeliveryState value)
+        {
             setDescriptor(WRITE, value);
             return this;
         }
         
-        public DeliveryState getDeliveryState() {
+        public DeliveryState getDeliveryState()
+        {
             return getDescriptor(READ);
         }
     }

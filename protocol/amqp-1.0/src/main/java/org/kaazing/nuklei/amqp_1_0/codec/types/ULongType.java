@@ -25,6 +25,7 @@ import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.FlyweightBE;
 
 import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /*
@@ -143,7 +144,7 @@ public final class ULongType extends Type {
         }
 
         @Override
-        public Descriptor wrap(MutableDirectBuffer buffer, int offset) {
+        public Descriptor wrap(DirectBuffer buffer, int offset) {
             super.wrap(buffer, offset);
 
             code.wrap(buffer, offset + OFFSET_CODE);

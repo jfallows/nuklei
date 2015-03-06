@@ -25,16 +25,19 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 2.8.13 "Fields"
  */
-public class Fields extends MapType {
+public class Fields extends MapType
+{
 
     @Override
-    public Fields watch(Consumer<Flyweight> notifier) {
+    public Fields watch(Consumer<Flyweight> notifier)
+    {
         super.watch(notifier);
         return this;
     }
 
     @Override
-    public Fields wrap(MutableDirectBuffer buffer, int offset) {
+    public Fields wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         return this;
     }

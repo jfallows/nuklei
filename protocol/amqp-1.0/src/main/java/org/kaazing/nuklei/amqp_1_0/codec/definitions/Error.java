@@ -25,16 +25,19 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 3.5.9 "Node Properties"
  */
-public final class Error extends MapType {
+public final class Error extends MapType
+{
 
     @Override
-    public Error watch(Consumer<Flyweight> notifier) {
+    public Error watch(Consumer<Flyweight> notifier)
+    {
         super.watch(notifier);
         return this;
     }
 
     @Override
-    public Error wrap(MutableDirectBuffer buffer, int offset) {
+    public Error wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         return this;
     }

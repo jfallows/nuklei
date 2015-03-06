@@ -26,16 +26,18 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 3.5.7 "Standard Distribution Mode"
  */
-public enum DistributionMode {
+public enum DistributionMode
+{
     MOVE, COPY;
 
-    public static final DirectBufferAccessor<DistributionMode> READ = (DirectBuffer buffer, int offset, int size) -> {
+    public static final DirectBufferAccessor<DistributionMode> READ = (DirectBuffer buffer, int offset, int size) ->
+    {
         switch (buffer.getByte(offset)) {
         case 'm':
-            // TODO: verify "move" matches entirely 
+            // TODO: verify "move" matches entirely
             return DistributionMode.MOVE;
         case 'c':
-            // TODO: verify "copy" matches entirely 
+            // TODO: verify "copy" matches entirely
             return DistributionMode.COPY;
         default:
             return null;
@@ -48,11 +50,16 @@ public enum DistributionMode {
     private static final int MOVE_LENGTH = MOVE_BYTES.length;
     private static final int COPY_LENGTH = COPY_BYTES.length;
 
-    public static final MutableDirectBufferMutator<DistributionMode> WRITE = new MutableDirectBufferMutator<DistributionMode>() {
+    public static final MutableDirectBufferMutator<DistributionMode> WRITE = new MutableDirectBufferMutator<DistributionMode>()
+    {
 
         @Override
-        public int mutate(org.kaazing.nuklei.function.MutableDirectBufferMutator.Mutation mutation, MutableDirectBuffer buffer, DistributionMode policy) {
-            switch (policy) {
+        public int mutate(org.kaazing.nuklei.function.MutableDirectBufferMutator.Mutation mutation,
+                          MutableDirectBuffer buffer,
+                          DistributionMode policy)
+        {
+            switch (policy)
+            {
             case MOVE:
                 int moveOffset = mutation.maxOffset(MOVE_LENGTH);
                 buffer.putBytes(moveOffset, MOVE_BYTES);

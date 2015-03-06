@@ -22,7 +22,7 @@ import org.kaazing.nuklei.amqp_1_0.codec.messaging.Performative;
 import org.kaazing.nuklei.amqp_1_0.codec.types.DynamicType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.ULongType;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 public final class Frame extends FlyweightBE {
 
@@ -57,7 +57,7 @@ public final class Frame extends FlyweightBE {
     }
 
     @Override
-    public Frame wrap(MutableDirectBuffer buffer, int offset) {
+    public Frame wrap(DirectBuffer buffer, int offset) {
         super.wrap(buffer, offset);
         return this;
     }
@@ -71,16 +71,16 @@ public final class Frame extends FlyweightBE {
     }
 
     public Frame setLength(long value) {
-        uint32Put(buffer(), offset() + OFFSET_LENGTH, value, BIG_ENDIAN);
+        uint32Put(mutableBuffer(), offset() + OFFSET_LENGTH, value, BIG_ENDIAN);
         return this;
     }
     
     public long getLength() {
-        return uint32Get(buffer(), offset() + OFFSET_LENGTH, BIG_ENDIAN);
+        return uint32Get(mutableBuffer(), offset() + OFFSET_LENGTH, BIG_ENDIAN);
     }
 
     public Frame setDataOffset(int value) {
-        uint8Put(buffer(), offset() + OFFSET_DATA_OFFSET, (short) value);
+        uint8Put(mutableBuffer(), offset() + OFFSET_DATA_OFFSET, (short) value);
         return this;
     }
 
@@ -89,7 +89,7 @@ public final class Frame extends FlyweightBE {
     }
 
     public Frame setType(int value) {
-        uint8Put(buffer(), offset() + OFFSET_TYPE, (short) value);
+        uint8Put(mutableBuffer(), offset() + OFFSET_TYPE, (short) value);
         return this;
     }
 
@@ -98,7 +98,7 @@ public final class Frame extends FlyweightBE {
     }
 
     public Frame setChannel(int value) {
-        uint16Put(buffer(), offset() + OFFSET_CHANNEL, value);
+        uint16Put(mutableBuffer(), offset() + OFFSET_CHANNEL, value);
         return this;
     }
 

@@ -25,41 +25,48 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 3.5.8 "Filter Set"
  */
-public final class FilterSet extends MapType {
+public final class FilterSet extends MapType
+{
 
     @Override
-    public FilterSet watch(Consumer<Flyweight> notifier) {
+    public FilterSet watch(Consumer<Flyweight> notifier)
+    {
         super.watch(notifier);
         return this;
     }
 
     @Override
-    public FilterSet wrap(MutableDirectBuffer buffer, int offset) {
+    public FilterSet wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         return this;
     }
-    
-    public static final class Embedded<T> extends MapType {
+
+    public static final class Embedded<T> extends MapType
+    {
 
         private final T parent;
-        
+
         public Embedded(T parent) {
             this.parent = parent;
         }
 
         @Override
-        public Embedded<T> watch(Consumer<Flyweight> notifier) {
+        public Embedded<T> watch(Consumer<Flyweight> notifier)
+        {
             super.watch(notifier);
             return this;
         }
 
         @Override
-        public Embedded<T> wrap(MutableDirectBuffer buffer, int offset) {
+        public Embedded<T> wrap(MutableDirectBuffer buffer, int offset)
+        {
             super.wrap(buffer, offset);
             return this;
         }
-        
-        public T done() {
+
+        public T done()
+        {
             return parent;
         }
     }

@@ -25,7 +25,8 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 1.6.12 "double"
  */
-public final class DoubleType extends Type {
+public final class DoubleType extends Type
+{
 
     private static final int OFFSET_KIND = 0;
     private static final int SIZEOF_KIND = BitUtil.SIZE_OF_BYTE;
@@ -38,31 +39,37 @@ public final class DoubleType extends Type {
     private static final short WIDTH_KIND_8 = 0x82;
 
     @Override
-    public Kind kind() {
+    public Kind kind()
+    {
         return Kind.DOUBLE;
     }
 
     @Override
-    public DoubleType watch(Consumer<Flyweight> observer) {
+    public DoubleType watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public DoubleType wrap(MutableDirectBuffer buffer, int offset) {
+    public DoubleType wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         return this;
     }
 
-    public DoubleType set(double value) {
+    public DoubleType set(double value)
+    {
         widthKind(WIDTH_KIND_8);
         doublePut(buffer(), offset() + OFFSET_VALUE, value);
         notifyChanged();
         return this;
     }
-    
-    public double get() {
-        switch (widthKind()) {
+
+    public double get()
+    {
+        switch (widthKind())
+        {
         case WIDTH_KIND_8:
             return doubleGet(buffer(), offset() + OFFSET_VALUE);
         default:
@@ -70,15 +77,18 @@ public final class DoubleType extends Type {
         }
     }
 
-    public int limit() {
+    public int limit()
+    {
         return offset() + SIZEOF_DOUBLE;
     }
 
-    private void widthKind(short value) {
+    private void widthKind(short value)
+    {
         uint8Put(buffer(), offset() + OFFSET_KIND, value);
     }
     
-    private short widthKind() {
+    private short widthKind()
+    {
         return uint8Get(buffer(), offset() + OFFSET_KIND);
     }
 }

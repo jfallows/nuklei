@@ -16,7 +16,7 @@
 package org.kaazing.nuklei.amqp_1_0.sender;
 
 import org.kaazing.nuklei.Flyweight;
-import org.kaazing.nuklei.net.TcpManagerHeadersDecoder;
+import org.kaazing.nuklei.protocol.tcp.TcpManagerHeadersDecoder;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 

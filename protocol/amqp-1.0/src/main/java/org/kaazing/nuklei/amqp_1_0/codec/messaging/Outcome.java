@@ -31,11 +31,14 @@ public enum Outcome {
 
     ACCEPTED, REJECTED, RELEASED, MODIFIED, DECLARED;
 
-    public static final LongFunction<Outcome> READ = new LongFunction<Outcome>() {
+    public static final LongFunction<Outcome> READ = new LongFunction<Outcome>()
+    {
 
         @Override
-        public Outcome apply(long value) {
-            switch ((int) value) {
+        public Outcome apply(long value)
+        {
+            switch ((int) value)
+            {
             case 0x24:
                 return ACCEPTED;
             case 0x25:
@@ -51,8 +54,9 @@ public enum Outcome {
             }
         }
     };
-    
-    public static final ToLongFunction<Outcome> WRITE = new ToLongFunction<Outcome>() {
+
+    public static final ToLongFunction<Outcome> WRITE = new ToLongFunction<Outcome>()
+    {
 
         @Override
         public long applyAsLong(Outcome value) {

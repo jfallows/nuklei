@@ -25,16 +25,19 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 3.5.9 "Node Properties"
  */
-public final class NodeProperties extends Fields {
+public final class NodeProperties extends Fields
+{
 
     @Override
-    public NodeProperties watch(Consumer<Flyweight> notifier) {
+    public NodeProperties watch(Consumer<Flyweight> notifier)
+    {
         super.watch(notifier);
         return this;
     }
 
     @Override
-    public NodeProperties wrap(MutableDirectBuffer buffer, int offset) {
+    public NodeProperties wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         return this;
     }
