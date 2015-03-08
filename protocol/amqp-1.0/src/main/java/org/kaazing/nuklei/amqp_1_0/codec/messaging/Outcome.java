@@ -27,7 +27,8 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 3.4 "Delivery State"
  */
-public enum Outcome {
+public enum Outcome
+{
 
     ACCEPTED, REJECTED, RELEASED, MODIFIED, DECLARED;
 
@@ -59,8 +60,10 @@ public enum Outcome {
     {
 
         @Override
-        public long applyAsLong(Outcome value) {
-            switch (value) {
+        public long applyAsLong(Outcome value)
+        {
+            switch (value)
+            {
             case ACCEPTED:
                 return 0x24;
             case REJECTED:
@@ -75,29 +78,34 @@ public enum Outcome {
                 throw new IllegalStateException();
             }
         }
-        
+
     };
 
-    public static final class Described extends CompositeType.Described {
+    public static final class Described extends CompositeType.Described
+    {
 
         @Override
-        public Described watch(Consumer<Flyweight> notifier) {
+        public Described watch(Consumer<Flyweight> notifier)
+        {
             super.watch(notifier);
             return this;
         }
-    
+
         @Override
-        public Described wrap(MutableDirectBuffer buffer, int offset) {
+        public Described wrap(MutableDirectBuffer buffer, int offset)
+        {
             super.wrap(buffer, offset);
             return this;
         }
 
-        public Described setDeliveryState(Outcome value) {
+        public Described setDeliveryState(Outcome value)
+        {
             setDescriptor(WRITE, value);
             return this;
         }
-        
-        public Outcome getOutcome() {
+
+        public Outcome getOutcome()
+        {
             return getDescriptor(READ);
         }
     }

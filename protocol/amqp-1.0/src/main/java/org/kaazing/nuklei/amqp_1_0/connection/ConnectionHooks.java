@@ -22,19 +22,40 @@ import org.kaazing.nuklei.amqp_1_0.codec.transport.Open;
 import org.kaazing.nuklei.amqp_1_0.function.FrameConsumer;
 import org.kaazing.nuklei.amqp_1_0.function.HeaderConsumer;
 
-public class ConnectionHooks<C, S, L> {
+public class ConnectionHooks<C, S, L>
+{
 
-    public Consumer<Connection<C, S, L>> whenInitialized = (c) -> {};
-    public Consumer<Connection<C, S, L>> whenError = (c) -> {};
+    public Consumer<Connection<C, S, L>> whenInitialized = (c) ->
+    {
+    };
+    public Consumer<Connection<C, S, L>> whenError = (c) ->
+    {
+    };
 
-    public HeaderConsumer<Connection<C, S, L>> whenHeaderReceived = (c, h) -> {};
-    public HeaderConsumer<Connection<C, S, L>> whenHeaderSent = (c, h) -> {};
-    public HeaderConsumer<Connection<C, S, L>> whenHeaderReceivedNotEqualSent = (c, h) -> {};
-    public HeaderConsumer<Connection<C, S, L>> whenHeaderSentNotEqualReceived = (c, h) -> {};
+    public HeaderConsumer<Connection<C, S, L>> whenHeaderReceived = (c, h) ->
+    {
+    };
+    public HeaderConsumer<Connection<C, S, L>> whenHeaderSent = (c, h) ->
+    {
+    };
+    public HeaderConsumer<Connection<C, S, L>> whenHeaderReceivedNotEqualSent = (c, h) ->
+    {
+    };
+    public HeaderConsumer<Connection<C, S, L>> whenHeaderSentNotEqualReceived = (c, h) ->
+    {
+    };
 
-    public FrameConsumer<Connection<C, S, L>, Open> whenOpenReceived = (p, f, o) -> {};
-    public FrameConsumer<Connection<C, S, L>, Open> whenOpenSent = (p, f, o) -> {};
-    public FrameConsumer<Connection<C, S, L>, Close> whenCloseReceived = (p, f, c) -> {};
-    public FrameConsumer<Connection<C, S, L>, Close> whenCloseSent = (p, f, c) -> {};
-    
+    public FrameConsumer<Connection<C, S, L>, Open> whenOpenReceived = (p, f, o) ->
+    {
+    };
+    public FrameConsumer<Connection<C, S, L>, Open> whenOpenSent = (p, f, o) ->
+    {
+    };
+    public FrameConsumer<Connection<C, S, L>, Close> whenCloseReceived = (p, f, c) ->
+    {
+    };
+    public FrameConsumer<Connection<C, S, L>, Close> whenCloseSent = (p, f, c) ->
+    {
+    };
+
 }

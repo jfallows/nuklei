@@ -21,7 +21,8 @@ import org.kaazing.nuklei.Flyweight;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public class DynamicType extends Type {
+public class DynamicType extends Type
+{
 
     private static final int WIDTH_KIND_0_NULL = 0x40;
     private static final int WIDTH_KIND_0_TRUE = 0x41;
@@ -62,10 +63,12 @@ public class DynamicType extends Type {
     private static final int WIDTH_KIND_4_MAP = 0xd1;
     private static final int WIDTH_KIND_1_ARRAY = 0xe0;
     private static final int WIDTH_KIND_4_ARRAY = 0xf0;
-    
+
     @Override
-    public Kind kind() {
-        switch (uint8Get(buffer(), offset())) {
+    public Kind kind()
+    {
+        switch (uint8Get(buffer(), offset()))
+        {
         case WIDTH_KIND_1_ARRAY:
         case WIDTH_KIND_4_ARRAY:
             return Kind.ARRAY;
@@ -136,19 +139,23 @@ public class DynamicType extends Type {
     }
 
     @Override
-    public DynamicType watch(Consumer<Flyweight> observer) {
+    public DynamicType watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public DynamicType wrap(MutableDirectBuffer buffer, int offset) {
+    public DynamicType wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         return this;
     }
 
-    public int limit() {
-        switch (uint8Get(buffer(), offset())) {
+    public int limit()
+    {
+        switch (uint8Get(buffer(), offset()))
+        {
         case WIDTH_KIND_0_NULL:
         case WIDTH_KIND_0_TRUE:
         case WIDTH_KIND_0_FALSE:
@@ -202,6 +209,6 @@ public class DynamicType extends Type {
             return offset() + 9 + int32Get(buffer(), offset() + 5);
         default:
             throw new IllegalArgumentException();
-        }        
+        }
     }
 }

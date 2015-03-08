@@ -29,11 +29,14 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 2.7.2 "Begin"
  */
-public final class Begin extends CompositeType {
+public final class Begin extends CompositeType
+{
 
-    public static final ThreadLocal<Begin> LOCAL_REF = new ThreadLocal<Begin>() {
+    public static final ThreadLocal<Begin> LOCAL_REF = new ThreadLocal<Begin>()
+    {
         @Override
-        protected Begin initialValue() {
+        protected Begin initialValue()
+        {
             return new Begin();
         }
     };
@@ -49,137 +52,195 @@ public final class Begin extends CompositeType {
     private final ArrayType desiredCapabilities;
     private final Fields properties;
 
-    public Begin() {
-        remoteChannel = new UShortType().watch((owner) -> { limit(1, owner.limit()); });
-        nextOutgoingId = new UIntType().watch((owner) -> { limit(2, owner.limit()); });;
-        incomingWindow = new UIntType().watch((owner) -> { limit(3, owner.limit()); });;
-        outgoingWindow = new UIntType().watch((owner) -> { limit(4, owner.limit()); });;
-        handleMax = new UIntType().watch((owner) -> { limit(5, owner.limit()); });;
-        offeredCapabilities = new ArrayType().watch((owner) -> { limit(6, owner.limit()); });;
-        desiredCapabilities = new ArrayType().watch((owner) -> { limit(7, owner.limit()); });;
-        properties = new Fields().watch((owner) -> { limit(8, owner.limit()); });;
+    public Begin()
+    {
+        remoteChannel = new UShortType().watch((owner) ->
+        {
+            limit(1, owner.limit());
+        });
+        nextOutgoingId = new UIntType().watch((owner) ->
+        {
+            limit(2, owner.limit());
+        });
+
+        incomingWindow = new UIntType().watch((owner) ->
+        {
+            limit(3, owner.limit());
+        });
+
+        outgoingWindow = new UIntType().watch((owner) ->
+        {
+            limit(4, owner.limit());
+        });
+
+        handleMax = new UIntType().watch((owner) ->
+        {
+            limit(5, owner.limit());
+        });
+
+        offeredCapabilities = new ArrayType().watch((owner) ->
+        {
+            limit(6, owner.limit());
+        });
+
+        desiredCapabilities = new ArrayType().watch((owner) ->
+        {
+            limit(7, owner.limit());
+        });
+
+        properties = new Fields().watch((owner) ->
+        {
+            limit(8, owner.limit());
+        });
     }
 
     @Override
-    public Begin watch(Consumer<Flyweight> observer) {
+    public Begin watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public Begin wrap(MutableDirectBuffer buffer, int offset) {
+    public Begin wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         return this;
     }
-    
+
     @Override
-    public Begin maxLength(int value) {
+    public Begin maxLength(int value)
+    {
         super.maxLength(value);
         return this;
     }
 
     @Override
-    public Begin maxCount(int value) {
+    public Begin maxCount(int value)
+    {
         super.maxCount(value);
         return this;
     }
 
-    public Begin setRemoteChannel(int value) {
+    public Begin setRemoteChannel(int value)
+    {
         remoteChannel().set(value);
         return this;
     }
-    
-    public long getRemoteChannel() {
+
+    public long getRemoteChannel()
+    {
         return remoteChannel().get();
     }
 
-    public Begin setNextOutgoingId(long value) {
+    public Begin setNextOutgoingId(long value)
+    {
         nextOutgoingId().set(value);
         return this;
     }
-    
-    public long getNextOutgoingId() {
+
+    public long getNextOutgoingId()
+    {
         return nextOutgoingId().get();
     }
 
-    public Begin setIncomingWindow(long value) {
+    public Begin setIncomingWindow(long value)
+    {
         incomingWindow().set(value);
         return this;
     }
-    
-    public long getIncomingWindow() {
+
+    public long getIncomingWindow()
+    {
         return incomingWindow().get();
     }
 
-    public Begin setOutgoingWindow(long value) {
+    public Begin setOutgoingWindow(long value)
+    {
         outgoingWindow().set(value);
         return this;
     }
-    
-    public long getOutgoingWindow() {
+
+    public long getOutgoingWindow()
+    {
         return outgoingWindow().get();
     }
 
-    public Begin setHandleMax(long value) {
+    public Begin setHandleMax(long value)
+    {
         handleMax().set(value);
         return this;
     }
-    
-    public long getHandleMax() {
+
+    public long getHandleMax()
+    {
         return handleMax().get();
     }
 
-    public Begin setOfferedCapabilities(ArrayType value) {
+    public Begin setOfferedCapabilities(ArrayType value)
+    {
         offeredCapabilities().set(value);
         return this;
     }
-    
-    public ArrayType getOfferedCapabilities() {
+
+    public ArrayType getOfferedCapabilities()
+    {
         return offeredCapabilities();
     }
 
-    public Begin setDesiredCapabilities(ArrayType value) {
+    public Begin setDesiredCapabilities(ArrayType value)
+    {
         desiredCapabilities().set(value);
         return this;
     }
-    
-    public ArrayType getDesiredCapabilities() {
+
+    public ArrayType getDesiredCapabilities()
+    {
         return desiredCapabilities();
     }
 
-    public Fields getProperties() {
+    public Fields getProperties()
+    {
         return properties();
     }
 
-    private UShortType remoteChannel() {
-        return remoteChannel.wrap(buffer(), offsetBody());
+    private UShortType remoteChannel()
+    {
+        return remoteChannel.wrap(mutableBuffer(), offsetBody());
     }
 
-    private UIntType nextOutgoingId() {
-        return nextOutgoingId.wrap(buffer(), remoteChannel().limit());
-    }
-    
-    private UIntType incomingWindow() {
-        return incomingWindow.wrap(buffer(), nextOutgoingId().limit());
+    private UIntType nextOutgoingId()
+    {
+        return nextOutgoingId.wrap(mutableBuffer(), remoteChannel().limit());
     }
 
-    private UIntType outgoingWindow() {
-        return outgoingWindow.wrap(buffer(), incomingWindow().limit());
+    private UIntType incomingWindow()
+    {
+        return incomingWindow.wrap(mutableBuffer(), nextOutgoingId().limit());
     }
 
-    private UIntType handleMax() {
-        return handleMax.wrap(buffer(), outgoingWindow().limit());
+    private UIntType outgoingWindow()
+    {
+        return outgoingWindow.wrap(mutableBuffer(), incomingWindow().limit());
     }
 
-    private ArrayType offeredCapabilities() {
-        return offeredCapabilities.wrap(buffer(), handleMax().limit());
+    private UIntType handleMax()
+    {
+        return handleMax.wrap(mutableBuffer(), outgoingWindow().limit());
     }
 
-    private ArrayType desiredCapabilities() {
-        return desiredCapabilities.wrap(buffer(), offeredCapabilities().limit());
+    private ArrayType offeredCapabilities()
+    {
+        return offeredCapabilities.wrap(mutableBuffer(), handleMax().limit());
     }
 
-    private Fields properties() {
-        return properties.wrap(buffer(), desiredCapabilities().limit());
+    private ArrayType desiredCapabilities()
+    {
+        return desiredCapabilities.wrap(mutableBuffer(), offeredCapabilities().limit());
+    }
+
+    private Fields properties()
+    {
+        return properties.wrap(mutableBuffer(), desiredCapabilities().limit());
     }
 }

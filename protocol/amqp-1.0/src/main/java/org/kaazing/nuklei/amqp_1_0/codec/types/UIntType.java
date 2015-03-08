@@ -29,7 +29,8 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 1.6.5 "uint"
  */
-public final class UIntType extends Type {
+public final class UIntType extends Type
+{
 
     private static final int OFFSET_KIND = 0;
     private static final int SIZEOF_KIND = BitUtil.SIZE_OF_BYTE;
@@ -38,34 +39,40 @@ public final class UIntType extends Type {
     private static final int SIZEOF_VALUE_MAX = BitUtil.SIZE_OF_INT;
 
     static final int SIZEOF_UINT_MAX = SIZEOF_KIND + SIZEOF_VALUE_MAX;
-    
+
     private static final short WIDTH_KIND_0 = 0x43;
     private static final short WIDTH_KIND_1 = 0x52;
     private static final short WIDTH_KIND_4 = 0x70;
 
     @Override
-    public Kind kind() {
+    public Kind kind()
+    {
         return Kind.UINT;
     }
 
     @Override
-    public UIntType watch(Consumer<Flyweight> observer) {
+    public UIntType watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public UIntType wrap(MutableDirectBuffer buffer, int offset) {
+    public UIntType wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         return this;
     }
 
-    public <T> UIntType set(ToLongFunction<T> mutator, T value) {
+    public <T> UIntType set(ToLongFunction<T> mutator, T value)
+    {
         return set(mutator.applyAsLong(value));
     }
 
-    public UIntType set(long value) {
-        switch ((int) highestOneBit(value)) {
+    public UIntType set(long value)
+    {
+        switch ((int) highestOneBit(value))
+        {
         case 0:
             widthKind(WIDTH_KIND_0);
             break;
@@ -78,24 +85,27 @@ public final class UIntType extends Type {
         case 64:
         case 128:
             widthKind(WIDTH_KIND_1);
-            uint8Put(buffer(), offset() + OFFSET_VALUE, (short) value);
+            uint8Put(mutableBuffer(), offset() + OFFSET_VALUE, (short) value);
             break;
         default:
             widthKind(WIDTH_KIND_4);
-            uint32Put(buffer(), offset() + OFFSET_VALUE, value);
+            uint32Put(mutableBuffer(), offset() + OFFSET_VALUE, value);
             break;
         }
-        
+
         notifyChanged();
         return this;
     }
 
-    public <T> T get(LongFunction<T> accessor) {
+    public <T> T get(LongFunction<T> accessor)
+    {
         return accessor.apply(get());
     }
 
-    public long get() {
-        switch (widthKind()) {
+    public long get()
+    {
+        switch (widthKind())
+        {
         case WIDTH_KIND_0:
             return 0L;
         case WIDTH_KIND_1:
@@ -107,8 +117,10 @@ public final class UIntType extends Type {
         }
     }
 
-    public int limit() {
-        switch (widthKind()) {
+    public int limit()
+    {
+        switch (widthKind())
+        {
         case WIDTH_KIND_0:
             return offset() + OFFSET_VALUE;
         case WIDTH_KIND_1:
@@ -119,12 +131,14 @@ public final class UIntType extends Type {
             throw new IllegalStateException();
         }
     }
-    
-    private void widthKind(short value) {
-        uint8Put(buffer(), offset() + OFFSET_KIND, value);
+
+    private void widthKind(short value)
+    {
+        uint8Put(mutableBuffer(), offset() + OFFSET_KIND, value);
     }
 
-    private short widthKind() {
+    private short widthKind()
+    {
         return uint8Get(buffer(), offset() + OFFSET_KIND);
     }
 

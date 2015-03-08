@@ -27,36 +27,41 @@ import org.kaazing.nuklei.amqp_1_0.link.Link;
 import org.kaazing.nuklei.amqp_1_0.link.LinkFactory;
 import org.kaazing.nuklei.amqp_1_0.link.LinkHandler;
 
-public final class SessionHandler<S, L> {
+public final class SessionHandler<S, L>
+{
 
     private final LinkFactory<S, L> linkFactory;
     private final LinkHandler<L> linkHandler;
 
-    public SessionHandler(LinkFactory<S, L> linkFactory, LinkHandler<L> linkHandler) {
+    public SessionHandler(LinkFactory<S, L> linkFactory, LinkHandler<L> linkHandler)
+    {
         this.linkFactory = linkFactory;
         this.linkHandler = linkHandler;
     }
 
-    public void init(Session<S, L> session) {
+    public void init(Session<S, L> session)
+    {
         session.stateMachine.start(session);
     }
-    
-    public void handle(Session<S, L> session, Frame frame) {
-        switch (frame.getPerformative()) {
+
+    public void handle(Session<S, L> session, Frame frame)
+    {
+        switch (frame.getPerformative())
+        {
         case BEGIN:
-            Begin begin = Begin.LOCAL_REF.get().wrap(frame.buffer(), frame.bodyOffset());
+            Begin begin = Begin.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset());
             session.stateMachine.received(session, frame, begin);
             break;
         case FLOW:
-            Flow flow = Flow.LOCAL_REF.get().wrap(frame.buffer(), frame.bodyOffset());
+            Flow flow = Flow.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset());
             session.stateMachine.received(session, frame, flow);
             break;
         case DISPOSITION:
-            Disposition disposition = Disposition.LOCAL_REF.get().wrap(frame.buffer(), frame.bodyOffset());
+            Disposition disposition = Disposition.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset());
             session.stateMachine.received(session, frame, disposition);
             break;
         case END:
-            End end = End.LOCAL_REF.get().wrap(frame.buffer(), frame.bodyOffset());
+            End end = End.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset());
             session.stateMachine.received(session, frame, end);
             break;
         case ATTACH:
@@ -74,11 +79,13 @@ public final class SessionHandler<S, L> {
         }
     }
 
-    private void handleLinkAttach(Session<S, L> session, Frame frame) {
-        Attach attach = Attach.LOCAL_REF.get().wrap(frame.buffer(), frame.bodyOffset());
+    private void handleLinkAttach(Session<S, L> session, Frame frame)
+    {
+        Attach attach = Attach.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset());
         int newHandle = (int) attach.getHandle();
         Link<L> newLink = session.links.get(newHandle);
-        if (newLink == null) {
+        if (newLink == null)
+        {
             newLink = linkFactory.newLink(session);
             session.links.put(newHandle, newLink);
             linkHandler.init(newLink);
@@ -86,26 +93,32 @@ public final class SessionHandler<S, L> {
         linkHandler.handle(newLink, frame);
     }
 
-    private void handleLinkTransfer(Session<S, L> session, Frame frame) {
-        Transfer transfer = Transfer.LOCAL_REF.get().wrap(frame.buffer(), frame.bodyOffset());
+    private void handleLinkTransfer(Session<S, L> session, Frame frame)
+    {
+        Transfer transfer = Transfer.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset());
         int handle = (int) transfer.getHandle();
         Link<L> link = session.links.get(handle);
-        if (link == null) {
+        if (link == null)
+        {
             session.stateMachine.error(session);
         }
-        else {
+        else
+        {
             linkHandler.handle(link, frame);
         }
     }
 
-    private void handleLinkDetach(Session<S, L> session, Frame frame) {
-        Detach detach = Detach.LOCAL_REF.get().wrap(frame.buffer(), frame.bodyOffset());
+    private void handleLinkDetach(Session<S, L> session, Frame frame)
+    {
+        Detach detach = Detach.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset());
         int oldHandle = (int) detach.getHandle();
         Link<L> oldLink = session.links.remove(oldHandle);
-        if (oldLink == null) {
+        if (oldLink == null)
+        {
             session.stateMachine.error(session);
         }
-        else {
+        else
+        {
             linkHandler.handle(oldLink, frame);
         }
     }

@@ -39,55 +39,60 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 @RunWith(Theories.class)
-public class DoubleTypeTest {
+public class DoubleTypeTest
+{
 
     private static final int BUFFER_CAPACITY = 64;
-    
+
     @DataPoint
     public static final int ZERO_OFFSET = 0;
-    
+
     @DataPoint
     public static final int NON_ZERO_OFFSET = new Random().nextInt(BUFFER_CAPACITY - SIZEOF_DOUBLE - 1) + 1;
 
     private final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
 
     @Theory
-    public void shouldEncode(int offset) {
+    public void shouldEncode(int offset)
+    {
         DoubleType doubleType = new DoubleType();
         doubleType.wrap(buffer, offset);
         doubleType.set(12345678d);
-        
+
         assertEquals(0x82, uint8Get(buffer, offset));
         assertEquals(12345678d, longBitsToDouble(int64Get(buffer, offset + 1)), 0.001d);
     }
-    
+
     @Theory
-    public void shouldDecode(int offset) {
+    public void shouldDecode(int offset)
+    {
         buffer.putByte(offset, (byte) 0x82);
         buffer.putLong(offset + 1, doubleToLongBits(12345678d), BIG_ENDIAN);
-        
+
         DoubleType doubleType = new DoubleType();
         doubleType.wrap(buffer, offset);
-        
+
         assertEquals(12345678d, doubleType.get(), 0.001f);
         assertEquals(offset + 9, doubleType.limit());
     }
-    
+
     @Theory
-    public void shouldEncodeThenDecode(int offset) {
+    public void shouldEncodeThenDecode(int offset)
+    {
         DoubleType doubleType = new DoubleType();
         doubleType.wrap(buffer, offset);
         doubleType.set(12345678d);
-        
+
         assertEquals(12345678d, doubleType.get(), 0.001f);
         assertEquals(offset + 9, doubleType.limit());
     }
-    
+
     @Theory
     @Test(expected = Exception.class)
-    public void shouldNotDecode(int offset) {
+    public void shouldNotDecode(int offset)
+    {
         buffer.putByte(offset, (byte) 0x00);
-        
+
         DoubleType doubleType = new DoubleType();
         doubleType.wrap(buffer, offset);
 
@@ -96,15 +101,16 @@ public class DoubleTypeTest {
 
     @Theory
     @SuppressWarnings("unchecked")
-    public void shouldNotifyChanged(int offset) {
+    public void shouldNotifyChanged(int offset)
+    {
         final Consumer<Flyweight> observer = mock(Consumer.class);
-        
+
         DoubleType doubleType = new DoubleType();
         doubleType.watch(observer);
         doubleType.wrap(buffer, offset);
         doubleType.set(12345678d);
-        
+
         verify(observer).accept(doubleType);
     }
-    
+
 }

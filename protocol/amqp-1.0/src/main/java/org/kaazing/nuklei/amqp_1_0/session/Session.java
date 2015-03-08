@@ -20,8 +20,9 @@ import org.kaazing.nuklei.amqp_1_0.sender.Sender;
 
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 
-public class Session<S, L> {
-    
+public class Session<S, L>
+{
+
     public final SessionStateMachine<S, L> stateMachine;
     public final Sender sender;
     public final Int2ObjectHashMap<Link<L>> links;
@@ -29,7 +30,8 @@ public class Session<S, L> {
     public SessionState state;
     public S parameter;
 
-    public Session(SessionStateMachine<S, L> stateMachine, Sender sender) {
+    public Session(SessionStateMachine<S, L> stateMachine, Sender sender)
+    {
         this.stateMachine = stateMachine;
         this.sender = sender;
         this.links = new Int2ObjectHashMap<>();

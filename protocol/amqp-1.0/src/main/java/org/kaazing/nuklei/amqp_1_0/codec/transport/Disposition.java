@@ -29,11 +29,14 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 2.7.6 "Disposition"
  */
-public final class Disposition extends CompositeType {
+public final class Disposition extends CompositeType
+{
 
-    public static final ThreadLocal<Disposition> LOCAL_REF = new ThreadLocal<Disposition>() {
+    public static final ThreadLocal<Disposition> LOCAL_REF = new ThreadLocal<Disposition>()
+    {
         @Override
-        protected Disposition initialValue() {
+        protected Disposition initialValue()
+        {
             return new Disposition();
         }
     };
@@ -45,110 +48,150 @@ public final class Disposition extends CompositeType {
     private final DeliveryState.Described state;
     private final BooleanType batchable;
 
-    public Disposition() {
-        role = new BooleanType().watch((owner) -> { limit(1, owner.limit()); });
-        first = new UIntType().watch((owner) -> { limit(2, owner.limit()); });
-        last = new UIntType().watch((owner) -> { limit(3, owner.limit()); });;
-        settled = new BooleanType().watch((owner) -> { limit(4, owner.limit()); });
-        state = new DeliveryState.Described().watch((owner) -> { limit(5, owner.limit()); });
-        batchable = new BooleanType().watch((owner) -> { limit(6, owner.limit()); });
+    public Disposition()
+    {
+        role = new BooleanType().watch((owner) ->
+        {
+            limit(1, owner.limit());
+        });
+        first = new UIntType().watch((owner) ->
+        {
+            limit(2, owner.limit());
+        });
+        last = new UIntType().watch((owner) ->
+        {
+            limit(3, owner.limit());
+        });
+
+        settled = new BooleanType().watch((owner) ->
+        {
+            limit(4, owner.limit());
+        });
+        state = new DeliveryState.Described().watch((owner) ->
+        {
+            limit(5, owner.limit());
+        });
+        batchable = new BooleanType().watch((owner) ->
+        {
+            limit(6, owner.limit());
+        });
     }
 
     @Override
-    public Disposition watch(Consumer<Flyweight> observer) {
+    public Disposition watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public Disposition wrap(MutableDirectBuffer buffer, int offset) {
+    public Disposition wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         return this;
     }
-    
+
     @Override
-    public Disposition maxLength(int value) {
+    public Disposition maxLength(int value)
+    {
         super.maxLength(value);
         return this;
     }
 
     @Override
-    public Disposition maxCount(int value) {
+    public Disposition maxCount(int value)
+    {
         super.maxCount(value);
         return this;
     }
 
-    public Disposition setRole(Role value) {
+    public Disposition setRole(Role value)
+    {
         role().set(Role.WRITE, value);
         return this;
     }
-    
-    public Role getRole() {
+
+    public Role getRole()
+    {
         return role().get(Role.READ);
     }
 
-
-    public Disposition setFirst(long value) {
+    public Disposition setFirst(long value)
+    {
         first().set(value);
         return this;
     }
-    
-    public long getFirst() {
+
+    public long getFirst()
+    {
         return first().get();
     }
-    
-    public Disposition setLast(long value) {
+
+    public Disposition setLast(long value)
+    {
         last().set(value);
         return this;
     }
-    
-    public long getLast() {
+
+    public long getLast()
+    {
         return last().get();
     }
 
-    public Disposition setSettled(boolean value) {
+    public Disposition setSettled(boolean value)
+    {
         settled().set(value);
         return this;
     }
-    
-    public boolean getSettled() {
+
+    public boolean getSettled()
+    {
         return settled().get();
     }
 
-    public DeliveryState.Described getState() {
+    public DeliveryState.Described getState()
+    {
         return state();
     }
 
-    public Disposition setBatchable(boolean value) {
+    public Disposition setBatchable(boolean value)
+    {
         batchable().set(value);
         return this;
     }
-    
-    public boolean getBatchable() {
+
+    public boolean getBatchable()
+    {
         return batchable().get();
     }
 
-    private BooleanType role() {
+    private BooleanType role()
+    {
         return role.wrap(buffer(), offsetBody());
     }
 
-    private UIntType first() {
+    private UIntType first()
+    {
         return first.wrap(buffer(), offsetBody());
     }
-    
-    private UIntType last() {
+
+    private UIntType last()
+    {
         return last.wrap(buffer(), first().limit());
     }
 
-    private BooleanType settled() {
+    private BooleanType settled()
+    {
         return settled.wrap(buffer(), last().limit());
     }
-    
-    private DeliveryState.Described state() {
+
+    private DeliveryState.Described state()
+    {
         return state.wrap(buffer(), settled().limit());
     }
 
-    private BooleanType batchable() {
+    private BooleanType batchable()
+    {
         return batchable.wrap(buffer(), state().limit());
     }
 

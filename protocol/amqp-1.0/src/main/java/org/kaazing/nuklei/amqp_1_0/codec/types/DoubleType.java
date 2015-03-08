@@ -20,7 +20,7 @@ import java.util.function.Consumer;
 import org.kaazing.nuklei.Flyweight;
 
 import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.12 "double"
@@ -35,7 +35,7 @@ public final class DoubleType extends Type
     private static final int SIZEOF_VALUE = BitUtil.SIZE_OF_DOUBLE;
 
     static final int SIZEOF_DOUBLE = SIZEOF_KIND + SIZEOF_VALUE;
-    
+
     private static final short WIDTH_KIND_8 = 0x82;
 
     @Override
@@ -52,16 +52,16 @@ public final class DoubleType extends Type
     }
 
     @Override
-    public DoubleType wrap(MutableDirectBuffer buffer, int offset)
+    public DoubleType wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 
     public DoubleType set(double value)
     {
         widthKind(WIDTH_KIND_8);
-        doublePut(buffer(), offset() + OFFSET_VALUE, value);
+        doublePut(mutableBuffer(), offset() + OFFSET_VALUE, value);
         notifyChanged();
         return this;
     }
@@ -84,9 +84,9 @@ public final class DoubleType extends Type
 
     private void widthKind(short value)
     {
-        uint8Put(buffer(), offset() + OFFSET_KIND, value);
+        uint8Put(mutableBuffer(), offset() + OFFSET_KIND, value);
     }
-    
+
     private short widthKind()
     {
         return uint8Get(buffer(), offset() + OFFSET_KIND);

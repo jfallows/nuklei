@@ -19,7 +19,8 @@ import org.kaazing.nuklei.amqp_1_0.sender.Sender;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public interface ConnectionFactory<C, S, L> {
+public interface ConnectionFactory<C, S, L>
+{
 
     Connection<C, S, L> newConnection(Sender sender, MutableDirectBuffer reassemblyBuffer);
 

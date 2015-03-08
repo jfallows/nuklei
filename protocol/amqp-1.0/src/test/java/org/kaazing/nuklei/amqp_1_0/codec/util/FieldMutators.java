@@ -24,15 +24,19 @@ import org.kaazing.nuklei.function.MutableDirectBufferMutator;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public class FieldMutators {
+public class FieldMutators
+{
 
-    public static final MutableDirectBufferMutator<String> newMutator(final Charset charset) {
-        return new MutableDirectBufferMutator<String>() {
+    public static final MutableDirectBufferMutator<String> newMutator(final Charset charset)
+    {
+        return new MutableDirectBufferMutator<String>()
+        {
             private final CharsetEncoder encoder = charset.newEncoder();
             private final int maxBytesPerChar = (int) encoder.maxBytesPerChar();
-    
+
             @Override
-            public int mutate(Mutation mutation, MutableDirectBuffer buffer, String value) {
+            public int mutate(Mutation mutation, MutableDirectBuffer buffer, String value)
+            {
                 int offset = mutation.maxOffset(value.length() * maxBytesPerChar);
                 ByteBuffer buf = buffer.byteBuffer();
                 ByteBuffer out = buf != null ? buf.duplicate() : ByteBuffer.wrap(buffer.byteArray());

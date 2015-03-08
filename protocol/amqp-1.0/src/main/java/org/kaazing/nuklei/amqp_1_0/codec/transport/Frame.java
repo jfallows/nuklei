@@ -24,11 +24,14 @@ import org.kaazing.nuklei.amqp_1_0.codec.types.ULongType;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 
-public final class Frame extends FlyweightBE {
+public final class Frame extends FlyweightBE
+{
 
-    public static final ThreadLocal<Frame> LOCAL_REF = new ThreadLocal<Frame>() {
+    public static final ThreadLocal<Frame> LOCAL_REF = new ThreadLocal<Frame>()
+    {
         @Override
-        protected Frame initialValue() {
+        protected Frame initialValue()
+        {
             return new Frame();
         }
     };
@@ -49,81 +52,98 @@ public final class Frame extends FlyweightBE {
 
     private final ULongType.Descriptor performative;
     private final DynamicType body;
-    
+
     // unit tests
-    Frame() {
+    Frame()
+    {
         performative = new ULongType.Descriptor();
         body = new DynamicType().watch((owner) -> setLength(owner.limit() - offset()));
     }
 
     @Override
-    public Frame wrap(DirectBuffer buffer, int offset) {
+    public Frame wrap(DirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         return this;
     }
 
-    public int bodyOffset() {
+    public int bodyOffset()
+    {
         return body().offset();
     }
 
-    public void bodyChanged() {
+    public void bodyChanged()
+    {
         body().notifyChanged();
     }
 
-    public Frame setLength(long value) {
+    public Frame setLength(long value)
+    {
         uint32Put(mutableBuffer(), offset() + OFFSET_LENGTH, value, BIG_ENDIAN);
         return this;
     }
-    
-    public long getLength() {
+
+    public long getLength()
+    {
         return uint32Get(mutableBuffer(), offset() + OFFSET_LENGTH, BIG_ENDIAN);
     }
 
-    public Frame setDataOffset(int value) {
+    public Frame setDataOffset(int value)
+    {
         uint8Put(mutableBuffer(), offset() + OFFSET_DATA_OFFSET, (short) value);
         return this;
     }
 
-    public int getDataOffset() {
+    public int getDataOffset()
+    {
         return uint8Get(buffer(), offset() + OFFSET_DATA_OFFSET);
     }
 
-    public Frame setType(int value) {
+    public Frame setType(int value)
+    {
         uint8Put(mutableBuffer(), offset() + OFFSET_TYPE, (short) value);
         return this;
     }
 
-    public int getType() {
+    public int getType()
+    {
         return uint8Get(buffer(), offset() + OFFSET_TYPE);
     }
 
-    public Frame setChannel(int value) {
+    public Frame setChannel(int value)
+    {
         uint16Put(mutableBuffer(), offset() + OFFSET_CHANNEL, value);
         return this;
     }
 
-    public int getChannel() {
+    public int getChannel()
+    {
         return uint16Get(buffer(), offset() + OFFSET_CHANNEL);
     }
 
-    public Frame setPerformative(Performative value) {
+    public Frame setPerformative(Performative value)
+    {
         performative().set(Performative.WRITE, value);
         return this;
     }
 
-    public Performative getPerformative() {
+    public Performative getPerformative()
+    {
         return performative().get(Performative.READ);
     }
 
-    public int limit() {
+    public int limit()
+    {
         return body().limit();
     }
 
-    private ULongType.Descriptor performative() {
+    private ULongType.Descriptor performative()
+    {
         return performative.wrap(buffer(), offset() + OFFSET_PERFORMATIVE);
     }
 
-    private DynamicType body() {
+    private DynamicType body()
+    {
         return body.wrap(buffer(), performative().limit());
     }
 }

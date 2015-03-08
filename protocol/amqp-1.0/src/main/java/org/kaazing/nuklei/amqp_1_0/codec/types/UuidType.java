@@ -26,52 +26,59 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 1.6.18 "uuid"
  */
-public final class UuidType extends Type {
+public final class UuidType extends Type
+{
 
     private static final int OFFSET_KIND = 0;
     private static final int SIZEOF_KIND = BitUtil.SIZE_OF_BYTE;
 
     private static final int OFFSET_MSB = OFFSET_KIND + SIZEOF_KIND;
     private static final int SIZEOF_MSB = BitUtil.SIZE_OF_LONG;
-    
+
     private static final int OFFSET_LSB = OFFSET_MSB + SIZEOF_MSB;
     private static final int SIZEOF_LSB = BitUtil.SIZE_OF_LONG;
-    
+
     static final int SIZEOF_UUID = SIZEOF_KIND + SIZEOF_MSB + SIZEOF_LSB;
 
     private static final short WIDTH_KIND_16 = 0x98;
 
     @Override
-    public Kind kind() {
+    public Kind kind()
+    {
         return Kind.UUID;
     }
 
     @Override
-    public UuidType watch(Consumer<Flyweight> observer) {
+    public UuidType watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public UuidType wrap(MutableDirectBuffer buffer, int offset) {
+    public UuidType wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         return this;
     }
 
-    public UuidType set(UUID uuid) {
+    public UuidType set(UUID uuid)
+    {
         long mostSigBits = uuid.getMostSignificantBits();
         long leastSigBits = uuid.getLeastSignificantBits();
 
         widthKind(WIDTH_KIND_16);
-        int64Put(buffer(), offset() + OFFSET_MSB, mostSigBits);
-        int64Put(buffer(), offset() + OFFSET_LSB, leastSigBits);
-        
+        int64Put(mutableBuffer(), offset() + OFFSET_MSB, mostSigBits);
+        int64Put(mutableBuffer(), offset() + OFFSET_LSB, leastSigBits);
+
         notifyChanged();
         return this;
     }
-    
-    public UUID get() {
-        switch (widthKind()) {
+
+    public UUID get()
+    {
+        switch (widthKind())
+        {
         case WIDTH_KIND_16:
             long mostSigBits = int64Get(buffer(), offset() + OFFSET_MSB);
             long leastSigBits = int64Get(buffer(), offset() + OFFSET_LSB);
@@ -81,15 +88,18 @@ public final class UuidType extends Type {
         }
     }
 
-    public int limit() {
+    public int limit()
+    {
         return offset() + SIZEOF_UUID;
     }
-    
-    private void widthKind(short value) {
-        uint8Put(buffer(), offset() + OFFSET_KIND, value);
+
+    private void widthKind(short value)
+    {
+        uint8Put(mutableBuffer(), offset() + OFFSET_KIND, value);
     }
-    
-    private short widthKind() {
+
+    private short widthKind()
+    {
         return uint8Get(buffer(), offset() + OFFSET_KIND);
     }
 }

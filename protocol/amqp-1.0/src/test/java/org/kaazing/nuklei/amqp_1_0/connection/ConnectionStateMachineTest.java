@@ -35,11 +35,13 @@ import org.kaazing.nuklei.amqp_1_0.sender.Sender;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public class ConnectionStateMachineTest {
+public class ConnectionStateMachineTest
+{
 
     private final ConnectionHooks<Void, Void, Void> connectionHooks = new ConnectionHooks<>();
     private final ConnectionStateMachine<Void, Void, Void> stateMachine = new ConnectionStateMachine<>(connectionHooks);
-    private final Connection<Void, Void, Void> connection = new Connection<>(stateMachine, mock(Sender.class), new UnsafeBuffer(new byte[0]));
+    private final Connection<Void, Void, Void> connection = new Connection<>(stateMachine, mock(Sender.class),
+            new UnsafeBuffer(new byte[0]));
     private final Header header = Header.LOCAL_REF.get().wrap(new UnsafeBuffer(new byte[Header.SIZEOF_HEADER]), 0);
     private final Frame frame = Frame.LOCAL_REF.get().wrap(new UnsafeBuffer(new byte[64]), 0);
     private final Open open = Open.LOCAL_REF.get();
@@ -47,19 +49,21 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldInitializeInStart() {
+    public void shouldInitializeInStart()
+    {
         connectionHooks.whenInitialized = mock(Consumer.class);
 
         stateMachine.start(connection);
 
         assertSame(ConnectionState.START, connection.state);
-        
+
         verify(connectionHooks.whenInitialized).accept(connection);
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromStartToHeaderReceivedWhenReceiveHeader() {
+    public void shouldTransitionFromStartToHeaderReceivedWhenReceiveHeader()
+    {
         connectionHooks.whenHeaderReceived = mock(HeaderConsumer.class);
         connection.state = ConnectionState.START;
 
@@ -78,7 +82,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromStartToHeaderSentWhenSendHeader() {
+    public void shouldTransitionFromStartToHeaderSentWhenSendHeader()
+    {
         connectionHooks.whenHeaderSent = mock(HeaderConsumer.class);
         connection.state = ConnectionState.START;
 
@@ -95,20 +100,15 @@ public class ConnectionStateMachineTest {
         verify(connectionHooks.whenHeaderSent).accept(connection, header);
     }
 
-
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromStartToEndWhenSendOpen() {
+    public void shouldTransitionFromStartToEndWhenSendOpen()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.START;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -120,17 +120,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromStartToEndReceiveOpen() {
+    public void shouldTransitionFromStartToEndReceiveOpen()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.START;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -142,17 +138,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromStartToEndWhenSendClose() {
+    public void shouldTransitionFromStartToEndWhenSendClose()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.START;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -164,17 +156,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromStartToEndWhenReceiveClose() {
+    public void shouldTransitionFromStartToEndWhenReceiveClose()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.START;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -186,7 +174,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromStartToDiscardingWhenError() {
+    public void shouldTransitionFromStartToDiscardingWhenError()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.START;
 
@@ -199,7 +188,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderSentToEndWhenSendHeader() {
+    public void shouldTransitionFromHeaderSentToEndWhenSendHeader()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.HEADER_SENT;
 
@@ -208,7 +198,7 @@ public class ConnectionStateMachineTest {
         header.setMajorVersion(0x01);
         header.setMinorVersion(0x00);
         header.setRevisionVersion(0x00);
-        
+
         stateMachine.sent(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -218,7 +208,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderSentToHeaderExchangedWhenReceiveHeader() {
+    public void shouldTransitionFromHeaderSentToHeaderExchangedWhenReceiveHeader()
+    {
         connectionHooks.whenHeaderReceived = mock(HeaderConsumer.class);
 
         header.setProtocol(AMQP_PROTOCOL);
@@ -229,7 +220,7 @@ public class ConnectionStateMachineTest {
 
         connection.state = ConnectionState.HEADER_SENT;
         connection.headerSent = header.buffer().getLong(header.offset());
-        
+
         stateMachine.received(connection, header);
 
         assertSame(ConnectionState.HEADER_EXCHANGED, connection.state);
@@ -239,7 +230,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderSentToEndWhenReceiveInconsistentHeader() {
+    public void shouldTransitionFromHeaderSentToEndWhenReceiveInconsistentHeader()
+    {
         connectionHooks.whenHeaderReceivedNotEqualSent = mock(HeaderConsumer.class);
 
         header.setProtocol(AMQP_PROTOCOL);
@@ -250,7 +242,7 @@ public class ConnectionStateMachineTest {
 
         connection.state = ConnectionState.HEADER_SENT;
         connection.headerSent = 0L;
-        
+
         stateMachine.received(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -260,17 +252,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderSentToOpenPipeWhenSendOpen() {
+    public void shouldTransitionFromHeaderSentToOpenPipeWhenSendOpen()
+    {
         connectionHooks.whenOpenSent = mock(FrameConsumer.class);
         connection.state = ConnectionState.HEADER_SENT;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -282,17 +270,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderSentToEndWhenReceiveOpen() {
+    public void shouldTransitionFromHeaderSentToEndWhenReceiveOpen()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.HEADER_SENT;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -304,17 +288,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderSentToEndWhenSendClose() {
+    public void shouldTransitionFromHeaderSentToEndWhenSendClose()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.HEADER_SENT;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -326,17 +306,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderSentToEndWhenReceiveClose() {
+    public void shouldTransitionFromHeaderSentToEndWhenReceiveClose()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.HEADER_SENT;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -348,7 +324,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderSentToDiscardingWhenError() {
+    public void shouldTransitionFromHeaderSentToDiscardingWhenError()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.HEADER_SENT;
 
@@ -361,7 +338,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderReceivedToHeaderExchangedWhenSendHeader() {
+    public void shouldTransitionFromHeaderReceivedToHeaderExchangedWhenSendHeader()
+    {
         connectionHooks.whenHeaderSent = mock(HeaderConsumer.class);
 
         header.setProtocol(AMQP_PROTOCOL);
@@ -372,7 +350,7 @@ public class ConnectionStateMachineTest {
 
         connection.state = ConnectionState.HEADER_RECEIVED;
         connection.headerReceived = header.buffer().getLong(header.offset());
-        
+
         stateMachine.sent(connection, header);
 
         assertSame(ConnectionState.HEADER_EXCHANGED, connection.state);
@@ -382,7 +360,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderReceivedToEndWhenSendInconsistentHeader() {
+    public void shouldTransitionFromHeaderReceivedToEndWhenSendInconsistentHeader()
+    {
         connectionHooks.whenHeaderSentNotEqualReceived = mock(HeaderConsumer.class);
 
         header.setProtocol(AMQP_PROTOCOL);
@@ -393,7 +372,7 @@ public class ConnectionStateMachineTest {
 
         connection.state = ConnectionState.HEADER_RECEIVED;
         connection.headerSent = 0L;
-        
+
         stateMachine.sent(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -403,7 +382,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderReceivedToEndWhenReceiveHeader() {
+    public void shouldTransitionFromHeaderReceivedToEndWhenReceiveHeader()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.HEADER_RECEIVED;
 
@@ -412,7 +392,7 @@ public class ConnectionStateMachineTest {
         header.setMajorVersion(0x01);
         header.setMinorVersion(0x00);
         header.setRevisionVersion(0x00);
-        
+
         stateMachine.received(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -422,17 +402,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderReceivedToEndWhenSendOpen() {
+    public void shouldTransitionFromHeaderReceivedToEndWhenSendOpen()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.HEADER_RECEIVED;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -444,17 +420,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderReceivedToEndWhenReceiveOpen() {
+    public void shouldTransitionFromHeaderReceivedToEndWhenReceiveOpen()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.HEADER_RECEIVED;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -466,17 +438,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderReceivedToEndWhenSendClose() {
+    public void shouldTransitionFromHeaderReceivedToEndWhenSendClose()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.HEADER_RECEIVED;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -488,17 +456,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderReceivedToEndWhenReceiveClose() {
+    public void shouldTransitionFromHeaderReceivedToEndWhenReceiveClose()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.HEADER_RECEIVED;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -510,7 +474,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderReceivedToDiscardingWhenError() {
+    public void shouldTransitionFromHeaderReceivedToDiscardingWhenError()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.HEADER_RECEIVED;
 
@@ -523,7 +488,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderExchangedToEndWhenSendHeader() {
+    public void shouldTransitionFromHeaderExchangedToEndWhenSendHeader()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.HEADER_EXCHANGED;
 
@@ -532,7 +498,7 @@ public class ConnectionStateMachineTest {
         header.setMajorVersion(0x01);
         header.setMinorVersion(0x00);
         header.setRevisionVersion(0x00);
-        
+
         stateMachine.sent(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -542,7 +508,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderExchangedToEndWhenReceiveHeader() {
+    public void shouldTransitionFromHeaderExchangedToEndWhenReceiveHeader()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.HEADER_EXCHANGED;
 
@@ -551,7 +518,7 @@ public class ConnectionStateMachineTest {
         header.setMajorVersion(0x01);
         header.setMinorVersion(0x00);
         header.setRevisionVersion(0x00);
-        
+
         stateMachine.received(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -561,17 +528,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderExchangedToEndWhenSendClose() {
+    public void shouldTransitionFromHeaderExchangedToEndWhenSendClose()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.HEADER_EXCHANGED;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -583,17 +546,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderExchangedToEndWhenReceiveClose() {
+    public void shouldTransitionFromHeaderExchangedToEndWhenReceiveClose()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.HEADER_EXCHANGED;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -605,17 +564,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderExchangedToOpenSentWhenSendOpen() {
+    public void shouldTransitionFromHeaderExchangedToOpenSentWhenSendOpen()
+    {
         connectionHooks.whenOpenSent = mock(FrameConsumer.class);
         connection.state = ConnectionState.HEADER_EXCHANGED;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -624,20 +579,16 @@ public class ConnectionStateMachineTest {
 
         verify(connectionHooks.whenOpenSent).accept(connection, frame, open);
     }
-    
+
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderExchangedToOpenReceivedWhenReceiveOpen() {
+    public void shouldTransitionFromHeaderExchangedToOpenReceivedWhenReceiveOpen()
+    {
         connectionHooks.whenOpenReceived = mock(FrameConsumer.class);
         connection.state = ConnectionState.HEADER_EXCHANGED;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -649,7 +600,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromHeaderExchangedToDiscardingWhenError() {
+    public void shouldTransitionFromHeaderExchangedToDiscardingWhenError()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.HEADER_EXCHANGED;
 
@@ -662,7 +614,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenPipeToEndWhenSendHeader() {
+    public void shouldTransitionFromOpenPipeToEndWhenSendHeader()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_PIPE;
 
@@ -671,7 +624,7 @@ public class ConnectionStateMachineTest {
         header.setMajorVersion(0x01);
         header.setMinorVersion(0x00);
         header.setRevisionVersion(0x00);
-        
+
         stateMachine.sent(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -681,7 +634,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenPipeToOpenSentWhenReceiveHeader() {
+    public void shouldTransitionFromOpenPipeToOpenSentWhenReceiveHeader()
+    {
         connectionHooks.whenHeaderReceived = mock(HeaderConsumer.class);
 
         header.setProtocol(AMQP_PROTOCOL);
@@ -692,7 +646,7 @@ public class ConnectionStateMachineTest {
 
         connection.state = ConnectionState.OPEN_PIPE;
         connection.headerSent = header.buffer().getLong(header.offset());
-        
+
         stateMachine.received(connection, header);
 
         assertSame(ConnectionState.OPEN_SENT, connection.state);
@@ -702,7 +656,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenPipeToEndWhenReceiveInconsistentHeader() {
+    public void shouldTransitionFromOpenPipeToEndWhenReceiveInconsistentHeader()
+    {
         connectionHooks.whenHeaderReceivedNotEqualSent = mock(HeaderConsumer.class);
 
         header.setProtocol(AMQP_PROTOCOL);
@@ -713,7 +668,7 @@ public class ConnectionStateMachineTest {
 
         connection.state = ConnectionState.OPEN_PIPE;
         connection.headerSent = 0L;
-        
+
         stateMachine.received(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -723,17 +678,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenPipeToEndWhenSendOpen() {
+    public void shouldTransitionFromOpenPipeToEndWhenSendOpen()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_PIPE;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -745,17 +696,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenPipeToEndWhenReceiveOpen() {
+    public void shouldTransitionFromOpenPipeToEndWhenReceiveOpen()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_PIPE;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -767,20 +714,16 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenPipeToOpenClosePipeWhenSendClose() {
+    public void shouldTransitionFromOpenPipeToOpenClosePipeWhenSendClose()
+    {
         connectionHooks.whenCloseSent = mock(FrameConsumer.class);
 
-        frame.setChannel(0x00)
-        .setDataOffset(0x02)
-        .setType(0x01)
-        .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         connection.state = ConnectionState.OPEN_PIPE;
-        
+
         stateMachine.sent(connection, frame, close);
 
         assertSame(ConnectionState.OPEN_CLOSE_PIPE, connection.state);
@@ -790,17 +733,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenPipeToEndWhenReceiveClose() {
+    public void shouldTransitionFromOpenPipeToEndWhenReceiveClose()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_PIPE;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -812,7 +751,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenPipeToDiscardingWhenError() {
+    public void shouldTransitionFromOpenPipeToDiscardingWhenError()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_PIPE;
 
@@ -825,7 +765,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenClosePipeToEndWhenSendHeader() {
+    public void shouldTransitionFromOpenClosePipeToEndWhenSendHeader()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_CLOSE_PIPE;
 
@@ -834,7 +775,7 @@ public class ConnectionStateMachineTest {
         header.setMajorVersion(0x01);
         header.setMinorVersion(0x00);
         header.setRevisionVersion(0x00);
-        
+
         stateMachine.sent(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -844,7 +785,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenClosePipeToClosePipeWhenReceiveHeader() {
+    public void shouldTransitionFromOpenClosePipeToClosePipeWhenReceiveHeader()
+    {
         connectionHooks.whenHeaderReceived = mock(HeaderConsumer.class);
 
         header.setProtocol(AMQP_PROTOCOL);
@@ -855,7 +797,7 @@ public class ConnectionStateMachineTest {
 
         connection.state = ConnectionState.OPEN_CLOSE_PIPE;
         connection.headerSent = header.buffer().getLong(header.offset());
-        
+
         stateMachine.received(connection, header);
 
         assertSame(ConnectionState.CLOSE_PIPE, connection.state);
@@ -865,7 +807,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenClosePipeToEndWhenReceiveInconsistentHeader() {
+    public void shouldTransitionFromOpenClosePipeToEndWhenReceiveInconsistentHeader()
+    {
         connectionHooks.whenHeaderReceivedNotEqualSent = mock(HeaderConsumer.class);
 
         header.setProtocol(AMQP_PROTOCOL);
@@ -876,7 +819,7 @@ public class ConnectionStateMachineTest {
 
         connection.state = ConnectionState.OPEN_CLOSE_PIPE;
         connection.headerSent = 0L;
-        
+
         stateMachine.received(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -886,17 +829,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenClosePipeToEndWhenSendOpen() {
+    public void shouldTransitionFromOpenClosePipeToEndWhenSendOpen()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_CLOSE_PIPE;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -908,17 +847,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenClosePipeToEndWhenReceiveOpen() {
+    public void shouldTransitionFromOpenClosePipeToEndWhenReceiveOpen()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_CLOSE_PIPE;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -930,17 +865,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenClosePipeToEndWhenSendClose() {
+    public void shouldTransitionFromOpenClosePipeToEndWhenSendClose()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_CLOSE_PIPE;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -952,17 +883,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenClosePipeToEndWhenReceiveClose() {
+    public void shouldTransitionFromOpenClosePipeToEndWhenReceiveClose()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_CLOSE_PIPE;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -974,7 +901,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenClosePipeToDiscardingWhenError() {
+    public void shouldTransitionFromOpenClosePipeToDiscardingWhenError()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_CLOSE_PIPE;
 
@@ -984,10 +912,11 @@ public class ConnectionStateMachineTest {
 
         verify(connectionHooks.whenError).accept(connection);
     }
-    
+
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromClosePipeToEndWhenSendHeader() {
+    public void shouldTransitionFromClosePipeToEndWhenSendHeader()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.CLOSE_PIPE;
 
@@ -996,7 +925,7 @@ public class ConnectionStateMachineTest {
         header.setMajorVersion(0x01);
         header.setMinorVersion(0x00);
         header.setRevisionVersion(0x00);
-        
+
         stateMachine.sent(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -1006,7 +935,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromClosePipeToEndWhenReceiveHeader() {
+    public void shouldTransitionFromClosePipeToEndWhenReceiveHeader()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.CLOSE_PIPE;
 
@@ -1015,7 +945,7 @@ public class ConnectionStateMachineTest {
         header.setMajorVersion(0x01);
         header.setMinorVersion(0x00);
         header.setRevisionVersion(0x00);
-        
+
         stateMachine.received(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -1025,17 +955,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromClosePipeToCloseSentWhenReceiveOpen() {
+    public void shouldTransitionFromClosePipeToCloseSentWhenReceiveOpen()
+    {
         connectionHooks.whenOpenReceived = mock(FrameConsumer.class);
         connection.state = ConnectionState.CLOSE_PIPE;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -1047,17 +973,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromClosePipeToEndWhenSendOpen() {
+    public void shouldTransitionFromClosePipeToEndWhenSendOpen()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.CLOSE_PIPE;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -1069,17 +991,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromClosePipeToEndWhenSendClose() {
+    public void shouldTransitionFromClosePipeToEndWhenSendClose()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.CLOSE_PIPE;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -1091,17 +1009,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromClosePipeToEndWhenReceiveClose() {
+    public void shouldTransitionFromClosePipeToEndWhenReceiveClose()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.CLOSE_PIPE;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -1113,7 +1027,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromClosePipeToDiscardingWhenError() {
+    public void shouldTransitionFromClosePipeToDiscardingWhenError()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.CLOSE_PIPE;
 
@@ -1123,10 +1038,11 @@ public class ConnectionStateMachineTest {
 
         verify(connectionHooks.whenError).accept(connection);
     }
-    
+
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenSentToEndWhenSendHeader() {
+    public void shouldTransitionFromOpenSentToEndWhenSendHeader()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_SENT;
 
@@ -1135,7 +1051,7 @@ public class ConnectionStateMachineTest {
         header.setMajorVersion(0x01);
         header.setMinorVersion(0x00);
         header.setRevisionVersion(0x00);
-        
+
         stateMachine.sent(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -1145,7 +1061,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenSentToEndWhenReceiveHeader() {
+    public void shouldTransitionFromOpenSentToEndWhenReceiveHeader()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_SENT;
 
@@ -1154,7 +1071,7 @@ public class ConnectionStateMachineTest {
         header.setMajorVersion(0x01);
         header.setMinorVersion(0x00);
         header.setRevisionVersion(0x00);
-        
+
         stateMachine.received(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -1164,17 +1081,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenSentToEndWhenSendOpen() {
+    public void shouldTransitionFromOpenSentToEndWhenSendOpen()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_SENT;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -1182,21 +1095,17 @@ public class ConnectionStateMachineTest {
         assertSame(ConnectionState.END, connection.state);
 
         verify(connectionHooks.whenError).accept(connection);
-    }   
-    
+    }
+
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenSentToOpenedWhenReceiveOpen() {
+    public void shouldTransitionFromOpenSentToOpenedWhenReceiveOpen()
+    {
         connectionHooks.whenOpenReceived = mock(FrameConsumer.class);
         connection.state = ConnectionState.OPEN_SENT;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -1208,17 +1117,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenSentToClosePipeWhenSendClose() {
+    public void shouldTransitionFromOpenSentToClosePipeWhenSendClose()
+    {
         connectionHooks.whenCloseSent = mock(FrameConsumer.class);
         connection.state = ConnectionState.OPEN_SENT;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -1230,17 +1135,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenSentToEndWhenReceiveClose() {
+    public void shouldTransitionFromOpenSentToEndWhenReceiveClose()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_SENT;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -1252,7 +1153,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenSentToDiscardingWhenError() {
+    public void shouldTransitionFromOpenSentToDiscardingWhenError()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_SENT;
 
@@ -1262,10 +1164,11 @@ public class ConnectionStateMachineTest {
 
         verify(connectionHooks.whenError).accept(connection);
     }
-    
+
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenReceivedToEndWhenSendHeader() {
+    public void shouldTransitionFromOpenReceivedToEndWhenSendHeader()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_RECEIVED;
 
@@ -1274,7 +1177,7 @@ public class ConnectionStateMachineTest {
         header.setMajorVersion(0x01);
         header.setMinorVersion(0x00);
         header.setRevisionVersion(0x00);
-        
+
         stateMachine.sent(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -1284,7 +1187,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenReceivedToEndWhenReceiveHeader() {
+    public void shouldTransitionFromOpenReceivedToEndWhenReceiveHeader()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_RECEIVED;
 
@@ -1293,7 +1197,7 @@ public class ConnectionStateMachineTest {
         header.setMajorVersion(0x01);
         header.setMinorVersion(0x00);
         header.setRevisionVersion(0x00);
-        
+
         stateMachine.received(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -1303,17 +1207,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenReceivedToOpenedWhenSendOpen() {
+    public void shouldTransitionFromOpenReceivedToOpenedWhenSendOpen()
+    {
         connectionHooks.whenOpenSent = mock(FrameConsumer.class);
         connection.state = ConnectionState.OPEN_RECEIVED;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -1325,17 +1225,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenReceivedToEndWhenReceiveOpen() {
+    public void shouldTransitionFromOpenReceivedToEndWhenReceiveOpen()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_RECEIVED;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -1347,17 +1243,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenReceivedToEndWhenSendClose() {
+    public void shouldTransitionFromOpenReceivedToEndWhenSendClose()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_RECEIVED;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -1369,17 +1261,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenReceivedToEndWhenReceiveClose() {
+    public void shouldTransitionFromOpenReceivedToEndWhenReceiveClose()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_RECEIVED;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -1388,10 +1276,11 @@ public class ConnectionStateMachineTest {
 
         verify(connectionHooks.whenError).accept(connection);
     }
-    
+
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenReceivedToDiscardingWhenError() {
+    public void shouldTransitionFromOpenReceivedToDiscardingWhenError()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPEN_RECEIVED;
 
@@ -1404,7 +1293,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenedToEndWhenSendHeader() {
+    public void shouldTransitionFromOpenedToEndWhenSendHeader()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPENED;
 
@@ -1413,7 +1303,7 @@ public class ConnectionStateMachineTest {
         header.setMajorVersion(0x01);
         header.setMinorVersion(0x00);
         header.setRevisionVersion(0x00);
-        
+
         stateMachine.sent(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -1423,7 +1313,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenedToEndWhenReceiveHeader() {
+    public void shouldTransitionFromOpenedToEndWhenReceiveHeader()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPENED;
 
@@ -1432,7 +1323,7 @@ public class ConnectionStateMachineTest {
         header.setMajorVersion(0x01);
         header.setMinorVersion(0x00);
         header.setRevisionVersion(0x00);
-        
+
         stateMachine.received(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -1442,17 +1333,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenedToEndWhenSendOpen() {
+    public void shouldTransitionFromOpenedToEndWhenSendOpen()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPENED;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -1460,21 +1347,17 @@ public class ConnectionStateMachineTest {
         assertSame(ConnectionState.END, connection.state);
 
         verify(connectionHooks.whenError).accept(connection);
-    }   
+    }
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenedToEndWhenReceiveOpen() {
+    public void shouldTransitionFromOpenedToEndWhenReceiveOpen()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPENED;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -1483,20 +1366,16 @@ public class ConnectionStateMachineTest {
 
         verify(connectionHooks.whenError).accept(connection);
     }
-    
+
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenedToCloseSentWhenSendClose() {
+    public void shouldTransitionFromOpenedToCloseSentWhenSendClose()
+    {
         connectionHooks.whenCloseSent = mock(FrameConsumer.class);
         connection.state = ConnectionState.OPENED;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -1508,18 +1387,14 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenedToDiscardingWhenSendCloseOnError() {
+    public void shouldTransitionFromOpenedToDiscardingWhenSendCloseOnError()
+    {
         connectionHooks.whenCloseSent = mock(FrameConsumer.class);
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPENED;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -1533,17 +1408,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenedToCloseReceivedWhenReceiveClose() {
+    public void shouldTransitionFromOpenedToCloseReceivedWhenReceiveClose()
+    {
         connectionHooks.whenCloseReceived = mock(FrameConsumer.class);
         connection.state = ConnectionState.OPENED;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -1555,7 +1426,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromOpenedToDiscardingWhenError() {
+    public void shouldTransitionFromOpenedToDiscardingWhenError()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.OPENED;
 
@@ -1568,7 +1440,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromCloseSentToEndWhenSendHeader() {
+    public void shouldTransitionFromCloseSentToEndWhenSendHeader()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.CLOSE_SENT;
 
@@ -1577,7 +1450,7 @@ public class ConnectionStateMachineTest {
         header.setMajorVersion(0x01);
         header.setMinorVersion(0x00);
         header.setRevisionVersion(0x00);
-        
+
         stateMachine.sent(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -1587,7 +1460,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromCloseSentToEndWhenReceiveHeader() {
+    public void shouldTransitionFromCloseSentToEndWhenReceiveHeader()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.CLOSE_SENT;
 
@@ -1596,7 +1470,7 @@ public class ConnectionStateMachineTest {
         header.setMajorVersion(0x01);
         header.setMinorVersion(0x00);
         header.setRevisionVersion(0x00);
-        
+
         stateMachine.received(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -1606,17 +1480,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromCloseSentToEndWhenSendOpen() {
+    public void shouldTransitionFromCloseSentToEndWhenSendOpen()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.CLOSE_SENT;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -1624,21 +1494,17 @@ public class ConnectionStateMachineTest {
         assertSame(ConnectionState.END, connection.state);
 
         verify(connectionHooks.whenError).accept(connection);
-    }   
+    }
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromCloseSentToEndWhenReceiveOpen() {
+    public void shouldTransitionFromCloseSentToEndWhenReceiveOpen()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.CLOSE_SENT;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -1650,17 +1516,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromCloseSentToEndWhenSendClose() {
+    public void shouldTransitionFromCloseSentToEndWhenSendClose()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.CLOSE_SENT;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -1672,17 +1534,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromCloseSentToEndWhenReceiveClose() {
+    public void shouldTransitionFromCloseSentToEndWhenReceiveClose()
+    {
         connectionHooks.whenCloseReceived = mock(FrameConsumer.class);
         connection.state = ConnectionState.CLOSE_SENT;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -1694,7 +1552,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromCloseSentToDiscardingWhenError() {
+    public void shouldTransitionFromCloseSentToDiscardingWhenError()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.CLOSE_SENT;
 
@@ -1707,7 +1566,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromDiscardingToEndWhenSendHeader() {
+    public void shouldTransitionFromDiscardingToEndWhenSendHeader()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.DISCARDING;
 
@@ -1716,7 +1576,7 @@ public class ConnectionStateMachineTest {
         header.setMajorVersion(0x01);
         header.setMinorVersion(0x00);
         header.setRevisionVersion(0x00);
-        
+
         stateMachine.sent(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -1726,7 +1586,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromDiscardingToEndWhenReceiveHeader() {
+    public void shouldTransitionFromDiscardingToEndWhenReceiveHeader()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.DISCARDING;
 
@@ -1735,7 +1596,7 @@ public class ConnectionStateMachineTest {
         header.setMajorVersion(0x01);
         header.setMinorVersion(0x00);
         header.setRevisionVersion(0x00);
-        
+
         stateMachine.received(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -1745,17 +1606,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromDiscardingToEndWhenSendOpen() {
+    public void shouldTransitionFromDiscardingToEndWhenSendOpen()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.DISCARDING;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -1763,21 +1620,17 @@ public class ConnectionStateMachineTest {
         assertSame(ConnectionState.END, connection.state);
 
         verify(connectionHooks.whenError).accept(connection);
-    }   
+    }
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromDiscardingToDiscardingWhenReceiveOpen() {
+    public void shouldTransitionFromDiscardingToDiscardingWhenReceiveOpen()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.DISCARDING;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -1789,17 +1642,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromDiscardingToEndWhenSendClose() {
+    public void shouldTransitionFromDiscardingToEndWhenSendClose()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.DISCARDING;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -1811,17 +1660,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromDiscardingToEndWhenReceiveClose() {
+    public void shouldTransitionFromDiscardingToEndWhenReceiveClose()
+    {
         connectionHooks.whenCloseReceived = mock(FrameConsumer.class);
         connection.state = ConnectionState.DISCARDING;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -1833,7 +1678,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromDiscardingToDiscardingWhenError() {
+    public void shouldTransitionFromDiscardingToDiscardingWhenError()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.DISCARDING;
 
@@ -1846,7 +1692,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromCloseReceivedToEndWhenSendHeader() {
+    public void shouldTransitionFromCloseReceivedToEndWhenSendHeader()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.CLOSE_RECEIVED;
 
@@ -1855,7 +1702,7 @@ public class ConnectionStateMachineTest {
         header.setMajorVersion(0x01);
         header.setMinorVersion(0x00);
         header.setRevisionVersion(0x00);
-        
+
         stateMachine.sent(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -1865,7 +1712,8 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromCloseReceivedToEndWhenReceiveHeader() {
+    public void shouldTransitionFromCloseReceivedToEndWhenReceiveHeader()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.CLOSE_RECEIVED;
 
@@ -1874,7 +1722,7 @@ public class ConnectionStateMachineTest {
         header.setMajorVersion(0x01);
         header.setMinorVersion(0x00);
         header.setRevisionVersion(0x00);
-        
+
         stateMachine.received(connection, header);
 
         assertSame(ConnectionState.END, connection.state);
@@ -1884,17 +1732,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromCloseReceivedToEndWhenSendOpen() {
+    public void shouldTransitionFromCloseReceivedToEndWhenSendOpen()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.CLOSE_RECEIVED;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -1902,21 +1746,17 @@ public class ConnectionStateMachineTest {
         assertSame(ConnectionState.END, connection.state);
 
         verify(connectionHooks.whenError).accept(connection);
-    }   
+    }
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromCloseReceivedToEndWhenReceiveOpen() {
+    public void shouldTransitionFromCloseReceivedToEndWhenReceiveOpen()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.CLOSE_RECEIVED;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.OPEN);
-        open.wrap(frame.buffer(), frame.bodyOffset())
-            .maxLength(255)
-            .setContainerId(null);
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -1928,17 +1768,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromCloseReceivedToEndWhenSendClose() {
+    public void shouldTransitionFromCloseReceivedToEndWhenSendClose()
+    {
         connectionHooks.whenCloseSent = mock(FrameConsumer.class);
         connection.state = ConnectionState.CLOSE_RECEIVED;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -1950,17 +1786,13 @@ public class ConnectionStateMachineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromCloseReceivedToEndWhenReceiveClose() {
+    public void shouldTransitionFromCloseReceivedToEndWhenReceiveClose()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.CLOSE_RECEIVED;
 
-        frame.setChannel(0x00)
-             .setDataOffset(0x02)
-             .setType(0x01)
-             .setPerformative(Performative.CLOSE);
-        close.wrap(frame.buffer(), frame.bodyOffset())
-             .maxLength(255)
-             .clear();
+        frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -1969,10 +1801,11 @@ public class ConnectionStateMachineTest {
 
         verify(connectionHooks.whenError).accept(connection);
     }
-    
+
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldTransitionFromCloseReceivedToDiscardingWhenError() {
+    public void shouldTransitionFromCloseReceivedToDiscardingWhenError()
+    {
         connectionHooks.whenError = mock(Consumer.class);
         connection.state = ConnectionState.CLOSE_RECEIVED;
 
@@ -1982,6 +1815,5 @@ public class ConnectionStateMachineTest {
 
         verify(connectionHooks.whenError).accept(connection);
     }
-
 
 }

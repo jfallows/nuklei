@@ -37,55 +37,60 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 @RunWith(Theories.class)
-public class UShortTypeTest {
+public class UShortTypeTest
+{
 
     private static final int BUFFER_CAPACITY = 64;
-    
+
     @DataPoint
     public static final int ZERO_OFFSET = 0;
-    
+
     @DataPoint
     public static final int NON_ZERO_OFFSET = new Random().nextInt(BUFFER_CAPACITY - SIZEOF_USHORT - 1) + 1;
 
     private final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
 
     @Theory
-    public void shouldEncode(int offset) {
+    public void shouldEncode(int offset)
+    {
         UShortType ushortType = new UShortType();
         ushortType.wrap(buffer, offset);
         ushortType.set(0x1234);
-        
+
         assertEquals(0x60, uint8Get(buffer, offset));
         assertEquals(0x1234, uint16Get(buffer, offset + 1));
     }
-    
+
     @Theory
-    public void shouldDecode(int offset) {
+    public void shouldDecode(int offset)
+    {
         buffer.putByte(offset, (byte) 0x60);
         buffer.putShort(offset + 1, (short) 0x1234, BIG_ENDIAN);
-        
+
         UShortType ushortType = new UShortType();
         ushortType.wrap(buffer, offset);
-        
+
         assertEquals(0x1234, ushortType.get());
         assertEquals(offset + 3, ushortType.limit());
     }
-    
+
     @Theory
-    public void shouldEncodeThenDecode8(int offset) {
+    public void shouldEncodeThenDecode8(int offset)
+    {
         UShortType ushortType = new UShortType();
         ushortType.wrap(buffer, offset);
         ushortType.set(0x1234);
-        
+
         assertEquals(0x1234, ushortType.get());
         assertEquals(offset + 3, ushortType.limit());
     }
-    
+
     @Theory
     @Test(expected = Exception.class)
-    public void shouldNotDecode(int offset) {
+    public void shouldNotDecode(int offset)
+    {
         buffer.putByte(offset, (byte) 0x00);
-        
+
         UShortType ushortType = new UShortType();
         ushortType.wrap(buffer, offset);
 
@@ -94,14 +99,15 @@ public class UShortTypeTest {
 
     @Theory
     @SuppressWarnings("unchecked")
-    public void shouldNotifyChanged(int offset) {
+    public void shouldNotifyChanged(int offset)
+    {
         final Consumer<Flyweight> observer = mock(Consumer.class);
-        
+
         UShortType ushortType = new UShortType();
         ushortType.watch(observer);
         ushortType.wrap(buffer, offset);
         ushortType.set(0x1234);
-        
+
         verify(observer).accept(ushortType);
     }
 }

@@ -17,7 +17,8 @@ package org.kaazing.nuklei.amqp_1_0.session;
 
 import org.kaazing.nuklei.amqp_1_0.connection.Connection;
 
-public interface SessionFactory<C, S, L> {
+public interface SessionFactory<C, S, L>
+{
 
     Session<S, L> newSession(Connection<C, S, L> connection);
 

@@ -27,7 +27,8 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 1.6.2 "boolean"
  */
-public final class BooleanType extends Type {
+public final class BooleanType extends Type
+{
 
     private static final int OFFSET_KIND = 0;
     private static final int SIZEOF_KIND = BitUtil.SIZE_OF_BYTE;
@@ -36,45 +37,53 @@ public final class BooleanType extends Type {
     private static final int SIZEOF_VALUE_MAX = BitUtil.SIZE_OF_BYTE;
 
     static final int SIZEOF_BOOLEAN_MAX = SIZEOF_KIND + SIZEOF_VALUE_MAX;
-    
+
     private static final short WIDTH_KIND_0_TRUE = 0x41;
     private static final short WIDTH_KIND_0_FALSE = 0x42;
     private static final short WIDTH_KIND_1 = 0x56;
 
     private static final short WIDTH_KIND_1_VALUE_FALSE = 0x00;
     private static final short WIDTH_KIND_1_VALUE_TRUE = 0x01;
-    
+
     @Override
-    public Kind kind() {
+    public Kind kind()
+    {
         return Kind.BOOLEAN;
     }
 
     @Override
-    public BooleanType watch(Consumer<Flyweight> observer) {
+    public BooleanType watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public BooleanType wrap(MutableDirectBuffer buffer, int offset) {
+    public BooleanType wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         return this;
     }
 
-    public <T> BooleanType set(ToBooleanFunction<T> mutator, T value) {
+    public <T> BooleanType set(ToBooleanFunction<T> mutator, T value)
+    {
         return set(mutator.applyAsBoolean(value));
     }
 
-    public <T> T get(BooleanFunction<T> accessor) {
+    public <T> T get(BooleanFunction<T> accessor)
+    {
         return accessor.apply(get());
     }
-    
-    public BooleanType set(boolean value) {
+
+    public BooleanType set(boolean value)
+    {
         // TODO: support zero-or-one
-        if (value) {
+        if (value)
+        {
             widthKind(WIDTH_KIND_0_TRUE);
         }
-        else {
+        else
+        {
             widthKind(WIDTH_KIND_0_FALSE);
         }
 
@@ -82,14 +91,17 @@ public final class BooleanType extends Type {
         return this;
     }
 
-    public boolean get() {
-        switch (widthKind()) {
+    public boolean get()
+    {
+        switch (widthKind())
+        {
         case WIDTH_KIND_0_TRUE:
             return true;
         case WIDTH_KIND_0_FALSE:
             return false;
         case WIDTH_KIND_1:
-            switch (uint8Get(buffer(), offset() + OFFSET_VALUE)) {
+            switch (uint8Get(buffer(), offset() + OFFSET_VALUE))
+            {
             case WIDTH_KIND_1_VALUE_FALSE:
                 return false;
             case WIDTH_KIND_1_VALUE_TRUE:
@@ -102,8 +114,10 @@ public final class BooleanType extends Type {
         }
     }
 
-    public int limit() {
-        switch (widthKind()) {
+    public int limit()
+    {
+        switch (widthKind())
+        {
         case WIDTH_KIND_0_TRUE:
         case WIDTH_KIND_0_FALSE:
             return offset() + OFFSET_VALUE;
@@ -114,11 +128,13 @@ public final class BooleanType extends Type {
         }
     }
 
-    private void widthKind(short value) {
-        uint8Put(buffer(), offset() + OFFSET_KIND, value);
+    private void widthKind(short value)
+    {
+        uint8Put(mutableBuffer(), offset() + OFFSET_KIND, value);
     }
-    
-    private short widthKind() {
+
+    private short widthKind()
+    {
         return uint8Get(buffer(), offset() + OFFSET_KIND);
     }
 

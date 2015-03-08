@@ -25,7 +25,8 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 1.6.17 "timestamp"
  */
-public final class TimestampType extends Type {
+public final class TimestampType extends Type
+{
 
     private static final int OFFSET_KIND = 0;
     private static final int SIZEOF_KIND = BitUtil.SIZE_OF_BYTE;
@@ -38,31 +39,37 @@ public final class TimestampType extends Type {
     private static final short WIDTH_KIND_8 = 0x83;
 
     @Override
-    public Kind kind() {
+    public Kind kind()
+    {
         return Kind.TIMESTAMP;
     }
 
     @Override
-    public TimestampType watch(Consumer<Flyweight> observer) {
+    public TimestampType watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public TimestampType wrap(MutableDirectBuffer buffer, int offset) {
+    public TimestampType wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         return this;
     }
 
-    public TimestampType set(long value) {
-        uint8Put(buffer(), offset() + OFFSET_KIND, WIDTH_KIND_8);
-        int64Put(buffer(), offset() + OFFSET_VALUE, value);
+    public TimestampType set(long value)
+    {
+        uint8Put(mutableBuffer(), offset() + OFFSET_KIND, WIDTH_KIND_8);
+        int64Put(mutableBuffer(), offset() + OFFSET_VALUE, value);
         notifyChanged();
         return this;
     }
-    
-    public long get() {
-        switch (uint8Get(buffer(), offset() + OFFSET_KIND)) {
+
+    public long get()
+    {
+        switch (uint8Get(buffer(), offset() + OFFSET_KIND))
+        {
         case WIDTH_KIND_8:
             return int64Get(buffer(), offset() + OFFSET_VALUE);
         default:
@@ -70,7 +77,8 @@ public final class TimestampType extends Type {
         }
     }
 
-    public int limit() {
+    public int limit()
+    {
         return offset() + SIZEOF_TIMESTAMP;
     }
 }

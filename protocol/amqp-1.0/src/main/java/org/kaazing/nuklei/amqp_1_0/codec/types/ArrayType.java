@@ -23,87 +23,107 @@ import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.FlyweightBE;
 
 import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.24 "array"
  */
-public final class ArrayType extends Type {
+public final class ArrayType extends Type
+{
 
     private final Header header;
     private final DynamicType elementType;
-    
-    public ArrayType() {
+
+    public ArrayType()
+    {
         this.elementType = new DynamicType();
-        this.header = new Header().watch((owner) -> { elementType().wrap(buffer(), owner.limit()); notifyChanged(); });
+        this.header = new Header().watch((owner) ->
+        {
+            elementType().wrap(mutableBuffer(), owner.limit());
+            notifyChanged();
+        });
     }
 
     @Override
-    public Kind kind() {
+    public Kind kind()
+    {
         return Kind.ARRAY;
     }
-    
-    public Kind elementKind() {
+
+    public Kind elementKind()
+    {
         return elementType().kind();
     }
 
     @Override
-    public ArrayType watch(Consumer<Flyweight> observer) {
+    public ArrayType watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public ArrayType wrap(MutableDirectBuffer buffer, int offset) {
-        super.wrap(buffer, offset);
-        header.wrap(buffer, offset);
+    public ArrayType wrap(DirectBuffer buffer, int offset, boolean mutable)
+    {
+        super.wrap(buffer, offset, mutable);
+        header.wrap(buffer, offset, mutable);
         return this;
     }
 
-    public ArrayType set(ArrayType value) {
-        buffer().putBytes(offset(), value.buffer(), value.offset(), value.limit() - value.offset());
+    public ArrayType set(ArrayType value)
+    {
+        mutableBuffer().putBytes(offset(), value.buffer(), value.offset(), value.limit() - value.offset());
         notifyChanged();
         return this;
     }
 
-    public int length() {
+    public int length()
+    {
         return header.length();
     }
 
-    public ArrayType maxLength(int value) {
+    public ArrayType maxLength(int value)
+    {
         header.max(value);
         return this;
     }
-    
-    public int count() {
+
+    public int count()
+    {
         return header.count();
     }
-    
-    public ArrayType maxCount(int value) {
+
+    public ArrayType maxCount(int value)
+    {
         header.max(value);
         return this;
     }
-    
+
     @Override
-    public int limit() {
+    public int limit()
+    {
         return header.lengthLimit() + header.length();
     }
-    
-    public final void limit(int count, int limit) {
+
+    public void limit(int count, int limit)
+    {
         header.count(count);
         header.length(limit - header.lengthLimit());
     }
 
-    protected final int offsetBody() {
+    protected int offsetBody()
+    {
         return header.limit();
     }
 
-    private DynamicType elementType() {
-        elementType.wrap(buffer(), header.limit());
+    private DynamicType elementType()
+    {
+        elementType.wrap(mutableBuffer(), header.limit());
         return elementType;
     }
 
-    private static final class Header extends FlyweightBE {
+    private static final class Header extends FlyweightBE
+    {
 
         private static final int OFFSET_LENGTH_KIND = 0;
         private static final int SIZEOF_LENGTH_KIND = BitUtil.SIZE_OF_BYTE;
@@ -113,21 +133,26 @@ public final class ArrayType extends Type {
         private static final short WIDTH_KIND_4 = 0xf0;
 
         @Override
-        public Header wrap(MutableDirectBuffer buffer, int offset) {
-            super.wrap(buffer, offset);
+        public Header wrap(DirectBuffer buffer, int offset, boolean mutable)
+        {
+            super.wrap(buffer, offset, mutable);
             return this;
         }
 
         @Override
-        public Header watch(Consumer<Flyweight> observer) {
+        public Header watch(Consumer<Flyweight> observer)
+        {
             super.watch(observer);
             return this;
         }
 
-        public void count(int value) {
-            switch (kind()) {
+        public void count(int value)
+        {
+            switch (kind())
+            {
             case WIDTH_KIND_1:
-                switch (highestOneBit(value)) {
+                switch (highestOneBit(value))
+                {
                 case 0:
                 case 1:
                 case 2:
@@ -137,22 +162,24 @@ public final class ArrayType extends Type {
                 case 32:
                 case 64:
                 case 128:
-                    uint8Put(buffer(), offset() + OFFSET_LENGTH + 1, (short) value);
+                    uint8Put(mutableBuffer(), offset() + OFFSET_LENGTH + 1, (short) value);
                     break;
                 default:
                     throw new IllegalStateException();
                 }
                 break;
             case WIDTH_KIND_4:
-                int32Put(buffer(), offset() + OFFSET_LENGTH + 4, value);
+                int32Put(mutableBuffer(), offset() + OFFSET_LENGTH + 4, value);
                 break;
             default:
                 throw new IllegalStateException();
             }
         }
 
-        public int count() {
-            switch (kind()) {
+        public int count()
+        {
+            switch (kind())
+            {
             case WIDTH_KIND_1:
                 return uint8Get(buffer(), offset() + OFFSET_LENGTH + 1);
             case WIDTH_KIND_4:
@@ -162,8 +189,10 @@ public final class ArrayType extends Type {
             }
         }
 
-        public int length() {
-            switch (kind()) {
+        public int length()
+        {
+            switch (kind())
+            {
             case WIDTH_KIND_1:
                 return uint8Get(buffer(), offset() + OFFSET_LENGTH);
             case WIDTH_KIND_4:
@@ -172,9 +201,11 @@ public final class ArrayType extends Type {
                 throw new IllegalStateException();
             }
         }
-        
-        public int lengthLimit() {
-            switch (kind()) {
+
+        public int lengthLimit()
+        {
+            switch (kind())
+            {
             case WIDTH_KIND_1:
                 return offset() + OFFSET_LENGTH + 1;
             case WIDTH_KIND_4:
@@ -183,11 +214,14 @@ public final class ArrayType extends Type {
                 throw new IllegalStateException();
             }
         }
-        
-        public Header length(int value) {
-            switch (kind()) {
+
+        public Header length(int value)
+        {
+            switch (kind())
+            {
             case WIDTH_KIND_1:
-                switch (highestOneBit(value)) {
+                switch (highestOneBit(value))
+                {
                 case 0:
                 case 1:
                 case 2:
@@ -197,25 +231,27 @@ public final class ArrayType extends Type {
                 case 32:
                 case 64:
                 case 128:
-                    uint8Put(buffer(), offset() + OFFSET_LENGTH, (short) value);
+                    uint8Put(mutableBuffer(), offset() + OFFSET_LENGTH, (short) value);
                     break;
                 default:
                     throw new IllegalStateException();
                 }
                 break;
             case WIDTH_KIND_4:
-                int32Put(buffer(), offset() + OFFSET_LENGTH, value);
+                int32Put(mutableBuffer(), offset() + OFFSET_LENGTH, value);
                 break;
             default:
                 throw new IllegalStateException();
             }
-            
+
             notifyChanged();
             return this;
         }
 
-        public void max(int value) {
-            switch (highestOneBit(value)) {
+        public void max(int value)
+        {
+            switch (highestOneBit(value))
+            {
             case 0:
             case 1:
             case 2:
@@ -231,11 +267,13 @@ public final class ArrayType extends Type {
                 kind(WIDTH_KIND_4);
                 break;
             }
-            
+
         }
-        
-        public int limit() {
-            switch (kind()) {
+
+        public int limit()
+        {
+            switch (kind())
+            {
             case WIDTH_KIND_1:
                 return offset() + OFFSET_LENGTH + 2;
             case WIDTH_KIND_4:
@@ -245,11 +283,13 @@ public final class ArrayType extends Type {
             }
         }
 
-        private void kind(short kind) {
-            uint8Put(buffer(), offset() + OFFSET_LENGTH_KIND, kind);
+        private void kind(short kind)
+        {
+            uint8Put(mutableBuffer(), offset() + OFFSET_LENGTH_KIND, kind);
         }
 
-        private short kind() {
+        private short kind()
+        {
             return uint8Get(buffer(), offset() + OFFSET_LENGTH_KIND);
         }
     }

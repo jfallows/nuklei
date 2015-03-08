@@ -43,7 +43,8 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 @RunWith(Theories.class)
-public class DynamicTypeTest {
+public class DynamicTypeTest
+{
 
     private static final int BUFFER_CAPACITY = 512;
     private static final MutableDirectBufferMutator<String> WRITE_UTF_8 = newMutator(UTF_8);
@@ -57,81 +58,87 @@ public class DynamicTypeTest {
     private final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
 
     @Theory
-    public void shouldDecodeDynamicAsArray1(int offset) {
+    public void shouldDecodeDynamicAsArray1(int offset)
+    {
         ArrayType arrayType = new ArrayType();
         arrayType.wrap(buffer, offset);
         arrayType.maxLength(0xff);
         arrayType.limit(0x00, offset + 0x03);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
         assertSame(Kind.ARRAY, dynamicType.kind());
         assertEquals(arrayType.limit(), dynamicType.limit());
     }
-    
+
     @Theory
-    public void shouldDecodeDynamicAsArray4(int offset) {
+    public void shouldDecodeDynamicAsArray4(int offset)
+    {
         ArrayType arrayType = new ArrayType();
         arrayType.wrap(buffer, offset);
         arrayType.maxLength(0x100);
         arrayType.limit(0x00, offset + 0x09);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
         assertSame(Kind.ARRAY, dynamicType.kind());
         assertEquals(arrayType.limit(), dynamicType.limit());
     }
-    
+
     @Theory
-    public void shouldDecodeDynamicAsBinary1(int offset) {
+    public void shouldDecodeDynamicAsBinary1(int offset)
+    {
         BinaryType binaryType = new BinaryType();
         binaryType.wrap(buffer, offset);
         binaryType.set(WRITE_UTF_8, "Hello, world");
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
         assertSame(Kind.BINARY, dynamicType.kind());
         assertEquals(binaryType.limit(), dynamicType.limit());
     }
-    
+
     @Theory
-    public void shouldDecodeDynamicAsBinary4(int offset) {
+    public void shouldDecodeDynamicAsBinary4(int offset)
+    {
         char[] chars = new char[256];
         Arrays.fill(chars, 'a');
 
         BinaryType binaryType = new BinaryType();
         binaryType.wrap(buffer, offset);
         binaryType.set(WRITE_UTF_8, new String(chars));
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
         assertSame(Kind.BINARY, dynamicType.kind());
         assertEquals(binaryType.limit(), dynamicType.limit());
     }
-    
+
     @Theory
-    public void shouldDecodeDynamicAsBooleanTrue(int offset) {
+    public void shouldDecodeDynamicAsBooleanTrue(int offset)
+    {
         BooleanType booleanType = new BooleanType();
         booleanType.wrap(buffer, offset);
         booleanType.set(true);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
         assertSame(Kind.BOOLEAN, dynamicType.kind());
         assertEquals(booleanType.limit(), dynamicType.limit());
     }
-    
+
     @Theory
-    public void shouldDecodeDynamicAsBooleanFalse(int offset) {
+    public void shouldDecodeDynamicAsBooleanFalse(int offset)
+    {
         BooleanType booleanType = new BooleanType();
         booleanType.wrap(buffer, offset);
         booleanType.set(false);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -140,79 +147,85 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsByte(int offset) {
+    public void shouldDecodeDynamicAsByte(int offset)
+    {
         ByteType byteType = new ByteType();
         byteType.wrap(buffer, offset);
         byteType.set((byte) 0x12);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
         assertSame(Kind.BYTE, dynamicType.kind());
         assertEquals(byteType.limit(), dynamicType.limit());
     }
-    
+
     @Theory
-    public void shouldDecodeDynamicAsChar(int offset) {
+    public void shouldDecodeDynamicAsChar(int offset)
+    {
         CharType charType = new CharType();
         charType.wrap(buffer, offset);
         charType.set(0x12);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
         assertSame(Kind.CHAR, dynamicType.kind());
         assertEquals(charType.limit(), dynamicType.limit());
     }
-    
+
     @Theory
     @Ignore("until decimal128 format implemented")
-    public void shouldDecodeDynamicAsDecimal128(int offset) {
+    public void shouldDecodeDynamicAsDecimal128(int offset)
+    {
         Decimal128Type decimal128Type = new Decimal128Type();
         decimal128Type.wrap(buffer, offset);
         decimal128Type.set(new BigDecimal(1.23456, DECIMAL128));
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
         assertSame(Kind.DECIMAL128, dynamicType.kind());
         assertEquals(decimal128Type.limit(), dynamicType.limit());
     }
-    
+
     @Theory
     @Ignore("until decimal32 format implemented")
-    public void shouldDecodeDynamicAsDecimal32(int offset) {
+    public void shouldDecodeDynamicAsDecimal32(int offset)
+    {
         Decimal32Type decimal32Type = new Decimal32Type();
         decimal32Type.wrap(buffer, offset);
         decimal32Type.set(new BigDecimal(1.23456, DECIMAL128));
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
         assertSame(Kind.DECIMAL32, dynamicType.kind());
         assertEquals(decimal32Type.limit(), dynamicType.limit());
     }
-    
+
     @Theory
     @Ignore("until decimal64 format implemented")
-    public void shouldDecodeDynamicAsDecimal64(int offset) {
+    public void shouldDecodeDynamicAsDecimal64(int offset)
+    {
         Decimal64Type decimal64Type = new Decimal64Type();
         decimal64Type.wrap(buffer, offset);
         decimal64Type.set(new BigDecimal(1.23456, DECIMAL128));
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
         assertSame(Kind.DECIMAL64, dynamicType.kind());
         assertEquals(decimal64Type.limit(), dynamicType.limit());
     }
-    
+
     @Theory
-    public void shouldDecodeDynamicAsDouble(int offset) {
+    public void shouldDecodeDynamicAsDouble(int offset)
+    {
         DoubleType doubleType = new DoubleType();
         doubleType.wrap(buffer, offset);
         doubleType.set(12345678d);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -221,11 +234,12 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsFloat(int offset) {
+    public void shouldDecodeDynamicAsFloat(int offset)
+    {
         FloatType floatType = new FloatType();
         floatType.wrap(buffer, offset);
         floatType.set(12345678f);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -234,11 +248,12 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsInt1(int offset) {
+    public void shouldDecodeDynamicAsInt1(int offset)
+    {
         IntType intType = new IntType();
         intType.wrap(buffer, offset);
         intType.set(1);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -247,11 +262,12 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsInt4(int offset) {
+    public void shouldDecodeDynamicAsInt4(int offset)
+    {
         IntType intType = new IntType();
         intType.wrap(buffer, offset);
         intType.set(0x12345678);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -260,12 +276,13 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsList0(int offset) {
+    public void shouldDecodeDynamicAsList0(int offset)
+    {
         ListType listType = new ListType();
         listType.wrap(buffer, offset);
         listType.maxLength(0x00);
         listType.clear();
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -274,12 +291,13 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsList1(int offset) {
+    public void shouldDecodeDynamicAsList1(int offset)
+    {
         ListType listType = new ListType();
         listType.wrap(buffer, offset);
         listType.maxLength(0xff);
         listType.clear();
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -288,12 +306,13 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsList8(int offset) {
+    public void shouldDecodeDynamicAsList8(int offset)
+    {
         ListType listType = new ListType();
         listType.wrap(buffer, offset);
         listType.maxLength(0x100);
         listType.clear();
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -302,11 +321,12 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsLong1(int offset) {
+    public void shouldDecodeDynamicAsLong1(int offset)
+    {
         LongType longType = new LongType();
         longType.wrap(buffer, offset);
         longType.set(1L);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -315,11 +335,12 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsLong8(int offset) {
+    public void shouldDecodeDynamicAsLong8(int offset)
+    {
         LongType longType = new LongType();
         longType.wrap(buffer, offset);
         longType.set(12345678L);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -328,12 +349,13 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsMap1(int offset) {
+    public void shouldDecodeDynamicAsMap1(int offset)
+    {
         MapType mapType = new MapType();
         mapType.wrap(buffer, offset);
         mapType.maxLength(0xff);
         mapType.clear();
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -342,12 +364,13 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsMap8(int offset) {
+    public void shouldDecodeDynamicAsMap8(int offset)
+    {
         MapType mapType = new MapType();
         mapType.wrap(buffer, offset);
         mapType.maxLength(0x100);
         mapType.clear();
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -356,82 +379,88 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsNull(int offset) {
+    public void shouldDecodeDynamicAsNull(int offset)
+    {
         NullType nullType = new NullType();
         nullType.wrap(buffer, offset);
         nullType.set(null);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
         assertSame(Kind.NULL, dynamicType.kind());
         assertEquals(nullType.limit(), dynamicType.limit());
     }
-    
+
     @Theory
-    public void shouldDecodeDynamicAsShort(int offset) {
+    public void shouldDecodeDynamicAsShort(int offset)
+    {
         ShortType shortType = new ShortType();
         shortType.wrap(buffer, offset);
         shortType.set((short) 0x1234);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
         assertSame(Kind.SHORT, dynamicType.kind());
         assertEquals(shortType.limit(), dynamicType.limit());
     }
-    
+
     @Theory
-    public void shouldDecodeDynamicAsString1(int offset) {
+    public void shouldDecodeDynamicAsString1(int offset)
+    {
         StringType stringType = new StringType();
         stringType.wrap(buffer, offset);
         stringType.set(WRITE_UTF_8, "a");
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
         assertSame(Kind.STRING, dynamicType.kind());
         assertEquals(stringType.limit(), dynamicType.limit());
     }
-    
+
     @Theory
-    public void shouldDecodeDynamicAsString4(int offset) {
+    public void shouldDecodeDynamicAsString4(int offset)
+    {
         char[] chars = new char[256];
         Arrays.fill(chars, 'a');
 
         StringType stringType = new StringType();
         stringType.wrap(buffer, offset);
         stringType.set(WRITE_UTF_8, new String(chars));
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
         assertSame(Kind.STRING, dynamicType.kind());
         assertEquals(stringType.limit(), dynamicType.limit());
     }
-    
+
     @Theory
-    public void shouldDecodeDynamicAsSymbol1(int offset) {
+    public void shouldDecodeDynamicAsSymbol1(int offset)
+    {
         SymbolType symbolType = new SymbolType();
         symbolType.wrap(buffer, offset);
         symbolType.set(WRITE_UTF_8, "a");
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
         assertSame(Kind.SYMBOL, dynamicType.kind());
         assertEquals(symbolType.limit(), dynamicType.limit());
     }
-    
+
     @Theory
-    public void shouldDecodeDynamicAsSymbol4(int offset) {
+    public void shouldDecodeDynamicAsSymbol4(int offset)
+    {
         char[] chars = new char[256];
         Arrays.fill(chars, 'a');
 
         SymbolType symbolType = new SymbolType();
         symbolType.wrap(buffer, offset);
         symbolType.set(WRITE_UTF_8, new String(chars));
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -440,11 +469,12 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsTimestamp(int offset) {
+    public void shouldDecodeDynamicAsTimestamp(int offset)
+    {
         TimestampType timestampType = new TimestampType();
         timestampType.wrap(buffer, offset);
         timestampType.set(0x12345678L);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -453,11 +483,12 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsUByte(int offset) {
+    public void shouldDecodeDynamicAsUByte(int offset)
+    {
         UByteType ubyteType = new UByteType();
         ubyteType.wrap(buffer, offset);
         ubyteType.set(0x12);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -466,11 +497,12 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsUInt0(int offset) {
+    public void shouldDecodeDynamicAsUInt0(int offset)
+    {
         UIntType uintType = new UIntType();
         uintType.wrap(buffer, offset);
         uintType.set(0L);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -479,11 +511,12 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsUInt1(int offset) {
+    public void shouldDecodeDynamicAsUInt1(int offset)
+    {
         UIntType uintType = new UIntType();
         uintType.wrap(buffer, offset);
         uintType.set(1L);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -492,11 +525,12 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsUInt4(int offset) {
+    public void shouldDecodeDynamicAsUInt4(int offset)
+    {
         UIntType uintType = new UIntType();
         uintType.wrap(buffer, offset);
         uintType.set(0x12345678L);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -505,11 +539,12 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsULong0(int offset) {
+    public void shouldDecodeDynamicAsULong0(int offset)
+    {
         ULongType ulongType = new ULongType();
         ulongType.wrap(buffer, offset);
         ulongType.set(0L);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -518,11 +553,12 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsULong1(int offset) {
+    public void shouldDecodeDynamicAsULong1(int offset)
+    {
         ULongType ulongType = new ULongType();
         ulongType.wrap(buffer, offset);
         ulongType.set(1L);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -531,11 +567,12 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsULong8(int offset) {
+    public void shouldDecodeDynamicAsULong8(int offset)
+    {
         ULongType ulongType = new ULongType();
         ulongType.wrap(buffer, offset);
         ulongType.set(12345678L);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -544,11 +581,12 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsUShort(int offset) {
+    public void shouldDecodeDynamicAsUShort(int offset)
+    {
         UShortType ushortType = new UShortType();
         ushortType.wrap(buffer, offset);
         ushortType.set(0x1234);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -557,11 +595,12 @@ public class DynamicTypeTest {
     }
 
     @Theory
-    public void shouldDecodeDynamicAsUuid(int offset) {
+    public void shouldDecodeDynamicAsUuid(int offset)
+    {
         UuidType uuidType = new UuidType();
         uuidType.wrap(buffer, offset);
         uuidType.set(fromString("f81d4fae-7dec-11d0-a765-00a0c91e6bf6"));
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
 
@@ -571,9 +610,10 @@ public class DynamicTypeTest {
 
     @Theory
     @Test(expected = Exception.class)
-    public void shouldNotDecode(int offset) {
+    public void shouldNotDecode(int offset)
+    {
         buffer.putByte(offset, (byte) 0x00);
-        
+
         DynamicType dynamicType = new DynamicType();
         dynamicType.wrap(buffer, offset);
         dynamicType.limit();
@@ -581,15 +621,16 @@ public class DynamicTypeTest {
 
     @Theory
     @SuppressWarnings("unchecked")
-    public void shouldNotifyChanged(int offset) {
+    public void shouldNotifyChanged(int offset)
+    {
         final Consumer<Flyweight> observer = mock(Consumer.class);
-        
+
         NullType nullType = new NullType();
         nullType.watch(observer);
         nullType.wrap(buffer, offset);
         nullType.set(null);
-        
+
         verify(observer).accept(nullType);
     }
-    
+
 }

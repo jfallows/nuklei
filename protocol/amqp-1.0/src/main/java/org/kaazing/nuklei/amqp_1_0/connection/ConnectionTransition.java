@@ -18,14 +18,8 @@ package org.kaazing.nuklei.amqp_1_0.connection;
 /*
  * See AMQP 1.0 specification, section 2.4.7 "Connection State Diagram"
  */
-public enum ConnectionTransition {
-    RECEIVED_HEADER,
-    SENT_HEADER,
-    RECEIVED_HEADER_NOT_EQUAL_SENT,
-    SENT_HEADER_NOT_EQUAL_RECEIVED,
-    RECEIVED_OPEN,
-    SENT_OPEN,
-    RECEIVED_CLOSE,
-    SENT_CLOSE,
-    ERROR
+public enum ConnectionTransition
+{
+    RECEIVED_HEADER, SENT_HEADER, RECEIVED_HEADER_NOT_EQUAL_SENT, SENT_HEADER_NOT_EQUAL_RECEIVED,
+    RECEIVED_OPEN, SENT_OPEN, RECEIVED_CLOSE, SENT_CLOSE, ERROR
 }

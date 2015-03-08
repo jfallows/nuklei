@@ -20,15 +20,17 @@ import org.kaazing.nuklei.amqp_1_0.sender.Sender;
 /*
  * See AMQP 1.0 specification, section 2.6 "Links"
  */
-public class Link<L> {
-    
+public class Link<L>
+{
+
     public final LinkStateMachine<L> stateMachine;
     public final Sender sender;
 
     public LinkState state;
     public L parameter;
 
-    public Link(LinkStateMachine<L> stateMachine, Sender sender) {
+    public Link(LinkStateMachine<L> stateMachine, Sender sender)
+    {
         this.stateMachine = stateMachine;
         this.sender = sender;
     }

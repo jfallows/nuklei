@@ -18,7 +18,6 @@ package org.kaazing.nuklei.amqp_1_0.codec.definitions;
 import java.util.function.IntFunction;
 import java.util.function.ToIntFunction;
 
-
 /*
  * See AMQP 1.0 specification, section 2.8.2 "Sender Settle Mode"
  */

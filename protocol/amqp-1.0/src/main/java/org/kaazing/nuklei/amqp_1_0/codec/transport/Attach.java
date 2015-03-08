@@ -40,11 +40,14 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 2.7.3 "Attach"
  */
-public final class Attach extends CompositeType {
+public final class Attach extends CompositeType
+{
 
-    public static final ThreadLocal<Attach> LOCAL_REF = new ThreadLocal<Attach>() {
+    public static final ThreadLocal<Attach> LOCAL_REF = new ThreadLocal<Attach>()
+    {
         @Override
-        protected Attach initialValue() {
+        protected Attach initialValue()
+        {
             return new Attach();
         }
     };
@@ -66,211 +69,297 @@ public final class Attach extends CompositeType {
     private final ArrayType desiredCapabilities;
     private final Fields properties;
 
-    public Attach() {
-        name = new StringType().watch((owner) -> { limit(1, owner.limit()); });
-        handle = new UIntType().watch((owner) -> { limit(2, owner.limit()); });
-        role = new BooleanType().watch((owner) -> { limit(3, owner.limit()); });
-        sendSettleMode = new UByteType().watch((owner) -> { limit(4, owner.limit()); });
-        receiveSettleMode = new UByteType().watch((owner) -> { limit(5, owner.limit()); });
-        source = new Source().watch((owner) -> { limit(6, owner.limit()); });
-        target = new Target().watch((owner) -> { limit(7, owner.limit()); });
-        unsettled = new MapType().watch((owner) -> { limit(8, owner.limit()); });
-        incompleteUnsettled = new BooleanType().watch((owner) -> { limit(9, owner.limit()); });
-        initialDeliveryCount = new UIntType().watch((owner) -> { limit(10, owner.limit()); });
-        maxMessageSize = new ULongType().watch((owner) -> { limit(11, owner.limit()); });
-        offeredCapabilities = new ArrayType().watch((owner) -> { limit(12, owner.limit()); });
-        desiredCapabilities = new ArrayType().watch((owner) -> { limit(13, owner.limit()); });
-        properties = new Fields().watch((owner) -> { limit(14, owner.limit()); });
+    public Attach()
+    {
+        name = new StringType().watch((owner) ->
+        {
+            limit(1, owner.limit());
+        });
+        handle = new UIntType().watch((owner) ->
+        {
+            limit(2, owner.limit());
+        });
+        role = new BooleanType().watch((owner) ->
+        {
+            limit(3, owner.limit());
+        });
+        sendSettleMode = new UByteType().watch((owner) ->
+        {
+            limit(4, owner.limit());
+        });
+        receiveSettleMode = new UByteType().watch((owner) ->
+        {
+            limit(5, owner.limit());
+        });
+        source = new Source().watch((owner) ->
+        {
+            limit(6, owner.limit());
+        });
+        target = new Target().watch((owner) ->
+        {
+            limit(7, owner.limit());
+        });
+        unsettled = new MapType().watch((owner) ->
+        {
+            limit(8, owner.limit());
+        });
+        incompleteUnsettled = new BooleanType().watch((owner) ->
+        {
+            limit(9, owner.limit());
+        });
+        initialDeliveryCount = new UIntType().watch((owner) ->
+        {
+            limit(10, owner.limit());
+        });
+        maxMessageSize = new ULongType().watch((owner) ->
+        {
+            limit(11, owner.limit());
+        });
+        offeredCapabilities = new ArrayType().watch((owner) ->
+        {
+            limit(12, owner.limit());
+        });
+        desiredCapabilities = new ArrayType().watch((owner) ->
+        {
+            limit(13, owner.limit());
+        });
+        properties = new Fields().watch((owner) ->
+        {
+            limit(14, owner.limit());
+        });
     }
 
     @Override
-    public Attach watch(Consumer<Flyweight> observer) {
+    public Attach watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public Attach wrap(MutableDirectBuffer buffer, int offset) {
+    public Attach wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         return this;
     }
-    
+
     @Override
-    public Attach maxLength(int value) {
+    public Attach maxLength(int value)
+    {
         super.maxLength(value);
         return this;
     }
 
     @Override
-    public Attach maxCount(int value) {
+    public Attach maxCount(int value)
+    {
         super.maxCount(value);
         return this;
     }
 
-    public Attach setName(Void value) {
+    public Attach setName(Void value)
+    {
         name().set(value);
         return this;
     }
-    
-    public <T> Attach setName(MutableDirectBufferMutator<T> mutator, T value) {
+
+    public <T> Attach setName(MutableDirectBufferMutator<T> mutator, T value)
+    {
         name().set(mutator, value);
         return this;
     }
-    
-    public <T> T getName(DirectBufferAccessor<T> accessor) {
+
+    public <T> T getName(DirectBufferAccessor<T> accessor)
+    {
         return name().get(accessor);
     }
 
-    public Attach setHandle(long value) {
+    public Attach setHandle(long value)
+    {
         handle().set(value);
         return this;
     }
-    
-    public long getHandle() {
+
+    public long getHandle()
+    {
         return handle().get();
     }
 
-    public Attach setRole(Role value) {
+    public Attach setRole(Role value)
+    {
         role().set(Role.WRITE, value);
         return this;
     }
-    
-    public Role getRole() {
+
+    public Role getRole()
+    {
         return role().get(Role.READ);
     }
 
-    public Attach setSendSettleMode(SenderSettleMode value) {
+    public Attach setSendSettleMode(SenderSettleMode value)
+    {
         sendSettleMode().set(SenderSettleMode.WRITE, value);
         return this;
     }
-    
-    public SenderSettleMode getSendSettleMode() {
+
+    public SenderSettleMode getSendSettleMode()
+    {
         return sendSettleMode().get(SenderSettleMode.READ);
     }
 
-    public Attach setReceiveSettleMode(ReceiverSettleMode value) {
+    public Attach setReceiveSettleMode(ReceiverSettleMode value)
+    {
         receiveSettleMode().set(ReceiverSettleMode.WRITE, value);
         return this;
     }
-    
-    public ReceiverSettleMode getReceiveSettleMode() {
+
+    public ReceiverSettleMode getReceiveSettleMode()
+    {
         return receiveSettleMode().get(ReceiverSettleMode.READ);
     }
 
-    public Source getSource() {
+    public Source getSource()
+    {
         return source();
     }
 
-    public Target getTarget() {
+    public Target getTarget()
+    {
         return target();
     }
 
-    public MapType getUnsettled() {
+    public MapType getUnsettled()
+    {
         return unsettled();
     }
-    
-    public Attach setIncompleteUnsettled(boolean value) {
+
+    public Attach setIncompleteUnsettled(boolean value)
+    {
         incompleteUnsettled().set(value);
         return this;
     }
-    
-    public boolean getIncompleteUnsettled() {
+
+    public boolean getIncompleteUnsettled()
+    {
         return incompleteUnsettled().get();
     }
 
-    public Attach setInitialDeliveryCount(long value) {
+    public Attach setInitialDeliveryCount(long value)
+    {
         initialDeliveryCount().set(value);
         return this;
     }
-    
-    public long getInitialDeliveryCount() {
+
+    public long getInitialDeliveryCount()
+    {
         return initialDeliveryCount().get();
     }
 
-    public Attach setMaxMessageSize(long value) {
+    public Attach setMaxMessageSize(long value)
+    {
         maxMessageSize().set(value);
         return this;
     }
-    
-    public long getMaxMessageSize() {
+
+    public long getMaxMessageSize()
+    {
         return maxMessageSize().get();
     }
 
-    public Attach setOfferedCapabilities(ArrayType value) {
+    public Attach setOfferedCapabilities(ArrayType value)
+    {
         offeredCapabilities().set(value);
         return this;
     }
-    
-    public ArrayType getOfferedCapabilities() {
+
+    public ArrayType getOfferedCapabilities()
+    {
         return offeredCapabilities();
     }
 
-    public Attach setDesiredCapabilities(ArrayType value) {
+    public Attach setDesiredCapabilities(ArrayType value)
+    {
         desiredCapabilities().set(value);
         return this;
     }
-    
-    public ArrayType getDesiredCapabilities() {
+
+    public ArrayType getDesiredCapabilities()
+    {
         return desiredCapabilities();
     }
 
-    public Fields getProperties() {
+    public Fields getProperties()
+    {
         return properties();
     }
 
-    private StringType name() {
-        return name.wrap(buffer(), offsetBody());
+    private StringType name()
+    {
+        return name.wrap(mutableBuffer(), offsetBody());
     }
 
-    private UIntType handle() {
-        return handle.wrap(buffer(), name().limit());
+    private UIntType handle()
+    {
+        return handle.wrap(mutableBuffer(), name().limit());
     }
 
-    private BooleanType role() {
-        return role.wrap(buffer(), handle().limit());
+    private BooleanType role()
+    {
+        return role.wrap(mutableBuffer(), handle().limit());
     }
 
-    private UByteType sendSettleMode() {
-        return sendSettleMode.wrap(buffer(), role().limit());
+    private UByteType sendSettleMode()
+    {
+        return sendSettleMode.wrap(mutableBuffer(), role().limit());
     }
 
-    private UByteType receiveSettleMode() {
-        return receiveSettleMode.wrap(buffer(), role().limit());
+    private UByteType receiveSettleMode()
+    {
+        return receiveSettleMode.wrap(mutableBuffer(), role().limit());
     }
 
-    private Source source() {
-        return source.wrap(buffer(), receiveSettleMode().limit());
+    private Source source()
+    {
+        return source.wrap(mutableBuffer(), receiveSettleMode().limit());
     }
 
-    private Target target() {
-        return target.wrap(buffer(), source().limit());
+    private Target target()
+    {
+        return target.wrap(mutableBuffer(), source().limit());
     }
 
-    private MapType unsettled() {
-        return unsettled.wrap(buffer(), target().limit());
+    private MapType unsettled()
+    {
+        return unsettled.wrap(mutableBuffer(), target().limit());
     }
 
-    private BooleanType incompleteUnsettled() {
-        return incompleteUnsettled.wrap(buffer(), unsettled().limit());
-    }
-    
-    private UIntType initialDeliveryCount() {
-        return initialDeliveryCount.wrap(buffer(), incompleteUnsettled().limit());
-    }
-    
-    private ULongType maxMessageSize() {
-        return maxMessageSize.wrap(buffer(), initialDeliveryCount().limit());
+    private BooleanType incompleteUnsettled()
+    {
+        return incompleteUnsettled.wrap(mutableBuffer(), unsettled().limit());
     }
 
-    private ArrayType offeredCapabilities() {
-        return offeredCapabilities.wrap(buffer(), maxMessageSize().limit());
+    private UIntType initialDeliveryCount()
+    {
+        return initialDeliveryCount.wrap(mutableBuffer(), incompleteUnsettled().limit());
     }
 
-    private ArrayType desiredCapabilities() {
-        return desiredCapabilities.wrap(buffer(), offeredCapabilities().limit());
+    private ULongType maxMessageSize()
+    {
+        return maxMessageSize.wrap(mutableBuffer(), initialDeliveryCount().limit());
     }
 
-    private Fields properties() {
-        return properties.wrap(buffer(), desiredCapabilities().limit());
+    private ArrayType offeredCapabilities()
+    {
+        return offeredCapabilities.wrap(mutableBuffer(), maxMessageSize().limit());
+    }
+
+    private ArrayType desiredCapabilities()
+    {
+        return desiredCapabilities.wrap(mutableBuffer(), offeredCapabilities().limit());
+    }
+
+    private Fields properties()
+    {
+        return properties.wrap(mutableBuffer(), desiredCapabilities().limit());
     }
 }

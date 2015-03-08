@@ -18,12 +18,7 @@ package org.kaazing.nuklei.amqp_1_0.session;
 /*
  * See AMQP 1.0 specification, section 2.5.5 "Session States"
  */
-public enum SessionState {
-    UNMAPPED,
-    BEGIN_SENT,
-    BEGIN_RECEIVED,
-    MAPPED,
-    END_SENT,
-    END_RECEIVED,
-    DISCARDING
+public enum SessionState
+{
+    UNMAPPED, BEGIN_SENT, BEGIN_RECEIVED, MAPPED, END_SENT, END_RECEIVED, DISCARDING
 }

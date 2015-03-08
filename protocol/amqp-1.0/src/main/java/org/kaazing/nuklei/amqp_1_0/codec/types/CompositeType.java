@@ -26,84 +26,101 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 1.4 "Composite Type Representation"
  */
-public class CompositeType extends ListType {
+public class CompositeType extends ListType
+{
 
     @Override
-    public CompositeType watch(Consumer<Flyweight> notifier) {
+    public CompositeType watch(Consumer<Flyweight> notifier)
+    {
         super.watch(notifier);
         return this;
     }
 
     @Override
-    public CompositeType wrap(MutableDirectBuffer buffer, int offset) {
+    public CompositeType wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         return this;
     }
-    
-    public <T extends CompositeType> T as(T composite) {
+
+    public <T extends CompositeType> T as(T composite)
+    {
         composite.wrap(buffer(), offset());
         return composite;
     }
 
-    public static class Described extends Type {
+    public static class Described extends Type
+    {
 
         private final ULongType.Descriptor descriptor;
         private final CompositeType composite;
-        
-        public Described() {
+
+        public Described()
+        {
             descriptor = new ULongType.Descriptor();
             composite = new CompositeType();
         }
 
         @Override
-        public Kind kind() {
+        public Kind kind()
+        {
             return Kind.DESCRIBED;
         }
 
         @Override
-        public Described watch(Consumer<Flyweight> notifier) {
+        public Described watch(Consumer<Flyweight> notifier)
+        {
             super.watch(notifier);
             return this;
         }
 
         @Override
-        public Described wrap(MutableDirectBuffer buffer, int offset) {
+        public Described wrap(MutableDirectBuffer buffer, int offset)
+        {
             super.wrap(buffer, offset);
             return this;
         }
 
         @Override
-        public int limit() {
+        public int limit()
+        {
             return composite().limit();
         }
 
-        public <T> Described setDescriptor(ToLongFunction<T> mutator, T value) {
+        public <T> Described setDescriptor(ToLongFunction<T> mutator, T value)
+        {
             descriptor().set(mutator, value);
             return this;
         }
 
-        public Described setDescriptor(long value) {
+        public Described setDescriptor(long value)
+        {
             descriptor().set(value);
             return this;
         }
 
-        public <R> R getDescriptor(LongFunction<R> accessor) {
+        public <R> R getDescriptor(LongFunction<R> accessor)
+        {
             return descriptor().get(accessor);
         }
 
-        public long getDescriptor() {
+        public long getDescriptor()
+        {
             return descriptor().get();
         }
 
-        public CompositeType getComposite() {
+        public CompositeType getComposite()
+        {
             return composite();
         }
-        
-        private ULongType.Descriptor descriptor() {
+
+        private ULongType.Descriptor descriptor()
+        {
             return descriptor.wrap(buffer(), offset());
         }
 
-        private CompositeType composite() {
+        private CompositeType composite()
+        {
             return composite.wrap(buffer(), descriptor().limit());
         }
 

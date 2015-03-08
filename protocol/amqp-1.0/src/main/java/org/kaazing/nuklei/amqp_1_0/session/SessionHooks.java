@@ -23,19 +23,42 @@ import org.kaazing.nuklei.amqp_1_0.codec.transport.End;
 import org.kaazing.nuklei.amqp_1_0.codec.transport.Flow;
 import org.kaazing.nuklei.amqp_1_0.function.FrameConsumer;
 
-public class SessionHooks<S, L> {
+public class SessionHooks<S, L>
+{
 
-    public Consumer<Session<S, L>> whenInitialized = (s) -> {};
-    public Consumer<Session<S, L>> whenError = (s) -> {};
+    public Consumer<Session<S, L>> whenInitialized = (s) ->
+    {
+    };
+    public Consumer<Session<S, L>> whenError = (s) ->
+    {
+    };
 
-    public FrameConsumer<Session<S, L>, Begin> whenBeginReceived = (s, f, m) -> {};
-    public FrameConsumer<Session<S, L>, Begin> whenBeginSent = (s, f, m) -> {};
-    public FrameConsumer<Session<S, L>, Flow> whenFlowReceived = (s, f, m) -> {};
-    public FrameConsumer<Session<S, L>, Flow> whenFlowSent = (s, f, m) -> {};
-    public FrameConsumer<Session<S, L>, Disposition> whenDispositionReceived = (s, f, m) -> {};
-    public FrameConsumer<Session<S, L>, Disposition> whenDispositionSent = (s, f, m) -> {};
-    public FrameConsumer<Session<S, L>, End> whenEndReceived = (s, f, m) -> {};
-    public FrameConsumer<Session<S, L>, End> whenEndSent = (s, f, m) -> {};
-    public FrameConsumer<Session<S, L>, End> whenEndSentWithError = (s, f, m) -> {};
-    
+    public FrameConsumer<Session<S, L>, Begin> whenBeginReceived = (s, f, m) ->
+    {
+    };
+    public FrameConsumer<Session<S, L>, Begin> whenBeginSent = (s, f, m) ->
+    {
+    };
+    public FrameConsumer<Session<S, L>, Flow> whenFlowReceived = (s, f, m) ->
+    {
+    };
+    public FrameConsumer<Session<S, L>, Flow> whenFlowSent = (s, f, m) ->
+    {
+    };
+    public FrameConsumer<Session<S, L>, Disposition> whenDispositionReceived = (s, f, m) ->
+    {
+    };
+    public FrameConsumer<Session<S, L>, Disposition> whenDispositionSent = (s, f, m) ->
+    {
+    };
+    public FrameConsumer<Session<S, L>, End> whenEndReceived = (s, f, m) ->
+    {
+    };
+    public FrameConsumer<Session<S, L>, End> whenEndSent = (s, f, m) ->
+    {
+    };
+    public FrameConsumer<Session<S, L>, End> whenEndSentWithError = (s, f, m) ->
+    {
+    };
+
 }

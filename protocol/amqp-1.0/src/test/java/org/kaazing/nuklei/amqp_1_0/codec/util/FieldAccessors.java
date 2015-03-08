@@ -24,14 +24,18 @@ import org.kaazing.nuklei.function.DirectBufferAccessor;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 
-public class FieldAccessors {
+public class FieldAccessors
+{
 
-    public static final DirectBufferAccessor<String> newAccessor(final Charset charset) {
-        return new DirectBufferAccessor<String>() {
+    public static final DirectBufferAccessor<String> newAccessor(final Charset charset)
+    {
+        return new DirectBufferAccessor<String>()
+        {
             private final CharsetDecoder decoder = charset.newDecoder();
-    
+
             @Override
-            public String access(DirectBuffer buffer, int offset, int size) {
+            public String access(DirectBuffer buffer, int offset, int size)
+            {
                 ByteBuffer buf = buffer.byteBuffer();
                 ByteBuffer in = buf != null ? buf.duplicate() : ByteBuffer.wrap(buffer.byteArray());
                 in.position(offset);

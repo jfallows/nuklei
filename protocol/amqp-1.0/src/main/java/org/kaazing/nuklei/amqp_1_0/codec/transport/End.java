@@ -26,54 +26,68 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 2.7.8 "End"
  */
-public final class End extends CompositeType {
+public final class End extends CompositeType
+{
 
-    public static final ThreadLocal<End> LOCAL_REF = new ThreadLocal<End>() {
+    public static final ThreadLocal<End> LOCAL_REF = new ThreadLocal<End>()
+    {
         @Override
-        protected End initialValue() {
+        protected End initialValue()
+        {
             return new End();
         }
     };
 
     private final Error error;
 
-    public End() {
-        error = new Error().watch((owner) -> { limit(1, owner.limit()); });
+    public End()
+    {
+        error = new Error().watch((owner) ->
+        {
+            limit(1, owner.limit());
+        });
     }
 
     @Override
-    public End watch(Consumer<Flyweight> observer) {
+    public End watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public End wrap(MutableDirectBuffer buffer, int offset) {
+    public End wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         return this;
     }
-    
+
     @Override
-    public End maxLength(int value) {
+    public End maxLength(int value)
+    {
         super.maxLength(value);
         return this;
     }
 
     @Override
-    public End maxCount(int value) {
+    public End maxCount(int value)
+    {
         super.maxCount(value);
         return this;
     }
 
-    public Error getError() {
+    public Error getError()
+    {
         return error();
     }
-    
-    public boolean hasError() {
+
+    public boolean hasError()
+    {
         return error.offset() < limit();
     }
-    
-    private Error error() {
+
+    private Error error()
+    {
         return error.wrap(buffer(), offsetBody());
     }
 }

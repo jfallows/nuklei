@@ -28,81 +28,97 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 1.6.22 "list"
  */
-public class ListType extends Type {
+public class ListType extends Type
+{
 
     private final Header header;
     private final DynamicType dynamic;
-    
-    public ListType() {
+
+    public ListType()
+    {
         super();
         this.header = new Header().watch((owner) -> notifyChanged());
         this.dynamic = new DynamicType();
     }
 
     @Override
-    public Kind kind() {
+    public Kind kind()
+    {
         return Kind.LIST;
     }
 
     @Override
-    public ListType watch(Consumer<Flyweight> observer) {
+    public ListType watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public ListType wrap(MutableDirectBuffer buffer, int offset) {
+    public ListType wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         header.wrap(buffer, offset);
         return this;
     }
-    
-    public int offsetAt(int index) {
+
+    public int offsetAt(int index)
+    {
         int offsetAt = offsetBody();
-        for (; index > 0; index--) {
+        for (; index > 0; index--)
+        {
             offsetAt = dynamic.wrap(buffer(), offsetAt).limit();
         }
         return offsetAt;
     }
-    
-    public ListType clear() {
+
+    public ListType clear()
+    {
         limit(0, offsetBody());
         return this;
     }
 
-    public int length() {
+    public int length()
+    {
         return header.length();
     }
 
-    public ListType maxLength(int value) {
+    public ListType maxLength(int value)
+    {
         header.max(value);
         return this;
     }
-    
-    public int count() {
+
+    public int count()
+    {
         return header.count();
     }
-    
-    public ListType maxCount(int value) {
+
+    public ListType maxCount(int value)
+    {
         header.max(value);
         return this;
     }
-    
+
     @Override
-    public int limit() {
+    public int limit()
+    {
         return header.lengthLimit() + header.length();
     }
-    
-    public final void limit(int count, int limit) {
+
+    public final void limit(int count, int limit)
+    {
         header.count(count);
         header.length(limit - header.lengthLimit());
     }
 
-    protected final int offsetBody() {
+    protected final int offsetBody()
+    {
         return header.limit();
     }
 
-    private static final class Header extends FlyweightBE {
+    private static final class Header extends FlyweightBE
+    {
 
         private static final int OFFSET_LENGTH_KIND = 0;
         private static final int SIZEOF_LENGTH_KIND = BitUtil.SIZE_OF_BYTE;
@@ -113,26 +129,32 @@ public class ListType extends Type {
         private static final short WIDTH_KIND_4 = 0xd0;
 
         @Override
-        public Header wrap(MutableDirectBuffer buffer, int offset) {
+        public Header wrap(MutableDirectBuffer buffer, int offset)
+        {
             super.wrap(buffer, offset);
             return this;
         }
 
         @Override
-        public Header watch(Consumer<Flyweight> observer) {
+        public Header watch(Consumer<Flyweight> observer)
+        {
             super.watch(observer);
             return this;
         }
 
-        public void count(int value) {
-            switch (kind()) {
+        public void count(int value)
+        {
+            switch (kind())
+            {
             case WIDTH_KIND_0:
-                if (value != 0) {
+                if (value != 0)
+                {
                     throw new IllegalStateException();
                 }
                 break;
             case WIDTH_KIND_1:
-                switch (highestOneBit(value)) {
+                switch (highestOneBit(value))
+                {
                 case 0:
                 case 1:
                 case 2:
@@ -142,22 +164,24 @@ public class ListType extends Type {
                 case 32:
                 case 64:
                 case 128:
-                    uint8Put(buffer(), offset() + OFFSET_LENGTH + 1, (short) value);
+                    uint8Put(mutableBuffer(), offset() + OFFSET_LENGTH + 1, (short) value);
                     break;
                 default:
                     throw new IllegalStateException();
                 }
                 break;
             case WIDTH_KIND_4:
-                int32Put(buffer(), offset() + OFFSET_LENGTH + 4, value);
+                int32Put(mutableBuffer(), offset() + OFFSET_LENGTH + 4, value);
                 break;
             default:
                 throw new IllegalStateException();
             }
         }
 
-        public int count() {
-            switch (kind()) {
+        public int count()
+        {
+            switch (kind())
+            {
             case WIDTH_KIND_0:
                 return 0;
             case WIDTH_KIND_1:
@@ -169,8 +193,10 @@ public class ListType extends Type {
             }
         }
 
-        public int length() {
-            switch (kind()) {
+        public int length()
+        {
+            switch (kind())
+            {
             case WIDTH_KIND_0:
                 return 0;
             case WIDTH_KIND_1:
@@ -181,9 +207,11 @@ public class ListType extends Type {
                 throw new IllegalStateException();
             }
         }
-        
-        public int lengthLimit() {
-            switch (kind()) {
+
+        public int lengthLimit()
+        {
+            switch (kind())
+            {
             case WIDTH_KIND_0:
                 return offset() + OFFSET_LENGTH_KIND + SIZEOF_LENGTH_KIND;
             case WIDTH_KIND_1:
@@ -194,16 +222,20 @@ public class ListType extends Type {
                 throw new IllegalStateException();
             }
         }
-        
-        public Header length(int value) {
-            switch (kind()) {
+
+        public Header length(int value)
+        {
+            switch (kind())
+            {
             case WIDTH_KIND_0:
-                if (value != 0) {
+                if (value != 0)
+                {
                     throw new IllegalStateException();
                 }
                 break;
             case WIDTH_KIND_1:
-                switch (highestOneBit(value)) {
+                switch (highestOneBit(value))
+                {
                 case 0:
                 case 1:
                 case 2:
@@ -213,25 +245,27 @@ public class ListType extends Type {
                 case 32:
                 case 64:
                 case 128:
-                    uint8Put(buffer(), offset() + OFFSET_LENGTH, (short) value);
+                    uint8Put(mutableBuffer(), offset() + OFFSET_LENGTH, (short) value);
                     break;
                 default:
                     throw new IllegalStateException();
                 }
                 break;
             case WIDTH_KIND_4:
-                int32Put(buffer(), offset() + OFFSET_LENGTH, value);
+                int32Put(mutableBuffer(), offset() + OFFSET_LENGTH, value);
                 break;
             default:
                 throw new IllegalStateException();
             }
-            
+
             notifyChanged();
             return this;
         }
 
-        public void max(int value) {
-            switch (highestOneBit(value)) {
+        public void max(int value)
+        {
+            switch (highestOneBit(value))
+            {
             case 0:
                 kind(WIDTH_KIND_0);
                 break;
@@ -249,11 +283,13 @@ public class ListType extends Type {
                 kind(WIDTH_KIND_4);
                 break;
             }
-            
+
         }
-        
-        public int limit() {
-            switch (kind()) {
+
+        public int limit()
+        {
+            switch (kind())
+            {
             case WIDTH_KIND_0:
                 return offset() + OFFSET_LENGTH_KIND + SIZEOF_LENGTH_KIND;
             case WIDTH_KIND_1:
@@ -265,11 +301,13 @@ public class ListType extends Type {
             }
         }
 
-        private void kind(short kind) {
-            uint8Put(buffer(), offset() + OFFSET_LENGTH_KIND, kind);
+        private void kind(short kind)
+        {
+            uint8Put(mutableBuffer(), offset() + OFFSET_LENGTH_KIND, kind);
         }
 
-        private short kind() {
+        private short kind()
+        {
             return uint8Get(buffer(), offset() + OFFSET_LENGTH_KIND);
         }
     }

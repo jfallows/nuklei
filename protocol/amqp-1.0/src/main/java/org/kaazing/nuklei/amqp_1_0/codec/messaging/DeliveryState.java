@@ -64,7 +64,8 @@ public enum DeliveryState
         @Override
         public long applyAsLong(DeliveryState value)
         {
-            switch (value) {
+            switch (value)
+            {
             case RECEIVED:
                 return 0x23;
             case ACCEPTED:
@@ -81,7 +82,7 @@ public enum DeliveryState
                 throw new IllegalStateException();
             }
         }
-        
+
     };
 
     public static final class Described extends CompositeType.Described
@@ -93,7 +94,7 @@ public enum DeliveryState
             super.watch(notifier);
             return this;
         }
-    
+
         @Override
         public Described wrap(MutableDirectBuffer buffer, int offset)
         {
@@ -106,7 +107,7 @@ public enum DeliveryState
             setDescriptor(WRITE, value);
             return this;
         }
-        
+
         public DeliveryState getDeliveryState()
         {
             return getDescriptor(READ);

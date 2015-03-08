@@ -15,8 +15,8 @@
  */
 package org.kaazing.nuklei.amqp_1_0.sender;
 
-
-public interface SenderFactory {
+public interface SenderFactory
+{
 
     Sender newSender(Object headers);
 

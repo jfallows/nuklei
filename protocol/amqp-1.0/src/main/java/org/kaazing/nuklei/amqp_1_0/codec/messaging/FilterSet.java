@@ -47,7 +47,8 @@ public final class FilterSet extends MapType
 
         private final T parent;
 
-        public Embedded(T parent) {
+        public Embedded(T parent)
+        {
             this.parent = parent;
         }
 

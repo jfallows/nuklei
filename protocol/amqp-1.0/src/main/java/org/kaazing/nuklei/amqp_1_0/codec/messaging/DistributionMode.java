@@ -32,7 +32,8 @@ public enum DistributionMode
 
     public static final DirectBufferAccessor<DistributionMode> READ = (DirectBuffer buffer, int offset, int size) ->
     {
-        switch (buffer.getByte(offset)) {
+        switch (buffer.getByte(offset))
+        {
         case 'm':
             // TODO: verify "move" matches entirely
             return DistributionMode.MOVE;

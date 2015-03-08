@@ -17,7 +17,8 @@ package org.kaazing.nuklei.amqp_1_0.link;
 
 import org.kaazing.nuklei.amqp_1_0.session.Session;
 
-public interface LinkFactory<S, L> {
+public interface LinkFactory<S, L>
+{
 
     Link<L> newLink(Session<S, L> session);
 }

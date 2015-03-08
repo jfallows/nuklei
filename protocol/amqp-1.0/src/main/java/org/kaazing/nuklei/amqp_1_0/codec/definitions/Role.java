@@ -18,7 +18,6 @@ package org.kaazing.nuklei.amqp_1_0.codec.definitions;
 import org.kaazing.nuklei.function.BooleanFunction;
 import org.kaazing.nuklei.function.ToBooleanFunction;
 
-
 /*
  * See AMQP 1.0 specification, section 2.8.1 "Role"
  */

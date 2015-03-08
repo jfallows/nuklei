@@ -20,45 +20,54 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 1.6.1 "null"
  */
-public final class NullType extends Type {
+public final class NullType extends Type
+{
 
     private static final short WIDTH_KIND_0 = 0x40;
 
     @Override
-    public Kind kind() {
+    public Kind kind()
+    {
         return Kind.NULL;
     }
 
     @Override
-    public NullType wrap(MutableDirectBuffer buffer, int offset) {
+    public NullType wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         return this;
     }
-    
-    public Void get() {
-        switch (widthKind()) {
+
+    public Void get()
+    {
+        switch (widthKind())
+        {
         case WIDTH_KIND_0:
             return null;
         default:
             throw new IllegalStateException();
         }
     }
-    
-    public NullType set(Void value) {
+
+    public NullType set(Void value)
+    {
         widthKind(WIDTH_KIND_0);
         notifyChanged();
         return this;
     }
-    
-    public int limit() {
+
+    public int limit()
+    {
         return offset() + 1;
     }
 
-    private void widthKind(short value) {
-        uint8Put(buffer(), offset(), value);
+    private void widthKind(short value)
+    {
+        uint8Put(mutableBuffer(), offset(), value);
     }
-    
-    private short widthKind() {
+
+    private short widthKind()
+    {
         return uint8Get(buffer(), offset());
     }
 

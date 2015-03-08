@@ -38,7 +38,12 @@ public class AmqpMikro<C, S, L> implements AlignedMikro<Connection<C, S, L>>
     }
 
     @Override
-    public void onMessage(Connection<C, S, L> connection, Object headers, int typeId, DirectBuffer buffer, int offset, int length)
+    public void onMessage(Connection<C, S, L> connection,
+                          Object headers,
+                          int typeId,
+                          DirectBuffer buffer,
+                          int offset,
+                          int length)
     {
         if (connection == null)
         {

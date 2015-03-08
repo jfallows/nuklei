@@ -33,11 +33,14 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 2.7.5 "Transfer"
  */
-public final class Transfer extends CompositeType {
+public final class Transfer extends CompositeType
+{
 
-    public static final ThreadLocal<Transfer> LOCAL_REF = new ThreadLocal<Transfer>() {
+    public static final ThreadLocal<Transfer> LOCAL_REF = new ThreadLocal<Transfer>()
+    {
         @Override
-        protected Transfer initialValue() {
+        protected Transfer initialValue()
+        {
             return new Transfer();
         }
     };
@@ -56,181 +59,250 @@ public final class Transfer extends CompositeType {
 
     // TODO: payload
 
-    public Transfer() {
-        handle = new UIntType().watch((owner) -> { limit(1, owner.limit()); });
-        deliveryId = new UIntType().watch((owner) -> { limit(2, owner.limit()); });
-        deliveryTag = new BinaryType().watch((owner) -> { limit(3, owner.limit()); });
-        messageFormat = new UIntType().watch((owner) -> { limit(4, owner.limit()); });;
-        settled = new BooleanType().watch((owner) -> { limit(5, owner.limit()); });
-        more = new BooleanType().watch((owner) -> { limit(6, owner.limit()); });
-        receiveSettleMode = new UByteType().watch((owner) -> { limit(7, owner.limit()); });
-        deliveryState = new DeliveryState.Described().watch((owner) -> { limit(8, owner.limit()); });
-        resume = new BooleanType().watch((owner) -> { limit(9, owner.limit()); });
-        aborted = new BooleanType().watch((owner) -> { limit(10, owner.limit()); });
-        batchable = new BooleanType().watch((owner) -> { limit(11, owner.limit()); });
+    public Transfer()
+    {
+        handle = new UIntType().watch((owner) ->
+        {
+            limit(1, owner.limit());
+        });
+        deliveryId = new UIntType().watch((owner) ->
+        {
+            limit(2, owner.limit());
+        });
+        deliveryTag = new BinaryType().watch((owner) ->
+        {
+            limit(3, owner.limit());
+        });
+        messageFormat = new UIntType().watch((owner) ->
+        {
+            limit(4, owner.limit());
+        });
+        settled = new BooleanType().watch((owner) ->
+        {
+            limit(5, owner.limit());
+        });
+        more = new BooleanType().watch((owner) ->
+        {
+            limit(6, owner.limit());
+        });
+        receiveSettleMode = new UByteType().watch((owner) ->
+        {
+            limit(7, owner.limit());
+        });
+        deliveryState = new DeliveryState.Described().watch((owner) ->
+        {
+            limit(8, owner.limit());
+        });
+        resume = new BooleanType().watch((owner) ->
+        {
+            limit(9, owner.limit());
+        });
+        aborted = new BooleanType().watch((owner) ->
+        {
+            limit(10, owner.limit());
+        });
+        batchable = new BooleanType().watch((owner) ->
+        {
+            limit(11, owner.limit());
+        });
     }
 
     @Override
-    public Transfer watch(Consumer<Flyweight> observer) {
+    public Transfer watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public Transfer wrap(MutableDirectBuffer buffer, int offset) {
+    public Transfer wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         return this;
     }
-    
+
     @Override
-    public Transfer maxLength(int value) {
+    public Transfer maxLength(int value)
+    {
         super.maxLength(value);
         return this;
     }
 
     @Override
-    public Transfer maxCount(int value) {
+    public Transfer maxCount(int value)
+    {
         super.maxCount(value);
         return this;
     }
 
-    public Transfer setHandle(long value) {
+    public Transfer setHandle(long value)
+    {
         handle().set(value);
         return this;
     }
-    
-    public long getHandle() {
+
+    public long getHandle()
+    {
         return handle().get();
     }
-    
-    public Transfer setDeliveryId(long value) {
+
+    public Transfer setDeliveryId(long value)
+    {
         deliveryId().set(value);
         return this;
     }
-    
-    public long getDeliveryId() {
+
+    public long getDeliveryId()
+    {
         return deliveryId().get();
     }
-    
 
-    public <T> Transfer setDeliveryTag(MutableDirectBufferMutator<T> mutator, T value) {
+    public <T> Transfer setDeliveryTag(MutableDirectBufferMutator<T> mutator, T value)
+    {
         deliveryTag().set(mutator, value);
         return this;
     }
-    
-    public <T> T getDeliveryTag(DirectBufferAccessor<T> accessor) {
+
+    public <T> T getDeliveryTag(DirectBufferAccessor<T> accessor)
+    {
         return deliveryTag().get(accessor);
     }
 
-    public Transfer setMessageFormat(long value) {
+    public Transfer setMessageFormat(long value)
+    {
         messageFormat().set(value);
         return this;
     }
-    
-    public long getMessageFormat() {
+
+    public long getMessageFormat()
+    {
         return messageFormat().get();
     }
 
-    public Transfer setSettled(boolean value) {
+    public Transfer setSettled(boolean value)
+    {
         settled().set(value);
         return this;
     }
-    
-    public boolean getSettled() {
+
+    public boolean getSettled()
+    {
         return settled().get();
     }
 
-    public Transfer setMore(boolean value) {
+    public Transfer setMore(boolean value)
+    {
         more().set(value);
         return this;
     }
-    
-    public boolean getMore() {
+
+    public boolean getMore()
+    {
         return more().get();
     }
 
-    public Transfer setReceiveSettleMode(ReceiverSettleMode value) {
+    public Transfer setReceiveSettleMode(ReceiverSettleMode value)
+    {
         receiveSettleMode().set(ReceiverSettleMode.WRITE, value);
         return this;
     }
-    
-    public ReceiverSettleMode getReceiveSettleMode() {
+
+    public ReceiverSettleMode getReceiveSettleMode()
+    {
         return receiveSettleMode().get(ReceiverSettleMode.READ);
     }
 
-    public DeliveryState.Described getDeliveryState() {
+    public DeliveryState.Described getDeliveryState()
+    {
         return deliveryState();
     }
-    
-    public Transfer setResume(boolean value) {
+
+    public Transfer setResume(boolean value)
+    {
         resume().set(value);
         return this;
     }
-    
-    public boolean getResume() {
+
+    public boolean getResume()
+    {
         return resume().get();
     }
 
-    public Transfer setAborted(boolean value) {
+    public Transfer setAborted(boolean value)
+    {
         aborted().set(value);
         return this;
     }
-    
-    public boolean getAborted() {
+
+    public boolean getAborted()
+    {
         return aborted().get();
     }
 
-    public Transfer setBatchable(boolean value) {
+    public Transfer setBatchable(boolean value)
+    {
         batchable().set(value);
         return this;
     }
-    
-    public boolean getBatchable() {
+
+    public boolean getBatchable()
+    {
         return batchable().get();
     }
 
-    private UIntType handle() {
-        return handle.wrap(buffer(), offsetBody());
+    private UIntType handle()
+    {
+        return handle.wrap(mutableBuffer(), offsetBody());
     }
 
-    private UIntType deliveryId() {
-        return deliveryId.wrap(buffer(), handle().limit());
-    }
-    
-    private BinaryType deliveryTag() {
-        return deliveryTag.wrap(buffer(), deliveryId().limit());
-    }
-        
-    private UIntType messageFormat() {
-        return messageFormat.wrap(buffer(), deliveryTag().limit());
+    private UIntType deliveryId()
+    {
+        return deliveryId.wrap(mutableBuffer(), handle().limit());
     }
 
-    private BooleanType settled() {
-        return settled.wrap(buffer(), messageFormat().limit());
-    }
-    
-    private BooleanType more() {
-        return more.wrap(buffer(), settled().limit());
+    private BinaryType deliveryTag()
+    {
+        return deliveryTag.wrap(mutableBuffer(), deliveryId().limit());
     }
 
-    private UByteType receiveSettleMode() {
-        return receiveSettleMode.wrap(buffer(), more().limit());
+    private UIntType messageFormat()
+    {
+        return messageFormat.wrap(mutableBuffer(), deliveryTag().limit());
     }
 
-    private DeliveryState.Described deliveryState() {
-        return deliveryState.wrap(buffer(), receiveSettleMode().limit());
+    private BooleanType settled()
+    {
+        return settled.wrap(mutableBuffer(), messageFormat().limit());
     }
 
-    private BooleanType resume() {
-        return resume.wrap(buffer(), deliveryState().limit());
+    private BooleanType more()
+    {
+        return more.wrap(mutableBuffer(), settled().limit());
     }
 
-    private BooleanType aborted() {
-        return aborted.wrap(buffer(), resume().limit());
+    private UByteType receiveSettleMode()
+    {
+        return receiveSettleMode.wrap(mutableBuffer(), more().limit());
     }
 
-    private BooleanType batchable() {
-        return batchable.wrap(buffer(), aborted().limit());
+    private DeliveryState.Described deliveryState()
+    {
+        return deliveryState.wrap(mutableBuffer(), receiveSettleMode().limit());
+    }
+
+    private BooleanType resume()
+    {
+        return resume.wrap(mutableBuffer(), deliveryState().limit());
+    }
+
+    private BooleanType aborted()
+    {
+        return aborted.wrap(mutableBuffer(), resume().limit());
+    }
+
+    private BooleanType batchable()
+    {
+        return batchable.wrap(mutableBuffer(), aborted().limit());
     }
 
 }

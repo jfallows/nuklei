@@ -27,7 +27,8 @@ public enum ReceiverSettleMode
 
     public static final IntFunction<ReceiverSettleMode> READ = (int code) ->
     {
-        switch (code) {
+        switch (code)
+        {
         case 0:
             return ReceiverSettleMode.FIRST;
         case 1:

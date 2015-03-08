@@ -20,12 +20,13 @@ import java.util.function.Consumer;
 import org.kaazing.nuklei.Flyweight;
 
 import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.8 "short"
  */
-public final class ShortType extends Type {
+public final class ShortType extends Type
+{
 
     private static final int OFFSET_KIND = 0;
     private static final int SIZEOF_KIND = BitUtil.SIZE_OF_BYTE;
@@ -38,31 +39,37 @@ public final class ShortType extends Type {
     private static final short WIDTH_KIND_2 = 0x61;
 
     @Override
-    public Kind kind() {
+    public Kind kind()
+    {
         return Kind.SHORT;
     }
 
     @Override
-    public ShortType watch(Consumer<Flyweight> observer) {
+    public ShortType watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public ShortType wrap(MutableDirectBuffer buffer, int offset) {
-        super.wrap(buffer, offset);
+    public ShortType wrap(DirectBuffer buffer, int offset, boolean mutable)
+    {
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 
-    public ShortType set(short value) {
-        uint8Put(buffer(), offset() + OFFSET_KIND, WIDTH_KIND_2);
-        int16Put(buffer(), offset() + OFFSET_VALUE, (short) value);
+    public ShortType set(short value)
+    {
+        uint8Put(mutableBuffer(), offset() + OFFSET_KIND, WIDTH_KIND_2);
+        int16Put(mutableBuffer(), offset() + OFFSET_VALUE, (short) value);
         notifyChanged();
         return this;
     }
 
-    public short get() {
-        switch (uint8Get(buffer(), offset() + OFFSET_KIND)) {
+    public short get()
+    {
+        switch (uint8Get(buffer(), offset() + OFFSET_KIND))
+        {
         case WIDTH_KIND_2:
             return int16Get(buffer(), offset() + OFFSET_VALUE);
         default:
@@ -70,7 +77,8 @@ public final class ShortType extends Type {
         }
     }
 
-    public int limit() {
+    public int limit()
+    {
         return offset() + OFFSET_VALUE + SIZEOF_VALUE;
     }
 }

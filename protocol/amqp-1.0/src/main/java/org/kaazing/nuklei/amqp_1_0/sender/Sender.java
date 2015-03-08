@@ -17,12 +17,13 @@ package org.kaazing.nuklei.amqp_1_0.sender;
 
 import org.kaazing.nuklei.Flyweight;
 
-public interface Sender {
-    
-    public <T extends Flyweight> T wrap(T flyweight);
+public interface Sender
+{
 
-    public void send(int limit);
+    <T extends Flyweight> T wrap(T flyweight);
 
-    public void close(boolean immediately);
+    void send(int limit);
+
+    void close(boolean immediately);
 
 }

@@ -42,90 +42,99 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 @RunWith(Theories.class)
-public class StringTypeTest {
+public class StringTypeTest
+{
 
     private static final int BUFFER_CAPACITY = 1024;
     private static final DirectBufferAccessor<String> READ_UTF_8 = newAccessor(UTF_8);
     private static final MutableDirectBufferMutator<String> WRITE_UTF_8 = newMutator(UTF_8);
-    
+
     @DataPoint
     public static final int ZERO_OFFSET = 0;
-    
+
     @DataPoint
     public static final int NON_ZERO_OFFSET = new Random().nextInt(BUFFER_CAPACITY - 256) + 1;
 
     private final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
 
     @Theory
-    public void shouldEncode1(int offset) {
+    public void shouldEncode1(int offset)
+    {
         StringType stringType = new StringType();
         stringType.wrap(buffer, offset);
         stringType.set(WRITE_UTF_8, "a");
-        
+
         assertEquals(0xa1, uint8Get(buffer, offset));
         assertEquals(0x01, uint8Get(buffer, offset + 1));
         assertEquals(0x61, uint8Get(buffer, offset + 2));
         assertEquals(offset + 3, stringType.limit());
     }
-    
+
     @Theory
-    public void shouldEncode4(int offset) {
+    public void shouldEncode4(int offset)
+    {
         char[] chars = new char[256];
         Arrays.fill(chars, 'a');
 
         StringType stringType = new StringType();
         stringType.wrap(buffer, offset);
         stringType.set(WRITE_UTF_8, new String(chars));
-        
+
         assertEquals(0xb1, uint8Get(buffer, offset));
         assertEquals(0x100, int32Get(buffer, offset + 1));
-        for (int i=0; i < 256; i++) {
+        for (int i = 0; i < 256; i++)
+        {
             assertEquals(0x61, uint8Get(buffer, offset + 5 + i));
         }
         assertEquals(offset + 261, stringType.limit());
     }
-    
+
     @Theory
-    public void shouldDecode1(int offset) {
+    public void shouldDecode1(int offset)
+    {
         buffer.putByte(offset, (byte) 0xa1);
         buffer.putByte(offset + 1, (byte) 0x01);
         buffer.putByte(offset + 2, (byte) 0x61);
-        
+
         StringType stringType = new StringType();
         stringType.wrap(buffer, offset);
-        
+
         assertEquals("a", stringType.get(READ_UTF_8).toString());
         assertEquals(offset + 3, stringType.limit());
     }
-    
+
     @Theory
-    public void shouldDecode4(int offset) {
+    public void shouldDecode4(int offset)
+    {
         buffer.putByte(offset, (byte) 0xb1);
         buffer.putInt(offset + 1, 0x100, BIG_ENDIAN);
-        for (int i=0; i < 256; i++) {
+        for (int i = 0; i < 256; i++)
+        {
             buffer.putByte(offset + 5 + i, (byte) 0x61);
         }
-        
+
         StringType stringType = new StringType();
         stringType.wrap(buffer, offset);
-        
+
         char[] chars = new char[256];
         Arrays.fill(chars, 'a');
         assertEquals(new String(chars), stringType.get(READ_UTF_8).toString());
         assertEquals(offset + 261, stringType.limit());
     }
-    
+
     @Theory
-    public void shouldEncodeThenDecode1(int offset) {
+    public void shouldEncodeThenDecode1(int offset)
+    {
         StringType stringType = new StringType();
         stringType.wrap(buffer, offset);
         stringType.set(WRITE_UTF_8, "a");
-        
+
         assertEquals("a", stringType.get(READ_UTF_8).toString());
     }
-    
+
     @Theory
-    public void shouldEncodeThenDecode4(int offset) {
+    public void shouldEncodeThenDecode4(int offset)
+    {
         char[] chars = new char[256];
         Arrays.fill(chars, 'a');
         String string = new String(chars);
@@ -133,15 +142,16 @@ public class StringTypeTest {
         StringType stringType = new StringType();
         stringType.wrap(buffer, offset);
         stringType.set(WRITE_UTF_8, string);
-        
+
         assertEquals(string, stringType.get(READ_UTF_8).toString());
     }
-    
+
     @Theory
     @Test(expected = Exception.class)
-    public void shouldNotDecode(int offset) {
+    public void shouldNotDecode(int offset)
+    {
         buffer.putByte(offset, (byte) 0x00);
-        
+
         StringType stringType = new StringType();
         stringType.wrap(buffer, offset);
         stringType.get(READ_UTF_8);
@@ -149,15 +159,16 @@ public class StringTypeTest {
 
     @Theory
     @SuppressWarnings("unchecked")
-    public void shouldNotifyChanged(int offset) {
+    public void shouldNotifyChanged(int offset)
+    {
         final Consumer<Flyweight> observer = mock(Consumer.class);
-        
+
         StringType stringType = new StringType();
         stringType.watch(observer);
         stringType.wrap(buffer, offset);
         stringType.set(WRITE_UTF_8, "a");
-        
+
         verify(observer).accept(stringType);
     }
-    
+
 }

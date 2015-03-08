@@ -30,7 +30,8 @@ import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 @RunWith(Theories.class)
-public class ArrayTypeTest {
+public class ArrayTypeTest
+{
 
     private static final int BUFFER_CAPACITY = 512;
 
@@ -43,12 +44,13 @@ public class ArrayTypeTest {
     private final AtomicBuffer buffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
 
     @Theory
-    public void shouldEncode1(int offset) {
+    public void shouldEncode1(int offset)
+    {
         ArrayType arrayType = new ArrayType();
         arrayType.wrap(buffer, offset);
         arrayType.maxLength(0xff);
         arrayType.limit(0x00, offset + 0x03);
-        
+
         assertEquals(0xe0, uint8Get(buffer, offset));
         assertEquals(0x01, uint8Get(buffer, offset + 1));
         assertEquals(0x00, uint8Get(buffer, offset + 2));
@@ -56,12 +58,13 @@ public class ArrayTypeTest {
     }
 
     @Theory
-    public void shouldEncode4(int offset) {
+    public void shouldEncode4(int offset)
+    {
         ArrayType arrayType = new ArrayType();
         arrayType.wrap(buffer, offset);
         arrayType.maxLength(0x100);
         arrayType.limit(0x00, offset + 0x09);
-        
+
         assertEquals(0xf0, uint8Get(buffer, offset));
         assertEquals(0x04, int32Get(buffer, offset + 1));
         assertEquals(0x00, int32Get(buffer, offset + 5));

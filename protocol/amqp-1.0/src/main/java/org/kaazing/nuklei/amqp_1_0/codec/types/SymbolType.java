@@ -31,52 +31,63 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 1.6.21 "symbol"
  */
-public final class SymbolType extends Type {
+public final class SymbolType extends Type
+{
 
     private final Length length;
-    
-    public SymbolType() {
+
+    public SymbolType()
+    {
         length = new Length();
     }
 
     @Override
-    public Kind kind() {
+    public Kind kind()
+    {
         return Kind.SYMBOL;
     }
 
     @Override
-    public SymbolType watch(Consumer<Flyweight> observer) {
+    public SymbolType watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public SymbolType wrap(MutableDirectBuffer buffer, int offset) {
+    public SymbolType wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         length.wrap(buffer, offset);
         return this;
     }
-    public <T> T get(DirectBufferAccessor<T> accessor) {
+
+    public <T> T get(DirectBufferAccessor<T> accessor)
+    {
         return accessor.access(buffer(), length.limit(), length.get());
     }
-    
-    public <T> SymbolType set(MutableDirectBufferMutator<T> mutator, T value) {
-        length.set(mutator.mutate(length.maxOffset(), buffer(), value));
+
+    public <T> SymbolType set(MutableDirectBufferMutator<T> mutator, T value)
+    {
+        length.set(mutator.mutate(length.maxOffset(), mutableBuffer(), value));
         notifyChanged();
         return this;
     }
 
-    public SymbolType set(SymbolType value) {
-        buffer().putBytes(offset(), value.buffer(), value.offset(), value.limit() - value.offset());
+    public SymbolType set(SymbolType value)
+    {
+        mutableBuffer().putBytes(offset(), value.buffer(), value.offset(), value.limit() - value.offset());
         notifyChanged();
         return this;
     }
 
-    public int limit() {
+    public int limit()
+    {
         return length.limit() + length.get();
     }
 
-    private static final class Length extends FlyweightBE {
+    private static final class Length extends FlyweightBE
+    {
 
         private static final int OFFSET_LENGTH_KIND = 0;
         private static final int SIZEOF_LENGTH_KIND = BitUtil.SIZE_OF_BYTE;
@@ -85,20 +96,28 @@ public final class SymbolType extends Type {
         private static final short WIDTH_KIND_1 = 0xa3;
         private static final short WIDTH_KIND_4 = 0xb3;
 
-        private final Mutation maxOffset = (value) -> { max(value); return limit(); };
+        private final Mutation maxOffset = (value) ->
+        {
+            max(value);
+            return limit();
+        };
 
         @Override
-        public Length wrap(MutableDirectBuffer buffer, int offset) {
+        public Length wrap(MutableDirectBuffer buffer, int offset)
+        {
             super.wrap(buffer, offset);
             return this;
         }
-        
-        public Mutation maxOffset() {
+
+        public Mutation maxOffset()
+        {
             return maxOffset;
         }
 
-        public int get() {
-            switch (widthKind()) {
+        public int get()
+        {
+            switch (widthKind())
+            {
             case WIDTH_KIND_1:
                 return uint8Get(buffer(), offset() + OFFSET_LENGTH);
             case WIDTH_KIND_4:
@@ -107,11 +126,14 @@ public final class SymbolType extends Type {
                 throw new IllegalStateException();
             }
         }
-        
-        public void set(int value) {
-            switch (widthKind()) {
+
+        public void set(int value)
+        {
+            switch (widthKind())
+            {
             case WIDTH_KIND_1:
-                switch (highestOneBit(value)) {
+                switch (highestOneBit(value))
+                {
                 case 0:
                 case 1:
                 case 2:
@@ -121,22 +143,24 @@ public final class SymbolType extends Type {
                 case 32:
                 case 64:
                 case 128:
-                    uint8Put(buffer(), offset() + OFFSET_LENGTH, (short) value);
+                    uint8Put(mutableBuffer(), offset() + OFFSET_LENGTH, (short) value);
                     break;
                 default:
                     throw new IllegalStateException();
                 }
                 break;
             case WIDTH_KIND_4:
-                int32Put(buffer(), offset() + OFFSET_LENGTH, value);
+                int32Put(mutableBuffer(), offset() + OFFSET_LENGTH, value);
                 break;
             default:
                 throw new IllegalStateException();
             }
         }
-        
-        public void max(int value) {
-            switch (highestOneBit(value)) {
+
+        public void max(int value)
+        {
+            switch (highestOneBit(value))
+            {
             case 0:
             case 1:
             case 2:
@@ -152,11 +176,13 @@ public final class SymbolType extends Type {
                 lengthKind(WIDTH_KIND_4);
                 break;
             }
-            
+
         }
-        
-        public int limit() {
-            switch (widthKind()) {
+
+        public int limit()
+        {
+            switch (widthKind())
+            {
             case WIDTH_KIND_1:
                 return offset() + OFFSET_LENGTH + 1;
             case WIDTH_KIND_4:
@@ -166,11 +192,13 @@ public final class SymbolType extends Type {
             }
         }
 
-        private void lengthKind(short lengthKind) {
-            uint8Put(buffer(), offset() + OFFSET_LENGTH_KIND, lengthKind);
+        private void lengthKind(short lengthKind)
+        {
+            uint8Put(mutableBuffer(), offset() + OFFSET_LENGTH_KIND, lengthKind);
         }
 
-        private int widthKind() {
+        private int widthKind()
+        {
             return uint8Get(buffer(), offset() + OFFSET_LENGTH_KIND);
         }
     }
@@ -178,18 +206,21 @@ public final class SymbolType extends Type {
     /*
      * See AMQP 1.0 specification, section 1.5 "Descriptor Values"
      */
-    public static final class Descriptor extends FlyweightBE {
+    public static final class Descriptor extends FlyweightBE
+    {
 
         private static final int OFFSET_CODE = 1;
 
         private final SymbolType code;
-        
-        public Descriptor() {
+
+        public Descriptor()
+        {
             this.code = new SymbolType();
         }
 
         @Override
-        public Descriptor wrap(MutableDirectBuffer buffer, int offset) {
+        public Descriptor wrap(MutableDirectBuffer buffer, int offset)
+        {
             super.wrap(buffer, offset);
 
             code.wrap(buffer, offset + OFFSET_CODE);
@@ -197,11 +228,13 @@ public final class SymbolType extends Type {
             return this;
         }
 
-        public <T> T get(DirectBufferAccessor<T> accessor) {
+        public <T> T get(DirectBufferAccessor<T> accessor)
+        {
             return code.get(accessor);
         }
 
-        public int limit() {
+        public int limit()
+        {
             return code.limit();
         }
     }

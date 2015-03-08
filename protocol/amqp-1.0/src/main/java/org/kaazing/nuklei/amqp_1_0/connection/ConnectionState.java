@@ -18,19 +18,9 @@ package org.kaazing.nuklei.amqp_1_0.connection;
 /*
  * See AMQP 1.0 specification, section 2.4.6 "Connection States"
  */
-public enum ConnectionState {
-    START,
-    HEADER_RECEIVED,
-    HEADER_SENT,
-    HEADER_EXCHANGED,
-    OPEN_PIPE,
-    OPEN_CLOSE_PIPE,
-    OPEN_RECEIVED,
-    OPEN_SENT,
-    CLOSE_PIPE,
-    OPENED,
-    CLOSE_RECEIVED,
-    CLOSE_SENT,
-    DISCARDING,
+public enum ConnectionState
+{
+    START, HEADER_RECEIVED, HEADER_SENT, HEADER_EXCHANGED, OPEN_PIPE, OPEN_CLOSE_PIPE,
+    OPEN_RECEIVED, OPEN_SENT, CLOSE_PIPE, OPENED, CLOSE_RECEIVED, CLOSE_SENT, DISCARDING,
     END
 }

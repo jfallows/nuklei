@@ -26,11 +26,14 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 2.7.9 "Close"
  */
-public final class Close extends CompositeType {
+public final class Close extends CompositeType
+{
 
-    public static final ThreadLocal<Close> LOCAL_REF = new ThreadLocal<Close>() {
+    public static final ThreadLocal<Close> LOCAL_REF = new ThreadLocal<Close>()
+    {
         @Override
-        protected Close initialValue() {
+        protected Close initialValue()
+        {
             return new Close();
         }
     };
@@ -38,39 +41,49 @@ public final class Close extends CompositeType {
     private final Error error;
 
     // unit tests
-    Close() {
-        error = new Error().watch((owner) -> { limit(1, owner.limit()); });
+    Close()
+    {
+        error = new Error().watch((owner) ->
+        {
+            limit(1, owner.limit());
+        });
     }
 
     @Override
-    public Close watch(Consumer<Flyweight> observer) {
+    public Close watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public Close wrap(MutableDirectBuffer buffer, int offset) {
+    public Close wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         return this;
     }
-    
+
     @Override
-    public Close maxLength(int value) {
+    public Close maxLength(int value)
+    {
         super.maxLength(value);
         return this;
     }
 
     @Override
-    public Close maxCount(int value) {
+    public Close maxCount(int value)
+    {
         super.maxCount(value);
         return this;
     }
 
-    public Error getError() {
+    public Error getError()
+    {
         return error();
     }
-    
-    private Error error() {
+
+    private Error error()
+    {
         return error.wrap(buffer(), offsetBody());
     }
 }

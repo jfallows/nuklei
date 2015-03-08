@@ -28,11 +28,14 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 2.7.4 "Flow"
  */
-public final class Flow extends CompositeType {
+public final class Flow extends CompositeType
+{
 
-    public static final ThreadLocal<Flow> LOCAL_REF = new ThreadLocal<Flow>() {
+    public static final ThreadLocal<Flow> LOCAL_REF = new ThreadLocal<Flow>()
+    {
         @Override
-        protected Flow initialValue() {
+        protected Flow initialValue()
+        {
             return new Flow();
         }
     };
@@ -49,171 +52,238 @@ public final class Flow extends CompositeType {
     private final BooleanType echo;
     private final Fields properties;
 
-    public Flow() {
-        nextIncomingId = new UIntType().watch((owner) -> { limit(1, owner.limit()); });;
-        incomingWindow = new UIntType().watch((owner) -> { limit(2, owner.limit()); });;
-        nextOutgoingId = new UIntType().watch((owner) -> { limit(3, owner.limit()); });;
-        outgoingWindow = new UIntType().watch((owner) -> { limit(4, owner.limit()); });;
-        handle = new UIntType().watch((owner) -> { limit(5, owner.limit()); });;
-        deliveryCount = new UIntType().watch((owner) -> { limit(6, owner.limit()); });
-        linkCredit = new UIntType().watch((owner) -> { limit(7, owner.limit()); });
-        available = new UIntType().watch((owner) -> { limit(8, owner.limit()); });
-        drain = new BooleanType().watch((owner) -> { limit(9, owner.limit()); });
-        echo = new BooleanType().watch((owner) -> { limit(10, owner.limit()); });
-        properties = new Fields().watch((owner) -> { limit(11, owner.limit()); });
+    public Flow()
+    {
+        nextIncomingId = new UIntType().watch((owner) ->
+        {
+            limit(1, owner.limit());
+        });
+        incomingWindow = new UIntType().watch((owner) ->
+        {
+            limit(2, owner.limit());
+        });
+        nextOutgoingId = new UIntType().watch((owner) ->
+        {
+            limit(3, owner.limit());
+        });
+        outgoingWindow = new UIntType().watch((owner) ->
+        {
+            limit(4, owner.limit());
+        });
+        handle = new UIntType().watch((owner) ->
+        {
+            limit(5, owner.limit());
+        });
+        deliveryCount = new UIntType().watch((owner) ->
+        {
+            limit(6, owner.limit());
+        });
+        linkCredit = new UIntType().watch((owner) ->
+        {
+            limit(7, owner.limit());
+        });
+        available = new UIntType().watch((owner) ->
+        {
+            limit(8, owner.limit());
+        });
+        drain = new BooleanType().watch((owner) ->
+        {
+            limit(9, owner.limit());
+        });
+        echo = new BooleanType().watch((owner) ->
+        {
+            limit(10, owner.limit());
+        });
+        properties = new Fields().watch((owner) ->
+        {
+            limit(11, owner.limit());
+        });
     }
 
     @Override
-    public Flow watch(Consumer<Flyweight> observer) {
+    public Flow watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public Flow wrap(MutableDirectBuffer buffer, int offset) {
+    public Flow wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         return this;
     }
-    
+
     @Override
-    public Flow maxLength(int value) {
+    public Flow maxLength(int value)
+    {
         super.maxLength(value);
         return this;
     }
 
     @Override
-    public Flow maxCount(int value) {
+    public Flow maxCount(int value)
+    {
         super.maxCount(value);
         return this;
     }
 
-    public Flow setNextOutgoingId(long value) {
+    public Flow setNextOutgoingId(long value)
+    {
         nextOutgoingId().set(value);
         return this;
     }
-    
-    public long getNextOutgoingId() {
+
+    public long getNextOutgoingId()
+    {
         return nextOutgoingId().get();
     }
 
-    public Flow setIncomingWindow(long value) {
+    public Flow setIncomingWindow(long value)
+    {
         incomingWindow().set(value);
         return this;
     }
-    
-    public long getIncomingWindow() {
+
+    public long getIncomingWindow()
+    {
         return incomingWindow().get();
     }
 
-    public Flow setOutgoingWindow(long value) {
+    public Flow setOutgoingWindow(long value)
+    {
         outgoingWindow().set(value);
         return this;
     }
-    
-    public long getOutgoingWindow() {
+
+    public long getOutgoingWindow()
+    {
         return outgoingWindow().get();
     }
 
-
-    public Flow setHandle(long value) {
+    public Flow setHandle(long value)
+    {
         handle().set(value);
         return this;
     }
-    
-    public long getHandle() {
+
+    public long getHandle()
+    {
         return handle().get();
     }
-    
-    public Flow setDeliveryCount(long value) {
+
+    public Flow setDeliveryCount(long value)
+    {
         deliveryCount().set(value);
         return this;
     }
-    
-    public long getDeliveryCount() {
+
+    public long getDeliveryCount()
+    {
         return deliveryCount().get();
     }
-    
-    public Flow setLinkCredit(long value) {
+
+    public Flow setLinkCredit(long value)
+    {
         linkCredit().set(value);
         return this;
     }
-    
-    public long getLinkCredit() {
+
+    public long getLinkCredit()
+    {
         return linkCredit().get();
     }
-    
-    public Flow setAvailable(long value) {
+
+    public Flow setAvailable(long value)
+    {
         available().set(value);
         return this;
     }
-    
-    public long getAvailable() {
+
+    public long getAvailable()
+    {
         return available().get();
     }
-    
-    public Flow setDrain(boolean value) {
+
+    public Flow setDrain(boolean value)
+    {
         drain().set(value);
         return this;
     }
-    
-    public boolean getDrain() {
+
+    public boolean getDrain()
+    {
         return drain().get();
     }
 
-    public Flow setEcho(boolean value) {
+    public Flow setEcho(boolean value)
+    {
         echo().set(value);
         return this;
     }
-    
-    public boolean getEcho() {
+
+    public boolean getEcho()
+    {
         return echo().get();
     }
 
-    public Fields getProperties() {
+    public Fields getProperties()
+    {
         return properties();
     }
 
-    private UIntType nextIncomingId() {
+    private UIntType nextIncomingId()
+    {
         return nextIncomingId.wrap(buffer(), offsetBody());
     }
-    
-    private UIntType incomingWindow() {
+
+    private UIntType incomingWindow()
+    {
         return incomingWindow.wrap(buffer(), nextIncomingId().limit());
     }
-    
-    private UIntType nextOutgoingId() {
+
+    private UIntType nextOutgoingId()
+    {
         return nextOutgoingId.wrap(buffer(), incomingWindow().limit());
     }
-    
-    private UIntType outgoingWindow() {
+
+    private UIntType outgoingWindow()
+    {
         return outgoingWindow.wrap(buffer(), nextOutgoingId().limit());
     }
 
-    private UIntType handle() {
+    private UIntType handle()
+    {
         return handle.wrap(buffer(), outgoingWindow().limit());
     }
-    
-    private UIntType deliveryCount() {
+
+    private UIntType deliveryCount()
+    {
         return deliveryCount.wrap(buffer(), handle().limit());
     }
 
-    private UIntType linkCredit() {
+    private UIntType linkCredit()
+    {
         return linkCredit.wrap(buffer(), deliveryCount().limit());
     }
 
-    private UIntType available() {
+    private UIntType available()
+    {
         return available.wrap(buffer(), linkCredit().limit());
     }
 
-    private BooleanType drain() {
+    private BooleanType drain()
+    {
         return drain.wrap(buffer(), available().limit());
     }
-    
-    private BooleanType echo() {
+
+    private BooleanType echo()
+    {
         return echo.wrap(buffer(), drain().limit());
     }
-    
-    private Fields properties() {
+
+    private Fields properties()
+    {
         return properties.wrap(buffer(), echo().limit());
     }
 }

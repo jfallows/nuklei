@@ -25,7 +25,8 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 1.6.7 "byte"
  */
-public final class ByteType extends Type {
+public final class ByteType extends Type
+{
 
     private static final int OFFSET_KIND = 0;
     private static final int SIZEOF_KIND = BitUtil.SIZE_OF_BYTE;
@@ -36,49 +37,58 @@ public final class ByteType extends Type {
     static final int SIZEOF_BYTE = SIZEOF_KIND + SIZEOF_VALUE;
 
     private static final short WIDTH_KIND_1 = 0x51;
-    
+
     @Override
-    public Kind kind() {
+    public Kind kind()
+    {
         return Kind.BYTE;
     }
 
     @Override
-    public ByteType watch(Consumer<Flyweight> observer) {
+    public ByteType watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public ByteType wrap(MutableDirectBuffer buffer, int offset) {
+    public ByteType wrap(MutableDirectBuffer buffer, int offset)
+    {
         super.wrap(buffer, offset);
         return this;
     }
 
-    public ByteType set(byte value) {
+    public ByteType set(byte value)
+    {
         widthKind(WIDTH_KIND_1);
-        int8Put(buffer(), offset() + OFFSET_VALUE, value);
+        int8Put(mutableBuffer(), offset() + OFFSET_VALUE, value);
         notifyChanged();
         return this;
     }
 
-    public byte get() {
-        switch (widthKind()) {
+    public byte get()
+    {
+        switch (widthKind())
+        {
         case WIDTH_KIND_1:
             return int8Get(buffer(), offset() + OFFSET_VALUE);
         default:
             throw new IllegalStateException();
         }
     }
-    
-    public int limit() {
+
+    public int limit()
+    {
         return offset() + SIZEOF_BYTE;
     }
 
-    private short widthKind() {
+    private short widthKind()
+    {
         return uint8Get(buffer(), offset() + OFFSET_KIND);
     }
 
-    private void widthKind(short value) {
-        uint8Put(buffer(), offset() + OFFSET_KIND, value);
+    private void widthKind(short value)
+    {
+        uint8Put(mutableBuffer(), offset() + OFFSET_KIND, value);
     }
 }

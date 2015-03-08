@@ -37,117 +37,128 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 @RunWith(Theories.class)
-public class UIntTypeTest {
+public class UIntTypeTest
+{
 
     private static final int BUFFER_CAPACITY = 64;
-    
+
     @DataPoint
     public static final int ZERO_OFFSET = 0;
-    
+
     @DataPoint
     public static final int NON_ZERO_OFFSET = new Random().nextInt(BUFFER_CAPACITY - SIZEOF_UINT_MAX - 1) + 1;
 
     private final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
 
     @Theory
-    public void shouldEncode0(int offset) {
+    public void shouldEncode0(int offset)
+    {
         UIntType uintType = new UIntType();
         uintType.wrap(buffer, offset);
         uintType.set(0L);
-        
+
         assertEquals(0x43, uint8Get(buffer, offset));
         assertEquals(offset + 1, uintType.limit());
     }
-    
+
     @Theory
-    public void shouldEncode1(int offset) {
+    public void shouldEncode1(int offset)
+    {
         UIntType uintType = new UIntType();
         uintType.wrap(buffer, offset);
         uintType.set(1L);
-        
+
         assertEquals(0x52, uint8Get(buffer, offset));
         assertEquals(0x1L, uint8Get(buffer, offset + 1));
         assertEquals(offset + 2, uintType.limit());
     }
-    
+
     @Theory
-    public void shouldEncode4(int offset) {
+    public void shouldEncode4(int offset)
+    {
         UIntType uintType = new UIntType();
         uintType.wrap(buffer, offset);
         uintType.set(0x12345678L);
-        
+
         assertEquals(0x70, uint8Get(buffer, offset));
         assertEquals(0x12345678L, uint32Get(buffer, offset + 1));
         assertEquals(offset + 5, uintType.limit());
     }
-    
+
     @Theory
-    public void shouldDecode0(int offset) {
+    public void shouldDecode0(int offset)
+    {
         buffer.putByte(offset, (byte) 0x43);
-        
+
         UIntType uintType = new UIntType();
         uintType.wrap(buffer, offset);
-        
+
         assertEquals(0x00L, uintType.get());
         assertEquals(offset + 1, uintType.limit());
     }
-    
+
     @Theory
-    public void shouldDecode1(int offset) {
+    public void shouldDecode1(int offset)
+    {
         buffer.putByte(offset, (byte) 0x52);
         buffer.putByte(offset + 1, (byte) 0x01);
-        
+
         UIntType uintType = new UIntType();
         uintType.wrap(buffer, offset);
-        
+
         assertEquals(0x01L, uintType.get());
         assertEquals(offset + 2, uintType.limit());
     }
-    
+
     @Theory
-    public void shouldDecode4(int offset) {
+    public void shouldDecode4(int offset)
+    {
         buffer.putByte(offset, (byte) 0x70);
         buffer.putInt(offset + 1, 0x12345678, BIG_ENDIAN);
-        
+
         UIntType uintType = new UIntType();
         uintType.wrap(buffer, offset);
-        
+
         assertEquals(0x12345678, uintType.get());
         assertEquals(offset + 5, uintType.limit());
     }
-    
+
     @Theory
-    public void shouldEncodeThenDecode0(int offset) {
+    public void shouldEncodeThenDecode0(int offset)
+    {
         UIntType uintType = new UIntType();
         uintType.wrap(buffer, offset);
         uintType.set(0L);
-        
+
         assertEquals(0L, uintType.get());
     }
-    
+
     @Theory
-    public void shouldEncodeThenDecode1(int offset) {
+    public void shouldEncodeThenDecode1(int offset)
+    {
         UIntType uintType = new UIntType();
         uintType.wrap(buffer, offset);
         uintType.set(1L);
-        
+
         assertEquals(1L, uintType.get());
     }
-    
+
     @Theory
-    public void shouldEncodeThenDecode4(int offset) {
+    public void shouldEncodeThenDecode4(int offset)
+    {
         UIntType uintType = new UIntType();
         uintType.wrap(buffer, offset);
         uintType.set(12345678L);
-        
+
         assertEquals(12345678L, uintType.get());
     }
-    
+
     @Theory
     @Test(expected = Exception.class)
-    public void shouldNotDecode(int offset) {
+    public void shouldNotDecode(int offset)
+    {
         buffer.putByte(offset, (byte) 0x00);
-        
+
         UIntType uintType = new UIntType();
         uintType.wrap(buffer, offset);
 
@@ -156,15 +167,16 @@ public class UIntTypeTest {
 
     @Theory
     @SuppressWarnings("unchecked")
-    public void shouldNotifyChanged(int offset) {
+    public void shouldNotifyChanged(int offset)
+    {
         final Consumer<Flyweight> observer = mock(Consumer.class);
-        
+
         UIntType uintType = new UIntType();
         uintType.watch(observer);
         uintType.wrap(buffer, offset);
         uintType.set(12345678L);
-        
+
         verify(observer).accept(uintType);
     }
-    
+
 }

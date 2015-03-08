@@ -41,19 +41,17 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 public class AmqpMikroFactory<C, S, L>
 {
 
-    public Mikro newMikro(
-            SenderFactory senderFactory,
-            ConnectionFactory<C, S, L> connectionFactory,
-            ConnectionHandler<C, S, L> connectionHandler)
+    public Mikro newMikro(SenderFactory senderFactory,
+                          ConnectionFactory<C, S, L> connectionFactory,
+                          ConnectionHandler<C, S, L> connectionHandler)
     {
 
         AmqpMikro<C, S, L> mikro = new AmqpMikro<>(connectionHandler);
 
-        StorageSupplier<Connection<C, S, L>> storage =
-                (connection) -> (connection != null) ? connection.reassemblyBuffer : null;
+        StorageSupplier<Connection<C, S, L>> storage = (connection) -> (connection != null) ? connection.reassemblyBuffer
+                : null;
 
-        StatefulMikro<Connection<C, S, L>> stateful = 
-                mikro.alignedBy(storage, AmqpMikroFactory::alignLength);
+        StatefulMikro<Connection<C, S, L>> stateful = mikro.alignedBy(storage, AmqpMikroFactory::alignLength);
 
         AmqpConnectionState connectionState = new AmqpConnectionState(connectionFactory, senderFactory);
 
@@ -67,7 +65,8 @@ public class AmqpMikroFactory<C, S, L>
                                              int offset,
                                              int length)
     {
-        switch (typeId) {
+        switch (typeId)
+        {
         case RECEIVED_DATA:
             switch (connection.state)
             {
