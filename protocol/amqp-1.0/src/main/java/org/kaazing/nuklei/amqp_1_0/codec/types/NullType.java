@@ -15,6 +15,10 @@
  */
 package org.kaazing.nuklei.amqp_1_0.codec.types;
 
+import java.util.function.Consumer;
+
+import org.kaazing.nuklei.Flyweight;
+
 import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
@@ -35,6 +39,13 @@ public final class NullType extends Type
     public NullType wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
         super.wrap(buffer, offset, mutable);
+        return this;
+    }
+
+    @Override
+    public NullType watch(Consumer<Flyweight> observer)
+    {
+        super.watch(observer);
         return this;
     }
 

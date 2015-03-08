@@ -115,6 +115,12 @@ public final class StringType extends Type
             return offset() + 1;
         }
 
+        @Override
+        public Nullable wrap(DirectBuffer buffer, int offset, boolean mutable)
+        {
+            super.wrap(buffer, offset, mutable);
+            return this;
+        }
     }
 
     private static final class Length extends FlyweightBE

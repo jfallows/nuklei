@@ -15,12 +15,10 @@
  */
 package org.kaazing.nuklei.amqp_1_0.sender;
 
-import org.kaazing.nuklei.Flyweight;
 
 public interface Sender
 {
-
-    <T extends Flyweight> T wrap(T flyweight);
+//    <T extends Flyweight> T wrap(T flyweight);
 
     void send(int limit);
 

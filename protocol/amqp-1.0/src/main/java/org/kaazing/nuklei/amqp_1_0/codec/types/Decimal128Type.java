@@ -20,6 +20,9 @@ import static java.lang.Double.longBitsToDouble;
 import static java.math.MathContext.DECIMAL128;
 
 import java.math.BigDecimal;
+import java.util.function.Consumer;
+
+import org.kaazing.nuklei.Flyweight;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 
@@ -52,6 +55,13 @@ public final class Decimal128Type extends Type
     public Decimal128Type wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
         super.wrap(buffer, offset, mutable);
+        return this;
+    }
+
+    @Override
+    public Decimal128Type watch(Consumer<Flyweight> observer)
+    {
+        super.watch(observer);
         return this;
     }
 

@@ -15,7 +15,6 @@
  */
 package org.kaazing.nuklei.amqp_1_0.sender;
 
-import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.protocol.tcp.TcpManagerHeadersDecoder;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
@@ -51,11 +50,11 @@ public final class TcpSenderFactory implements SenderFactory
             this.sendBufferOffset = tcpHeaders.length();
         }
 
-        public <T extends Flyweight> T wrap(T flyweight)
-        {
-            flyweight.wrap(sendBuffer, sendBufferOffset, true);
-            return flyweight;
-        }
+//        public <T extends Flyweight> T wrap(T flyweight)
+//        {
+//            flyweight.wrap(sendBuffer, sendBufferOffset, true);
+//            return flyweight;
+//        }
 
         public void send(int limit)
         {

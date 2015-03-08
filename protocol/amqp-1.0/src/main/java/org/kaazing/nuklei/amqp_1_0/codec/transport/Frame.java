@@ -144,6 +144,6 @@ public final class Frame extends FlyweightBE
 
     private DynamicType body()
     {
-        return body.wrap(mutableBuffer(), performative().limit());
+        return body.wrap(mutableBuffer(), performative().limit(), true);
     }
 }
