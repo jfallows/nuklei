@@ -26,7 +26,7 @@ import org.kaazing.nuklei.function.MutableDirectBufferMutator;
 import org.kaazing.nuklei.function.MutableDirectBufferMutator.Mutation;
 
 import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.21 "symbol"
@@ -55,10 +55,10 @@ public final class SymbolType extends Type
     }
 
     @Override
-    public SymbolType wrap(MutableDirectBuffer buffer, int offset)
+    public SymbolType wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
-        length.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
+        length.wrap(buffer, offset, mutable);
         return this;
     }
 
@@ -103,9 +103,9 @@ public final class SymbolType extends Type
         };
 
         @Override
-        public Length wrap(MutableDirectBuffer buffer, int offset)
+        public Length wrap(DirectBuffer buffer, int offset, boolean mutable)
         {
-            super.wrap(buffer, offset);
+            super.wrap(buffer, offset, mutable);
             return this;
         }
 
@@ -219,11 +219,11 @@ public final class SymbolType extends Type
         }
 
         @Override
-        public Descriptor wrap(MutableDirectBuffer buffer, int offset)
+        public Descriptor wrap(DirectBuffer buffer, int offset, boolean mutable)
         {
-            super.wrap(buffer, offset);
+            super.wrap(buffer, offset, true);
 
-            code.wrap(buffer, offset + OFFSET_CODE);
+            code.wrap(buffer, offset + OFFSET_CODE, true);
 
             return this;
         }

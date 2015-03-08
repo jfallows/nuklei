@@ -26,7 +26,6 @@ import org.kaazing.nuklei.FlyweightBE;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.6 "ulong"
@@ -60,9 +59,9 @@ public final class ULongType extends Type
     }
 
     @Override
-    public ULongType wrap(MutableDirectBuffer buffer, int offset)
+    public ULongType wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 
@@ -160,11 +159,11 @@ public final class ULongType extends Type
         }
 
         @Override
-        public Descriptor wrap(DirectBuffer buffer, int offset)
+        public Descriptor wrap(DirectBuffer buffer, int offset, boolean mutable)
         {
-            super.wrap(buffer, offset);
+            super.wrap(buffer, offset, mutable);
 
-            code.wrap(buffer, offset + OFFSET_CODE);
+            code.wrap(buffer, offset + OFFSET_CODE, mutable);
 
             return this;
         }

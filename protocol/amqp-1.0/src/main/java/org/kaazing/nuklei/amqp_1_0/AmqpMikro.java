@@ -63,7 +63,7 @@ public class AmqpMikro<C, S, L> implements AlignedMikro<Connection<C, S, L>>
                 {
                 case START:
                 case HEADER_SENT:
-                    Header header = Header.LOCAL_REF.get().wrap(buffer, offset);
+                    Header header = Header.LOCAL_REF.get().wrap(buffer, offset, false);
                     offset = header.limit();
                     connectionHandler.handleHeader(connection, header);
                     break;
@@ -71,7 +71,7 @@ public class AmqpMikro<C, S, L> implements AlignedMikro<Connection<C, S, L>>
                     offset = limit;
                     break;
                 default:
-                    Frame frame = Frame.LOCAL_REF.get().wrap(buffer, offset);
+                    Frame frame = Frame.LOCAL_REF.get().wrap(buffer, offset, false);
                     offset = frame.limit();
                     connectionHandler.handleFrame(connection, frame);
                     break;

@@ -54,7 +54,7 @@ public class UIntTypeTest
     public void shouldEncode0(int offset)
     {
         UIntType uintType = new UIntType();
-        uintType.wrap(buffer, offset);
+        uintType.wrap(buffer, offset, true);
         uintType.set(0L);
 
         assertEquals(0x43, uint8Get(buffer, offset));
@@ -65,7 +65,7 @@ public class UIntTypeTest
     public void shouldEncode1(int offset)
     {
         UIntType uintType = new UIntType();
-        uintType.wrap(buffer, offset);
+        uintType.wrap(buffer, offset, true);
         uintType.set(1L);
 
         assertEquals(0x52, uint8Get(buffer, offset));
@@ -77,7 +77,7 @@ public class UIntTypeTest
     public void shouldEncode4(int offset)
     {
         UIntType uintType = new UIntType();
-        uintType.wrap(buffer, offset);
+        uintType.wrap(buffer, offset, true);
         uintType.set(0x12345678L);
 
         assertEquals(0x70, uint8Get(buffer, offset));
@@ -91,7 +91,7 @@ public class UIntTypeTest
         buffer.putByte(offset, (byte) 0x43);
 
         UIntType uintType = new UIntType();
-        uintType.wrap(buffer, offset);
+        uintType.wrap(buffer, offset, true);
 
         assertEquals(0x00L, uintType.get());
         assertEquals(offset + 1, uintType.limit());
@@ -104,7 +104,7 @@ public class UIntTypeTest
         buffer.putByte(offset + 1, (byte) 0x01);
 
         UIntType uintType = new UIntType();
-        uintType.wrap(buffer, offset);
+        uintType.wrap(buffer, offset, true);
 
         assertEquals(0x01L, uintType.get());
         assertEquals(offset + 2, uintType.limit());
@@ -117,7 +117,7 @@ public class UIntTypeTest
         buffer.putInt(offset + 1, 0x12345678, BIG_ENDIAN);
 
         UIntType uintType = new UIntType();
-        uintType.wrap(buffer, offset);
+        uintType.wrap(buffer, offset, true);
 
         assertEquals(0x12345678, uintType.get());
         assertEquals(offset + 5, uintType.limit());
@@ -127,7 +127,7 @@ public class UIntTypeTest
     public void shouldEncodeThenDecode0(int offset)
     {
         UIntType uintType = new UIntType();
-        uintType.wrap(buffer, offset);
+        uintType.wrap(buffer, offset, true);
         uintType.set(0L);
 
         assertEquals(0L, uintType.get());
@@ -137,7 +137,7 @@ public class UIntTypeTest
     public void shouldEncodeThenDecode1(int offset)
     {
         UIntType uintType = new UIntType();
-        uintType.wrap(buffer, offset);
+        uintType.wrap(buffer, offset, true);
         uintType.set(1L);
 
         assertEquals(1L, uintType.get());
@@ -147,7 +147,7 @@ public class UIntTypeTest
     public void shouldEncodeThenDecode4(int offset)
     {
         UIntType uintType = new UIntType();
-        uintType.wrap(buffer, offset);
+        uintType.wrap(buffer, offset, true);
         uintType.set(12345678L);
 
         assertEquals(12345678L, uintType.get());
@@ -160,7 +160,7 @@ public class UIntTypeTest
         buffer.putByte(offset, (byte) 0x00);
 
         UIntType uintType = new UIntType();
-        uintType.wrap(buffer, offset);
+        uintType.wrap(buffer, offset, true);
 
         assertEquals(0L, uintType.get());
     }
@@ -173,7 +173,7 @@ public class UIntTypeTest
 
         UIntType uintType = new UIntType();
         uintType.watch(observer);
-        uintType.wrap(buffer, offset);
+        uintType.wrap(buffer, offset, true);
         uintType.set(12345678L);
 
         verify(observer).accept(uintType);

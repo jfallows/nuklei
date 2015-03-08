@@ -26,7 +26,7 @@ import org.kaazing.nuklei.function.MutableDirectBufferMutator;
 import org.kaazing.nuklei.function.MutableDirectBufferMutator.Mutation;
 
 import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.20 "string"
@@ -57,11 +57,11 @@ public final class StringType extends Type
     }
 
     @Override
-    public StringType wrap(MutableDirectBuffer buffer, int offset)
+    public StringType wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
-        nullable.wrap(buffer, offset);
-        length.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
+        nullable.wrap(buffer, offset, mutable);
+        length.wrap(buffer, offset, mutable);
         return this;
     }
 
@@ -86,7 +86,7 @@ public final class StringType extends Type
 
     public StringType set(StringType value)
     {
-        mutableBuffer().putBytes(mutableBuffer(), value.buffer(), value.offset(), value.limit() - value.offset());
+        mutableBuffer().putBytes(limit(), value.buffer(), value.offset(), value.limit() - value.offset());
         notifyChanged();
         return this;
     }
@@ -134,9 +134,9 @@ public final class StringType extends Type
         };
 
         @Override
-        public Length wrap(MutableDirectBuffer buffer, int offset)
+        public Length wrap(DirectBuffer buffer, int offset, boolean mutable)
         {
-            super.wrap(buffer, offset);
+            super.wrap(buffer, offset, mutable);
             return this;
         }
 

@@ -61,7 +61,7 @@ public class SymbolTypeTest
     public void shouldEncode1(int offset)
     {
         SymbolType symbolType = new SymbolType();
-        symbolType.wrap(buffer, offset);
+        symbolType.wrap(buffer, offset, true);
         symbolType.set(WRITE_UTF_8, "a");
 
         assertEquals(0xa3, uint8Get(buffer, offset));
@@ -77,7 +77,7 @@ public class SymbolTypeTest
         Arrays.fill(chars, 'a');
 
         SymbolType symbolType = new SymbolType();
-        symbolType.wrap(buffer, offset);
+        symbolType.wrap(buffer, offset, true);
         symbolType.set(WRITE_UTF_8, new String(chars));
 
         assertEquals(0xb3, uint8Get(buffer, offset));
@@ -97,7 +97,7 @@ public class SymbolTypeTest
         buffer.putByte(offset + 2, (byte) 0x61);
 
         SymbolType symbolType = new SymbolType();
-        symbolType.wrap(buffer, offset);
+        symbolType.wrap(buffer, offset, true);
 
         assertEquals("a", symbolType.get(READ_UTF_8).toString());
         assertEquals(offset + 3, symbolType.limit());
@@ -114,7 +114,7 @@ public class SymbolTypeTest
         }
 
         SymbolType symbolType = new SymbolType();
-        symbolType.wrap(buffer, offset);
+        symbolType.wrap(buffer, offset, true);
 
         char[] chars = new char[256];
         Arrays.fill(chars, 'a');
@@ -126,7 +126,7 @@ public class SymbolTypeTest
     public void shouldEncodeThenDecode1(int offset)
     {
         SymbolType symbolType = new SymbolType();
-        symbolType.wrap(buffer, offset);
+        symbolType.wrap(buffer, offset, true);
         symbolType.set(WRITE_UTF_8, "a");
 
         assertEquals("a", symbolType.get(READ_UTF_8).toString());
@@ -140,7 +140,7 @@ public class SymbolTypeTest
         String string = new String(chars);
 
         SymbolType symbolType = new SymbolType();
-        symbolType.wrap(buffer, offset);
+        symbolType.wrap(buffer, offset, true);
         symbolType.set(WRITE_UTF_8, string);
 
         assertEquals(string, symbolType.get(READ_UTF_8).toString());
@@ -153,7 +153,7 @@ public class SymbolTypeTest
         buffer.putByte(offset, (byte) 0x00);
 
         SymbolType symbolType = new SymbolType();
-        symbolType.wrap(buffer, offset);
+        symbolType.wrap(buffer, offset, true);
         symbolType.get(READ_UTF_8);
     }
 
@@ -165,7 +165,7 @@ public class SymbolTypeTest
 
         SymbolType symbolType = new SymbolType();
         symbolType.watch(observer);
-        symbolType.wrap(buffer, offset);
+        symbolType.wrap(buffer, offset, true);
         symbolType.set(WRITE_UTF_8, "a");
 
         verify(observer).accept(symbolType);

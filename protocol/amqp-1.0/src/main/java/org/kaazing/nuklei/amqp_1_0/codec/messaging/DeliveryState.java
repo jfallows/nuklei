@@ -22,7 +22,7 @@ import java.util.function.ToLongFunction;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.amqp_1_0.codec.types.CompositeType;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 3.4 "Delivery State"
@@ -96,9 +96,9 @@ public enum DeliveryState
         }
 
         @Override
-        public Described wrap(MutableDirectBuffer buffer, int offset)
+        public Described wrap(DirectBuffer buffer, int offset, boolean mutable)
         {
-            super.wrap(buffer, offset);
+            super.wrap(buffer, offset, mutable);
             return this;
         }
 

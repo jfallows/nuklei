@@ -53,7 +53,7 @@ public class LongTypeTest
     public void shouldEncode1(int offset)
     {
         LongType longType = new LongType();
-        longType.wrap(buffer, offset);
+        longType.wrap(buffer, offset, true);
         longType.set(1L);
 
         assertEquals(0x55, uint8Get(buffer, offset));
@@ -64,7 +64,7 @@ public class LongTypeTest
     public void shouldEncode8(int offset)
     {
         LongType longType = new LongType();
-        longType.wrap(buffer, offset);
+        longType.wrap(buffer, offset, true);
         longType.set(12345678L);
 
         assertEquals(0x81, uint8Get(buffer, offset));
@@ -78,7 +78,7 @@ public class LongTypeTest
         buffer.putByte(offset + 1, (byte) 0x01);
 
         LongType longType = new LongType();
-        longType.wrap(buffer, offset);
+        longType.wrap(buffer, offset, true);
 
         assertEquals(0x01L, longType.get());
         assertEquals(offset + 2, longType.limit());
@@ -91,7 +91,7 @@ public class LongTypeTest
         buffer.putLong(offset + 1, 0x12345678L, BIG_ENDIAN);
 
         LongType longType = new LongType();
-        longType.wrap(buffer, offset);
+        longType.wrap(buffer, offset, true);
 
         assertEquals(0x12345678L, longType.get());
         assertEquals(offset + 9, longType.limit());
@@ -101,7 +101,7 @@ public class LongTypeTest
     public void shouldEncodeThenDecode1(int offset)
     {
         LongType longType = new LongType();
-        longType.wrap(buffer, offset);
+        longType.wrap(buffer, offset, true);
         longType.set(1L);
 
         assertEquals(1L, longType.get());
@@ -111,7 +111,7 @@ public class LongTypeTest
     public void shouldEncodeThenDecode8(int offset)
     {
         LongType longType = new LongType();
-        longType.wrap(buffer, offset);
+        longType.wrap(buffer, offset, true);
         longType.set(12345678L);
 
         assertEquals(12345678L, longType.get());
@@ -124,7 +124,7 @@ public class LongTypeTest
         buffer.putByte(offset, (byte) 0x00);
 
         LongType longType = new LongType();
-        longType.wrap(buffer, offset);
+        longType.wrap(buffer, offset, true);
 
         assertEquals(0L, longType.get());
     }
@@ -137,7 +137,7 @@ public class LongTypeTest
 
         LongType longType = new LongType();
         longType.watch(observer);
-        longType.wrap(buffer, offset);
+        longType.wrap(buffer, offset, true);
         longType.set(12345678L);
 
         verify(observer).accept(longType);

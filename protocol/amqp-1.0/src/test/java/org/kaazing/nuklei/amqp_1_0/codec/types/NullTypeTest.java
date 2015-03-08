@@ -52,7 +52,7 @@ public class NullTypeTest
     public void shouldEncode(int offset)
     {
         NullType nullType = new NullType();
-        nullType.wrap(buffer, offset);
+        nullType.wrap(buffer, offset, true);
         nullType.set(null);
 
         assertEquals(0x40, uint8Get(buffer, offset));
@@ -65,7 +65,7 @@ public class NullTypeTest
         buffer.putByte(offset, (byte) 0x40);
 
         NullType nullType = new NullType();
-        nullType.wrap(buffer, offset);
+        nullType.wrap(buffer, offset, true);
 
         assertNull(nullType.get());
         assertEquals(offset + 1, nullType.limit());
@@ -75,7 +75,7 @@ public class NullTypeTest
     public void shouldEncodeAndDecode(int offset)
     {
         NullType nullType = new NullType();
-        nullType.wrap(buffer, offset);
+        nullType.wrap(buffer, offset, true);
         nullType.set(null);
 
         assertNull(nullType.get());
@@ -89,7 +89,7 @@ public class NullTypeTest
         buffer.putByte(offset, (byte) 0x00);
 
         NullType nullType = new NullType();
-        nullType.wrap(buffer, offset);
+        nullType.wrap(buffer, offset, true);
 
         assertNull(nullType.get());
     }
@@ -102,7 +102,7 @@ public class NullTypeTest
 
         NullType nullType = new NullType();
         nullType.watch(observer);
-        nullType.wrap(buffer, offset);
+        nullType.wrap(buffer, offset, true);
         nullType.set(null);
 
         verify(observer).accept(nullType);

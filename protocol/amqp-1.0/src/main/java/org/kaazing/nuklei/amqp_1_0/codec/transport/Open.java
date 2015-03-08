@@ -27,7 +27,7 @@ import org.kaazing.nuklei.amqp_1_0.codec.types.UShortType;
 import org.kaazing.nuklei.function.DirectBufferAccessor;
 import org.kaazing.nuklei.function.MutableDirectBufferMutator;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 2.7.1 "Open"
@@ -110,9 +110,9 @@ public final class Open extends CompositeType
     }
 
     @Override
-    public Open wrap(MutableDirectBuffer buffer, int offset)
+    public Open wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 
@@ -248,51 +248,51 @@ public final class Open extends CompositeType
 
     private StringType containerId()
     {
-        return containerId.wrap(buffer(), offsetBody());
+        return containerId.wrap(mutableBuffer(), offsetBody(), true);
     }
 
     private StringType hostname()
     {
-        return hostname.wrap(buffer(), containerId().limit());
+        return hostname.wrap(mutableBuffer(), containerId().limit(), true);
     }
 
     private UIntType maxFrameSize()
     {
-        return maxFrameSize.wrap(buffer(), hostname().limit());
+        return maxFrameSize.wrap(mutableBuffer(), hostname().limit(), true);
     }
 
     private UShortType channelMax()
     {
-        return channelMax.wrap(buffer(), maxFrameSize().limit());
+        return channelMax.wrap(mutableBuffer(), maxFrameSize().limit(), true);
     }
 
     private UIntType idleTimeout()
     {
-        return idleTimeout.wrap(buffer(), channelMax().limit());
+        return idleTimeout.wrap(mutableBuffer(), channelMax().limit(), true);
     }
 
     private ArrayType outgoingLocales()
     {
-        return outgoingLocales.wrap(buffer(), idleTimeout().limit());
+        return outgoingLocales.wrap(mutableBuffer(), idleTimeout().limit(), true);
     }
 
     private ArrayType incomingLocales()
     {
-        return incomingLocales.wrap(buffer(), outgoingLocales().limit());
+        return incomingLocales.wrap(mutableBuffer(), outgoingLocales().limit(), true);
     }
 
     private ArrayType offeredCapabilities()
     {
-        return offeredCapabilities.wrap(buffer(), incomingLocales().limit());
+        return offeredCapabilities.wrap(mutableBuffer(), incomingLocales().limit(), true);
     }
 
     private ArrayType desiredCapabilities()
     {
-        return desiredCapabilities.wrap(buffer(), offeredCapabilities().limit());
+        return desiredCapabilities.wrap(mutableBuffer(), offeredCapabilities().limit(), true);
     }
 
     private Fields properties()
     {
-        return properties.wrap(buffer(), desiredCapabilities().limit());
+        return properties.wrap(mutableBuffer(), desiredCapabilities().limit(), true);
     }
 }

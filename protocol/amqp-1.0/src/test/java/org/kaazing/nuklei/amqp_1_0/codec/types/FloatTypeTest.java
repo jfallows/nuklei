@@ -56,7 +56,7 @@ public class FloatTypeTest
     public void shouldEncode(int offset)
     {
         FloatType floatType = new FloatType();
-        floatType.wrap(buffer, offset);
+        floatType.wrap(buffer, offset, true);
         floatType.set(12345678f);
 
         assertEquals(0x72, uint8Get(buffer, offset));
@@ -70,7 +70,7 @@ public class FloatTypeTest
         buffer.putInt(offset + 1, floatToIntBits(12345678f), BIG_ENDIAN);
 
         FloatType floatType = new FloatType();
-        floatType.wrap(buffer, offset);
+        floatType.wrap(buffer, offset, true);
 
         assertEquals(12345678f, floatType.get(), 0.001f);
         assertEquals(offset + 5, floatType.limit());
@@ -80,7 +80,7 @@ public class FloatTypeTest
     public void shouldEncodeThenDecode(int offset)
     {
         FloatType floatType = new FloatType();
-        floatType.wrap(buffer, offset);
+        floatType.wrap(buffer, offset, true);
         floatType.set(12345678f);
 
         assertEquals(12345678f, floatType.get(), 0.001f);
@@ -94,7 +94,7 @@ public class FloatTypeTest
         buffer.putByte(offset, (byte) 0x00);
 
         FloatType floatType = new FloatType();
-        floatType.wrap(buffer, offset);
+        floatType.wrap(buffer, offset, true);
 
         assertEquals(0.0f, floatType.get(), 0.0f);
     }
@@ -107,7 +107,7 @@ public class FloatTypeTest
 
         FloatType floatType = new FloatType();
         floatType.watch(observer);
-        floatType.wrap(buffer, offset);
+        floatType.wrap(buffer, offset, true);
         floatType.set(12345678f);
 
         verify(observer).accept(floatType);

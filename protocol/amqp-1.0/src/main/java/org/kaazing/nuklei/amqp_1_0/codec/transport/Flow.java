@@ -23,7 +23,7 @@ import org.kaazing.nuklei.amqp_1_0.codec.types.BooleanType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.CompositeType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UIntType;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 2.7.4 "Flow"
@@ -108,9 +108,9 @@ public final class Flow extends CompositeType
     }
 
     @Override
-    public Flow wrap(MutableDirectBuffer buffer, int offset)
+    public Flow wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 
@@ -234,56 +234,56 @@ public final class Flow extends CompositeType
 
     private UIntType nextIncomingId()
     {
-        return nextIncomingId.wrap(buffer(), offsetBody());
+        return nextIncomingId.wrap(mutableBuffer(), offsetBody(), true);
     }
 
     private UIntType incomingWindow()
     {
-        return incomingWindow.wrap(buffer(), nextIncomingId().limit());
+        return incomingWindow.wrap(mutableBuffer(), nextIncomingId().limit(), true);
     }
 
     private UIntType nextOutgoingId()
     {
-        return nextOutgoingId.wrap(buffer(), incomingWindow().limit());
+        return nextOutgoingId.wrap(mutableBuffer(), incomingWindow().limit(), true);
     }
 
     private UIntType outgoingWindow()
     {
-        return outgoingWindow.wrap(buffer(), nextOutgoingId().limit());
+        return outgoingWindow.wrap(mutableBuffer(), nextOutgoingId().limit(), true);
     }
 
     private UIntType handle()
     {
-        return handle.wrap(buffer(), outgoingWindow().limit());
+        return handle.wrap(mutableBuffer(), outgoingWindow().limit(), true);
     }
 
     private UIntType deliveryCount()
     {
-        return deliveryCount.wrap(buffer(), handle().limit());
+        return deliveryCount.wrap(mutableBuffer(), handle().limit(), true);
     }
 
     private UIntType linkCredit()
     {
-        return linkCredit.wrap(buffer(), deliveryCount().limit());
+        return linkCredit.wrap(mutableBuffer(), deliveryCount().limit(), true);
     }
 
     private UIntType available()
     {
-        return available.wrap(buffer(), linkCredit().limit());
+        return available.wrap(mutableBuffer(), linkCredit().limit(), true);
     }
 
     private BooleanType drain()
     {
-        return drain.wrap(buffer(), available().limit());
+        return drain.wrap(mutableBuffer(), available().limit(), true);
     }
 
     private BooleanType echo()
     {
-        return echo.wrap(buffer(), drain().limit());
+        return echo.wrap(mutableBuffer(), drain().limit(), true);
     }
 
     private Fields properties()
     {
-        return properties.wrap(buffer(), echo().limit());
+        return properties.wrap(mutableBuffer(), echo().limit(), true);
     }
 }

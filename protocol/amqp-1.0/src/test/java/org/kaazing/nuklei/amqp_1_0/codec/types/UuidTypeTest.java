@@ -55,7 +55,7 @@ public class UuidTypeTest
     public void shouldEncode(int offset)
     {
         UuidType uuidType = new UuidType();
-        uuidType.wrap(buffer, offset);
+        uuidType.wrap(buffer, offset, true);
         uuidType.set(fromString("f81d4fae-7dec-11d0-a765-00a0c91e6bf6"));
 
         assertEquals(0x98, uint8Get(buffer, offset));
@@ -69,7 +69,7 @@ public class UuidTypeTest
         buffer.putBytes(offset + 1, fromHex("f81d4fae7dec11d0a76500a0c91e6bf6"));
 
         UuidType uuidType = new UuidType();
-        uuidType.wrap(buffer, offset);
+        uuidType.wrap(buffer, offset, true);
 
         assertEquals(fromString("f81d4fae-7dec-11d0-a765-00a0c91e6bf6"), uuidType.get());
         assertEquals(offset + 17, uuidType.limit());
@@ -79,7 +79,7 @@ public class UuidTypeTest
     public void shouldEncodeThenDecode(int offset)
     {
         UuidType uuidType = new UuidType();
-        uuidType.wrap(buffer, offset);
+        uuidType.wrap(buffer, offset, true);
         uuidType.set(fromString("f81d4fae-7dec-11d0-a765-00a0c91e6bf6"));
 
         assertEquals(fromString("f81d4fae-7dec-11d0-a765-00a0c91e6bf6"), uuidType.get());
@@ -93,7 +93,7 @@ public class UuidTypeTest
         buffer.putByte(offset, (byte) 0x00);
 
         UuidType uuidType = new UuidType();
-        uuidType.wrap(buffer, offset);
+        uuidType.wrap(buffer, offset, true);
 
         assertEquals(fromString("f81d4fae-7dec-11d0-a765-00a0c91e6bf6"), uuidType.get());
     }
@@ -106,7 +106,7 @@ public class UuidTypeTest
 
         UuidType uuidType = new UuidType();
         uuidType.watch(observer);
-        uuidType.wrap(buffer, offset);
+        uuidType.wrap(buffer, offset, true);
         uuidType.set(fromString("f81d4fae-7dec-11d0-a765-00a0c91e6bf6"));
 
         verify(observer).accept(uuidType);

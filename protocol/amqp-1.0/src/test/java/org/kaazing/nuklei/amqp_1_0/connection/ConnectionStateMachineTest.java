@@ -42,8 +42,9 @@ public class ConnectionStateMachineTest
     private final ConnectionStateMachine<Void, Void, Void> stateMachine = new ConnectionStateMachine<>(connectionHooks);
     private final Connection<Void, Void, Void> connection = new Connection<>(stateMachine, mock(Sender.class),
             new UnsafeBuffer(new byte[0]));
-    private final Header header = Header.LOCAL_REF.get().wrap(new UnsafeBuffer(new byte[Header.SIZEOF_HEADER]), 0);
-    private final Frame frame = Frame.LOCAL_REF.get().wrap(new UnsafeBuffer(new byte[64]), 0);
+    private final Header header =
+            Header.LOCAL_REF.get().wrap(new UnsafeBuffer(new byte[Header.SIZEOF_HEADER]), 0, true);
+    private final Frame frame = Frame.LOCAL_REF.get().wrap(new UnsafeBuffer(new byte[64]), 0, true);
     private final Open open = Open.LOCAL_REF.get();
     private final Close close = Close.LOCAL_REF.get();
 
@@ -108,7 +109,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.START;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -126,7 +127,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.START;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -144,7 +145,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.START;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -162,7 +163,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.START;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -258,7 +259,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.HEADER_SENT;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -276,7 +277,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.HEADER_SENT;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -294,7 +295,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.HEADER_SENT;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -312,7 +313,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.HEADER_SENT;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -408,7 +409,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.HEADER_RECEIVED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -426,7 +427,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.HEADER_RECEIVED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -444,7 +445,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.HEADER_RECEIVED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -462,7 +463,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.HEADER_RECEIVED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -534,7 +535,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.HEADER_EXCHANGED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -552,7 +553,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.HEADER_EXCHANGED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -570,7 +571,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.HEADER_EXCHANGED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -588,7 +589,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.HEADER_EXCHANGED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -684,7 +685,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.OPEN_PIPE;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -702,7 +703,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.OPEN_PIPE;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -719,7 +720,7 @@ public class ConnectionStateMachineTest
         connectionHooks.whenCloseSent = mock(FrameConsumer.class);
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         connection.state = ConnectionState.OPEN_PIPE;
@@ -739,7 +740,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.OPEN_PIPE;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -835,7 +836,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.OPEN_CLOSE_PIPE;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -853,7 +854,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.OPEN_CLOSE_PIPE;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -871,7 +872,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.OPEN_CLOSE_PIPE;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -889,7 +890,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.OPEN_CLOSE_PIPE;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -961,7 +962,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.CLOSE_PIPE;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -979,7 +980,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.CLOSE_PIPE;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -997,7 +998,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.CLOSE_PIPE;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -1015,7 +1016,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.CLOSE_PIPE;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -1087,7 +1088,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.OPEN_SENT;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -1105,7 +1106,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.OPEN_SENT;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -1123,7 +1124,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.OPEN_SENT;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -1141,7 +1142,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.OPEN_SENT;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -1213,7 +1214,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.OPEN_RECEIVED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -1231,7 +1232,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.OPEN_RECEIVED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -1249,7 +1250,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.OPEN_RECEIVED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -1267,7 +1268,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.OPEN_RECEIVED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -1339,7 +1340,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.OPENED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -1357,7 +1358,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.OPENED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -1375,7 +1376,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.OPENED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -1394,7 +1395,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.OPENED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -1414,7 +1415,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.OPENED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -1486,7 +1487,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.CLOSE_SENT;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -1504,7 +1505,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.CLOSE_SENT;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -1522,7 +1523,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.CLOSE_SENT;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -1540,7 +1541,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.CLOSE_SENT;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -1612,7 +1613,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.DISCARDING;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -1630,7 +1631,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.DISCARDING;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -1648,7 +1649,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.DISCARDING;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -1666,7 +1667,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.DISCARDING;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);
@@ -1738,7 +1739,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.CLOSE_RECEIVED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, open);
@@ -1756,7 +1757,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.CLOSE_RECEIVED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.OPEN);
-        open.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setContainerId(null);
+        open.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setContainerId(null);
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, open);
@@ -1774,7 +1775,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.CLOSE_RECEIVED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(connection, frame, close);
@@ -1792,7 +1793,7 @@ public class ConnectionStateMachineTest
         connection.state = ConnectionState.CLOSE_RECEIVED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.CLOSE);
-        close.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        close.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(connection, frame, close);

@@ -54,7 +54,7 @@ public class CharTypeTest
     public void shouldEncode(int offset)
     {
         CharType charType = new CharType();
-        charType.wrap(buffer, offset);
+        charType.wrap(buffer, offset, true);
         charType.set(0x12);
 
         assertEquals(0x73, uint8Get(buffer, offset));
@@ -68,7 +68,7 @@ public class CharTypeTest
         buffer.putInt(offset + 1, 0x12, BIG_ENDIAN);
 
         CharType charType = new CharType();
-        charType.wrap(buffer, offset);
+        charType.wrap(buffer, offset, true);
 
         assertEquals(0x12, charType.get());
         assertEquals(offset + 5, charType.limit());
@@ -78,7 +78,7 @@ public class CharTypeTest
     public void shouldEncodeThenDecode(int offset)
     {
         CharType charType = new CharType();
-        charType.wrap(buffer, offset);
+        charType.wrap(buffer, offset, true);
         charType.set(0x12);
 
         assertEquals(0x12, charType.get());
@@ -92,7 +92,7 @@ public class CharTypeTest
         buffer.putByte(offset, (byte) 0x00);
 
         CharType charType = new CharType();
-        charType.wrap(buffer, offset);
+        charType.wrap(buffer, offset, true);
 
         assertEquals(0, charType.get());
     }
@@ -105,7 +105,7 @@ public class CharTypeTest
 
         CharType charType = new CharType();
         charType.watch(observer);
-        charType.wrap(buffer, offset);
+        charType.wrap(buffer, offset, true);
         charType.set(0x12);
 
         verify(observer).accept(charType);

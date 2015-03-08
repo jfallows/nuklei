@@ -58,9 +58,9 @@ public final class Header extends FlyweightBE
     }
 
     @Override
-    public Header wrap(DirectBuffer buffer, int offset)
+    public Header wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 

@@ -58,7 +58,7 @@ public class Decimal128TypeTest
     public void shouldEncode(int offset)
     {
         Decimal128Type decimal128Type = new Decimal128Type();
-        decimal128Type.wrap(buffer, offset);
+        decimal128Type.wrap(buffer, offset, true);
         decimal128Type.set(new BigDecimal(1.23456, DECIMAL128));
 
         assertEquals(0x74, uint8Get(buffer, offset));
@@ -74,7 +74,7 @@ public class Decimal128TypeTest
         buffer.putInt(offset + 1, 0x12345678, BIG_ENDIAN);
 
         Decimal128Type decimal128Type = new Decimal128Type();
-        decimal128Type.wrap(buffer, offset);
+        decimal128Type.wrap(buffer, offset, true);
 
         assertEquals(new BigDecimal(1.23456, DECIMAL128), decimal128Type.get());
         assertEquals(offset + 5, decimal128Type.limit());
@@ -85,7 +85,7 @@ public class Decimal128TypeTest
     public void shouldEncodeThenDecode(int offset)
     {
         Decimal128Type decimal128Type = new Decimal128Type();
-        decimal128Type.wrap(buffer, offset);
+        decimal128Type.wrap(buffer, offset, true);
         decimal128Type.set(new BigDecimal(1.23456, DECIMAL128));
 
         assertEquals(new BigDecimal(1.23456, DECIMAL128), decimal128Type.get());
@@ -98,7 +98,7 @@ public class Decimal128TypeTest
         buffer.putByte(offset, (byte) 0x00);
 
         Decimal128Type decimal128Type = new Decimal128Type();
-        decimal128Type.wrap(buffer, offset);
+        decimal128Type.wrap(buffer, offset, true);
 
         assertEquals(0L, decimal128Type.get());
     }
@@ -111,7 +111,7 @@ public class Decimal128TypeTest
 
         Decimal128Type decimal128Type = new Decimal128Type();
         decimal128Type.watch(observer);
-        decimal128Type.wrap(buffer, offset);
+        decimal128Type.wrap(buffer, offset, true);
         decimal128Type.set(new BigDecimal(1.23456, DECIMAL128));
 
         verify(observer).accept(decimal128Type);

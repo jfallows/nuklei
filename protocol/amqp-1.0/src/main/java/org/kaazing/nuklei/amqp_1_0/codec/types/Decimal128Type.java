@@ -21,7 +21,7 @@ import static java.math.MathContext.DECIMAL128;
 
 import java.math.BigDecimal;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.15 "decimal128"
@@ -49,9 +49,9 @@ public final class Decimal128Type extends Type
     }
 
     @Override
-    public Decimal128Type wrap(MutableDirectBuffer buffer, int offset)
+    public Decimal128Type wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 

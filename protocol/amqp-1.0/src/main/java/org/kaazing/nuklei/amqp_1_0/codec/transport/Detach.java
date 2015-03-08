@@ -23,7 +23,7 @@ import org.kaazing.nuklei.amqp_1_0.codec.types.BooleanType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.CompositeType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UIntType;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 2.7.7 "Detach"
@@ -68,9 +68,9 @@ public final class Detach extends CompositeType
     }
 
     @Override
-    public Detach wrap(MutableDirectBuffer buffer, int offset)
+    public Detach wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 
@@ -117,16 +117,16 @@ public final class Detach extends CompositeType
 
     private UIntType handle()
     {
-        return handle.wrap(buffer(), offsetBody());
+        return handle.wrap(mutableBuffer(), offsetBody(), true);
     }
 
     private BooleanType closed()
     {
-        return closed.wrap(buffer(), handle().limit());
+        return closed.wrap(mutableBuffer(), handle().limit(), true);
     }
 
     private Error error()
     {
-        return error.wrap(buffer(), closed().limit());
+        return error.wrap(mutableBuffer(), closed().limit(), true);
     }
 }

@@ -54,7 +54,7 @@ public class ShortTypeTest
     public void shouldEncode(int offset)
     {
         ShortType shortType = new ShortType();
-        shortType.wrap(buffer, offset);
+        shortType.wrap(buffer, offset, true);
         shortType.set((short) 0x1234);
 
         assertEquals(0x61, uint8Get(buffer, offset));
@@ -68,7 +68,7 @@ public class ShortTypeTest
         buffer.putShort(offset + 1, (short) 0x1234, BIG_ENDIAN);
 
         ShortType shortType = new ShortType();
-        shortType.wrap(buffer, offset);
+        shortType.wrap(buffer, offset, true);
 
         assertEquals(0x1234, shortType.get());
         assertEquals(offset + 3, shortType.limit());
@@ -78,7 +78,7 @@ public class ShortTypeTest
     public void shouldEncodeThenDecode(int offset)
     {
         ShortType shortType = new ShortType();
-        shortType.wrap(buffer, offset);
+        shortType.wrap(buffer, offset, true);
         shortType.set((short) 0x1234);
 
         assertEquals(0x1234, shortType.get());
@@ -92,7 +92,7 @@ public class ShortTypeTest
         buffer.putByte(offset, (byte) 0x00);
 
         ShortType shortType = new ShortType();
-        shortType.wrap(buffer, offset);
+        shortType.wrap(buffer, offset, true);
 
         assertEquals(0, shortType.get());
     }
@@ -105,7 +105,7 @@ public class ShortTypeTest
 
         ShortType shortType = new ShortType();
         shortType.watch(observer);
-        shortType.wrap(buffer, offset);
+        shortType.wrap(buffer, offset, true);
         shortType.set((short) 0x1234);
 
         verify(observer).accept(shortType);

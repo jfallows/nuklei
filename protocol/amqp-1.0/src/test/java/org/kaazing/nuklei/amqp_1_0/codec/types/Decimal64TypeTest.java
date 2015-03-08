@@ -58,7 +58,7 @@ public class Decimal64TypeTest
     public void shouldEncode(int offset)
     {
         Decimal64Type decimal64Type = new Decimal64Type();
-        decimal64Type.wrap(buffer, offset);
+        decimal64Type.wrap(buffer, offset, true);
         decimal64Type.set(new BigDecimal(12345678L, DECIMAL64));
 
         assertEquals(0x84, uint8Get(buffer, offset));
@@ -74,7 +74,7 @@ public class Decimal64TypeTest
         buffer.putLong(offset + 1, 0x12345678L, BIG_ENDIAN);
 
         Decimal64Type decimal64Type = new Decimal64Type();
-        decimal64Type.wrap(buffer, offset);
+        decimal64Type.wrap(buffer, offset, true);
 
         assertEquals(0x12345678L, decimal64Type.get());
         assertEquals(offset + 9, decimal64Type.limit());
@@ -85,7 +85,7 @@ public class Decimal64TypeTest
     public void shouldEncodeThenDecode(int offset)
     {
         Decimal64Type decimal64Type = new Decimal64Type();
-        decimal64Type.wrap(buffer, offset);
+        decimal64Type.wrap(buffer, offset, true);
         decimal64Type.set(new BigDecimal(12345678L, DECIMAL64));
 
         assertEquals(12345678L, decimal64Type.get());
@@ -98,7 +98,7 @@ public class Decimal64TypeTest
         buffer.putByte(offset, (byte) 0x00);
 
         Decimal64Type decimal64Type = new Decimal64Type();
-        decimal64Type.wrap(buffer, offset);
+        decimal64Type.wrap(buffer, offset, true);
 
         assertEquals(0L, decimal64Type.get());
     }
@@ -111,7 +111,7 @@ public class Decimal64TypeTest
 
         Decimal64Type decimal64Type = new Decimal64Type();
         decimal64Type.watch(observer);
-        decimal64Type.wrap(buffer, offset);
+        decimal64Type.wrap(buffer, offset, true);
         decimal64Type.set(new BigDecimal(12345678L, DECIMAL64));
 
         verify(observer).accept(decimal64Type);

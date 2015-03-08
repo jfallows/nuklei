@@ -49,19 +49,19 @@ public final class SessionHandler<S, L>
         switch (frame.getPerformative())
         {
         case BEGIN:
-            Begin begin = Begin.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset());
+            Begin begin = Begin.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset(), true);
             session.stateMachine.received(session, frame, begin);
             break;
         case FLOW:
-            Flow flow = Flow.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset());
+            Flow flow = Flow.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset(), true);
             session.stateMachine.received(session, frame, flow);
             break;
         case DISPOSITION:
-            Disposition disposition = Disposition.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset());
+            Disposition disposition = Disposition.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset(), true);
             session.stateMachine.received(session, frame, disposition);
             break;
         case END:
-            End end = End.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset());
+            End end = End.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset(), true);
             session.stateMachine.received(session, frame, end);
             break;
         case ATTACH:
@@ -81,7 +81,7 @@ public final class SessionHandler<S, L>
 
     private void handleLinkAttach(Session<S, L> session, Frame frame)
     {
-        Attach attach = Attach.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset());
+        Attach attach = Attach.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset(), true);
         int newHandle = (int) attach.getHandle();
         Link<L> newLink = session.links.get(newHandle);
         if (newLink == null)
@@ -95,7 +95,7 @@ public final class SessionHandler<S, L>
 
     private void handleLinkTransfer(Session<S, L> session, Frame frame)
     {
-        Transfer transfer = Transfer.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset());
+        Transfer transfer = Transfer.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset(), true);
         int handle = (int) transfer.getHandle();
         Link<L> link = session.links.get(handle);
         if (link == null)
@@ -110,7 +110,7 @@ public final class SessionHandler<S, L>
 
     private void handleLinkDetach(Session<S, L> session, Frame frame)
     {
-        Detach detach = Detach.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset());
+        Detach detach = Detach.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset(), true);
         int oldHandle = (int) detach.getHandle();
         Link<L> oldLink = session.links.remove(oldHandle);
         if (oldLink == null)

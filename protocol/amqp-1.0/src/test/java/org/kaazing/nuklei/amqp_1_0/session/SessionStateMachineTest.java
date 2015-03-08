@@ -41,7 +41,7 @@ public class SessionStateMachineTest
     private final SessionStateMachine<Void, Void> stateMachine = new SessionStateMachine<>(sessionHooks);
     private final Session<Void, Void> session = new Session<>(stateMachine, mock(Sender.class));
 
-    private final Frame frame = Frame.LOCAL_REF.get().wrap(new UnsafeBuffer(new byte[64]), 0);
+    private final Frame frame = Frame.LOCAL_REF.get().wrap(new UnsafeBuffer(new byte[64]), 0, true);
     private final Begin begin = Begin.LOCAL_REF.get();
     private final Flow flow = Flow.LOCAL_REF.get();
     private final Disposition disposition = Disposition.LOCAL_REF.get();
@@ -68,7 +68,7 @@ public class SessionStateMachineTest
         session.state = SessionState.UNMAPPED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.BEGIN);
-        begin.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setRemoteChannel(0x01)
+        begin.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setRemoteChannel(0x01)
                 .setNextOutgoingId(0x0011223344556677L);
         frame.bodyChanged();
 
@@ -87,7 +87,7 @@ public class SessionStateMachineTest
         session.state = SessionState.UNMAPPED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.BEGIN);
-        begin.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setRemoteChannel(0x01)
+        begin.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setRemoteChannel(0x01)
                 .setNextOutgoingId(0x0011223344556677L);
         frame.bodyChanged();
 
@@ -106,7 +106,7 @@ public class SessionStateMachineTest
         session.state = SessionState.UNMAPPED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.FLOW);
-        flow.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        flow.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(session, frame, flow);
@@ -124,7 +124,7 @@ public class SessionStateMachineTest
         session.state = SessionState.UNMAPPED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.FLOW);
-        flow.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        flow.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(session, frame, flow);
@@ -142,7 +142,7 @@ public class SessionStateMachineTest
         session.state = SessionState.UNMAPPED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.DISPOSITION);
-        disposition.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        disposition.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(session, frame, disposition);
@@ -160,7 +160,7 @@ public class SessionStateMachineTest
         session.state = SessionState.UNMAPPED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.DISPOSITION);
-        disposition.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        disposition.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(session, frame, disposition);
@@ -178,7 +178,7 @@ public class SessionStateMachineTest
         session.state = SessionState.UNMAPPED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.END);
-        end.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        end.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(session, frame, end);
@@ -196,7 +196,7 @@ public class SessionStateMachineTest
         session.state = SessionState.UNMAPPED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.END);
-        end.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        end.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(session, frame, end);
@@ -214,7 +214,7 @@ public class SessionStateMachineTest
         session.state = SessionState.BEGIN_SENT;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.BEGIN);
-        begin.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setRemoteChannel(0x01)
+        begin.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setRemoteChannel(0x01)
                 .setNextOutgoingId(0x0011223344556677L);
         frame.bodyChanged();
 
@@ -233,7 +233,7 @@ public class SessionStateMachineTest
         session.state = SessionState.BEGIN_SENT;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.BEGIN);
-        begin.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setRemoteChannel(0x01)
+        begin.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setRemoteChannel(0x01)
                 .setNextOutgoingId(0x0011223344556677L);
         frame.bodyChanged();
 
@@ -252,7 +252,7 @@ public class SessionStateMachineTest
         session.state = SessionState.BEGIN_SENT;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.FLOW);
-        flow.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        flow.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(session, frame, flow);
@@ -270,7 +270,7 @@ public class SessionStateMachineTest
         session.state = SessionState.BEGIN_SENT;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.FLOW);
-        flow.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        flow.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(session, frame, flow);
@@ -288,7 +288,7 @@ public class SessionStateMachineTest
         session.state = SessionState.BEGIN_SENT;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.DISPOSITION);
-        disposition.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        disposition.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(session, frame, disposition);
@@ -306,7 +306,7 @@ public class SessionStateMachineTest
         session.state = SessionState.BEGIN_SENT;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.DISPOSITION);
-        disposition.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        disposition.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(session, frame, disposition);
@@ -324,7 +324,7 @@ public class SessionStateMachineTest
         session.state = SessionState.BEGIN_SENT;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.END);
-        end.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        end.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(session, frame, end);
@@ -342,7 +342,7 @@ public class SessionStateMachineTest
         session.state = SessionState.BEGIN_SENT;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.END);
-        end.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        end.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(session, frame, end);
@@ -360,7 +360,7 @@ public class SessionStateMachineTest
         session.state = SessionState.BEGIN_RECEIVED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.BEGIN);
-        begin.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setRemoteChannel(0x01)
+        begin.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setRemoteChannel(0x01)
                 .setNextOutgoingId(0x0011223344556677L);
         frame.bodyChanged();
 
@@ -379,7 +379,7 @@ public class SessionStateMachineTest
         session.state = SessionState.BEGIN_RECEIVED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.BEGIN);
-        begin.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setRemoteChannel(0x01)
+        begin.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setRemoteChannel(0x01)
                 .setNextOutgoingId(0x0011223344556677L);
         frame.bodyChanged();
 
@@ -398,7 +398,7 @@ public class SessionStateMachineTest
         session.state = SessionState.BEGIN_RECEIVED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.FLOW);
-        flow.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        flow.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(session, frame, flow);
@@ -416,7 +416,7 @@ public class SessionStateMachineTest
         session.state = SessionState.BEGIN_RECEIVED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.FLOW);
-        flow.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        flow.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(session, frame, flow);
@@ -434,7 +434,7 @@ public class SessionStateMachineTest
         session.state = SessionState.BEGIN_RECEIVED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.DISPOSITION);
-        disposition.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        disposition.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(session, frame, disposition);
@@ -452,7 +452,7 @@ public class SessionStateMachineTest
         session.state = SessionState.BEGIN_RECEIVED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.DISPOSITION);
-        disposition.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        disposition.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(session, frame, disposition);
@@ -470,7 +470,7 @@ public class SessionStateMachineTest
         session.state = SessionState.BEGIN_RECEIVED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.END);
-        end.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        end.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(session, frame, end);
@@ -488,7 +488,7 @@ public class SessionStateMachineTest
         session.state = SessionState.BEGIN_RECEIVED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.END);
-        end.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        end.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(session, frame, end);
@@ -506,7 +506,7 @@ public class SessionStateMachineTest
         session.state = SessionState.MAPPED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.BEGIN);
-        begin.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setRemoteChannel(0x01)
+        begin.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setRemoteChannel(0x01)
                 .setNextOutgoingId(0x0011223344556677L);
         frame.bodyChanged();
 
@@ -525,7 +525,7 @@ public class SessionStateMachineTest
         session.state = SessionState.MAPPED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.BEGIN);
-        begin.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setRemoteChannel(0x01)
+        begin.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setRemoteChannel(0x01)
                 .setNextOutgoingId(0x0011223344556677L);
         frame.bodyChanged();
 
@@ -544,7 +544,7 @@ public class SessionStateMachineTest
         session.state = SessionState.MAPPED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.END);
-        end.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        end.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(session, frame, end);
@@ -562,7 +562,7 @@ public class SessionStateMachineTest
         session.state = SessionState.MAPPED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.END);
-        end.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        end.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(session, frame, end);
@@ -580,7 +580,7 @@ public class SessionStateMachineTest
         session.state = SessionState.MAPPED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.FLOW);
-        flow.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        flow.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(session, frame, flow);
@@ -598,7 +598,7 @@ public class SessionStateMachineTest
         session.state = SessionState.MAPPED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.FLOW);
-        flow.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        flow.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(session, frame, flow);
@@ -616,7 +616,7 @@ public class SessionStateMachineTest
         session.state = SessionState.MAPPED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.DISPOSITION);
-        disposition.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        disposition.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(session, frame, disposition);
@@ -634,7 +634,7 @@ public class SessionStateMachineTest
         session.state = SessionState.MAPPED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.DISPOSITION);
-        disposition.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        disposition.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(session, frame, disposition);
@@ -652,7 +652,7 @@ public class SessionStateMachineTest
         session.state = SessionState.MAPPED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.END);
-        end.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        end.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.error(session);
@@ -670,7 +670,7 @@ public class SessionStateMachineTest
         session.state = SessionState.DISCARDING;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.BEGIN);
-        begin.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setRemoteChannel(0x01)
+        begin.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setRemoteChannel(0x01)
                 .setNextOutgoingId(0x0011223344556677L);
         frame.bodyChanged();
 
@@ -689,7 +689,7 @@ public class SessionStateMachineTest
         session.state = SessionState.DISCARDING;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.BEGIN);
-        begin.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).setRemoteChannel(0x01)
+        begin.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).setRemoteChannel(0x01)
                 .setNextOutgoingId(0x0011223344556677L);
         frame.bodyChanged();
 
@@ -708,7 +708,7 @@ public class SessionStateMachineTest
         session.state = SessionState.DISCARDING;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.END);
-        end.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        end.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(session, frame, end);
@@ -726,7 +726,7 @@ public class SessionStateMachineTest
         session.state = SessionState.DISCARDING;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.END);
-        end.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        end.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(session, frame, end);
@@ -744,7 +744,7 @@ public class SessionStateMachineTest
         session.state = SessionState.DISCARDING;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.FLOW);
-        flow.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        flow.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(session, frame, flow);
@@ -762,7 +762,7 @@ public class SessionStateMachineTest
         session.state = SessionState.DISCARDING;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.FLOW);
-        flow.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        flow.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(session, frame, flow);
@@ -780,7 +780,7 @@ public class SessionStateMachineTest
         session.state = SessionState.DISCARDING;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.DISPOSITION);
-        disposition.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        disposition.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(session, frame, disposition);
@@ -798,7 +798,7 @@ public class SessionStateMachineTest
         session.state = SessionState.DISCARDING;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.DISPOSITION);
-        disposition.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        disposition.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(session, frame, disposition);
@@ -816,7 +816,7 @@ public class SessionStateMachineTest
         session.state = SessionState.DISCARDING;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.END);
-        end.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        end.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.error(session);
@@ -834,7 +834,7 @@ public class SessionStateMachineTest
         session.state = SessionState.END_SENT;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.END);
-        end.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        end.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.received(session, frame, end);
@@ -852,7 +852,7 @@ public class SessionStateMachineTest
         session.state = SessionState.END_RECEIVED;
 
         frame.setChannel(0x00).setDataOffset(0x02).setType(0x01).setPerformative(Performative.END);
-        end.wrap(frame.mutableBuffer(), frame.bodyOffset()).maxLength(255).clear();
+        end.wrap(frame.mutableBuffer(), frame.bodyOffset(), true).maxLength(255).clear();
         frame.bodyChanged();
 
         stateMachine.sent(session, frame, end);

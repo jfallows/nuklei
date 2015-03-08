@@ -39,7 +39,7 @@ public final class ArrayType extends Type
         this.elementType = new DynamicType();
         this.header = new Header().watch((owner) ->
         {
-            elementType().wrap(mutableBuffer(), owner.limit());
+            elementType().wrap(mutableBuffer(), owner.limit(), true);
             notifyChanged();
         });
     }
@@ -118,7 +118,7 @@ public final class ArrayType extends Type
 
     private DynamicType elementType()
     {
-        elementType.wrap(mutableBuffer(), header.limit());
+        elementType.wrap(mutableBuffer(), header.limit(), true);
         return elementType;
     }
 

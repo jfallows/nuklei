@@ -35,7 +35,7 @@ import org.kaazing.nuklei.amqp_1_0.codec.types.ULongType;
 import org.kaazing.nuklei.function.DirectBufferAccessor;
 import org.kaazing.nuklei.function.MutableDirectBufferMutator;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 2.7.3 "Attach"
@@ -137,9 +137,9 @@ public final class Attach extends CompositeType
     }
 
     @Override
-    public Attach wrap(MutableDirectBuffer buffer, int offset)
+    public Attach wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 
@@ -295,71 +295,71 @@ public final class Attach extends CompositeType
 
     private StringType name()
     {
-        return name.wrap(mutableBuffer(), offsetBody());
+        return name.wrap(mutableBuffer(), offsetBody(), true);
     }
 
     private UIntType handle()
     {
-        return handle.wrap(mutableBuffer(), name().limit());
+        return handle.wrap(mutableBuffer(), name().limit(), true);
     }
 
     private BooleanType role()
     {
-        return role.wrap(mutableBuffer(), handle().limit());
+        return role.wrap(mutableBuffer(), handle().limit(), true);
     }
 
     private UByteType sendSettleMode()
     {
-        return sendSettleMode.wrap(mutableBuffer(), role().limit());
+        return sendSettleMode.wrap(mutableBuffer(), role().limit(), true);
     }
 
     private UByteType receiveSettleMode()
     {
-        return receiveSettleMode.wrap(mutableBuffer(), role().limit());
+        return receiveSettleMode.wrap(mutableBuffer(), role().limit(), true);
     }
 
     private Source source()
     {
-        return source.wrap(mutableBuffer(), receiveSettleMode().limit());
+        return source.wrap(mutableBuffer(), receiveSettleMode().limit(), true);
     }
 
     private Target target()
     {
-        return target.wrap(mutableBuffer(), source().limit());
+        return target.wrap(mutableBuffer(), source().limit(), true);
     }
 
     private MapType unsettled()
     {
-        return unsettled.wrap(mutableBuffer(), target().limit());
+        return unsettled.wrap(buffer(), target().limit(), false);
     }
 
     private BooleanType incompleteUnsettled()
     {
-        return incompleteUnsettled.wrap(mutableBuffer(), unsettled().limit());
+        return incompleteUnsettled.wrap(mutableBuffer(), unsettled().limit(), true);
     }
 
     private UIntType initialDeliveryCount()
     {
-        return initialDeliveryCount.wrap(mutableBuffer(), incompleteUnsettled().limit());
+        return initialDeliveryCount.wrap(mutableBuffer(), incompleteUnsettled().limit(), true);
     }
 
     private ULongType maxMessageSize()
     {
-        return maxMessageSize.wrap(mutableBuffer(), initialDeliveryCount().limit());
+        return maxMessageSize.wrap(buffer(), initialDeliveryCount().limit(), false);
     }
 
     private ArrayType offeredCapabilities()
     {
-        return offeredCapabilities.wrap(mutableBuffer(), maxMessageSize().limit());
+        return offeredCapabilities.wrap(buffer(), maxMessageSize().limit(), false);
     }
 
     private ArrayType desiredCapabilities()
     {
-        return desiredCapabilities.wrap(mutableBuffer(), offeredCapabilities().limit());
+        return desiredCapabilities.wrap(buffer(), offeredCapabilities().limit(), false);
     }
 
     private Fields properties()
     {
-        return properties.wrap(mutableBuffer(), desiredCapabilities().limit());
+        return properties.wrap(mutableBuffer(), desiredCapabilities().limit(), true);
     }
 }

@@ -54,7 +54,7 @@ public class TimestampTypeTest
     public void shouldEncode(int offset)
     {
         TimestampType timestampType = new TimestampType();
-        timestampType.wrap(buffer, offset);
+        timestampType.wrap(buffer, offset, true);
         timestampType.set(0x12345678L);
 
         assertEquals(0x83, uint8Get(buffer, offset));
@@ -68,7 +68,7 @@ public class TimestampTypeTest
         buffer.putLong(offset + 1, 0x12345678L, BIG_ENDIAN);
 
         TimestampType timestampType = new TimestampType();
-        timestampType.wrap(buffer, offset);
+        timestampType.wrap(buffer, offset, true);
 
         assertEquals(0x12345678L, timestampType.get());
         assertEquals(offset + 9, timestampType.limit());
@@ -78,7 +78,7 @@ public class TimestampTypeTest
     public void shouldEncodeThenDecode(int offset)
     {
         TimestampType timestampType = new TimestampType();
-        timestampType.wrap(buffer, offset);
+        timestampType.wrap(buffer, offset, true);
         timestampType.set(0x12345678L);
 
         assertEquals(0x12345678L, timestampType.get());
@@ -92,7 +92,7 @@ public class TimestampTypeTest
         buffer.putByte(offset, (byte) 0x00);
 
         TimestampType timestampType = new TimestampType();
-        timestampType.wrap(buffer, offset);
+        timestampType.wrap(buffer, offset, true);
 
         assertEquals(0L, timestampType.get());
     }
@@ -105,7 +105,7 @@ public class TimestampTypeTest
 
         TimestampType timestampType = new TimestampType();
         timestampType.watch(observer);
-        timestampType.wrap(buffer, offset);
+        timestampType.wrap(buffer, offset, true);
         timestampType.set(0x12345678L);
 
         verify(observer).accept(timestampType);

@@ -56,7 +56,7 @@ public class DoubleTypeTest
     public void shouldEncode(int offset)
     {
         DoubleType doubleType = new DoubleType();
-        doubleType.wrap(buffer, offset);
+        doubleType.wrap(buffer, offset, true);
         doubleType.set(12345678d);
 
         assertEquals(0x82, uint8Get(buffer, offset));
@@ -70,7 +70,7 @@ public class DoubleTypeTest
         buffer.putLong(offset + 1, doubleToLongBits(12345678d), BIG_ENDIAN);
 
         DoubleType doubleType = new DoubleType();
-        doubleType.wrap(buffer, offset);
+        doubleType.wrap(buffer, offset, true);
 
         assertEquals(12345678d, doubleType.get(), 0.001f);
         assertEquals(offset + 9, doubleType.limit());
@@ -80,7 +80,7 @@ public class DoubleTypeTest
     public void shouldEncodeThenDecode(int offset)
     {
         DoubleType doubleType = new DoubleType();
-        doubleType.wrap(buffer, offset);
+        doubleType.wrap(buffer, offset, true);
         doubleType.set(12345678d);
 
         assertEquals(12345678d, doubleType.get(), 0.001f);
@@ -94,7 +94,7 @@ public class DoubleTypeTest
         buffer.putByte(offset, (byte) 0x00);
 
         DoubleType doubleType = new DoubleType();
-        doubleType.wrap(buffer, offset);
+        doubleType.wrap(buffer, offset, true);
 
         assertEquals(0.0d, doubleType.get(), 0.0d);
     }
@@ -107,7 +107,7 @@ public class DoubleTypeTest
 
         DoubleType doubleType = new DoubleType();
         doubleType.watch(observer);
-        doubleType.wrap(buffer, offset);
+        doubleType.wrap(buffer, offset, true);
         doubleType.set(12345678d);
 
         verify(observer).accept(doubleType);

@@ -34,6 +34,7 @@ import org.kaazing.nuklei.function.Mikro;
 import org.kaazing.nuklei.function.StatefulMikro;
 import org.kaazing.nuklei.protocol.tcp.TcpManagerHeadersDecoder;
 
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -61,7 +62,7 @@ public class AmqpMikroFactory<C, S, L>
     private static <C, S, L> int alignLength(Connection<C, S, L> connection,
                                              Object header,
                                              int typeId,
-                                             MutableDirectBuffer buffer,
+                                             DirectBuffer buffer,
                                              int offset,
                                              int length)
     {

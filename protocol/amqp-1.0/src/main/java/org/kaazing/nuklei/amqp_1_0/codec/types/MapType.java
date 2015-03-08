@@ -23,7 +23,7 @@ import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.FlyweightBE;
 
 import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.23 "map"
@@ -54,10 +54,10 @@ public class MapType extends Type
     }
 
     @Override
-    public MapType wrap(MutableDirectBuffer buffer, int offset)
+    public MapType wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
-        header.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
+        header.wrap(buffer, offset, mutable);
         return this;
     }
 
@@ -66,8 +66,8 @@ public class MapType extends Type
         int offsetAt = offsetBody();
         for (; index > 0; index--)
         {
-            offsetAt = dynamic.wrap(buffer(), offsetAt).limit();
-            offsetAt = dynamic.wrap(buffer(), offsetAt).limit();
+            offsetAt = dynamic.wrap(mutableBuffer(), offsetAt, true).limit();
+            offsetAt = dynamic.wrap(mutableBuffer(), offsetAt, true).limit();
         }
         return offsetAt;
     }
@@ -136,9 +136,9 @@ public class MapType extends Type
         }
 
         @Override
-        public Header wrap(MutableDirectBuffer buffer, int offset)
+        public Header wrap(DirectBuffer buffer, int offset, boolean mutable)
         {
-            super.wrap(buffer, offset);
+            super.wrap(buffer, offset, mutable);
             return this;
         }
 

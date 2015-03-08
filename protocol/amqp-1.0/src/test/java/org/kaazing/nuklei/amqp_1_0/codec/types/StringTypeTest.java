@@ -61,7 +61,7 @@ public class StringTypeTest
     public void shouldEncode1(int offset)
     {
         StringType stringType = new StringType();
-        stringType.wrap(buffer, offset);
+        stringType.wrap(buffer, offset, true);
         stringType.set(WRITE_UTF_8, "a");
 
         assertEquals(0xa1, uint8Get(buffer, offset));
@@ -77,7 +77,7 @@ public class StringTypeTest
         Arrays.fill(chars, 'a');
 
         StringType stringType = new StringType();
-        stringType.wrap(buffer, offset);
+        stringType.wrap(buffer, offset, true);
         stringType.set(WRITE_UTF_8, new String(chars));
 
         assertEquals(0xb1, uint8Get(buffer, offset));
@@ -97,7 +97,7 @@ public class StringTypeTest
         buffer.putByte(offset + 2, (byte) 0x61);
 
         StringType stringType = new StringType();
-        stringType.wrap(buffer, offset);
+        stringType.wrap(buffer, offset, true);
 
         assertEquals("a", stringType.get(READ_UTF_8).toString());
         assertEquals(offset + 3, stringType.limit());
@@ -114,7 +114,7 @@ public class StringTypeTest
         }
 
         StringType stringType = new StringType();
-        stringType.wrap(buffer, offset);
+        stringType.wrap(buffer, offset, true);
 
         char[] chars = new char[256];
         Arrays.fill(chars, 'a');
@@ -126,7 +126,7 @@ public class StringTypeTest
     public void shouldEncodeThenDecode1(int offset)
     {
         StringType stringType = new StringType();
-        stringType.wrap(buffer, offset);
+        stringType.wrap(buffer, offset, true);
         stringType.set(WRITE_UTF_8, "a");
 
         assertEquals("a", stringType.get(READ_UTF_8).toString());
@@ -140,7 +140,7 @@ public class StringTypeTest
         String string = new String(chars);
 
         StringType stringType = new StringType();
-        stringType.wrap(buffer, offset);
+        stringType.wrap(buffer, offset, true);
         stringType.set(WRITE_UTF_8, string);
 
         assertEquals(string, stringType.get(READ_UTF_8).toString());
@@ -153,7 +153,7 @@ public class StringTypeTest
         buffer.putByte(offset, (byte) 0x00);
 
         StringType stringType = new StringType();
-        stringType.wrap(buffer, offset);
+        stringType.wrap(buffer, offset, true);
         stringType.get(READ_UTF_8);
     }
 
@@ -165,7 +165,7 @@ public class StringTypeTest
 
         StringType stringType = new StringType();
         stringType.watch(observer);
-        stringType.wrap(buffer, offset);
+        stringType.wrap(buffer, offset, true);
         stringType.set(WRITE_UTF_8, "a");
 
         verify(observer).accept(stringType);

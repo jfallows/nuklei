@@ -21,7 +21,7 @@ import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.amqp_1_0.codec.definitions.Error;
 import org.kaazing.nuklei.amqp_1_0.codec.types.CompositeType;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 2.7.9 "Close"
@@ -57,9 +57,9 @@ public final class Close extends CompositeType
     }
 
     @Override
-    public Close wrap(MutableDirectBuffer buffer, int offset)
+    public Close wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 
@@ -84,6 +84,6 @@ public final class Close extends CompositeType
 
     private Error error()
     {
-        return error.wrap(buffer(), offsetBody());
+        return error.wrap(mutableBuffer(), offsetBody(), true);
     }
 }

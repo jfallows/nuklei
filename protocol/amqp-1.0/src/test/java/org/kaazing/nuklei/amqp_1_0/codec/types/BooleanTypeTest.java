@@ -55,7 +55,7 @@ public class BooleanTypeTest
     public void shouldEncodeTrue0(int offset)
     {
         BooleanType booleanType = new BooleanType();
-        booleanType.wrap(buffer, offset);
+        booleanType.wrap(buffer, offset, true);
         booleanType.set(true);
 
         assertEquals(0x41, uint8Get(buffer, offset));
@@ -65,7 +65,7 @@ public class BooleanTypeTest
     public void shouldEncodeFalse0(int offset)
     {
         BooleanType booleanType = new BooleanType();
-        booleanType.wrap(buffer, offset);
+        booleanType.wrap(buffer, offset, true);
         booleanType.set(false);
 
         assertEquals(0x42, uint8Get(buffer, offset));
@@ -77,7 +77,7 @@ public class BooleanTypeTest
         buffer.putByte(offset, (byte) 0x41);
 
         BooleanType booleanType = new BooleanType();
-        booleanType.wrap(buffer, offset);
+        booleanType.wrap(buffer, offset, true);
 
         assertTrue(booleanType.get());
         assertEquals(offset + 1, booleanType.limit());
@@ -89,7 +89,7 @@ public class BooleanTypeTest
         buffer.putByte(offset, (byte) 0x42);
 
         BooleanType booleanType = new BooleanType();
-        booleanType.wrap(buffer, offset);
+        booleanType.wrap(buffer, offset, true);
 
         assertFalse(booleanType.get());
         assertEquals(offset + 1, booleanType.limit());
@@ -100,7 +100,7 @@ public class BooleanTypeTest
     public void shouldEncodeTrue1(int offset)
     {
         BooleanType booleanType = new BooleanType();
-        booleanType.wrap(buffer, offset);
+        booleanType.wrap(buffer, offset, true);
         booleanType.set(true);
 
         assertEquals(0x56, uint8Get(buffer, offset));
@@ -112,7 +112,7 @@ public class BooleanTypeTest
     public void shouldEncodeFalse1(int offset)
     {
         BooleanType booleanType = new BooleanType();
-        booleanType.wrap(buffer, offset);
+        booleanType.wrap(buffer, offset, true);
         booleanType.set(false);
 
         assertEquals(0x56, uint8Get(buffer, offset));
@@ -126,7 +126,7 @@ public class BooleanTypeTest
         buffer.putByte(offset + 1, (byte) 0x01);
 
         BooleanType booleanType = new BooleanType();
-        booleanType.wrap(buffer, offset);
+        booleanType.wrap(buffer, offset, true);
 
         assertTrue(booleanType.get());
         assertEquals(offset + 2, booleanType.limit());
@@ -139,7 +139,7 @@ public class BooleanTypeTest
         buffer.putByte(offset + 1, (byte) 0x00);
 
         BooleanType booleanType = new BooleanType();
-        booleanType.wrap(buffer, offset);
+        booleanType.wrap(buffer, offset, true);
 
         assertFalse(booleanType.get());
         assertEquals(offset + 2, booleanType.limit());
@@ -149,7 +149,7 @@ public class BooleanTypeTest
     public void shouldEncodeThenDecodeTrue0(int offset)
     {
         BooleanType booleanType = new BooleanType();
-        booleanType.wrap(buffer, offset);
+        booleanType.wrap(buffer, offset, true);
         booleanType.set(true);
 
         assertTrue(booleanType.get());
@@ -160,7 +160,7 @@ public class BooleanTypeTest
     public void shouldEncodeThenDecodeFalse0(int offset)
     {
         BooleanType booleanType = new BooleanType();
-        booleanType.wrap(buffer, offset);
+        booleanType.wrap(buffer, offset, true);
         booleanType.set(false);
 
         assertFalse(booleanType.get());
@@ -172,7 +172,7 @@ public class BooleanTypeTest
     public void shouldEncodeThenDecodeTrue1(int offset)
     {
         BooleanType booleanType = new BooleanType();
-        booleanType.wrap(buffer, offset);
+        booleanType.wrap(buffer, offset, true);
         booleanType.set(true);
 
         assertTrue(booleanType.get());
@@ -184,7 +184,7 @@ public class BooleanTypeTest
     public void shouldEncodeThenDecodeFalse1(int offset)
     {
         BooleanType booleanType = new BooleanType();
-        booleanType.wrap(buffer, offset);
+        booleanType.wrap(buffer, offset, true);
         booleanType.set(false);
 
         assertFalse(booleanType.get());
@@ -198,7 +198,7 @@ public class BooleanTypeTest
         buffer.putByte(offset, (byte) 0x00);
 
         BooleanType booleanType = new BooleanType();
-        booleanType.wrap(buffer, offset);
+        booleanType.wrap(buffer, offset, true);
 
         assertTrue(booleanType.get());
     }
@@ -211,7 +211,7 @@ public class BooleanTypeTest
 
         BooleanType booleanType = new BooleanType();
         booleanType.watch(observer);
-        booleanType.wrap(buffer, offset);
+        booleanType.wrap(buffer, offset, true);
         booleanType.set(false);
 
         verify(observer).accept(booleanType);

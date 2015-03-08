@@ -52,7 +52,7 @@ public class MapTypeTest
     public void shouldEncode1(int offset)
     {
         MapType mapType = new MapType();
-        mapType.wrap(buffer, offset);
+        mapType.wrap(buffer, offset, true);
         mapType.maxLength(0xff);
         mapType.clear();
 
@@ -64,7 +64,7 @@ public class MapTypeTest
     public void shouldEncode8(int offset)
     {
         MapType mapType = new MapType();
-        mapType.wrap(buffer, offset);
+        mapType.wrap(buffer, offset, true);
         mapType.maxLength(0x100);
         mapType.clear();
 
@@ -80,7 +80,7 @@ public class MapTypeTest
         buffer.putByte(offset + 2, (byte) 0x00);
 
         MapType mapType = new MapType();
-        mapType.wrap(buffer, offset);
+        mapType.wrap(buffer, offset, true);
 
         assertEquals(0x01, mapType.length());
         assertEquals(0x00, mapType.count());
@@ -95,7 +95,7 @@ public class MapTypeTest
         buffer.putInt(offset + 5, (byte) 0x00);
 
         MapType mapType = new MapType();
-        mapType.wrap(buffer, offset);
+        mapType.wrap(buffer, offset, true);
 
         assertEquals(0x04, mapType.length());
         assertEquals(0x00, mapType.count());
@@ -106,7 +106,7 @@ public class MapTypeTest
     public void shouldEncodeThenDecode1(int offset)
     {
         MapType mapType = new MapType();
-        mapType.wrap(buffer, offset);
+        mapType.wrap(buffer, offset, true);
         mapType.maxLength(0xff);
         mapType.clear();
 
@@ -119,7 +119,7 @@ public class MapTypeTest
     public void shouldEncodeThenDecode8(int offset)
     {
         MapType mapType = new MapType();
-        mapType.wrap(buffer, offset);
+        mapType.wrap(buffer, offset, true);
         mapType.maxLength(0x100);
         mapType.clear();
 
@@ -135,7 +135,7 @@ public class MapTypeTest
         buffer.putByte(offset, (byte) 0x00);
 
         MapType mapType = new MapType();
-        mapType.wrap(buffer, offset);
+        mapType.wrap(buffer, offset, true);
 
         assertEquals(0, mapType.count());
     }
@@ -148,7 +148,7 @@ public class MapTypeTest
 
         MapType mapType = new MapType();
         mapType.watch(observer);
-        mapType.wrap(buffer, offset);
+        mapType.wrap(buffer, offset, true);
         mapType.maxLength(0x00);
         mapType.clear();
 

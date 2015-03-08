@@ -54,7 +54,7 @@ public class IntTypeTest
     public void shouldEncode1(int offset)
     {
         IntType intType = new IntType();
-        intType.wrap(buffer, offset);
+        intType.wrap(buffer, offset, true);
         intType.set(1);
 
         assertEquals(0x54, uint8Get(buffer, offset));
@@ -65,7 +65,7 @@ public class IntTypeTest
     public void shouldEncode4(int offset)
     {
         IntType intType = new IntType();
-        intType.wrap(buffer, offset);
+        intType.wrap(buffer, offset, true);
         intType.set(0x12345678);
 
         assertEquals(0x71, uint8Get(buffer, offset));
@@ -80,7 +80,7 @@ public class IntTypeTest
         buffer.putByte(offset + 1, (byte) 0x01);
 
         IntType intType = new IntType();
-        intType.wrap(buffer, offset);
+        intType.wrap(buffer, offset, true);
 
         assertEquals(0x01, intType.get());
         assertEquals(offset + 2, intType.limit());
@@ -93,7 +93,7 @@ public class IntTypeTest
         buffer.putInt(offset + 1, 0x12345678, BIG_ENDIAN);
 
         IntType intType = new IntType();
-        intType.wrap(buffer, offset);
+        intType.wrap(buffer, offset, true);
 
         assertEquals(0x12345678, intType.get());
         assertEquals(offset + 5, intType.limit());
@@ -103,7 +103,7 @@ public class IntTypeTest
     public void shouldEncodeThenDecode1(int offset)
     {
         IntType intType = new IntType();
-        intType.wrap(buffer, offset);
+        intType.wrap(buffer, offset, true);
         intType.set(1);
 
         assertEquals(1, intType.get());
@@ -113,7 +113,7 @@ public class IntTypeTest
     public void shouldEncodeThenDecode4(int offset)
     {
         IntType intType = new IntType();
-        intType.wrap(buffer, offset);
+        intType.wrap(buffer, offset, true);
         intType.set(12345678);
 
         assertEquals(12345678, intType.get());
@@ -126,7 +126,7 @@ public class IntTypeTest
         buffer.putByte(offset, (byte) 0x00);
 
         IntType intType = new IntType();
-        intType.wrap(buffer, offset);
+        intType.wrap(buffer, offset, true);
 
         assertEquals(0L, intType.get());
     }
@@ -139,7 +139,7 @@ public class IntTypeTest
 
         IntType intType = new IntType();
         intType.watch(observer);
-        intType.wrap(buffer, offset);
+        intType.wrap(buffer, offset, true);
         intType.set(12345678);
 
         verify(observer).accept(intType);

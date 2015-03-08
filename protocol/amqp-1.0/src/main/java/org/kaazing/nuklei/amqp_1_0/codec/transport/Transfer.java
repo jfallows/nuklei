@@ -28,7 +28,7 @@ import org.kaazing.nuklei.amqp_1_0.codec.types.UIntType;
 import org.kaazing.nuklei.function.DirectBufferAccessor;
 import org.kaazing.nuklei.function.MutableDirectBufferMutator;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 2.7.5 "Transfer"
@@ -115,9 +115,9 @@ public final class Transfer extends CompositeType
     }
 
     @Override
-    public Transfer wrap(MutableDirectBuffer buffer, int offset)
+    public Transfer wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 
@@ -252,57 +252,57 @@ public final class Transfer extends CompositeType
 
     private UIntType handle()
     {
-        return handle.wrap(mutableBuffer(), offsetBody());
+        return handle.wrap(mutableBuffer(), offsetBody(), true);
     }
 
     private UIntType deliveryId()
     {
-        return deliveryId.wrap(mutableBuffer(), handle().limit());
+        return deliveryId.wrap(mutableBuffer(), handle().limit(), true);
     }
 
     private BinaryType deliveryTag()
     {
-        return deliveryTag.wrap(mutableBuffer(), deliveryId().limit());
+        return deliveryTag.wrap(mutableBuffer(), deliveryId().limit(), true);
     }
 
     private UIntType messageFormat()
     {
-        return messageFormat.wrap(mutableBuffer(), deliveryTag().limit());
+        return messageFormat.wrap(mutableBuffer(), deliveryTag().limit(), true);
     }
 
     private BooleanType settled()
     {
-        return settled.wrap(mutableBuffer(), messageFormat().limit());
+        return settled.wrap(mutableBuffer(), messageFormat().limit(), true);
     }
 
     private BooleanType more()
     {
-        return more.wrap(mutableBuffer(), settled().limit());
+        return more.wrap(mutableBuffer(), settled().limit(), true);
     }
 
     private UByteType receiveSettleMode()
     {
-        return receiveSettleMode.wrap(mutableBuffer(), more().limit());
+        return receiveSettleMode.wrap(mutableBuffer(), more().limit(), true);
     }
 
     private DeliveryState.Described deliveryState()
     {
-        return deliveryState.wrap(mutableBuffer(), receiveSettleMode().limit());
+        return deliveryState.wrap(mutableBuffer(), receiveSettleMode().limit(), true);
     }
 
     private BooleanType resume()
     {
-        return resume.wrap(mutableBuffer(), deliveryState().limit());
+        return resume.wrap(mutableBuffer(), deliveryState().limit(), true);
     }
 
     private BooleanType aborted()
     {
-        return aborted.wrap(mutableBuffer(), resume().limit());
+        return aborted.wrap(mutableBuffer(), resume().limit(), true);
     }
 
     private BooleanType batchable()
     {
-        return batchable.wrap(mutableBuffer(), aborted().limit());
+        return batchable.wrap(mutableBuffer(), aborted().limit(), true);
     }
 
 }

@@ -51,11 +51,11 @@ public final class ConnectionHandler<C, S, L>
         switch (frame.getPerformative())
         {
         case OPEN:
-            Open open = Open.LOCAL_REF.get().wrap(frame.buffer(), frame.bodyOffset());
+            Open open = Open.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset(), true);
             connection.stateMachine.received(connection, frame, open);
             break;
         case CLOSE:
-            Close close = Close.LOCAL_REF.get().wrap(frame.buffer(), frame.bodyOffset());
+            Close close = Close.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset(), true);
             connection.stateMachine.received(connection, frame, close);
             break;
         case BEGIN:

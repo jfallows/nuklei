@@ -61,9 +61,9 @@ public final class Frame extends FlyweightBE
     }
 
     @Override
-    public Frame wrap(DirectBuffer buffer, int offset)
+    public Frame wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 
@@ -139,11 +139,11 @@ public final class Frame extends FlyweightBE
 
     private ULongType.Descriptor performative()
     {
-        return performative.wrap(buffer(), offset() + OFFSET_PERFORMATIVE);
+        return performative.wrap(mutableBuffer(), offset() + OFFSET_PERFORMATIVE, true);
     }
 
     private DynamicType body()
     {
-        return body.wrap(buffer(), performative().limit());
+        return body.wrap(mutableBuffer(), performative().limit());
     }
 }

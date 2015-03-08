@@ -15,7 +15,7 @@
  */
 package org.kaazing.nuklei.amqp_1_0.codec.types;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.1 "null"
@@ -32,9 +32,9 @@ public final class NullType extends Type
     }
 
     @Override
-    public NullType wrap(MutableDirectBuffer buffer, int offset)
+    public NullType wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 

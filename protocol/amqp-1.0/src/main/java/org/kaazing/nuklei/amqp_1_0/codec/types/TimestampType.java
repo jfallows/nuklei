@@ -20,7 +20,7 @@ import java.util.function.Consumer;
 import org.kaazing.nuklei.Flyweight;
 
 import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.17 "timestamp"
@@ -52,9 +52,9 @@ public final class TimestampType extends Type
     }
 
     @Override
-    public TimestampType wrap(MutableDirectBuffer buffer, int offset)
+    public TimestampType wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 

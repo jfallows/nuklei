@@ -47,7 +47,7 @@ public class ArrayTypeTest
     public void shouldEncode1(int offset)
     {
         ArrayType arrayType = new ArrayType();
-        arrayType.wrap(buffer, offset);
+        arrayType.wrap(buffer, offset, true);
         arrayType.maxLength(0xff);
         arrayType.limit(0x00, offset + 0x03);
 
@@ -61,7 +61,7 @@ public class ArrayTypeTest
     public void shouldEncode4(int offset)
     {
         ArrayType arrayType = new ArrayType();
-        arrayType.wrap(buffer, offset);
+        arrayType.wrap(buffer, offset, true);
         arrayType.maxLength(0x100);
         arrayType.limit(0x00, offset + 0x09);
 

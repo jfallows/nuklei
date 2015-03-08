@@ -20,7 +20,7 @@ import java.util.function.Consumer;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.amqp_1_0.codec.types.MapType;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 3.5.8 "Filter Set"
@@ -36,9 +36,9 @@ public final class FilterSet extends MapType
     }
 
     @Override
-    public FilterSet wrap(MutableDirectBuffer buffer, int offset)
+    public FilterSet wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 
@@ -60,9 +60,9 @@ public final class FilterSet extends MapType
         }
 
         @Override
-        public Embedded<T> wrap(MutableDirectBuffer buffer, int offset)
+        public Embedded<T> wrap(DirectBuffer buffer, int offset, boolean mutable)
         {
-            super.wrap(buffer, offset);
+            super.wrap(buffer, offset, mutable);
             return this;
         }
 

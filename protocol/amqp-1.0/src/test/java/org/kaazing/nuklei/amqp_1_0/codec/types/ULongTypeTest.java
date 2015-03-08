@@ -53,7 +53,7 @@ public class ULongTypeTest
     public void shouldEncode0(int offset)
     {
         ULongType ulongType = new ULongType();
-        ulongType.wrap(buffer, offset);
+        ulongType.wrap(buffer, offset, true);
         ulongType.set(0L);
 
         assertEquals(0x44, uint8Get(buffer, offset));
@@ -64,7 +64,7 @@ public class ULongTypeTest
     public void shouldEncode1(int offset)
     {
         ULongType ulongType = new ULongType();
-        ulongType.wrap(buffer, offset);
+        ulongType.wrap(buffer, offset, true);
         ulongType.set(1L);
 
         assertEquals(0x53, uint8Get(buffer, offset));
@@ -75,7 +75,7 @@ public class ULongTypeTest
     public void shouldEncode8(int offset)
     {
         ULongType ulongType = new ULongType();
-        ulongType.wrap(buffer, offset);
+        ulongType.wrap(buffer, offset, true);
         ulongType.set(12345678L);
 
         assertEquals(0x80, uint8Get(buffer, offset));
@@ -88,7 +88,7 @@ public class ULongTypeTest
         buffer.putByte(offset, (byte) 0x44);
 
         ULongType ulongType = new ULongType();
-        ulongType.wrap(buffer, offset);
+        ulongType.wrap(buffer, offset, true);
 
         assertEquals(0x00L, ulongType.get());
         assertEquals(offset + 1, ulongType.limit());
@@ -101,7 +101,7 @@ public class ULongTypeTest
         buffer.putByte(offset + 1, (byte) 0x01);
 
         ULongType ulongType = new ULongType();
-        ulongType.wrap(buffer, offset);
+        ulongType.wrap(buffer, offset, true);
 
         assertEquals(0x01L, ulongType.get());
         assertEquals(offset + 2, ulongType.limit());
@@ -114,7 +114,7 @@ public class ULongTypeTest
         buffer.putLong(offset + 1, 0x12345678L, BIG_ENDIAN);
 
         ULongType ulongType = new ULongType();
-        ulongType.wrap(buffer, offset);
+        ulongType.wrap(buffer, offset, true);
 
         assertEquals(0x12345678L, ulongType.get());
         assertEquals(offset + 9, ulongType.limit());
@@ -124,7 +124,7 @@ public class ULongTypeTest
     public void shouldEncodeThenDecode0(int offset)
     {
         ULongType ulongType = new ULongType();
-        ulongType.wrap(buffer, offset);
+        ulongType.wrap(buffer, offset, true);
         ulongType.set(0L);
 
         assertEquals(0L, ulongType.get());
@@ -134,7 +134,7 @@ public class ULongTypeTest
     public void shouldEncodeThenDecode1(int offset)
     {
         ULongType ulongType = new ULongType();
-        ulongType.wrap(buffer, offset);
+        ulongType.wrap(buffer, offset, true);
         ulongType.set(1L);
 
         assertEquals(1L, ulongType.get());
@@ -144,7 +144,7 @@ public class ULongTypeTest
     public void shouldEncodeThenDecode8(int offset)
     {
         ULongType ulongType = new ULongType();
-        ulongType.wrap(buffer, offset);
+        ulongType.wrap(buffer, offset, true);
         ulongType.set(12345678L);
 
         assertEquals(12345678L, ulongType.get());
@@ -157,7 +157,7 @@ public class ULongTypeTest
         buffer.putByte(offset, (byte) 0x00);
 
         ULongType ulongType = new ULongType();
-        ulongType.wrap(buffer, offset);
+        ulongType.wrap(buffer, offset, true);
 
         assertEquals(0L, ulongType.get());
     }
@@ -170,7 +170,7 @@ public class ULongTypeTest
 
         ULongType ulongType = new ULongType();
         ulongType.watch(observer);
-        ulongType.wrap(buffer, offset);
+        ulongType.wrap(buffer, offset, true);
         ulongType.set(12345678L);
 
         verify(observer).accept(ulongType);

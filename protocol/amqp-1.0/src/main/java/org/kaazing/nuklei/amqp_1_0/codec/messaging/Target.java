@@ -27,7 +27,7 @@ import org.kaazing.nuklei.amqp_1_0.codec.types.UIntType;
 import org.kaazing.nuklei.function.DirectBufferAccessor;
 import org.kaazing.nuklei.function.MutableDirectBufferMutator;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 3.5.3 "Source"
@@ -103,9 +103,9 @@ public final class Target extends ListType
     }
 
     @Override
-    public Target wrap(MutableDirectBuffer buffer, int offset)
+    public Target wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 
@@ -234,56 +234,56 @@ public final class Target extends ListType
 
     private StringType address()
     {
-        return address.wrap(mutableBuffer(), offsetBody());
+        return address.wrap(mutableBuffer(), offsetBody(), true);
     }
 
     private UIntType durable()
     {
-        return durable.wrap(mutableBuffer(), address().limit());
+        return durable.wrap(mutableBuffer(), address().limit(), true);
     }
 
     private SymbolType expiryPolicy()
     {
-        return expiryPolicy.wrap(mutableBuffer(), durable().limit());
+        return expiryPolicy.wrap(mutableBuffer(), durable().limit(), true);
     }
 
     private UIntType timeout()
     {
-        return timeout.wrap(mutableBuffer(), expiryPolicy().limit());
+        return timeout.wrap(mutableBuffer(), expiryPolicy().limit(), true);
     }
 
     private BooleanType dynamic()
     {
-        return dynamic.wrap(mutableBuffer(), timeout().limit());
+        return dynamic.wrap(mutableBuffer(), timeout().limit(), true);
     }
 
     private NodeProperties dynamicNodeProperties()
     {
-        return dynamicNodeProperties.wrap(mutableBuffer(), dynamic().limit());
+        return dynamicNodeProperties.wrap(mutableBuffer(), dynamic().limit(), true);
     }
 
     private SymbolType distributionMode()
     {
-        return distributionMode.wrap(mutableBuffer(), dynamicNodeProperties().limit());
+        return distributionMode.wrap(mutableBuffer(), dynamicNodeProperties().limit(), true);
     }
 
     private FilterSet.Embedded<Target> filter()
     {
-        return filter.wrap(mutableBuffer(), distributionMode().limit());
+        return filter.wrap(mutableBuffer(), distributionMode().limit(), true);
     }
 
     private Outcome.Described defaultOutcome()
     {
-        return defaultOutcome.wrap(mutableBuffer(), filter().limit());
+        return defaultOutcome.wrap(mutableBuffer(), filter().limit(), true);
     }
 
     private ArrayType outcomes()
     {
-        return outcomes.wrap(mutableBuffer(), defaultOutcome().limit());
+        return outcomes.wrap(mutableBuffer(), defaultOutcome().limit(), true);
     }
 
     private ArrayType capabilities()
     {
-        return capabilities.wrap(mutableBuffer(), outcomes().limit());
+        return capabilities.wrap(mutableBuffer(), outcomes().limit(), true);
     }
 }

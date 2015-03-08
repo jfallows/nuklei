@@ -52,7 +52,7 @@ public class ListTypeTest
     public void shouldEncode0(int offset)
     {
         ListType listType = new ListType();
-        listType.wrap(buffer, offset);
+        listType.wrap(buffer, offset, true);
         listType.maxLength(0x00);
         listType.clear();
 
@@ -64,7 +64,7 @@ public class ListTypeTest
     public void shouldEncode1(int offset)
     {
         ListType listType = new ListType();
-        listType.wrap(buffer, offset);
+        listType.wrap(buffer, offset, true);
         listType.maxLength(0xff);
         listType.clear();
 
@@ -76,7 +76,7 @@ public class ListTypeTest
     public void shouldEncode8(int offset)
     {
         ListType listType = new ListType();
-        listType.wrap(buffer, offset);
+        listType.wrap(buffer, offset, true);
         listType.maxLength(0x100);
         listType.clear();
 
@@ -90,7 +90,7 @@ public class ListTypeTest
         buffer.putByte(offset, (byte) 0x45);
 
         ListType listType = new ListType();
-        listType.wrap(buffer, offset);
+        listType.wrap(buffer, offset, true);
 
         assertEquals(0x00, listType.count());
         assertEquals(0x00, listType.length());
@@ -105,7 +105,7 @@ public class ListTypeTest
         buffer.putByte(offset + 2, (byte) 0x00);
 
         ListType listType = new ListType();
-        listType.wrap(buffer, offset);
+        listType.wrap(buffer, offset, true);
 
         assertEquals(0x01, listType.length());
         assertEquals(0x00, listType.count());
@@ -120,7 +120,7 @@ public class ListTypeTest
         buffer.putInt(offset + 5, (byte) 0x00);
 
         ListType listType = new ListType();
-        listType.wrap(buffer, offset);
+        listType.wrap(buffer, offset, true);
 
         assertEquals(0x04, listType.length());
         assertEquals(0x00, listType.count());
@@ -131,7 +131,7 @@ public class ListTypeTest
     public void shouldEncodeThenDecode0(int offset)
     {
         ListType listType = new ListType();
-        listType.wrap(buffer, offset);
+        listType.wrap(buffer, offset, true);
         listType.maxLength(0x00);
         listType.clear();
 
@@ -144,7 +144,7 @@ public class ListTypeTest
     public void shouldEncodeThenDecode1(int offset)
     {
         ListType listType = new ListType();
-        listType.wrap(buffer, offset);
+        listType.wrap(buffer, offset, true);
         listType.maxLength(0xff);
         listType.clear();
 
@@ -157,7 +157,7 @@ public class ListTypeTest
     public void shouldEncodeThenDecode8(int offset)
     {
         ListType listType = new ListType();
-        listType.wrap(buffer, offset);
+        listType.wrap(buffer, offset, true);
         listType.maxLength(0x100);
         listType.clear();
 
@@ -173,7 +173,7 @@ public class ListTypeTest
         buffer.putByte(offset, (byte) 0x00);
 
         ListType listType = new ListType();
-        listType.wrap(buffer, offset);
+        listType.wrap(buffer, offset, true);
 
         assertEquals(0, listType.count());
     }
@@ -186,7 +186,7 @@ public class ListTypeTest
 
         ListType listType = new ListType();
         listType.watch(observer);
-        listType.wrap(buffer, offset);
+        listType.wrap(buffer, offset, true);
         listType.maxLength(0x00);
         listType.clear();
 

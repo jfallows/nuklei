@@ -22,7 +22,7 @@ import org.kaazing.nuklei.function.BooleanFunction;
 import org.kaazing.nuklei.function.ToBooleanFunction;
 
 import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.2 "boolean"
@@ -59,9 +59,9 @@ public final class BooleanType extends Type
     }
 
     @Override
-    public BooleanType wrap(MutableDirectBuffer buffer, int offset)
+    public BooleanType wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 

@@ -52,7 +52,7 @@ public class ByteTypeTest
     public void shouldEncode(int offset)
     {
         ByteType byteType = new ByteType();
-        byteType.wrap(buffer, offset);
+        byteType.wrap(buffer, offset, true);
         byteType.set((byte) 0x12);
 
         assertEquals(0x51, uint8Get(buffer, offset));
@@ -66,7 +66,7 @@ public class ByteTypeTest
         buffer.putByte(offset + 1, (byte) 0x12);
 
         ByteType byteType = new ByteType();
-        byteType.wrap(buffer, offset);
+        byteType.wrap(buffer, offset, true);
 
         assertEquals(0x12, byteType.get());
         assertEquals(offset + 2, byteType.limit());
@@ -76,7 +76,7 @@ public class ByteTypeTest
     public void shouldEncodeThenDecode(int offset)
     {
         ByteType byteType = new ByteType();
-        byteType.wrap(buffer, offset);
+        byteType.wrap(buffer, offset, true);
         byteType.set((byte) 0x12);
 
         assertEquals(0x12, byteType.get());
@@ -90,7 +90,7 @@ public class ByteTypeTest
         buffer.putByte(offset, (byte) 0x00);
 
         ByteType byteType = new ByteType();
-        byteType.wrap(buffer, offset);
+        byteType.wrap(buffer, offset, true);
 
         assertEquals(0, byteType.get());
     }
@@ -103,7 +103,7 @@ public class ByteTypeTest
 
         ByteType byteType = new ByteType();
         byteType.watch(observer);
-        byteType.wrap(buffer, offset);
+        byteType.wrap(buffer, offset, true);
         byteType.set((byte) 0x12);
 
         verify(observer).accept(byteType);

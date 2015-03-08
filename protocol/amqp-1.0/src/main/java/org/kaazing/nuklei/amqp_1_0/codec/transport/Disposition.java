@@ -24,7 +24,7 @@ import org.kaazing.nuklei.amqp_1_0.codec.types.BooleanType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.CompositeType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UIntType;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 2.7.6 "Disposition"
@@ -85,9 +85,9 @@ public final class Disposition extends CompositeType
     }
 
     @Override
-    public Disposition wrap(MutableDirectBuffer buffer, int offset)
+    public Disposition wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 
@@ -167,32 +167,32 @@ public final class Disposition extends CompositeType
 
     private BooleanType role()
     {
-        return role.wrap(buffer(), offsetBody());
+        return role.wrap(mutableBuffer(), offsetBody(), true);
     }
 
     private UIntType first()
     {
-        return first.wrap(buffer(), offsetBody());
+        return first.wrap(mutableBuffer(), offsetBody(), true);
     }
 
     private UIntType last()
     {
-        return last.wrap(buffer(), first().limit());
+        return last.wrap(mutableBuffer(), first().limit(), true);
     }
 
     private BooleanType settled()
     {
-        return settled.wrap(buffer(), last().limit());
+        return settled.wrap(mutableBuffer(), last().limit(), true);
     }
 
     private DeliveryState.Described state()
     {
-        return state.wrap(buffer(), settled().limit());
+        return state.wrap(mutableBuffer(), settled().limit(), true);
     }
 
     private BooleanType batchable()
     {
-        return batchable.wrap(buffer(), state().limit());
+        return batchable.wrap(mutableBuffer(), state().limit(), true);
     }
 
 }

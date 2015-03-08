@@ -23,7 +23,7 @@ import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.FlyweightBE;
 
 import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.22 "list"
@@ -55,10 +55,10 @@ public class ListType extends Type
     }
 
     @Override
-    public ListType wrap(MutableDirectBuffer buffer, int offset)
+    public ListType wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
-        header.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
+        header.wrap(buffer, offset, mutable);
         return this;
     }
 
@@ -67,7 +67,7 @@ public class ListType extends Type
         int offsetAt = offsetBody();
         for (; index > 0; index--)
         {
-            offsetAt = dynamic.wrap(buffer(), offsetAt).limit();
+            offsetAt = dynamic.wrap(buffer(), offsetAt, false).limit();
         }
         return offsetAt;
     }
@@ -129,9 +129,9 @@ public class ListType extends Type
         private static final short WIDTH_KIND_4 = 0xd0;
 
         @Override
-        public Header wrap(MutableDirectBuffer buffer, int offset)
+        public Header wrap(DirectBuffer buffer, int offset, boolean mutable)
         {
-            super.wrap(buffer, offset);
+            super.wrap(buffer, offset, mutable);
             return this;
         }
 

@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 
 import org.kaazing.nuklei.Flyweight;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 public class DynamicType extends Type
 {
@@ -146,9 +146,9 @@ public class DynamicType extends Type
     }
 
     @Override
-    public DynamicType wrap(MutableDirectBuffer buffer, int offset)
+    public DynamicType wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 

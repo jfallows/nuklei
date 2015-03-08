@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 import org.kaazing.nuklei.Flyweight;
 
 import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.18 "uuid"
@@ -56,9 +56,9 @@ public final class UuidType extends Type
     }
 
     @Override
-    public UuidType wrap(MutableDirectBuffer buffer, int offset)
+    public UuidType wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 

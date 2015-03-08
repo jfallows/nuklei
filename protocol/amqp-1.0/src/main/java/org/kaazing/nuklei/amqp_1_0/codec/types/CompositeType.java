@@ -21,7 +21,7 @@ import java.util.function.ToLongFunction;
 
 import org.kaazing.nuklei.Flyweight;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.4 "Composite Type Representation"
@@ -37,15 +37,15 @@ public class CompositeType extends ListType
     }
 
     @Override
-    public CompositeType wrap(MutableDirectBuffer buffer, int offset)
+    public CompositeType wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 
     public <T extends CompositeType> T as(T composite)
     {
-        composite.wrap(buffer(), offset());
+        composite.wrap(mutableBuffer(), offset(), true);
         return composite;
     }
 
@@ -75,9 +75,9 @@ public class CompositeType extends ListType
         }
 
         @Override
-        public Described wrap(MutableDirectBuffer buffer, int offset)
+        public Described wrap(DirectBuffer buffer, int offset, boolean mutable)
         {
-            super.wrap(buffer, offset);
+            super.wrap(buffer, offset, mutable);
             return this;
         }
 
@@ -116,12 +116,12 @@ public class CompositeType extends ListType
 
         private ULongType.Descriptor descriptor()
         {
-            return descriptor.wrap(buffer(), offset());
+            return descriptor.wrap(buffer(), offset(), true);
         }
 
         private CompositeType composite()
         {
-            return composite.wrap(buffer(), descriptor().limit());
+            return composite.wrap(mutableBuffer(), descriptor().limit(), true);
         }
 
     }

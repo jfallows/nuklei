@@ -24,7 +24,7 @@ import org.kaazing.nuklei.amqp_1_0.codec.types.CompositeType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UIntType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UShortType;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 2.7.2 "Begin"
@@ -102,9 +102,9 @@ public final class Begin extends CompositeType
     }
 
     @Override
-    public Begin wrap(MutableDirectBuffer buffer, int offset)
+    public Begin wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 
@@ -206,41 +206,41 @@ public final class Begin extends CompositeType
 
     private UShortType remoteChannel()
     {
-        return remoteChannel.wrap(mutableBuffer(), offsetBody());
+        return remoteChannel.wrap(mutableBuffer(), offsetBody(), true);
     }
 
     private UIntType nextOutgoingId()
     {
-        return nextOutgoingId.wrap(mutableBuffer(), remoteChannel().limit());
+        return nextOutgoingId.wrap(mutableBuffer(), remoteChannel().limit(), true);
     }
 
     private UIntType incomingWindow()
     {
-        return incomingWindow.wrap(mutableBuffer(), nextOutgoingId().limit());
+        return incomingWindow.wrap(mutableBuffer(), nextOutgoingId().limit(), true);
     }
 
     private UIntType outgoingWindow()
     {
-        return outgoingWindow.wrap(mutableBuffer(), incomingWindow().limit());
+        return outgoingWindow.wrap(mutableBuffer(), incomingWindow().limit(), true);
     }
 
     private UIntType handleMax()
     {
-        return handleMax.wrap(mutableBuffer(), outgoingWindow().limit());
+        return handleMax.wrap(mutableBuffer(), outgoingWindow().limit(), true);
     }
 
     private ArrayType offeredCapabilities()
     {
-        return offeredCapabilities.wrap(mutableBuffer(), handleMax().limit());
+        return offeredCapabilities.wrap(mutableBuffer(), handleMax().limit(), true);
     }
 
     private ArrayType desiredCapabilities()
     {
-        return desiredCapabilities.wrap(mutableBuffer(), offeredCapabilities().limit());
+        return desiredCapabilities.wrap(mutableBuffer(), offeredCapabilities().limit(), true);
     }
 
     private Fields properties()
     {
-        return properties.wrap(mutableBuffer(), desiredCapabilities().limit());
+        return properties.wrap(mutableBuffer(), desiredCapabilities().limit(), true);
     }
 }
