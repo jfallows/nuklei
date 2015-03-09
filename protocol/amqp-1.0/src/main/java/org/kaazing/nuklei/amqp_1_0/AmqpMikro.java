@@ -71,7 +71,7 @@ public class AmqpMikro<C, S, L> implements AlignedMikro<Connection<C, S, L>>
                     offset = limit;
                     break;
                 default:
-                    Frame frame = Frame.LOCAL_REF.get().wrap(buffer, offset, false);
+                    Frame frame = Frame.LOCAL_REF.get().wrap(buffer, offset, true);
                     offset = frame.limit();
                     connectionHandler.handleFrame(connection, frame);
                     break;

@@ -66,5 +66,15 @@ public final class TcpSenderFactory implements SenderFactory
             throw new UnsupportedOperationException();
             // TODO: tcpHeaders.closeConnection(id, immediately);
         }
+
+        public MutableDirectBuffer getBuffer()
+        {
+            return sendBuffer;
+        }
+
+        public int getOffset()
+        {
+            return sendBufferOffset;
+        }
     }
 }

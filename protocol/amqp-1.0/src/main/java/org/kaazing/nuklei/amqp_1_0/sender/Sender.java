@@ -15,6 +15,7 @@
  */
 package org.kaazing.nuklei.amqp_1_0.sender;
 
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public interface Sender
 {
@@ -24,4 +25,7 @@ public interface Sender
 
     void close(boolean immediately);
 
+    MutableDirectBuffer getBuffer();
+
+    int getOffset();
 }
