@@ -250,14 +250,16 @@ public class KompoundAmqpIT
 
     private static class AmqpTestConnectionHooks extends ConnectionHooks<AmqpTestConnection, AmqpTestSession, AmqpTestLink>
     {
-        public AmqpTestConnectionHooks() {
+        public AmqpTestConnectionHooks()
+        {
             whenHeaderReceived = AmqpTestConnectionHooks::whenHeaderReceived;
             whenOpenReceived = AmqpTestConnectionHooks::whenOpenReceived;
             whenCloseReceived = AmqpTestConnectionHooks::whenCloseReceived;
         }
 
         private static void whenHeaderReceived(Connection<AmqpTestConnection, AmqpTestSession, AmqpTestLink> connection,
-                                        Header header) {
+                                        Header header)
+        {
             Sender sender = connection.sender;
             header.wrap(sender.getBuffer(), sender.getOffset(), true)
                   .setProtocol(AMQP_PROTOCOL)
@@ -271,7 +273,8 @@ public class KompoundAmqpIT
 
         private static void whenOpenReceived(Connection<AmqpTestConnection, AmqpTestSession, AmqpTestLink> connection,
                                       Frame frame,
-                                      Open open) {
+                                      Open open)
+        {
             // TODO: Create a connection to the Aeron bus?
             //       broker, is something similar needed here for the connection to the Aeron bus?
             // AmqpTestConnection parameter = connection.parameter;
@@ -294,7 +297,8 @@ public class KompoundAmqpIT
 
         private static void whenCloseReceived(Connection<AmqpTestConnection, AmqpTestSession, AmqpTestLink> connection,
                                               Frame frame,
-                                              Close close) {
+                                              Close close)
+        {
             // TODO:  close connection to Aeron bus?
             // AmqpTestConnection parameter = connection.parameter;
             // parameter.connection.close();
@@ -315,13 +319,16 @@ public class KompoundAmqpIT
 
     private static final MutableDirectBufferMutator<String> WRITE_UTF_8 = newMutator(UTF_8);
 
-    public static final MutableDirectBufferMutator<String> newMutator(final Charset charset) {
-        return new MutableDirectBufferMutator<String>() {
+    public static final MutableDirectBufferMutator<String> newMutator(final Charset charset)
+    {
+        return new MutableDirectBufferMutator<String>()
+        {
             private final CharsetEncoder encoder = charset.newEncoder();
             private final int maxBytesPerChar = (int) encoder.maxBytesPerChar();
 
             @Override
-            public int mutate(Mutation mutation, MutableDirectBuffer buffer, String value) {
+            public int mutate(Mutation mutation, MutableDirectBuffer buffer, String value)
+            {
                 int offset = mutation.maxOffset(value.length() * maxBytesPerChar);
                 ByteBuffer buf = buffer.byteBuffer();
                 ByteBuffer out = buf != null ? buf.duplicate() : ByteBuffer.wrap(buffer.byteArray());
