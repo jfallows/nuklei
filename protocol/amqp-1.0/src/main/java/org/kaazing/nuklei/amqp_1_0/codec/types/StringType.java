@@ -236,7 +236,7 @@ public final class StringType extends Type
 
         private int lengthKind()
         {
-            return uint8Get(mutableBuffer(), offset() + OFFSET_LENGTH_KIND);
+            return uint8Get(buffer(), offset() + OFFSET_LENGTH_KIND);
         }
     }
 }

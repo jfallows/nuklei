@@ -20,7 +20,7 @@ import java.util.function.Consumer;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.amqp_1_0.codec.types.ArrayType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.BooleanType;
-import org.kaazing.nuklei.amqp_1_0.codec.types.ListType;
+import org.kaazing.nuklei.amqp_1_0.codec.types.CompositeType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.StringType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.SymbolType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UIntType;
@@ -32,9 +32,8 @@ import uk.co.real_logic.agrona.DirectBuffer;
 /*
  * See AMQP 1.0 specification, section 3.5.3 "Source"
  */
-public final class Source extends ListType
+public final class Source extends CompositeType.Described
 {
-
     private final StringType address;
     private final UIntType durable;
     private final SymbolType expiryPolicy;
@@ -93,6 +92,12 @@ public final class Source extends ListType
         {
             limit(11, owner.limit());
         });
+    }
+
+    public Source setDescriptor()
+    {
+        super.setDescriptor(0x28L);
+        return this;
     }
 
     @Override

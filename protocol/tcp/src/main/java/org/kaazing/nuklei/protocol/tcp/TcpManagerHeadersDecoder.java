@@ -70,13 +70,26 @@ public class TcpManagerHeadersDecoder extends Flyweight
      */
     public void respond(final MutableDirectBuffer buffer, final int offset, final int length)
     {
+        write(connectionId(), buffer, offset, length);
+    }
+
+    /**
+     * write an event with the given buffer contents.
+     *
+     * @param connectionId target connection
+     * @param buffer to respond with
+     * @param offset within the buffer to start the response from
+     * @param length of the response in bytes
+     */
+    public void write(final long connectionId, final MutableDirectBuffer buffer, final int offset, final int length)
+    {
         if (HEADER_LENGTH > offset)
         {
             throw new IllegalArgumentException(
                 "must leave enough room at start of buffer for header: " + HEADER_LENGTH);
         }
 
-        buffer.putLong(offset - HEADER_LENGTH, connectionId());
+        buffer.putLong(offset - HEADER_LENGTH, connectionId);
         tcpManagerProxy.write(TcpManagerTypeId.SEND_DATA, buffer, offset - HEADER_LENGTH, length + HEADER_LENGTH);
     }
 
@@ -84,7 +97,4 @@ public class TcpManagerHeadersDecoder extends Flyweight
     {
         return super.wrap(buffer, offset, false);
     }
-
-
-
 }

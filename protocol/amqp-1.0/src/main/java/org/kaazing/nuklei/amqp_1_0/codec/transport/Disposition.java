@@ -172,7 +172,7 @@ public final class Disposition extends CompositeType
 
     private UIntType first()
     {
-        return first.wrap(mutableBuffer(), offsetBody(), true);
+        return first.wrap(mutableBuffer(), role().limit(), true);
     }
 
     private UIntType last()
@@ -194,5 +194,4 @@ public final class Disposition extends CompositeType
     {
         return batchable.wrap(mutableBuffer(), state().limit(), true);
     }
-
 }

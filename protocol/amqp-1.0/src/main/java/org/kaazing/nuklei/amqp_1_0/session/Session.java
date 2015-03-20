@@ -15,6 +15,9 @@
  */
 package org.kaazing.nuklei.amqp_1_0.session;
 
+import org.kaazing.nuklei.amqp_1_0.codec.transport.Begin;
+import org.kaazing.nuklei.amqp_1_0.codec.transport.End;
+import org.kaazing.nuklei.amqp_1_0.codec.transport.Frame;
 import org.kaazing.nuklei.amqp_1_0.link.Link;
 import org.kaazing.nuklei.amqp_1_0.sender.Sender;
 
@@ -37,4 +40,17 @@ public class Session<S, L>
         this.links = new Int2ObjectHashMap<>();
     }
 
+    public void send(Frame frame, Begin begin)
+    {
+        assert begin.limit() == frame.limit();
+        sender.send(frame.limit());
+        stateMachine.sent(this, frame, begin);
+    }
+
+    public void send(Frame frame, End end)
+    {
+        assert end.limit() == frame.limit();
+        sender.send(frame.limit());
+        stateMachine.sent(this, frame, end);
+    }
 }

@@ -57,8 +57,7 @@ public final class Open extends CompositeType
     private final ArrayType desiredCapabilities;
     private final Fields properties;
 
-    // unit tests
-    Open()
+    public Open()
     {
         containerId = new StringType().watch((owner) ->
         {

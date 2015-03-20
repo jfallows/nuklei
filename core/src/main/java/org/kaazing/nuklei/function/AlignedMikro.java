@@ -15,6 +15,8 @@
  */
 package org.kaazing.nuklei.function;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import uk.co.real_logic.agrona.DirectBuffer;
@@ -23,26 +25,34 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 @FunctionalInterface
 public interface AlignedMikro<T> extends StatefulMikro<T>
 {
-
     default StatefulMikro<T> alignedBy(StorageSupplier<T> storage, AlignmentSupplier<T> alignment)
     {
+        // indicies into the array of offset/limit for the associated replayBuffer
+        int offsetIndex = 0;
+        int limitIndex = 1;
         Objects.requireNonNull(storage);
-        int replayOffset[] = { 0 };
-        int replayLimit[] = { 0 };
+        Map<MutableDirectBuffer, int[]> offsetAndLimitMap = new HashMap<MutableDirectBuffer, int[]>();
         return (state, header, typeId, buffer, offset, length) ->
         {
-
             MutableDirectBuffer replayBuffer = storage.supply(state);
 
-            // determine alignment boundary
-            if (replayOffset[0] != replayLimit[0])
+            int[] offsetAndLimit = offsetAndLimitMap.get(replayBuffer);
+            if (offsetAndLimit == null)
             {
-                int newReplayOffset = replayOffset[0] + length;
-                if (newReplayOffset < replayLimit[0])
+                offsetAndLimit = new int[] { 0, 0 };
+                offsetAndLimitMap.put(replayBuffer, offsetAndLimit);
+            }
+
+            // determine alignment boundary
+            if (offsetAndLimit[offsetIndex] != offsetAndLimit[limitIndex])
+            {
+                int newReplayOffset = offsetAndLimit[offsetIndex] + length;
+                if (newReplayOffset < offsetAndLimit[limitIndex])
                 {
                     // retain partial frame for re-assembly
-                    replayBuffer.putBytes(replayOffset[0], buffer, offset, length);
-                    replayOffset[0] = newReplayOffset;
+                    replayBuffer.putBytes(offsetAndLimit[offsetIndex], buffer, offset, length);
+                    offsetAndLimit[offsetIndex] = newReplayOffset;
+
                     // no remaining data to process
                     return;
                 }
@@ -50,13 +60,15 @@ public interface AlignedMikro<T> extends StatefulMikro<T>
                 {
                     // complete the re-assembled frame
                     replayBuffer.putBytes(
-                        replayOffset[0], buffer, offset, replayLimit[0] - replayOffset[0]);
-                    onMessage(state, header, typeId, replayBuffer, 0, replayLimit[0]);
+                            offsetAndLimit[offsetIndex], buffer, offset,
+                            offsetAndLimit[limitIndex] - offsetAndLimit[offsetIndex]);
+
+                    onMessage(state, header, typeId, replayBuffer, 0, offsetAndLimit[limitIndex]);
 
                     // update offset and length for remaining processing
-                    offset += replayLimit[0] - replayOffset[0];
-                    length -= replayLimit[0] - replayOffset[0];
-                    replayOffset[0] = replayLimit[0] = 0;
+                    offset += offsetAndLimit[limitIndex] - offsetAndLimit[offsetIndex];
+                    length -= offsetAndLimit[limitIndex] - offsetAndLimit[offsetIndex];
+                    offsetAndLimit[offsetIndex] = offsetAndLimit[limitIndex] = 0;
 
                     // no remaining data to process
                     if (length == 0)
@@ -80,19 +92,20 @@ public interface AlignedMikro<T> extends StatefulMikro<T>
                 // retain partial frame for re-assembly
                 offset += alignedLength;
                 length -= alignedLength;
-                replayBuffer.putBytes(replayOffset[0], buffer, offset, length);
+                replayBuffer.putBytes(offsetAndLimit[offsetIndex], buffer, offset, length);
 
-                replayOffset[0] += length;
-                replayLimit[0] = alignment.supply(state, header, typeId, replayBuffer, 0, replayOffset[0]);
+                offsetAndLimit[offsetIndex] += length;
+                offsetAndLimit[limitIndex] = alignment.supply(state, header, typeId, replayBuffer,
+                        0, offsetAndLimit[offsetIndex]);
             }
             else
             {
                 // retain knowledge of remaining length required for alignment
-                replayLimit[0] = alignedLength;
+                offsetAndLimit[limitIndex] = alignedLength;
 
                 // retain partial frame for re-assembly
-                replayBuffer.putBytes(replayOffset[0], buffer, offset, length);
-                replayOffset[0] += length;
+                replayBuffer.putBytes(offsetAndLimit[offsetIndex], buffer, offset, length);
+                offsetAndLimit[offsetIndex] += length;
             }
         };
     }

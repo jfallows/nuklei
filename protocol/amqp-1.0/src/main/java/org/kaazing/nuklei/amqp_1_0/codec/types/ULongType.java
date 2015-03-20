@@ -155,7 +155,14 @@ public final class ULongType extends Type
 
         public Descriptor()
         {
-            this.code = new ULongType();
+            this.code = new ULongType().watch((owner) -> notifyChanged());
+        }
+
+        @Override
+        public Descriptor watch(Consumer<Flyweight> observer)
+        {
+            super.watch(observer);
+            return this;
         }
 
         @Override
@@ -176,6 +183,7 @@ public final class ULongType extends Type
 
         public Descriptor set(long value)
         {
+            mutableBuffer().putByte(offset(), (byte)0x00);
             code.set(value);
             return this;
         }

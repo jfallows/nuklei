@@ -41,6 +41,7 @@ public final class TcpSenderFactory implements SenderFactory
         private final TcpManagerHeadersDecoder tcpHeaders;
         private final MutableDirectBuffer sendBuffer;
         private final int sendBufferOffset;
+        private final long connectionId;
 
         public TcpSender(TcpManagerHeadersDecoder tcpHeaders, MutableDirectBuffer sendBuffer)
         {
@@ -48,17 +49,13 @@ public final class TcpSenderFactory implements SenderFactory
 
             this.sendBuffer = sendBuffer;
             this.sendBufferOffset = tcpHeaders.length();
-        }
 
-//        public <T extends Flyweight> T wrap(T flyweight)
-//        {
-//            flyweight.wrap(sendBuffer, sendBufferOffset, true);
-//            return flyweight;
-//        }
+            this.connectionId = tcpHeaders.connectionId();
+        }
 
         public void send(int limit)
         {
-            tcpHeaders.respond(sendBuffer, sendBufferOffset, limit - sendBufferOffset);
+            tcpHeaders.write(connectionId, sendBuffer, sendBufferOffset, limit - sendBufferOffset);
         }
 
         public void close(boolean immediately)

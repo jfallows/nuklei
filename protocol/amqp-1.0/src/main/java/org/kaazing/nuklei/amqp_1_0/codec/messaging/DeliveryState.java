@@ -87,7 +87,6 @@ public enum DeliveryState
 
     public static final class Described extends CompositeType.Described
     {
-
         @Override
         public Described watch(Consumer<Flyweight> notifier)
         {

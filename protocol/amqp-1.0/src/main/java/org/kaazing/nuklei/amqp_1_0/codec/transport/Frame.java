@@ -15,6 +15,7 @@
  */
 package org.kaazing.nuklei.amqp_1_0.codec.transport;
 
+import static java.lang.String.format;
 import static java.nio.ByteOrder.BIG_ENDIAN;
 
 import org.kaazing.nuklei.FlyweightBE;
@@ -53,8 +54,7 @@ public final class Frame extends FlyweightBE
     private final ULongType.Descriptor performative;
     private final DynamicType body;
 
-    // unit tests
-    Frame()
+    public Frame()
     {
         performative = new ULongType.Descriptor();
         body = new DynamicType().watch((owner) -> setLength(owner.limit() - offset()));
@@ -134,7 +134,13 @@ public final class Frame extends FlyweightBE
 
     public int limit()
     {
-        return body().limit();
+        long frameLength = uint32Get(buffer(), offset() + OFFSET_LENGTH);
+        if ((frameLength & 0x80000000) != 0)
+        {
+            throw new RuntimeException(format("Unsuported frame length: %d", frameLength));
+        }
+
+        return (offset() + (int)frameLength);
     }
 
     private ULongType.Descriptor performative()

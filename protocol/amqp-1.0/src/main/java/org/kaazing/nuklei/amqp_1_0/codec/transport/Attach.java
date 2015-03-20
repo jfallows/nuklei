@@ -315,7 +315,7 @@ public final class Attach extends CompositeType
 
     private UByteType receiveSettleMode()
     {
-        return receiveSettleMode.wrap(mutableBuffer(), role().limit(), true);
+        return receiveSettleMode.wrap(mutableBuffer(), sendSettleMode().limit(), true);
     }
 
     private Source source()

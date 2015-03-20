@@ -54,11 +54,12 @@ public class CompositeType extends ListType
 
         private final ULongType.Descriptor descriptor;
         private final CompositeType composite;
+        private int limit;
 
         public Described()
         {
-            descriptor = new ULongType.Descriptor();
-            composite = new CompositeType();
+            descriptor = new ULongType.Descriptor().watch((owner) -> limit(owner.limit()));
+            composite = new CompositeType().watch((owner) -> limit(owner.limit()));
         }
 
         @Override
@@ -81,10 +82,38 @@ public class CompositeType extends ListType
             return this;
         }
 
+        protected void limit(int limit)
+        {
+            this.limit = limit;
+            notifyChanged();
+        }
+
         @Override
         public int limit()
         {
-            return composite().limit();
+            return limit;
+        }
+
+        public void limit(int count, int limit)
+        {
+            composite().limit(count, limit);
+        }
+
+        public Described maxLength(int value)
+        {
+            composite().maxLength(value);
+            return this;
+        }
+
+        public Described maxCount(int value)
+        {
+            composite().maxCount(value);
+            return this;
+        }
+
+        protected int offsetBody()
+        {
+            return composite().offsetBody();
         }
 
         public <T> Described setDescriptor(ToLongFunction<T> mutator, T value)

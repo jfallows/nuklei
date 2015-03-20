@@ -15,11 +15,14 @@
  */
 package org.kaazing.nuklei.amqp_1_0.codec.transport;
 
+import static java.lang.Math.max;
+
 import java.util.function.Consumer;
 
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.amqp_1_0.codec.definitions.ReceiverSettleMode;
 import org.kaazing.nuklei.amqp_1_0.codec.messaging.DeliveryState;
+import org.kaazing.nuklei.amqp_1_0.codec.messaging.Message;
 import org.kaazing.nuklei.amqp_1_0.codec.types.BinaryType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.BooleanType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.CompositeType;
@@ -45,6 +48,8 @@ public final class Transfer extends CompositeType
         }
     };
 
+    private int limit;
+
     private final UIntType handle;
     private final UIntType deliveryId;
     private final BinaryType deliveryTag;
@@ -56,54 +61,68 @@ public final class Transfer extends CompositeType
     private final BooleanType resume;
     private final BooleanType aborted;
     private final BooleanType batchable;
-
-    // TODO: payload
+    private final Message message;
 
     public Transfer()
     {
         handle = new UIntType().watch((owner) ->
         {
             limit(1, owner.limit());
+            limit(owner.limit());
         });
         deliveryId = new UIntType().watch((owner) ->
         {
             limit(2, owner.limit());
+            limit(owner.limit());
         });
         deliveryTag = new BinaryType().watch((owner) ->
         {
             limit(3, owner.limit());
+            limit(owner.limit());
         });
         messageFormat = new UIntType().watch((owner) ->
         {
             limit(4, owner.limit());
+            limit(owner.limit());
         });
         settled = new BooleanType().watch((owner) ->
         {
             limit(5, owner.limit());
+            limit(owner.limit());
         });
         more = new BooleanType().watch((owner) ->
         {
             limit(6, owner.limit());
+            limit(owner.limit());
         });
         receiveSettleMode = new UByteType().watch((owner) ->
         {
             limit(7, owner.limit());
+            limit(owner.limit());
         });
         deliveryState = new DeliveryState.Described().watch((owner) ->
         {
             limit(8, owner.limit());
+            limit(owner.limit());
         });
         resume = new BooleanType().watch((owner) ->
         {
             limit(9, owner.limit());
+            limit(owner.limit());
         });
         aborted = new BooleanType().watch((owner) ->
         {
             limit(10, owner.limit());
+            limit(owner.limit());
         });
         batchable = new BooleanType().watch((owner) ->
         {
             limit(11, owner.limit());
+            limit(owner.limit());
+        });
+        message = new Message().watch((owner) ->
+        {
+            limit(owner.limit());
         });
     }
 
@@ -118,7 +137,19 @@ public final class Transfer extends CompositeType
     public Transfer wrap(DirectBuffer buffer, int offset, boolean mutable)
     {
         super.wrap(buffer, offset, mutable);
+        this.limit = offset;
         return this;
+    }
+
+    protected void limit(int limit)
+    {
+        this.limit = limit;
+        notifyChanged();
+    }
+
+    public int limit()
+    {
+        return max(super.limit(), limit);
     }
 
     @Override
@@ -250,6 +281,11 @@ public final class Transfer extends CompositeType
         return batchable().get();
     }
 
+    public Message getMessage()
+    {
+        return message();
+    }
+
     private UIntType handle()
     {
         return handle.wrap(mutableBuffer(), offsetBody(), true);
@@ -305,4 +341,34 @@ public final class Transfer extends CompositeType
         return batchable.wrap(mutableBuffer(), aborted().limit(), true);
     }
 
+    private Message message()
+    {
+        switch(count())
+        {
+        case 1:
+            return message.wrap(mutableBuffer(), handle().limit(), true);
+        case 2:
+            return message.wrap(mutableBuffer(), deliveryId().limit(), true);
+        case 3:
+            return message.wrap(mutableBuffer(), deliveryTag().limit(), true);
+        case 4:
+            return message.wrap(mutableBuffer(), messageFormat().limit(), true);
+        case 5:
+            return message.wrap(mutableBuffer(), settled().limit(), true);
+        case 6:
+            return message.wrap(mutableBuffer(), more().limit(), true);
+        case 7:
+            return message.wrap(mutableBuffer(), receiveSettleMode().limit(), true);
+        case 8:
+            return message.wrap(mutableBuffer(), deliveryState().limit(), true);
+        case 9:
+            return message.wrap(mutableBuffer(), resume().limit(), true);
+        case 10:
+            return message.wrap(mutableBuffer(), aborted().limit(), true);
+        case 11:
+            return message.wrap(mutableBuffer(), batchable().limit(), true);
+        default:
+            throw new IllegalStateException("Transfer frame has illegal count: " + count());
+        }
+    }
 }
