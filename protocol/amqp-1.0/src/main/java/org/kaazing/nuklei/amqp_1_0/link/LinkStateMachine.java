@@ -77,6 +77,19 @@ public final class LinkStateMachine<L>
         linkHooks.whenDetachSent.accept(link, frame, detach);
     }
 
+    // TODO: implement?  Also need Flow frames?
+//    public void received(Link<L> link, Frame frame, Disposition disposition)
+//    {
+//        transition(link, LinkTransition.RECEIVED_DISPOSITION);
+//        linkHooks.whenDispositionReceived.accept(link, frame, disposition);
+//    }
+//
+//    public void sent(Link<L> link, Frame frame, Disposition disposition)
+//    {
+//        transition(link, LinkTransition.SENT_DISPOSITION);
+//        linkHooks.whenDispositionSent.accept(link, frame, disposition);
+//    }
+
     public void error(Link<L> link)
     {
         transition(link, LinkTransition.ERROR);
