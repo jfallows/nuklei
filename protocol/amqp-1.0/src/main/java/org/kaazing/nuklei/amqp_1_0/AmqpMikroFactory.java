@@ -49,7 +49,8 @@ public class AmqpMikroFactory<C, S, L>
 
         AmqpMikro<C, S, L> mikro = new AmqpMikro<>(connectionHandler);
 
-        StorageSupplier<Connection<C, S, L>> storage = (connection) -> (connection != null) ? connection.reassemblyBuffer
+        StorageSupplier<Connection<C, S, L>> storage = (connection) -> (connection != null) ?
+                connection.reassemblyStorage
                 : null;
 
         StatefulMikro<Connection<C, S, L>> stateful = mikro.alignedBy(storage, AmqpMikroFactory::alignLength);
