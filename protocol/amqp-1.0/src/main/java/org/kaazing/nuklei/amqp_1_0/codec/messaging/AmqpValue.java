@@ -36,10 +36,7 @@ public class AmqpValue extends Type
 
     public AmqpValue()
     {
-        value = new DynamicType().watch((owner) ->
-        {
-            notifyChanged();
-        });
+        value = new DynamicType().watch((owner) -> notifyChanged());
         stringType = new StringType().watch((owner) -> notifyChanged());
     }
 

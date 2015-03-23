@@ -110,24 +110,6 @@ public class KompoundAmqpIT
 
     private Kompound kompound;
 
-    public static final ThreadLocal<Frame> FRAME_LOCAL_REF = new ThreadLocal<Frame>()
-    {
-        @Override
-        protected Frame initialValue()
-        {
-            return new Frame();
-        }
-    };
-
-    public static final ThreadLocal<Open> OPEN_LOCAL_REF = new ThreadLocal<Open>()
-    {
-        @Override
-        protected Open initialValue()
-        {
-            return new Open();
-        }
-    };
-
     @After
     public void cleanUp() throws Exception
     {
@@ -371,13 +353,11 @@ public class KompoundAmqpIT
 //            parameter.connection = parameter.connectionFactory.createConnection();
 
             Sender sender = connection.sender;
-            frame = FRAME_LOCAL_REF.get();
             frame.wrap(sender.getBuffer(), sender.getOffset(), true)
                 .setDataOffset(2)
                 .setType(0)
                 .setChannel(0)
                 .setPerformative(OPEN);
-            open = OPEN_LOCAL_REF.get();
             open.wrap(sender.getBuffer(), frame.bodyOffset(), true)
                 .maxLength(255)
                 .setContainerId(WRITE_UTF_8, "")
