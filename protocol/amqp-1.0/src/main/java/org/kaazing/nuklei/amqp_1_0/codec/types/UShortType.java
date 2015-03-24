@@ -20,12 +20,13 @@ import java.util.function.Consumer;
 import org.kaazing.nuklei.Flyweight;
 
 import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.4 "ushort"
  */
-public final class UShortType extends Type {
+public final class UShortType extends Type
+{
 
     private static final int OFFSET_KIND = 0;
     private static final int SIZEOF_KIND = BitUtil.SIZE_OF_BYTE;
@@ -38,31 +39,37 @@ public final class UShortType extends Type {
     private static final short WIDTH_KIND_2 = 0x60;
 
     @Override
-    public Kind kind() {
+    public Kind kind()
+    {
         return Kind.USHORT;
     }
 
     @Override
-    public UShortType watch(Consumer<Flyweight> observer) {
+    public UShortType watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public UShortType wrap(MutableDirectBuffer buffer, int offset) {
-        super.wrap(buffer, offset);
+    public UShortType wrap(DirectBuffer buffer, int offset, boolean mutable)
+    {
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 
-    public UShortType set(int value) {
+    public UShortType set(int value)
+    {
         widthKind(WIDTH_KIND_2);
-        uint16Put(buffer(), offset() + OFFSET_VALUE, value);
+        uint16Put(mutableBuffer(), offset() + OFFSET_VALUE, value);
         notifyChanged();
         return this;
     }
 
-    public int get() {
-        switch (widthKind()) {
+    public int get()
+    {
+        switch (widthKind())
+        {
         case WIDTH_KIND_2:
             return uint16Get(buffer(), offset() + OFFSET_VALUE);
         default:
@@ -70,15 +77,18 @@ public final class UShortType extends Type {
         }
     }
 
-    public int limit() {
+    public int limit()
+    {
         return offset() + SIZEOF_USHORT;
     }
-    
-    private void widthKind(short value) {
-        uint8Put(buffer(), offset() + OFFSET_KIND, value);
+
+    private void widthKind(short value)
+    {
+        uint8Put(mutableBuffer(), offset() + OFFSET_KIND, value);
     }
 
-    private short widthKind() {
+    private short widthKind()
+    {
         return uint8Get(buffer(), offset() + OFFSET_KIND);
     }
 }

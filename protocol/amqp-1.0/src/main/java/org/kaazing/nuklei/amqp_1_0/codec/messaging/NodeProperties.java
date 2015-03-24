@@ -20,22 +20,25 @@ import java.util.function.Consumer;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.amqp_1_0.codec.definitions.Fields;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 3.5.9 "Node Properties"
  */
-public final class NodeProperties extends Fields {
+public final class NodeProperties extends Fields
+{
 
     @Override
-    public NodeProperties watch(Consumer<Flyweight> notifier) {
+    public NodeProperties watch(Consumer<Flyweight> notifier)
+    {
         super.watch(notifier);
         return this;
     }
 
     @Override
-    public NodeProperties wrap(MutableDirectBuffer buffer, int offset) {
-        super.wrap(buffer, offset);
+    public NodeProperties wrap(DirectBuffer buffer, int offset, boolean mutable)
+    {
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 

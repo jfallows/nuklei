@@ -21,90 +21,136 @@ import java.util.function.ToLongFunction;
 
 import org.kaazing.nuklei.Flyweight;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.4 "Composite Type Representation"
  */
-public class CompositeType extends ListType {
+public class CompositeType extends ListType
+{
 
     @Override
-    public CompositeType watch(Consumer<Flyweight> notifier) {
+    public CompositeType watch(Consumer<Flyweight> notifier)
+    {
         super.watch(notifier);
         return this;
     }
 
     @Override
-    public CompositeType wrap(MutableDirectBuffer buffer, int offset) {
-        super.wrap(buffer, offset);
+    public CompositeType wrap(DirectBuffer buffer, int offset, boolean mutable)
+    {
+        super.wrap(buffer, offset, mutable);
         return this;
     }
-    
-    public <T extends CompositeType> T as(T composite) {
-        composite.wrap(buffer(), offset());
+
+    public <T extends CompositeType> T as(T composite)
+    {
+        composite.wrap(mutableBuffer(), offset(), true);
         return composite;
     }
 
-    public static class Described extends Type {
+    public static class Described extends Type
+    {
 
         private final ULongType.Descriptor descriptor;
         private final CompositeType composite;
-        
-        public Described() {
-            descriptor = new ULongType.Descriptor();
-            composite = new CompositeType();
+        private int limit;
+
+        public Described()
+        {
+            descriptor = new ULongType.Descriptor().watch((owner) -> limit(owner.limit()));
+            composite = new CompositeType().watch((owner) -> limit(owner.limit()));
         }
 
         @Override
-        public Kind kind() {
+        public Kind kind()
+        {
             return Kind.DESCRIBED;
         }
 
         @Override
-        public Described watch(Consumer<Flyweight> notifier) {
+        public Described watch(Consumer<Flyweight> notifier)
+        {
             super.watch(notifier);
             return this;
         }
 
         @Override
-        public Described wrap(MutableDirectBuffer buffer, int offset) {
-            super.wrap(buffer, offset);
+        public Described wrap(DirectBuffer buffer, int offset, boolean mutable)
+        {
+            super.wrap(buffer, offset, mutable);
             return this;
         }
 
-        @Override
-        public int limit() {
-            return composite().limit();
+        protected void limit(int limit)
+        {
+            this.limit = limit;
+            notifyChanged();
         }
 
-        public <T> Described setDescriptor(ToLongFunction<T> mutator, T value) {
+        @Override
+        public int limit()
+        {
+            return limit;
+        }
+
+        public void limit(int count, int limit)
+        {
+            composite().limit(count, limit);
+        }
+
+        public Described maxLength(int value)
+        {
+            composite().maxLength(value);
+            return this;
+        }
+
+        public Described maxCount(int value)
+        {
+            composite().maxCount(value);
+            return this;
+        }
+
+        protected int offsetBody()
+        {
+            return composite().offsetBody();
+        }
+
+        public <T> Described setDescriptor(ToLongFunction<T> mutator, T value)
+        {
             descriptor().set(mutator, value);
             return this;
         }
 
-        public Described setDescriptor(long value) {
+        public Described setDescriptor(long value)
+        {
             descriptor().set(value);
             return this;
         }
 
-        public <R> R getDescriptor(LongFunction<R> accessor) {
+        public <R> R getDescriptor(LongFunction<R> accessor)
+        {
             return descriptor().get(accessor);
         }
 
-        public long getDescriptor() {
+        public long getDescriptor()
+        {
             return descriptor().get();
         }
 
-        public CompositeType getComposite() {
+        public CompositeType getComposite()
+        {
             return composite();
         }
-        
-        private ULongType.Descriptor descriptor() {
-            return descriptor.wrap(buffer(), offset());
+
+        private ULongType.Descriptor descriptor()
+        {
+            return descriptor.wrap(buffer(), offset(), true);
         }
 
-        private CompositeType composite() {
-            return composite.wrap(buffer(), descriptor().limit());
+        private CompositeType composite()
+        {
+            return composite.wrap(mutableBuffer(), descriptor().limit(), true);
         }
 
     }

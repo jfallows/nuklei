@@ -15,9 +15,9 @@
  */
 package org.kaazing.nuklei.amqp_1_0;
 
-import static org.kaazing.nuklei.net.TcpManagerTypeId.EOF;
-import static org.kaazing.nuklei.net.TcpManagerTypeId.NEW_CONNECTION;
-import static org.kaazing.nuklei.net.TcpManagerTypeId.RECEIVED_DATA;
+import static org.kaazing.nuklei.protocol.tcp.TcpManagerTypeId.EOF;
+import static org.kaazing.nuklei.protocol.tcp.TcpManagerTypeId.NEW_CONNECTION;
+import static org.kaazing.nuklei.protocol.tcp.TcpManagerTypeId.RECEIVED_DATA;
 
 import org.kaazing.nuklei.amqp_1_0.codec.transport.Frame;
 import org.kaazing.nuklei.amqp_1_0.codec.transport.Header;
@@ -25,33 +25,45 @@ import org.kaazing.nuklei.amqp_1_0.connection.Connection;
 import org.kaazing.nuklei.amqp_1_0.connection.ConnectionHandler;
 import org.kaazing.nuklei.function.AlignedMikro;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
-public class AmqpMikro<C, S, L> implements AlignedMikro<Connection<C, S, L>> {
+public class AmqpMikro<C, S, L> implements AlignedMikro<Connection<C, S, L>>
+{
 
     private final ConnectionHandler<C, S, L> connectionHandler;
 
-    protected AmqpMikro(ConnectionHandler<C, S, L> connectionHandler) {
+    protected AmqpMikro(ConnectionHandler<C, S, L> connectionHandler)
+    {
         this.connectionHandler = connectionHandler;
     }
 
     @Override
-    public void onMessage(Connection<C, S, L> connection, Object headers, int typeId, MutableDirectBuffer buffer, int offset, int length) {
-        if (connection == null) {
+    public void onMessage(Connection<C, S, L> connection,
+                          Object headers,
+                          int typeId,
+                          DirectBuffer buffer,
+                          int offset,
+                          int length)
+    {
+        if (connection == null)
+        {
             return;
         }
 
-        switch (typeId) {
+        switch (typeId)
+        {
         case NEW_CONNECTION:
             connectionHandler.init(connection);
             break;
         case RECEIVED_DATA:
             int limit = offset + length;
-            while (offset < limit) {
-                switch (connection.state) {
+            while (offset < limit)
+            {
+                switch (connection.state)
+                {
                 case START:
                 case HEADER_SENT:
-                    Header header = Header.LOCAL_REF.get().wrap(buffer, offset);
+                    Header header = Header.LOCAL_REF.get().wrap(buffer, offset, false);
                     offset = header.limit();
                     connectionHandler.handleHeader(connection, header);
                     break;
@@ -59,7 +71,7 @@ public class AmqpMikro<C, S, L> implements AlignedMikro<Connection<C, S, L>> {
                     offset = limit;
                     break;
                 default:
-                    Frame frame = Frame.LOCAL_REF.get().wrap(buffer, offset);
+                    Frame frame = Frame.LOCAL_REF.get().wrap(buffer, offset, true);
                     offset = frame.limit();
                     connectionHandler.handleFrame(connection, frame);
                     break;
@@ -71,5 +83,4 @@ public class AmqpMikro<C, S, L> implements AlignedMikro<Connection<C, S, L>> {
             break;
         }
     }
-
 }

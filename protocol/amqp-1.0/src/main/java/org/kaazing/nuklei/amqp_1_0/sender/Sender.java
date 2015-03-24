@@ -15,14 +15,17 @@
  */
 package org.kaazing.nuklei.amqp_1_0.sender;
 
-import org.kaazing.nuklei.Flyweight;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public interface Sender {
-    
-    public <T extends Flyweight> T wrap(T flyweight);
+public interface Sender
+{
+//    <T extends Flyweight> T wrap(T flyweight);
 
-    public void send(int limit);
+    void send(int limit);
 
-    public void close(boolean immediately);
+    void close(boolean immediately);
 
+    MutableDirectBuffer getBuffer();
+
+    int getOffset();
 }

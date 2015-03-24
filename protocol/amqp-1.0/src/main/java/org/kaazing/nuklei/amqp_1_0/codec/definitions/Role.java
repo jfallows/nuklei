@@ -18,19 +18,22 @@ package org.kaazing.nuklei.amqp_1_0.codec.definitions;
 import org.kaazing.nuklei.function.BooleanFunction;
 import org.kaazing.nuklei.function.ToBooleanFunction;
 
-
 /*
  * See AMQP 1.0 specification, section 2.8.1 "Role"
  */
-public enum Role {
+public enum Role
+{
     SENDER, RECEIVER;
 
-    public static final BooleanFunction<Role> READ = (boolean value) -> {
+    public static final BooleanFunction<Role> READ = (boolean value) ->
+    {
         return value ? Role.RECEIVER : Role.SENDER;
     };
 
-    public static final ToBooleanFunction<Role> WRITE = (Role role) -> {
-        switch (role) {
+    public static final ToBooleanFunction<Role> WRITE = (Role role) ->
+    {
+        switch (role)
+        {
         case SENDER:
             return false;
         case RECEIVER:

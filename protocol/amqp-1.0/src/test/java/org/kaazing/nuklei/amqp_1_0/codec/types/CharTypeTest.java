@@ -37,72 +37,78 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 @RunWith(Theories.class)
-public class CharTypeTest {
+public class CharTypeTest
+{
 
     private static final int BUFFER_CAPACITY = 64;
-    
+
     @DataPoint
     public static final int ZERO_OFFSET = 0;
-    
+
     @DataPoint
     public static final int NON_ZERO_OFFSET = new Random().nextInt(BUFFER_CAPACITY - SIZEOF_CHAR - 1) + 1;
 
     private final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
 
     @Theory
-    public void shouldEncode(int offset) {
+    public void shouldEncode(int offset)
+    {
         CharType charType = new CharType();
-        charType.wrap(buffer, offset);
+        charType.wrap(buffer, offset, true);
         charType.set(0x12);
-        
+
         assertEquals(0x73, uint8Get(buffer, offset));
         assertEquals(0x12, uint32Get(buffer, offset + 1));
     }
-    
+
     @Theory
-    public void shouldDecode(int offset) {
+    public void shouldDecode(int offset)
+    {
         buffer.putByte(offset, (byte) 0x73);
         buffer.putInt(offset + 1, 0x12, BIG_ENDIAN);
-        
+
         CharType charType = new CharType();
-        charType.wrap(buffer, offset);
-        
+        charType.wrap(buffer, offset, true);
+
         assertEquals(0x12, charType.get());
         assertEquals(offset + 5, charType.limit());
     }
-    
+
     @Theory
-    public void shouldEncodeThenDecode(int offset) {
+    public void shouldEncodeThenDecode(int offset)
+    {
         CharType charType = new CharType();
-        charType.wrap(buffer, offset);
+        charType.wrap(buffer, offset, true);
         charType.set(0x12);
-        
+
         assertEquals(0x12, charType.get());
         assertEquals(offset + 5, charType.limit());
     }
-    
+
     @Theory
     @Test(expected = Exception.class)
-    public void shouldNotDecode(int offset) {
+    public void shouldNotDecode(int offset)
+    {
         buffer.putByte(offset, (byte) 0x00);
-        
+
         CharType charType = new CharType();
-        charType.wrap(buffer, offset);
+        charType.wrap(buffer, offset, true);
 
         assertEquals(0, charType.get());
     }
 
     @Theory
     @SuppressWarnings("unchecked")
-    public void shouldNotifyChanged(int offset) {
+    public void shouldNotifyChanged(int offset)
+    {
         final Consumer<Flyweight> observer = mock(Consumer.class);
-        
+
         CharType charType = new CharType();
         charType.watch(observer);
-        charType.wrap(buffer, offset);
+        charType.wrap(buffer, offset, true);
         charType.set(0x12);
-        
+
         verify(observer).accept(charType);
     }
-    
+
 }

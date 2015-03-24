@@ -22,20 +22,24 @@ import java.util.function.ToLongFunction;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.amqp_1_0.codec.types.CompositeType;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 3.4 "Delivery State"
  */
-public enum Outcome {
+public enum Outcome
+{
 
     ACCEPTED, REJECTED, RELEASED, MODIFIED, DECLARED;
 
-    public static final LongFunction<Outcome> READ = new LongFunction<Outcome>() {
+    public static final LongFunction<Outcome> READ = new LongFunction<Outcome>()
+    {
 
         @Override
-        public Outcome apply(long value) {
-            switch ((int) value) {
+        public Outcome apply(long value)
+        {
+            switch ((int) value)
+            {
             case 0x24:
                 return ACCEPTED;
             case 0x25:
@@ -51,12 +55,15 @@ public enum Outcome {
             }
         }
     };
-    
-    public static final ToLongFunction<Outcome> WRITE = new ToLongFunction<Outcome>() {
+
+    public static final ToLongFunction<Outcome> WRITE = new ToLongFunction<Outcome>()
+    {
 
         @Override
-        public long applyAsLong(Outcome value) {
-            switch (value) {
+        public long applyAsLong(Outcome value)
+        {
+            switch (value)
+            {
             case ACCEPTED:
                 return 0x24;
             case REJECTED:
@@ -71,29 +78,34 @@ public enum Outcome {
                 throw new IllegalStateException();
             }
         }
-        
+
     };
 
-    public static final class Described extends CompositeType.Described {
+    public static final class Described extends CompositeType.Described
+    {
 
         @Override
-        public Described watch(Consumer<Flyweight> notifier) {
+        public Described watch(Consumer<Flyweight> notifier)
+        {
             super.watch(notifier);
             return this;
         }
-    
+
         @Override
-        public Described wrap(MutableDirectBuffer buffer, int offset) {
-            super.wrap(buffer, offset);
+        public Described wrap(DirectBuffer buffer, int offset, boolean mutable)
+        {
+            super.wrap(buffer, offset, mutable);
             return this;
         }
 
-        public Described setDeliveryState(Outcome value) {
+        public Described setDeliveryState(Outcome value)
+        {
             setDescriptor(WRITE, value);
             return this;
         }
-        
-        public Outcome getOutcome() {
+
+        public Outcome getOutcome()
+        {
             return getDescriptor(READ);
         }
     }

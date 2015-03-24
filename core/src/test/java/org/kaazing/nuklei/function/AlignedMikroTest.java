@@ -15,19 +15,22 @@
  */
 package org.kaazing.nuklei.function;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
+
+import java.nio.ByteBuffer;
+
 import org.junit.Test;
 import org.kaazing.nuklei.function.AlignedMikro.AlignmentSupplier;
+import org.kaazing.nuklei.function.AlignedMikro.Storage;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
-import java.nio.ByteBuffer;
-
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.*;
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 @SuppressWarnings("unchecked")
 public class AlignedMikroTest
@@ -55,7 +58,7 @@ public class AlignedMikroTest
                 handler.onMessage(state, null, typeId, buffer, offset, length);
             }
         };
-        StatefulMikro<MutableDirectBuffer> mikro = wrapHandler.alignedBy((t) -> t, alignment);
+        StatefulMikro<MutableDirectBuffer> mikro = wrapHandler.alignedBy((t) -> new Storage(t), alignment);
         mikro.onMessage(storageBuffer, null, 0, readBuffer, SIZE_OF_LONG, 32);
 
         verify(handler).onMessage(storageBuffer, null, 0, readBuffer, SIZE_OF_LONG, 32);
@@ -79,7 +82,7 @@ public class AlignedMikroTest
                 handler.onMessage(state, null, typeId, buffer, offset, length);
             }
         };
-        StatefulMikro<MutableDirectBuffer> mikro = wrapHandler.alignedBy((t) -> t, alignment);
+        StatefulMikro<MutableDirectBuffer> mikro = wrapHandler.alignedBy((t) -> new Storage(t), alignment);
         mikro.onMessage(storageBuffer, null, 0, readBuffer, SIZE_OF_LONG, 16);
 
         verify(handler, never()).onMessage(any(), any(), anyInt(), any(), anyInt(), anyInt());
@@ -103,7 +106,7 @@ public class AlignedMikroTest
                 handler.onMessage(state, null, typeId, buffer, offset, length);
             }
         };
-        StatefulMikro<MutableDirectBuffer> mikro = wrapHandler.alignedBy((t) -> t, alignment);
+        StatefulMikro<MutableDirectBuffer> mikro = wrapHandler.alignedBy((t) -> new Storage(t), alignment);
         mikro.onMessage(storageBuffer, null, 0, readBuffer, SIZE_OF_LONG, 40);
 
         verify(handler).onMessage(storageBuffer, null, 0, readBuffer, SIZE_OF_LONG, 32);
@@ -119,6 +122,7 @@ public class AlignedMikroTest
         readBuffer.putLong(16, 1L);
 
         final AlignedMikro<MutableDirectBuffer> handler = mock(AlignedMikro.class);
+        final Storage storage = new Storage();
         AlignedMikro<MutableDirectBuffer> wrapHandler = new AlignedMikro<MutableDirectBuffer>()
         {
             @Override
@@ -128,7 +132,7 @@ public class AlignedMikroTest
                 handler.onMessage(state, null, typeId, buffer, offset, length);
             }
         };
-        StatefulMikro<MutableDirectBuffer> mikro = wrapHandler.alignedBy((t) -> t, alignment);
+        StatefulMikro<MutableDirectBuffer> mikro = wrapHandler.alignedBy((t) -> storage.buffer(t), alignment);
         mikro.onMessage(storageBuffer, null, 0, readBuffer, SIZE_OF_LONG, 8);
         mikro.onMessage(storageBuffer, null, 0, readBuffer, 24, 24);
 
@@ -146,6 +150,7 @@ public class AlignedMikroTest
         readBuffer.putLong(64, 1L);
 
         final AlignedMikro<MutableDirectBuffer> handler = mock(AlignedMikro.class);
+        final Storage storage = new Storage();
         AlignedMikro<MutableDirectBuffer> wrapHandler = new AlignedMikro<MutableDirectBuffer>()
         {
             @Override
@@ -155,7 +160,7 @@ public class AlignedMikroTest
                 handler.onMessage(state, null, typeId, buffer, offset, length);
             }
         };
-        StatefulMikro<MutableDirectBuffer> mikro = wrapHandler.alignedBy((t) -> t, alignment);
+        StatefulMikro<MutableDirectBuffer> mikro = wrapHandler.alignedBy((t) -> storage.buffer(t), alignment);
         mikro.onMessage(storageBuffer, null, 0, readBuffer, SIZE_OF_LONG, 56);
         mikro.onMessage(storageBuffer, null, 0, readBuffer, 72, 8);
 

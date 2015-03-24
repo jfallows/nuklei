@@ -25,12 +25,13 @@ import java.util.function.Consumer;
 import org.kaazing.nuklei.Flyweight;
 
 import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.13 "decimal32"
  */
-public final class Decimal32Type extends Type {
+public final class Decimal32Type extends Type
+{
 
     private static final int OFFSET_KIND = 0;
     private static final int SIZEOF_KIND = BitUtil.SIZE_OF_BYTE;
@@ -39,35 +40,41 @@ public final class Decimal32Type extends Type {
     private static final int SIZEOF_VALUE_MAX = BitUtil.SIZE_OF_INT;
 
     static final int SIZEOF_INT_MAX = SIZEOF_KIND + SIZEOF_VALUE_MAX;
-    
+
     private static final short WIDTH_KIND_4 = 0x74;
 
     @Override
-    public Kind kind() {
+    public Kind kind()
+    {
         return Kind.DECIMAL32;
     }
 
     @Override
-    public Decimal32Type watch(Consumer<Flyweight> observer) {
+    public Decimal32Type watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public Decimal32Type wrap(MutableDirectBuffer buffer, int offset) {
-        super.wrap(buffer, offset);
+    public Decimal32Type wrap(DirectBuffer buffer, int offset, boolean mutable)
+    {
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 
-    public Decimal32Type set(BigDecimal value) {
+    public Decimal32Type set(BigDecimal value)
+    {
         widthKind(WIDTH_KIND_4);
-        int32Put(buffer(), offset() + OFFSET_VALUE, toIntBits(value));
+        int32Put(mutableBuffer(), offset() + OFFSET_VALUE, toIntBits(value));
         notifyChanged();
         return this;
     }
 
-    public BigDecimal get() {
-        switch (widthKind()) {
+    public BigDecimal get()
+    {
+        switch (widthKind())
+        {
         case WIDTH_KIND_4:
             return fromIntBits(int32Get(buffer(), offset() + OFFSET_VALUE));
         default:
@@ -75,8 +82,10 @@ public final class Decimal32Type extends Type {
         }
     }
 
-    public int limit() {
-        switch (widthKind()) {
+    public int limit()
+    {
+        switch (widthKind())
+        {
         case WIDTH_KIND_4:
             return offset() + OFFSET_VALUE + 4;
         default:
@@ -84,20 +93,24 @@ public final class Decimal32Type extends Type {
         }
     }
 
-    private void widthKind(short value) {
-        uint8Put(buffer(), offset() + OFFSET_KIND, value);
+    private void widthKind(short value)
+    {
+        uint8Put(mutableBuffer(), offset() + OFFSET_KIND, value);
     }
 
-    private int widthKind() {
+    private int widthKind()
+    {
         return uint8Get(buffer(), offset() + OFFSET_KIND);
     }
 
-    private int toIntBits(BigDecimal value) {
+    private int toIntBits(BigDecimal value)
+    {
         // TODO: use IEEE 754 decimal32 format (not binary32)
         return floatToIntBits(value.floatValue());
     }
-    
-    private BigDecimal fromIntBits(int value) {
+
+    private BigDecimal fromIntBits(int value)
+    {
         // TODO: use IEEE 754 decimal32 format (not binary32)
         return new BigDecimal(intBitsToFloat(value), DECIMAL32);
     }

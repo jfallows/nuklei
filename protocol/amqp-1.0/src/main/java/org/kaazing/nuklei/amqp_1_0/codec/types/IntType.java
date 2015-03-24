@@ -22,12 +22,13 @@ import java.util.function.Consumer;
 import org.kaazing.nuklei.Flyweight;
 
 import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.9 "int"
  */
-public final class IntType extends Type {
+public final class IntType extends Type
+{
 
     private static final int OFFSET_KIND = 0;
     private static final int SIZEOF_KIND = BitUtil.SIZE_OF_BYTE;
@@ -36,29 +37,34 @@ public final class IntType extends Type {
     private static final int SIZEOF_VALUE_MAX = BitUtil.SIZE_OF_INT;
 
     static final int SIZEOF_INT_MAX = SIZEOF_KIND + SIZEOF_VALUE_MAX;
-    
+
     private static final short WIDTH_KIND_1 = 0x54;
     private static final short WIDTH_KIND_4 = 0x71;
 
     @Override
-    public Kind kind() {
+    public Kind kind()
+    {
         return Kind.INT;
     }
 
     @Override
-    public IntType watch(Consumer<Flyweight> observer) {
+    public IntType watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public IntType wrap(MutableDirectBuffer buffer, int offset) {
-        super.wrap(buffer, offset);
+    public IntType wrap(DirectBuffer buffer, int offset, boolean mutable)
+    {
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 
-    public IntType set(int value) {
-        switch ((int) highestOneBit(value)) {
+    public IntType set(int value)
+    {
+        switch ((int) highestOneBit(value))
+        {
         case 0:
         case 1:
         case 2:
@@ -69,11 +75,11 @@ public final class IntType extends Type {
         case 64:
         case 128:
             widthKind(WIDTH_KIND_1);
-            uint8Put(buffer(), offset() + OFFSET_VALUE, (short) value);
+            uint8Put(mutableBuffer(), offset() + OFFSET_VALUE, (short) value);
             break;
         default:
             widthKind(WIDTH_KIND_4);
-            int32Put(buffer(), offset() + OFFSET_VALUE, value);
+            int32Put(mutableBuffer(), offset() + OFFSET_VALUE, value);
             break;
         }
 
@@ -81,8 +87,10 @@ public final class IntType extends Type {
         return this;
     }
 
-    public long get() {
-        switch (widthKind()) {
+    public long get()
+    {
+        switch (widthKind())
+        {
         case WIDTH_KIND_1:
             return int8Get(buffer(), offset() + OFFSET_VALUE);
         case WIDTH_KIND_4:
@@ -92,8 +100,10 @@ public final class IntType extends Type {
         }
     }
 
-    public int limit() {
-        switch (widthKind()) {
+    public int limit()
+    {
+        switch (widthKind())
+        {
         case WIDTH_KIND_1:
             return offset() + OFFSET_VALUE + 1;
         case WIDTH_KIND_4:
@@ -103,11 +113,13 @@ public final class IntType extends Type {
         }
     }
 
-    private void widthKind(short value) {
-        uint8Put(buffer(), offset() + OFFSET_KIND, value);
+    private void widthKind(short value)
+    {
+        uint8Put(mutableBuffer(), offset() + OFFSET_KIND, value);
     }
 
-    private int widthKind() {
+    private int widthKind()
+    {
         return uint8Get(buffer(), offset() + OFFSET_KIND);
     }
 }

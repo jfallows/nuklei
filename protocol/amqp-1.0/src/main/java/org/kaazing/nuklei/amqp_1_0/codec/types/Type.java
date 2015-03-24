@@ -17,14 +17,17 @@ package org.kaazing.nuklei.amqp_1_0.codec.types;
 
 import org.kaazing.nuklei.FlyweightBE;
 
-public abstract class Type extends FlyweightBE {
+public abstract class Type extends FlyweightBE
+{
 
-    public static enum Kind { 
-        DYNAMIC, NULL, BOOLEAN, UBYTE, USHORT, UINT, ULONG, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE, 
-        DECIMAL32, DECIMAL64, DECIMAL128, CHAR, TIMESTAMP, UUID, BINARY, STRING, SYMBOL,
-        LIST, MAP, ARRAY, DESCRIBED
+    public static enum Kind
+    {
+        DYNAMIC, NULL, BOOLEAN, UBYTE, USHORT, UINT, ULONG, BYTE, SHORT, INT,
+        LONG, FLOAT, DOUBLE, DECIMAL32, DECIMAL64, DECIMAL128, CHAR, TIMESTAMP,
+        UUID, BINARY, STRING, SYMBOL, LIST, MAP, ARRAY, DESCRIBED, DATA,
+        AMQPSEQUENCE, AMQPVALUE, MESSAGE
     };
-    
+
     public abstract Kind kind();
 
 }

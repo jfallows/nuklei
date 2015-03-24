@@ -20,19 +20,20 @@ import java.util.function.Consumer;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.amqp_1_0.codec.types.ArrayType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.BooleanType;
-import org.kaazing.nuklei.amqp_1_0.codec.types.ListType;
+import org.kaazing.nuklei.amqp_1_0.codec.types.CompositeType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.StringType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.SymbolType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UIntType;
 import org.kaazing.nuklei.function.DirectBufferAccessor;
 import org.kaazing.nuklei.function.MutableDirectBufferMutator;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 3.5.3 "Source"
  */
-public final class Target extends ListType {
+public final class Target extends CompositeType.Described
+{
 
     private final StringType address;
     private final UIntType durable;
@@ -46,174 +47,249 @@ public final class Target extends ListType {
     private final ArrayType outcomes;
     private final ArrayType capabilities;
 
-    public Target() {
-        address = new StringType().watch((owner) -> { limit(1, owner.limit()); });
-        durable = new UIntType().watch((owner) -> { limit(2, owner.limit()); });
-        expiryPolicy = new SymbolType().watch((owner) -> { limit(3, owner.limit()); });
-        timeout = new UIntType().watch((owner) -> { limit(4, owner.limit()); });
-        dynamic = new BooleanType().watch((owner) -> { limit(5, owner.limit()); });
-        dynamicNodeProperties = new NodeProperties().watch((owner) -> { limit(6, owner.limit()); });
-        distributionMode = new SymbolType().watch((owner) -> { limit(7, owner.limit()); });
-        filter = new FilterSet.Embedded<>(this).watch((owner) -> { limit(8, owner.limit()); });
-        defaultOutcome = new Outcome.Described().watch((owner) -> { limit(9, owner.limit()); });
-        outcomes = new ArrayType().watch((owner) -> { limit(10, owner.limit()); });
-        capabilities = new ArrayType().watch((owner) -> { limit(11, owner.limit()); });
+    public Target()
+    {
+        address = new StringType().watch((owner) ->
+        {
+            limit(1, owner.limit());
+        });
+        durable = new UIntType().watch((owner) ->
+        {
+            limit(2, owner.limit());
+        });
+        expiryPolicy = new SymbolType().watch((owner) ->
+        {
+            limit(3, owner.limit());
+        });
+        timeout = new UIntType().watch((owner) ->
+        {
+            limit(4, owner.limit());
+        });
+        dynamic = new BooleanType().watch((owner) ->
+        {
+            limit(5, owner.limit());
+        });
+        dynamicNodeProperties = new NodeProperties().watch((owner) ->
+        {
+            limit(6, owner.limit());
+        });
+        distributionMode = new SymbolType().watch((owner) ->
+        {
+            limit(7, owner.limit());
+        });
+        filter = new FilterSet.Embedded<>(this).watch((owner) ->
+        {
+            limit(8, owner.limit());
+        });
+        defaultOutcome = new Outcome.Described().watch((owner) ->
+        {
+            limit(9, owner.limit());
+        });
+        outcomes = new ArrayType().watch((owner) ->
+        {
+            limit(10, owner.limit());
+        });
+        capabilities = new ArrayType().watch((owner) ->
+        {
+            limit(11, owner.limit());
+        });
+    }
+
+    public Target setDescriptor()
+    {
+        super.setDescriptor(0x29L);
+        return this;
     }
 
     @Override
-    public Target watch(Consumer<Flyweight> observer) {
+    public Target watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public Target wrap(MutableDirectBuffer buffer, int offset) {
-        super.wrap(buffer, offset);
+    public Target wrap(DirectBuffer buffer, int offset, boolean mutable)
+    {
+        super.wrap(buffer, offset, mutable);
         return this;
     }
-    
+
     @Override
-    public Target maxLength(int value) {
+    public Target maxLength(int value)
+    {
         super.maxLength(value);
         return this;
     }
 
     @Override
-    public Target maxCount(int value) {
+    public Target maxCount(int value)
+    {
         super.maxCount(value);
         return this;
     }
 
-    public Target setAddress(Void value) {
+    public Target setAddress(Void value)
+    {
         address().set(value);
         return this;
     }
-    
-    public <T> Target setAddress(MutableDirectBufferMutator<T> mutator, T value) {
+
+    public <T> Target setAddress(MutableDirectBufferMutator<T> mutator, T value)
+    {
         address().set(mutator, value);
         return this;
     }
-    
-    public <T> T getAddress(DirectBufferAccessor<T> accessor) {
+
+    public <T> T getAddress(DirectBufferAccessor<T> accessor)
+    {
         return address().get(accessor);
     }
 
-    public Target setDurable(TerminusDurability value) {
+    public Target setDurable(TerminusDurability value)
+    {
         durable().set(TerminusDurability.WRITE, value);
         return this;
     }
-    
-    public TerminusDurability getDurable() {
+
+    public TerminusDurability getDurable()
+    {
         return durable().get(TerminusDurability.READ);
     }
 
-    public Target setExpiryPolicy(TerminusExpiryPolicy value) {
+    public Target setExpiryPolicy(TerminusExpiryPolicy value)
+    {
         expiryPolicy().set(TerminusExpiryPolicy.WRITE, value);
         return this;
     }
-    
-    public TerminusExpiryPolicy getExpiryPolicy() {
+
+    public TerminusExpiryPolicy getExpiryPolicy()
+    {
         return expiryPolicy().get(TerminusExpiryPolicy.READ);
     }
-    
-    public Target setTimeout(long value) {
+
+    public Target setTimeout(long value)
+    {
         timeout().set(value);
         return this;
     }
-    
-    public long getTimeout() {
+
+    public long getTimeout()
+    {
         return timeout().get();
     }
-    
-    public Target setDynamic(boolean value) {
+
+    public Target setDynamic(boolean value)
+    {
         dynamic().set(value);
         return this;
     }
-    
-    public boolean getDynamic() {
+
+    public boolean getDynamic()
+    {
         return dynamic().get();
     }
 
-    public NodeProperties getDynamicNodeProperties() {
+    public NodeProperties getDynamicNodeProperties()
+    {
         return dynamicNodeProperties();
     }
 
-    public Target setDistributionMode(DistributionMode value) {
+    public Target setDistributionMode(DistributionMode value)
+    {
         distributionMode().set(DistributionMode.WRITE, value);
         return this;
     }
-    
-    public DistributionMode getDistributionMode() {
+
+    public DistributionMode getDistributionMode()
+    {
         return distributionMode().get(DistributionMode.READ);
     }
 
-    public FilterSet.Embedded<Target> setFilter() {
+    public FilterSet.Embedded<Target> setFilter()
+    {
         return filter();
     }
-    
-    public Outcome.Described getDefaultOutcome() {
+
+    public Outcome.Described getDefaultOutcome()
+    {
         return defaultOutcome();
     }
-    
-    public Target setOutcomes(ArrayType value) {
+
+    public Target setOutcomes(ArrayType value)
+    {
         outcomes().set(value);
         return this;
     }
-    
-    public ArrayType getOutcomes() {
+
+    public ArrayType getOutcomes()
+    {
         return outcomes();
     }
 
-    public Target setCapabilities(ArrayType value) {
+    public Target setCapabilities(ArrayType value)
+    {
         capabilities().set(value);
         return this;
     }
-    
-    public ArrayType getCapabilities() {
+
+    public ArrayType getCapabilities()
+    {
         return capabilities();
     }
 
-    private StringType address() {
-        return address.wrap(buffer(), offsetBody());
+    private StringType address()
+    {
+        return address.wrap(mutableBuffer(), offsetBody(), true);
     }
 
-    private UIntType durable() {
-        return durable.wrap(buffer(), address().limit());
+    private UIntType durable()
+    {
+        return durable.wrap(mutableBuffer(), address().limit(), true);
     }
 
-    private SymbolType expiryPolicy() {
-        return expiryPolicy.wrap(buffer(), durable().limit());
+    private SymbolType expiryPolicy()
+    {
+        return expiryPolicy.wrap(mutableBuffer(), durable().limit(), true);
     }
-    
-    private UIntType timeout() {
-        return timeout.wrap(buffer(), expiryPolicy().limit());
+
+    private UIntType timeout()
+    {
+        return timeout.wrap(mutableBuffer(), expiryPolicy().limit(), true);
     }
-    
-    private BooleanType dynamic() {
-        return dynamic.wrap(buffer(), timeout().limit());
+
+    private BooleanType dynamic()
+    {
+        return dynamic.wrap(mutableBuffer(), timeout().limit(), true);
     }
-    
-    private NodeProperties dynamicNodeProperties() {
-        return dynamicNodeProperties.wrap(buffer(), dynamic().limit());
+
+    private NodeProperties dynamicNodeProperties()
+    {
+        return dynamicNodeProperties.wrap(mutableBuffer(), dynamic().limit(), true);
     }
-    
-    private SymbolType distributionMode() {
-        return distributionMode.wrap(buffer(), dynamicNodeProperties().limit());
+
+    private SymbolType distributionMode()
+    {
+        return distributionMode.wrap(mutableBuffer(), dynamicNodeProperties().limit(), true);
     }
-    
-    private FilterSet.Embedded<Target> filter() {
-        return filter.wrap(buffer(), distributionMode().limit());
+
+    private FilterSet.Embedded<Target> filter()
+    {
+        return filter.wrap(mutableBuffer(), distributionMode().limit(), true);
     }
-    
-    private Outcome.Described defaultOutcome() {
-        return defaultOutcome.wrap(buffer(), filter().limit());
+
+    private Outcome.Described defaultOutcome()
+    {
+        return defaultOutcome.wrap(mutableBuffer(), filter().limit(), true);
     }
-    
-    private ArrayType outcomes() {
-        return outcomes.wrap(buffer(), defaultOutcome().limit());
+
+    private ArrayType outcomes()
+    {
+        return outcomes.wrap(mutableBuffer(), defaultOutcome().limit(), true);
     }
-    
-    private ArrayType capabilities() {
-        return capabilities.wrap(buffer(), outcomes().limit());
+
+    private ArrayType capabilities()
+    {
+        return capabilities.wrap(mutableBuffer(), outcomes().limit(), true);
     }
 }

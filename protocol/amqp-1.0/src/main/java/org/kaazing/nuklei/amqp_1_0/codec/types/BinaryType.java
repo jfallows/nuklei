@@ -24,12 +24,13 @@ import org.kaazing.nuklei.function.DirectBufferAccessor;
 import org.kaazing.nuklei.function.MutableDirectBufferMutator;
 
 import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.19 "binary"
  */
-public final class BinaryType extends Type {
+public final class BinaryType extends Type
+{
 
     private static final int OFFSET_LENGTH_KIND = 0;
     private static final int SIZEOF_LENGTH_KIND = BitUtil.SIZE_OF_BYTE;
@@ -41,25 +42,30 @@ public final class BinaryType extends Type {
     private static final short WIDTH_KIND_4 = 0xb0;
 
     @Override
-    public Kind kind() {
+    public Kind kind()
+    {
         return Kind.BINARY;
     }
-    
+
     @Override
-    public BinaryType watch(Consumer<Flyweight> observer) {
+    public BinaryType watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public BinaryType wrap(MutableDirectBuffer buffer, int offset) {
-        super.wrap(buffer, offset);
+    public BinaryType wrap(DirectBuffer buffer, int offset, boolean mutable)
+    {
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 
-    public <T> T get(DirectBufferAccessor<T> accessor) {
+    public <T> T get(DirectBufferAccessor<T> accessor)
+    {
 
-        switch (widthKind()) {
+        switch (widthKind())
+        {
         case WIDTH_KIND_1:
             return accessor.access(buffer(), lengthLimit(), uint8Get(buffer(), offset() + OFFSET_LENGTH));
         case WIDTH_KIND_4:
@@ -68,28 +74,37 @@ public final class BinaryType extends Type {
             throw new IllegalStateException();
         }
     }
-    
-    public <T> BinaryType set(MutableDirectBufferMutator<T> mutator, T value) {
-        length(mutator.mutate((length) -> { maxLength(length); return lengthLimit(); }, buffer(), value));
+
+    public <T> BinaryType set(MutableDirectBufferMutator<T> mutator, T value)
+    {
+        length(mutator.mutate((length) ->
+        {
+            maxLength(length);
+            return lengthLimit();
+        }, mutableBuffer(), value));
         notifyChanged();
         return this;
     }
 
-    private void length(long length) {
-        switch (widthKind()) {
+    private void length(long length)
+    {
+        switch (widthKind())
+        {
         case WIDTH_KIND_1:
-            uint8Put(buffer(), offset() + OFFSET_LENGTH, (short) length);
+            uint8Put(mutableBuffer(), offset() + OFFSET_LENGTH, (short) length);
             break;
         case WIDTH_KIND_4:
-            uint32Put(buffer(), offset() + OFFSET_LENGTH, length);
+            uint32Put(mutableBuffer(), offset() + OFFSET_LENGTH, length);
             break;
         default:
             throw new IllegalStateException();
         }
     }
 
-    public int limit() {
-        switch (widthKind()) {
+    public int limit()
+    {
+        switch (widthKind())
+        {
         case WIDTH_KIND_1:
             return lengthLimit() + uint8Get(buffer(), offset() + OFFSET_LENGTH);
         case WIDTH_KIND_4:
@@ -99,16 +114,20 @@ public final class BinaryType extends Type {
         }
     }
 
-    private void widthKind(short widthKind) {
-        uint8Put(buffer(), offset() + OFFSET_LENGTH_KIND, widthKind);
+    private void widthKind(short widthKind)
+    {
+        uint8Put(mutableBuffer(), offset() + OFFSET_LENGTH_KIND, widthKind);
     }
 
-    private short widthKind() {
+    private short widthKind()
+    {
         return uint8Get(buffer(), offset() + OFFSET_LENGTH_KIND);
     }
 
-    private void maxLength(int value) {
-        switch (highestOneBit(value)) {
+    private void maxLength(int value)
+    {
+        switch (highestOneBit(value))
+        {
         case 0:
         case 1:
         case 2:
@@ -125,10 +144,12 @@ public final class BinaryType extends Type {
             break;
         }
     }
-    
-    private int lengthLimit() {
 
-        switch (widthKind()) {
+    private int lengthLimit()
+    {
+
+        switch (widthKind())
+        {
         case WIDTH_KIND_1:
             return offset() + OFFSET_LENGTH + BitUtil.SIZE_OF_BYTE;
         case WIDTH_KIND_4:
@@ -137,5 +158,5 @@ public final class BinaryType extends Type {
             throw new IllegalStateException();
         }
     }
-    
+
 }

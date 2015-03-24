@@ -26,16 +26,16 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>nuklei.amqp_1_0</artifactId>
+    <artifactId>nuklei-amqp_1_0</artifactId>
     <packaging>jar</packaging>
 
     <name>Nuklei AMQP 1.0 support</name>
-    <url>http://github.com/kaazing/nuklei.amqp_1_0</url>
     <description>AMQP 1.0 support, including codec flyweights and state machine</description>
+    <url>https://github.com/kaazing/nuklei.git</url>
 
     <scm>
-        <url>https://github.com/kaazing/nuklei.amqp_1_0.git</url>
-        <connection>scm:git:https://github.com/kaazing/nuklei.amqp_1_0.git</connection>
+        <url>https://github.com/kaazing/nuklei.git</url>
+        <connection>scm:git:https://github.com/kaazing/nuklei.git</connection>
     </scm>
 
     <properties>
@@ -46,13 +46,19 @@
 
         <!-- animal sniffer does not yet support Java8, see MANIMALSNIFFER-45 -->
         <animal.sniffer.skip>true</animal.sniffer.skip>
+        <checkstyle.config.location>../../config/checkstyle/checkstyle.xml</checkstyle.config.location>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.kaazing</groupId>
             <artifactId>nuklei-core</artifactId>
-            <version>[0.2,1.0)</version>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kaazing</groupId>
+            <artifactId>nuklei-tcp</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -67,5 +73,19 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>
 

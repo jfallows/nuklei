@@ -27,16 +27,19 @@ import org.kaazing.nuklei.amqp_1_0.codec.types.UShortType;
 import org.kaazing.nuklei.function.DirectBufferAccessor;
 import org.kaazing.nuklei.function.MutableDirectBufferMutator;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 2.7.1 "Open"
  */
-public final class Open extends CompositeType {
+public final class Open extends CompositeType
+{
 
-    public static final ThreadLocal<Open> LOCAL_REF = new ThreadLocal<Open>() {
+    public static final ThreadLocal<Open> LOCAL_REF = new ThreadLocal<Open>()
+    {
         @Override
-        protected Open initialValue() {
+        protected Open initialValue()
+        {
             return new Open();
         }
     };
@@ -54,176 +57,241 @@ public final class Open extends CompositeType {
     private final ArrayType desiredCapabilities;
     private final Fields properties;
 
-    // unit tests
-    Open() {
-        containerId = new StringType().watch((owner) -> { limit(1, owner.limit()); });
-        hostname = new StringType().watch((owner) -> { limit(2, owner.limit()); });
-        maxFrameSize = new UIntType().watch((owner) -> { limit(3, owner.limit()); });
-        channelMax = new UShortType().watch((owner) -> { limit(4, owner.limit()); });
-        idleTimeout = new UIntType().watch((owner) -> { limit(5, owner.limit()); });
-        outgoingLocales = new ArrayType().watch((owner) -> { limit(6, owner.limit()); });;
-        incomingLocales = new ArrayType().watch((owner) -> { limit(7, owner.limit()); });
-        offeredCapabilities = new ArrayType().watch((owner) -> { limit(8, owner.limit()); });;
-        desiredCapabilities = new ArrayType().watch((owner) -> { limit(9, owner.limit()); });;
-        properties = new Fields().watch((owner) -> { limit(10, owner.limit()); });;
+    public Open()
+    {
+        containerId = new StringType().watch((owner) ->
+        {
+            limit(1, owner.limit());
+        });
+        hostname = new StringType().watch((owner) ->
+        {
+            limit(2, owner.limit());
+        });
+        maxFrameSize = new UIntType().watch((owner) ->
+        {
+            limit(3, owner.limit());
+        });
+        channelMax = new UShortType().watch((owner) ->
+        {
+            limit(4, owner.limit());
+        });
+        idleTimeout = new UIntType().watch((owner) ->
+        {
+            limit(5, owner.limit());
+        });
+        outgoingLocales = new ArrayType().watch((owner) ->
+        {
+            limit(6, owner.limit());
+        });
+        incomingLocales = new ArrayType().watch((owner) ->
+        {
+            limit(7, owner.limit());
+        });
+        offeredCapabilities = new ArrayType().watch((owner) ->
+        {
+            limit(8, owner.limit());
+        });
+        desiredCapabilities = new ArrayType().watch((owner) ->
+        {
+            limit(9, owner.limit());
+        });
+        properties = new Fields().watch((owner) ->
+        {
+            limit(10, owner.limit());
+        });
     }
 
     @Override
-    public Open watch(Consumer<Flyweight> observer) {
+    public Open watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public Open wrap(MutableDirectBuffer buffer, int offset) {
-        super.wrap(buffer, offset);
+    public Open wrap(DirectBuffer buffer, int offset, boolean mutable)
+    {
+        super.wrap(buffer, offset, mutable);
         return this;
     }
-    
+
     @Override
-    public Open maxLength(int value) {
+    public Open maxLength(int value)
+    {
         super.maxLength(value);
         return this;
     }
 
     @Override
-    public Open maxCount(int value) {
+    public Open maxCount(int value)
+    {
         super.maxCount(value);
         return this;
     }
 
-    public Open setContainerId(Void value) {
+    public Open setContainerId(Void value)
+    {
         containerId().set(value);
         return this;
     }
-    
-    public <T> Open setContainerId(MutableDirectBufferMutator<T> mutator, T value) {
+
+    public <T> Open setContainerId(MutableDirectBufferMutator<T> mutator, T value)
+    {
         containerId().set(mutator, value);
         return this;
     }
-    
-    public <T> T getContainerId(DirectBufferAccessor<T> accessor) {
+
+    public <T> T getContainerId(DirectBufferAccessor<T> accessor)
+    {
         return containerId().get(accessor);
     }
 
-    public Open setHostname(Void value) {
+    public Open setHostname(Void value)
+    {
         hostname().set(value);
         return this;
     }
-    
-    public <T> Open setHostname(MutableDirectBufferMutator<T> mutator, T value) {
+
+    public <T> Open setHostname(MutableDirectBufferMutator<T> mutator, T value)
+    {
         hostname().set(mutator, value);
         return this;
     }
-    
-    public <T> T getHostname(DirectBufferAccessor<T> accessor) {
+
+    public <T> T getHostname(DirectBufferAccessor<T> accessor)
+    {
         return hostname().get(accessor);
     }
 
-    public Open setMaxFrameSize(long value) {
+    public Open setMaxFrameSize(long value)
+    {
         maxFrameSize().set(value);
         return this;
     }
-    
-    public long getMaxFrameSize() {
+
+    public long getMaxFrameSize()
+    {
         return maxFrameSize().get();
     }
 
-    public Open setChannelMax(int value) {
+    public Open setChannelMax(int value)
+    {
         channelMax().set(value);
         return this;
     }
-    
-    public int getChannelMax() {
+
+    public int getChannelMax()
+    {
         return channelMax().get();
     }
 
-    public Open setIdleTimeout(long value) {
+    public Open setIdleTimeout(long value)
+    {
         idleTimeout().set(value);
         return this;
     }
-    
-    public long getIdleTimeout() {
+
+    public long getIdleTimeout()
+    {
         return idleTimeout().get();
     }
 
-    public Open setOutgoingLocales(ArrayType value) {
+    public Open setOutgoingLocales(ArrayType value)
+    {
         outgoingLocales().set(value);
         return this;
     }
-    
-    public ArrayType getOutgoingLocales() {
+
+    public ArrayType getOutgoingLocales()
+    {
         return outgoingLocales();
     }
 
-    public Open setIncomingLocales(ArrayType value) {
+    public Open setIncomingLocales(ArrayType value)
+    {
         incomingLocales().set(value);
         return this;
     }
-    
-    public ArrayType getIncomingLocales() {
+
+    public ArrayType getIncomingLocales()
+    {
         return incomingLocales();
     }
 
-    public Open setOfferedCapabilities(ArrayType value) {
+    public Open setOfferedCapabilities(ArrayType value)
+    {
         offeredCapabilities().set(value);
         return this;
     }
-    
-    public ArrayType getOfferedCapabilities() {
+
+    public ArrayType getOfferedCapabilities()
+    {
         return offeredCapabilities();
     }
 
-    public Open setDesiredCapabilities(ArrayType value) {
+    public Open setDesiredCapabilities(ArrayType value)
+    {
         desiredCapabilities().set(value);
         return this;
     }
-    
-    public ArrayType getDesiredCapabilities() {
+
+    public ArrayType getDesiredCapabilities()
+    {
         return desiredCapabilities();
     }
 
-    public Fields getProperties() {
+    public Fields getProperties()
+    {
         return properties();
     }
 
-    private StringType containerId() {
-        return containerId.wrap(buffer(), offsetBody());
+    private StringType containerId()
+    {
+        return containerId.wrap(mutableBuffer(), offsetBody(), true);
     }
 
-    private StringType hostname() {
-        return hostname.wrap(buffer(), containerId().limit());
+    private StringType hostname()
+    {
+        return hostname.wrap(mutableBuffer(), containerId().limit(), true);
     }
 
-    private UIntType maxFrameSize() {
-        return maxFrameSize.wrap(buffer(), hostname().limit());
+    private UIntType maxFrameSize()
+    {
+        return maxFrameSize.wrap(mutableBuffer(), hostname().limit(), true);
     }
 
-    private UShortType channelMax() {
-        return channelMax.wrap(buffer(), maxFrameSize().limit());
+    private UShortType channelMax()
+    {
+        return channelMax.wrap(mutableBuffer(), maxFrameSize().limit(), true);
     }
 
-    private UIntType idleTimeout() {
-        return idleTimeout.wrap(buffer(), channelMax().limit());
+    private UIntType idleTimeout()
+    {
+        return idleTimeout.wrap(mutableBuffer(), channelMax().limit(), true);
     }
 
-    private ArrayType outgoingLocales() {
-        return outgoingLocales.wrap(buffer(), idleTimeout().limit());
+    private ArrayType outgoingLocales()
+    {
+        return outgoingLocales.wrap(mutableBuffer(), idleTimeout().limit(), true);
     }
 
-    private ArrayType incomingLocales() {
-        return incomingLocales.wrap(buffer(), outgoingLocales().limit());
+    private ArrayType incomingLocales()
+    {
+        return incomingLocales.wrap(mutableBuffer(), outgoingLocales().limit(), true);
     }
 
-    private ArrayType offeredCapabilities() {
-        return offeredCapabilities.wrap(buffer(), incomingLocales().limit());
+    private ArrayType offeredCapabilities()
+    {
+        return offeredCapabilities.wrap(mutableBuffer(), incomingLocales().limit(), true);
     }
 
-    private ArrayType desiredCapabilities() {
-        return desiredCapabilities.wrap(buffer(), offeredCapabilities().limit());
+    private ArrayType desiredCapabilities()
+    {
+        return desiredCapabilities.wrap(mutableBuffer(), offeredCapabilities().limit(), true);
     }
 
-    private Fields properties() {
-        return properties.wrap(buffer(), desiredCapabilities().limit());
+    private Fields properties()
+    {
+        return properties.wrap(mutableBuffer(), desiredCapabilities().limit(), true);
     }
 }

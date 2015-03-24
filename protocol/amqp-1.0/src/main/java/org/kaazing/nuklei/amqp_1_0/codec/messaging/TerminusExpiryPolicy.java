@@ -26,22 +26,25 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 /*
  * See AMQP 1.0 specification, section 3.5.6 "Terminus Expiry Policy"
  */
-public enum TerminusExpiryPolicy {
+public enum TerminusExpiryPolicy
+{
     LINK_DETACH, SESSION_END, CONNECTION_CLOSE, NEVER;
 
-    public static final DirectBufferAccessor<TerminusExpiryPolicy> READ = (DirectBuffer buffer, int offset, int size) -> {
-        switch (buffer.getByte(offset)) {
+    public static final DirectBufferAccessor<TerminusExpiryPolicy> READ = (DirectBuffer buffer, int offset, int size) ->
+    {
+        switch (buffer.getByte(offset))
+        {
         case 'l':
-            // TODO: verify "link-detach" matches entirely 
+            // TODO: verify "link-detach" matches entirely
             return TerminusExpiryPolicy.LINK_DETACH;
         case 's':
-            // TODO: verify "session-end" matches entirely 
+            // TODO: verify "session-end" matches entirely
             return TerminusExpiryPolicy.SESSION_END;
         case 'c':
-            // TODO: verify "connection-close" matches entirely 
+            // TODO: verify "connection-close" matches entirely
             return TerminusExpiryPolicy.CONNECTION_CLOSE;
         case 'n':
-            // TODO: verify "never" matches entirely 
+            // TODO: verify "never" matches entirely
             return TerminusExpiryPolicy.NEVER;
         default:
             return null;
@@ -58,11 +61,17 @@ public enum TerminusExpiryPolicy {
     private static final int CONNECTION_CLOSE_LENGTH = CONNECTION_CLOSE_BYTES.length;
     private static final int NEVER_LENGTH = NEVER_BYTES.length;
 
-    public static final MutableDirectBufferMutator<TerminusExpiryPolicy> WRITE = new MutableDirectBufferMutator<TerminusExpiryPolicy>() {
+    public static final MutableDirectBufferMutator<TerminusExpiryPolicy> WRITE =
+            new MutableDirectBufferMutator<TerminusExpiryPolicy>()
+    {
 
         @Override
-        public int mutate(org.kaazing.nuklei.function.MutableDirectBufferMutator.Mutation mutation, MutableDirectBuffer buffer, TerminusExpiryPolicy policy) {
-            switch (policy) {
+        public int mutate(org.kaazing.nuklei.function.MutableDirectBufferMutator.Mutation mutation,
+                          MutableDirectBuffer buffer,
+                          TerminusExpiryPolicy policy)
+        {
+            switch (policy)
+            {
             case LINK_DETACH:
                 buffer.putBytes(mutation.maxOffset(LINK_DETACH_LENGTH), LINK_DETACH_BYTES);
                 return LINK_DETACH_LENGTH;

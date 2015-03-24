@@ -23,26 +23,26 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 @FunctionalInterface
 public interface AlignedMikro<T> extends StatefulMikro<T>
 {
-
     default StatefulMikro<T> alignedBy(StorageSupplier<T> storage, AlignmentSupplier<T> alignment)
     {
         Objects.requireNonNull(storage);
-        int replayOffset[] = { 0 };
-        int replayLimit[] = { 0 };
         return (state, header, typeId, buffer, offset, length) ->
         {
-
-            MutableDirectBuffer replayBuffer = storage.supply(state);
+            Storage replayStorage = storage.supply(state);
+            MutableDirectBuffer replayBuffer = replayStorage.buffer();
+            int replayLimit = replayStorage.limit();
+            int replayOffset = replayStorage.offset();
 
             // determine alignment boundary
-            if (replayOffset[0] != replayLimit[0])
+            if (replayOffset != replayLimit)
             {
-                int newReplayOffset = replayOffset[0] + length;
-                if (newReplayOffset < replayLimit[0])
+                int newReplayOffset = replayOffset + length;
+                if (newReplayOffset < replayLimit)
                 {
                     // retain partial frame for re-assembly
-                    replayBuffer.putBytes(replayOffset[0], buffer, offset, length);
-                    replayOffset[0] = newReplayOffset;
+                    replayBuffer.putBytes(replayOffset, buffer, offset, length);
+                    replayStorage.offset(newReplayOffset);
+
                     // no remaining data to process
                     return;
                 }
@@ -50,13 +50,18 @@ public interface AlignedMikro<T> extends StatefulMikro<T>
                 {
                     // complete the re-assembled frame
                     replayBuffer.putBytes(
-                        replayOffset[0], buffer, offset, replayLimit[0] - replayOffset[0]);
-                    onMessage(state, header, typeId, replayBuffer, 0, replayLimit[0]);
+                            replayOffset, buffer, offset,
+                            replayLimit - replayOffset);
+
+                    onMessage(state, header, typeId, replayBuffer, 0, replayLimit);
 
                     // update offset and length for remaining processing
-                    offset += replayLimit[0] - replayOffset[0];
-                    length -= replayLimit[0] - replayOffset[0];
-                    replayOffset[0] = replayLimit[0] = 0;
+                    offset += replayLimit - replayOffset;
+                    length -= replayLimit - replayOffset;
+
+                    replayLimit = replayOffset = 0;
+                    replayStorage.offset(replayOffset);
+                    replayStorage.limit(replayLimit);
 
                     // no remaining data to process
                     if (length == 0)
@@ -80,19 +85,22 @@ public interface AlignedMikro<T> extends StatefulMikro<T>
                 // retain partial frame for re-assembly
                 offset += alignedLength;
                 length -= alignedLength;
-                replayBuffer.putBytes(replayOffset[0], buffer, offset, length);
+                replayBuffer.putBytes(replayOffset, buffer, offset, length);
 
-                replayOffset[0] += length;
-                replayLimit[0] = alignment.supply(state, header, typeId, replayBuffer, 0, replayOffset[0]);
+                replayOffset += length;
+                replayLimit = alignment.supply(state, header, typeId, replayBuffer,
+                        0, replayOffset);
+                replayStorage.offset(replayOffset);
+                replayStorage.limit(replayLimit);
             }
             else
             {
                 // retain knowledge of remaining length required for alignment
-                replayLimit[0] = alignedLength;
+                replayStorage.limit(alignedLength);
 
                 // retain partial frame for re-assembly
-                replayBuffer.putBytes(replayOffset[0], buffer, offset, length);
-                replayOffset[0] += length;
+                replayBuffer.putBytes(replayOffset, buffer, offset, length);
+                replayStorage.offset(replayOffset + length);
             }
         };
     }
@@ -100,12 +108,58 @@ public interface AlignedMikro<T> extends StatefulMikro<T>
     @FunctionalInterface
     public interface StorageSupplier<T>
     {
-        MutableDirectBuffer supply(T state);
+        Storage supply(T state);
     }
 
     @FunctionalInterface
     public interface AlignmentSupplier<T>
     {
         int supply(T state, Object header, int typeId, DirectBuffer buffer, int offset, int length);
+    }
+
+    public static class Storage
+    {
+        private MutableDirectBuffer buffer;
+        private int limit;
+        private int offset;
+
+        public Storage()
+        {
+            this.limit = 0;
+            this.offset = 0;
+        }
+
+        public Storage(MutableDirectBuffer buffer)
+        {
+            this.buffer = buffer;
+            this.limit = 0;
+            this.offset = 0;
+        }
+
+        public MutableDirectBuffer buffer()
+        {
+            return buffer;
+        }
+        public Storage buffer(MutableDirectBuffer buffer)
+        {
+            this.buffer = buffer;
+            return this;
+        }
+        public int limit()
+        {
+            return limit;
+        }
+        public void limit(int limit)
+        {
+            this.limit = limit;
+        }
+        public int offset()
+        {
+            return offset;
+        }
+        public void offset(int offset)
+        {
+            this.offset = offset;
+        }
     }
 }

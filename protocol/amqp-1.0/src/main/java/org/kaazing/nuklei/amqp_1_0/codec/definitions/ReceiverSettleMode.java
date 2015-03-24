@@ -21,11 +21,14 @@ import java.util.function.ToIntFunction;
 /*
  * See AMQP 1.0 specification, section 2.8.3 "Receiver Settle Mode"
  */
-public enum ReceiverSettleMode {
+public enum ReceiverSettleMode
+{
     FIRST, MIXED;
 
-    public static final IntFunction<ReceiverSettleMode> READ = (int code) -> {
-        switch (code) {
+    public static final IntFunction<ReceiverSettleMode> READ = (int code) ->
+    {
+        switch (code)
+        {
         case 0:
             return ReceiverSettleMode.FIRST;
         case 1:
@@ -35,8 +38,10 @@ public enum ReceiverSettleMode {
         }
     };
 
-    public static final ToIntFunction<ReceiverSettleMode> WRITE = (ReceiverSettleMode mode) -> {
-        switch (mode) {
+    public static final ToIntFunction<ReceiverSettleMode> WRITE = (ReceiverSettleMode mode) ->
+    {
+        switch (mode)
+        {
         case FIRST:
         case MIXED:
             return mode.ordinal();

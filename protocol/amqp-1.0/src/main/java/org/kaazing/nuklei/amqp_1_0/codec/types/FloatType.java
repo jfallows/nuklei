@@ -20,12 +20,13 @@ import java.util.function.Consumer;
 import org.kaazing.nuklei.Flyweight;
 
 import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 1.6.11 "float"
  */
-public final class FloatType extends Type {
+public final class FloatType extends Type
+{
 
     private static final int OFFSET_KIND = 0;
     private static final int SIZEOF_KIND = BitUtil.SIZE_OF_BYTE;
@@ -34,35 +35,41 @@ public final class FloatType extends Type {
     private static final int SIZEOF_VALUE = BitUtil.SIZE_OF_FLOAT;
 
     static final int SIZEOF_FLOAT = SIZEOF_KIND + SIZEOF_VALUE;
-    
+
     private static final short WIDTH_KIND_4 = 0x72;
 
     @Override
-    public Kind kind() {
+    public Kind kind()
+    {
         return Kind.FLOAT;
     }
 
     @Override
-    public FloatType watch(Consumer<Flyweight> observer) {
+    public FloatType watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public FloatType wrap(MutableDirectBuffer buffer, int offset) {
-        super.wrap(buffer, offset);
+    public FloatType wrap(DirectBuffer buffer, int offset, boolean mutable)
+    {
+        super.wrap(buffer, offset, mutable);
         return this;
     }
 
-    public FloatType set(float value) {
+    public FloatType set(float value)
+    {
         widthKind(WIDTH_KIND_4);
-        floatPut(buffer(), offset() + OFFSET_VALUE, value);
+        floatPut(mutableBuffer(), offset() + OFFSET_VALUE, value);
         notifyChanged();
         return this;
     }
-    
-    public float get() {
-        switch (widthKind()) {
+
+    public float get()
+    {
+        switch (widthKind())
+        {
         case WIDTH_KIND_4:
             return floatGet(buffer(), offset() + OFFSET_VALUE);
         default:
@@ -70,15 +77,18 @@ public final class FloatType extends Type {
         }
     }
 
-    public int limit() {
+    public int limit()
+    {
         return offset() + SIZEOF_FLOAT;
     }
 
-    private void widthKind(short value) {
-        uint8Put(buffer(), offset() + OFFSET_KIND, value);
+    private void widthKind(short value)
+    {
+        uint8Put(mutableBuffer(), offset() + OFFSET_KIND, value);
     }
-    
-    private short widthKind() {
-        return uint8Get(buffer(), offset() + OFFSET_KIND);
+
+    private short widthKind()
+    {
+        return uint8Get(mutableBuffer(), offset() + OFFSET_KIND);
     }
 }

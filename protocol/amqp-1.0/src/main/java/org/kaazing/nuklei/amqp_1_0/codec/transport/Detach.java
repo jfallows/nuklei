@@ -23,16 +23,19 @@ import org.kaazing.nuklei.amqp_1_0.codec.types.BooleanType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.CompositeType;
 import org.kaazing.nuklei.amqp_1_0.codec.types.UIntType;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 2.7.7 "Detach"
  */
-public final class Detach extends CompositeType {
+public final class Detach extends CompositeType
+{
 
-    public static final ThreadLocal<Detach> LOCAL_REF = new ThreadLocal<Detach>() {
+    public static final ThreadLocal<Detach> LOCAL_REF = new ThreadLocal<Detach>()
+    {
         @Override
-        protected Detach initialValue() {
+        protected Detach initialValue()
+        {
             return new Detach();
         }
     };
@@ -41,67 +44,89 @@ public final class Detach extends CompositeType {
     private final BooleanType closed;
     private final Error error;
 
-    public Detach() {
-        handle = new UIntType().watch((owner) -> { limit(1, owner.limit()); });
-        closed = new BooleanType().watch((owner) -> { limit(2, owner.limit()); });
-        error = new Error().watch((owner) -> { limit(3, owner.limit()); });
+    public Detach()
+    {
+        handle = new UIntType().watch((owner) ->
+        {
+            limit(1, owner.limit());
+        });
+        closed = new BooleanType().watch((owner) ->
+        {
+            limit(2, owner.limit());
+        });
+        error = new Error().watch((owner) ->
+        {
+            limit(3, owner.limit());
+        });
     }
 
     @Override
-    public Detach watch(Consumer<Flyweight> observer) {
+    public Detach watch(Consumer<Flyweight> observer)
+    {
         super.watch(observer);
         return this;
     }
 
     @Override
-    public Detach wrap(MutableDirectBuffer buffer, int offset) {
-        super.wrap(buffer, offset);
+    public Detach wrap(DirectBuffer buffer, int offset, boolean mutable)
+    {
+        super.wrap(buffer, offset, mutable);
         return this;
     }
-    
+
     @Override
-    public Detach maxLength(int value) {
+    public Detach maxLength(int value)
+    {
         super.maxLength(value);
         return this;
     }
 
     @Override
-    public Detach maxCount(int value) {
+    public Detach maxCount(int value)
+    {
         super.maxCount(value);
         return this;
     }
 
-    public Detach setHandle(long value) {
+    public Detach setHandle(long value)
+    {
         handle().set(value);
         return this;
     }
-    
-    public long getHandle() {
+
+    public long getHandle()
+    {
         return handle().get();
     }
 
-    public Detach setClosed(boolean value) {
+    public Detach setClosed(boolean value)
+    {
         closed().set(value);
         return this;
     }
-    
-    public boolean getClosed() {
+
+    public boolean getClosed()
+    {
         return closed().get();
     }
 
-    public Error getError() {
+    public Error getError()
+    {
         return error();
     }
-    
-    private UIntType handle() {
-        return handle.wrap(buffer(), offsetBody());
+
+    private UIntType handle()
+    {
+        return handle.wrap(mutableBuffer(), offsetBody(), true);
     }
 
-    private BooleanType closed() {
-        return closed.wrap(buffer(), handle().limit());
+    private BooleanType closed()
+    {
+        return closed.wrap(mutableBuffer(), handle().limit(), true);
     }
 
-    private Error error() {
-        return error.wrap(buffer(), closed().limit());
+    private Error error()
+    {
+        return error.wrap(mutableBuffer(), closed().limit(), true);
     }
 }

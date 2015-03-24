@@ -38,11 +38,11 @@
     <modules>
         <module>core</module>
         <module>benchmarks</module>
-        <module>kompound</module>
         <module>protocol/tcp</module>
         <module>protocol/http</module>
         <module>protocol/ws</module>
         <module>protocol/amqp-1.0</module>
+        <module>kompound</module>
     </modules>
 
     <build>

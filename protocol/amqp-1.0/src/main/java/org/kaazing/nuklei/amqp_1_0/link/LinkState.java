@@ -18,12 +18,7 @@ package org.kaazing.nuklei.amqp_1_0.link;
 /*
  * See AMQP 1.0 specification, section 2.6 "Links"
  */
-public enum LinkState {
-    DETACHED,
-    ATTACH_SENT,
-    ATTACH_RECEIVED,
-    ATTACHED,
-    DETACH_SENT,
-    DETACH_RECEIVED,
-    DISCARDING
+public enum LinkState
+{
+    DETACHED, ATTACH_SENT, ATTACH_RECEIVED, ATTACHED, DETACH_SENT, DETACH_RECEIVED, DISCARDING
 }

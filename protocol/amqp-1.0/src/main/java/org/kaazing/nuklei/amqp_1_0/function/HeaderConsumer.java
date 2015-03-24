@@ -17,8 +17,9 @@ package org.kaazing.nuklei.amqp_1_0.function;
 
 import org.kaazing.nuklei.amqp_1_0.codec.transport.Header;
 
-public interface HeaderConsumer<P> {
-    
+public interface HeaderConsumer<P>
+{
+
     void accept(P param, Header header);
 
 }

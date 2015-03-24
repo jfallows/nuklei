@@ -23,24 +23,28 @@ import org.kaazing.nuklei.amqp_1_0.codec.transport.Transfer;
 /*
  * See AMQP 1.0 specification, section 2.6 "Links"
  */
-public final class LinkHandler<L> {
-    
-    public void init(Link<L> session) {
+public final class LinkHandler<L>
+{
+
+    public void init(Link<L> session)
+    {
         session.stateMachine.start(session);
     }
-    
-    public void handle(Link<L> link, Frame frame) {
-        switch (frame.getPerformative()) {
+
+    public void handle(Link<L> link, Frame frame)
+    {
+        switch (frame.getPerformative())
+        {
         case ATTACH:
-            Attach attach = Attach.LOCAL_REF.get().wrap(frame.buffer(), frame.bodyOffset());
+            Attach attach = Attach.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset(), true);
             link.stateMachine.received(link, frame, attach);
             break;
         case TRANSFER:
-            Transfer transfer = Transfer.LOCAL_REF.get().wrap(frame.buffer(), frame.bodyOffset());
+            Transfer transfer = Transfer.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset(), true);
             link.stateMachine.received(link, frame, transfer);
             break;
         case DETACH:
-            Detach detach = Detach.LOCAL_REF.get().wrap(frame.buffer(), frame.bodyOffset());
+            Detach detach = Detach.LOCAL_REF.get().wrap(frame.mutableBuffer(), frame.bodyOffset(), true);
             link.stateMachine.received(link, frame, detach);
             break;
         default:

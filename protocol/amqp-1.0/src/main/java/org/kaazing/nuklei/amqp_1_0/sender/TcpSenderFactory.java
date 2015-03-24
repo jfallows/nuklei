@@ -15,49 +15,63 @@
  */
 package org.kaazing.nuklei.amqp_1_0.sender;
 
-import org.kaazing.nuklei.Flyweight;
-import org.kaazing.nuklei.net.TcpManagerHeadersDecoder;
+import org.kaazing.nuklei.protocol.tcp.TcpManagerHeadersDecoder;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public final class TcpSenderFactory implements SenderFactory {
+public final class TcpSenderFactory implements SenderFactory
+{
 
     private final MutableDirectBuffer sendBuffer;
 
-    public TcpSenderFactory(MutableDirectBuffer sendBuffer) {
+    public TcpSenderFactory(MutableDirectBuffer sendBuffer)
+    {
         this.sendBuffer = sendBuffer;
     }
 
-    public Sender newSender(Object headers) {
+    public Sender newSender(Object headers)
+    {
         TcpManagerHeadersDecoder tcpHeaders = (TcpManagerHeadersDecoder) headers;
         return new TcpSender(tcpHeaders, sendBuffer);
     }
 
-    private static final class TcpSender implements Sender {
-        
+    private static final class TcpSender implements Sender
+    {
+
         private final TcpManagerHeadersDecoder tcpHeaders;
         private final MutableDirectBuffer sendBuffer;
         private final int sendBufferOffset;
+        private final long connectionId;
 
-        public TcpSender(TcpManagerHeadersDecoder tcpHeaders, MutableDirectBuffer sendBuffer) {
+        public TcpSender(TcpManagerHeadersDecoder tcpHeaders, MutableDirectBuffer sendBuffer)
+        {
             this.tcpHeaders = tcpHeaders;
 
             this.sendBuffer = sendBuffer;
             this.sendBufferOffset = tcpHeaders.length();
+
+            this.connectionId = tcpHeaders.connectionId();
         }
 
-        public <T extends Flyweight> T wrap(T flyweight) {
-            flyweight.wrap(sendBuffer, sendBufferOffset);
-            return flyweight;
+        public void send(int limit)
+        {
+            tcpHeaders.write(connectionId, sendBuffer, sendBufferOffset, limit - sendBufferOffset);
         }
 
-        public void send(int limit) {
-            tcpHeaders.respond(sendBuffer, sendBufferOffset, limit - sendBufferOffset);
-        }
-
-        public void close(boolean immediately) {
+        public void close(boolean immediately)
+        {
             throw new UnsupportedOperationException();
             // TODO: tcpHeaders.closeConnection(id, immediately);
+        }
+
+        public MutableDirectBuffer getBuffer()
+        {
+            return sendBuffer;
+        }
+
+        public int getOffset()
+        {
+            return sendBufferOffset;
         }
     }
 }

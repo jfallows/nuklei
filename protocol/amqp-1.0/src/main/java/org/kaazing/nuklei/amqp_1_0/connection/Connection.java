@@ -21,42 +21,48 @@ import org.kaazing.nuklei.amqp_1_0.codec.transport.Header;
 import org.kaazing.nuklei.amqp_1_0.codec.transport.Open;
 import org.kaazing.nuklei.amqp_1_0.sender.Sender;
 import org.kaazing.nuklei.amqp_1_0.session.Session;
+import org.kaazing.nuklei.function.AlignedMikro.Storage;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 
-public class Connection<C, S, L> {
-    
+public class Connection<C, S, L>
+{
+
     public final Sender sender;
-    public final MutableDirectBuffer reassemblyBuffer;
+    public final Storage reassemblyStorage;
     public final ConnectionStateMachine<C, S, L> stateMachine;
     public final Int2ObjectHashMap<Session<S, L>> sessions;
-    
+
     public long headerSent;
     public long headerReceived;
 
     public C parameter;
     public ConnectionState state;
 
-    public Connection(ConnectionStateMachine<C, S, L> stateMachine, Sender sender, MutableDirectBuffer reassemblyBuffer) {
+    public Connection(ConnectionStateMachine<C, S, L> stateMachine, Sender sender, MutableDirectBuffer reassemblyBuffer)
+    {
         this.stateMachine = stateMachine;
         this.sender = sender;
-        this.reassemblyBuffer = reassemblyBuffer;
+        this.reassemblyStorage = new Storage(reassemblyBuffer);
         this.sessions = new Int2ObjectHashMap<>();
     }
 
-    public void send(Header header) {
+    public void send(Header header)
+    {
         sender.send(header.limit());
         stateMachine.sent(this, header);
     }
 
-    public void send(Frame frame, Open open) {
+    public void send(Frame frame, Open open)
+    {
         assert open.limit() == frame.limit();
         sender.send(frame.limit());
         stateMachine.sent(this, frame, open);
     }
 
-    public void send(Frame frame, Close close) {
+    public void send(Frame frame, Close close)
+    {
         assert close.limit() == frame.limit();
         sender.send(frame.limit());
         stateMachine.sent(this, frame, close);

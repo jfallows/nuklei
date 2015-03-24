@@ -18,14 +18,7 @@ package org.kaazing.nuklei.amqp_1_0.session;
 /*
  * See AMQP 1.0 specification, section 2.4.7 "Connection State Diagram"
  */
-public enum SessionTransition {
-    RECEIVED_BEGIN,
-    SENT_BEGIN,
-    RECEIVED_FLOW,
-    SENT_FLOW,
-    RECEIVED_DISPOSITION,
-    SENT_DISPOSITION,
-    RECEIVED_END,
-    SENT_END,
-    ERROR
+public enum SessionTransition
+{
+    RECEIVED_BEGIN, SENT_BEGIN, RECEIVED_FLOW, SENT_FLOW, RECEIVED_DISPOSITION, SENT_DISPOSITION, RECEIVED_END, SENT_END, ERROR
 }

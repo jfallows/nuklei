@@ -21,11 +21,14 @@ import java.util.function.ToLongFunction;
 /*
  * See AMQP 1.0 specification, section 3.5.5 "Terminus Durability"
  */
-public enum TerminusDurability {
+public enum TerminusDurability
+{
     NONE, CONFIGURATION, UNSETTLED_STATE;
 
-    public static final LongFunction<TerminusDurability> READ = (long code) -> {
-        switch ((int) code) {
+    public static final LongFunction<TerminusDurability> READ = (long code) ->
+    {
+        switch ((int) code)
+        {
         case 0:
             return TerminusDurability.NONE;
         case 1:
@@ -37,8 +40,10 @@ public enum TerminusDurability {
         }
     };
 
-    public static final ToLongFunction<TerminusDurability> WRITE = (TerminusDurability mode) -> {
-        switch (mode) {
+    public static final ToLongFunction<TerminusDurability> WRITE = (TerminusDurability mode) ->
+    {
+        switch (mode)
+        {
         case NONE:
         case CONFIGURATION:
         case UNSETTLED_STATE:

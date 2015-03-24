@@ -22,20 +22,24 @@ import java.util.function.ToLongFunction;
 import org.kaazing.nuklei.Flyweight;
 import org.kaazing.nuklei.amqp_1_0.codec.types.CompositeType;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /*
  * See AMQP 1.0 specification, section 3.4 "Delivery State"
  */
-public enum Performative {
+public enum Performative
+{
 
     OPEN, BEGIN, ATTACH, FLOW, TRANSFER, DISPOSITION, DETACH, END, CLOSE;
 
-    public static final LongFunction<Performative> READ = new LongFunction<Performative>() {
+    public static final LongFunction<Performative> READ = new LongFunction<Performative>()
+    {
 
         @Override
-        public Performative apply(long value) {
-            switch ((int) value) {
+        public Performative apply(long value)
+        {
+            switch ((int) value)
+            {
             case 0x10:
                 return OPEN;
             case 0x11:
@@ -59,12 +63,15 @@ public enum Performative {
             }
         }
     };
-    
-    public static final ToLongFunction<Performative> WRITE = new ToLongFunction<Performative>() {
+
+    public static final ToLongFunction<Performative> WRITE = new ToLongFunction<Performative>()
+    {
 
         @Override
-        public long applyAsLong(Performative value) {
-            switch (value) {
+        public long applyAsLong(Performative value)
+        {
+            switch (value)
+            {
             case OPEN:
                 return 0x10;
             case BEGIN:
@@ -87,29 +94,34 @@ public enum Performative {
                 throw new IllegalStateException();
             }
         }
-        
+
     };
 
-    public static final class Described extends CompositeType.Described {
+    public static final class Described extends CompositeType.Described
+    {
 
         @Override
-        public Described watch(Consumer<Flyweight> notifier) {
+        public Described watch(Consumer<Flyweight> notifier)
+        {
             super.watch(notifier);
             return this;
         }
-    
+
         @Override
-        public Described wrap(MutableDirectBuffer buffer, int offset) {
-            super.wrap(buffer, offset);
+        public Described wrap(DirectBuffer buffer, int offset, boolean mutable)
+        {
+            super.wrap(buffer, offset, mutable);
             return this;
         }
 
-        public Described setPerformative(Performative value) {
+        public Described setPerformative(Performative value)
+        {
             setDescriptor(WRITE, value);
             return this;
         }
-        
-        public Performative getPerformative() {
+
+        public Performative getPerformative()
+        {
             return getDescriptor(READ);
         }
     }

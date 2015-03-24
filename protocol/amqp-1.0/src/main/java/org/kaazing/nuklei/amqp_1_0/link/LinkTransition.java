@@ -18,12 +18,7 @@ package org.kaazing.nuklei.amqp_1_0.link;
 /*
  * See AMQP 1.0 specification, section 2.6 "Links"
  */
-public enum LinkTransition {
-    RECEIVED_ATTACH,
-    SENT_ATTACH,
-    RECEIVED_TRANSFER,
-    SENT_TRANSFER,
-    RECEIVED_DETACH,
-    SENT_DETACH,
-    ERROR
+public enum LinkTransition
+{
+    RECEIVED_ATTACH, SENT_ATTACH, RECEIVED_TRANSFER, SENT_TRANSFER, RECEIVED_DETACH, SENT_DETACH, ERROR
 }

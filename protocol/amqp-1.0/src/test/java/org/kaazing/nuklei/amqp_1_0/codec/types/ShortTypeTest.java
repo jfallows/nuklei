@@ -37,72 +37,78 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 @RunWith(Theories.class)
-public class ShortTypeTest {
+public class ShortTypeTest
+{
 
     private static final int BUFFER_CAPACITY = 64;
-    
+
     @DataPoint
     public static final int ZERO_OFFSET = 0;
-    
+
     @DataPoint
     public static final int NON_ZERO_OFFSET = new Random().nextInt(BUFFER_CAPACITY - SIZEOF_SHORT - 1) + 1;
 
     private final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
 
     @Theory
-    public void shouldEncode(int offset) {
+    public void shouldEncode(int offset)
+    {
         ShortType shortType = new ShortType();
-        shortType.wrap(buffer, offset);
+        shortType.wrap(buffer, offset, true);
         shortType.set((short) 0x1234);
-        
+
         assertEquals(0x61, uint8Get(buffer, offset));
         assertEquals(0x1234, int16Get(buffer, offset + 1));
     }
-    
+
     @Theory
-    public void shouldDecode(int offset) {
+    public void shouldDecode(int offset)
+    {
         buffer.putByte(offset, (byte) 0x61);
         buffer.putShort(offset + 1, (short) 0x1234, BIG_ENDIAN);
-        
+
         ShortType shortType = new ShortType();
-        shortType.wrap(buffer, offset);
-        
+        shortType.wrap(buffer, offset, true);
+
         assertEquals(0x1234, shortType.get());
         assertEquals(offset + 3, shortType.limit());
     }
-    
+
     @Theory
-    public void shouldEncodeThenDecode(int offset) {
+    public void shouldEncodeThenDecode(int offset)
+    {
         ShortType shortType = new ShortType();
-        shortType.wrap(buffer, offset);
+        shortType.wrap(buffer, offset, true);
         shortType.set((short) 0x1234);
-        
+
         assertEquals(0x1234, shortType.get());
         assertEquals(offset + 3, shortType.limit());
     }
-    
+
     @Theory
     @Test(expected = Exception.class)
-    public void shouldNotDecode(int offset) {
+    public void shouldNotDecode(int offset)
+    {
         buffer.putByte(offset, (byte) 0x00);
-        
+
         ShortType shortType = new ShortType();
-        shortType.wrap(buffer, offset);
+        shortType.wrap(buffer, offset, true);
 
         assertEquals(0, shortType.get());
     }
 
     @Theory
     @SuppressWarnings("unchecked")
-    public void shouldNotifyChanged(int offset) {
+    public void shouldNotifyChanged(int offset)
+    {
         final Consumer<Flyweight> observer = mock(Consumer.class);
-        
+
         ShortType shortType = new ShortType();
         shortType.watch(observer);
-        shortType.wrap(buffer, offset);
+        shortType.wrap(buffer, offset, true);
         shortType.set((short) 0x1234);
-        
+
         verify(observer).accept(shortType);
     }
-    
+
 }
