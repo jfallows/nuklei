@@ -4,7 +4,7 @@
 [![Issue Stats][pull-requests-image]][pull-requests]
 [![Issue Stats][issues-closed-image]][issues-closed]
 
-[build-status-image]: https://travis-ci.org/nuklei-io/nuklei.svg?branch=develop
+[build-status-image]: https://travis-ci.org/kaazing/nuklei.svg?branch=develop
 [build-status]: https://travis-ci.org/nuklei-io/nuklei
 [pull-requests-image]: http://www.issuestats.com/github/nuklei-io/nuklei/badge/pr
 [pull-requests]: http://www.issuestats.com/github/nuklei-io/nuklei
