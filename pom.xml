@@ -40,6 +40,7 @@
         <module>reaktor</module>
         <module>tcp</module>
         <module>echo</module>
+        <module>shell</module>
     </modules>
 
     <build>
