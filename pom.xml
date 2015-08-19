@@ -8,12 +8,12 @@
         <version>2.10</version>
     </parent>
 
-    <artifactId>nuklei-parent</artifactId>
+    <artifactId>nuklei</artifactId>
     <packaging>pom</packaging>
     <version>develop-SNAPSHOT</version>
 
-    <name>Nuklei Parent</name>
-    <description>Micro-services toolkit</description>
+    <name>Nuklei</name>
+    <description>Reactive services toolkit</description>
     <url>https://github.com/kaazing/nuklei.git</url>
 
     <scm>
@@ -26,10 +26,10 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <require.java.version>1.8+</require.java.version>
         <require.maven.version>3.0.4+</require.maven.version>
-        <checkstyle.config.location>../config/checkstyle/checkstyle.xml</checkstyle.config.location>
+        <checkstyle.config.location>../.config/checkstyle/checkstyle.xml</checkstyle.config.location>
 
         <doctitle><![CDATA[<h1>Nuklei</h1>]]></doctitle>
-        <bottom><![CDATA[<i>Copyright &#169; 2014 Kaazing Corporation. All Rights Reserved.</i>]]></bottom>
+        <bottom><![CDATA[<i>Copyright &#169; 2015 Kaazing Corporation. All Rights Reserved.</i>]]></bottom>
 
         <!-- animal sniffer does not yet support Java8, see MANIMALSNIFFER-45 -->
         <animal.sniffer.skip>true</animal.sniffer.skip>
@@ -37,12 +37,9 @@
 
     <modules>
         <module>core</module>
-        <module>benchmarks</module>
-        <module>protocol/tcp</module>
-        <module>protocol/http</module>
-        <module>protocol/ws</module>
-        <module>protocol/amqp-1.0</module>
-        <module>kompound</module>
+        <module>reaktor</module>
+        <module>tcp</module>
+        <module>echo</module>
     </modules>
 
     <build>

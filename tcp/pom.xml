@@ -8,11 +8,11 @@
         <version>develop-SNAPSHOT</version>
     </parent>
 
-    <artifactId>nuklei-core</artifactId>
+    <artifactId>nuklei-tcp</artifactId>
     <packaging>jar</packaging>
 
-    <name>Nuklei Core</name>
-    <description>Core components</description>
+    <name>Nuklei TCP</name>
+    <description>Nukleus for TCP transport</description>
     <url>https://github.com/kaazing/nuklei.git</url>
 
     <scm>
@@ -22,9 +22,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>uk.co.real-logic</groupId>
-            <artifactId>Agrona</artifactId>
-            <version>0.4.2</version>
+            <groupId>org.kaazing</groupId>
+            <artifactId>nuklei-core</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.hamcrest</groupId>

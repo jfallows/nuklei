@@ -1,5 +1,0 @@
-connect tcp://localhost:9876
-connected
-write "hello world"
-close
-closed
