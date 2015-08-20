@@ -1,0 +1,33 @@
+<?xml version="1.0" ?>
+<messageSchema xmlns="http://www.fixprotocol.org/ns/simple/1.0"
+               package="org.kaazing.nuklei.reaktor.control"
+               id="1" >
+
+    <types>
+        <composite name="messageHeader" description="Message identifiers and length of message root">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="templateId" primitiveType="uint16"/>
+            <type name="schemaId" primitiveType="uint16"/>
+            <type name="version" primitiveType="uint16"/>
+        </composite>
+
+        <composite name="groupSize" description="Repeating group dimensions">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="numInGroup" primitiveType="uint8"/>
+        </composite>
+
+        <composite name="string" >
+            <type name="length" primitiveType="uint8" />
+            <type name="characters" primitiveType="char" length="0" characterEncoding="UTF-8" />
+        </composite>
+    </types>
+
+    <message name="DiscoverCommand" id="1" />
+
+    <message name="DiscoverResponse" id="2" >
+        <group name="names" id="1" dimensionType="groupSize" >
+            <field name="name" id="2" type="string" />
+        </group>
+    </message>
+
+</messageSchema>
