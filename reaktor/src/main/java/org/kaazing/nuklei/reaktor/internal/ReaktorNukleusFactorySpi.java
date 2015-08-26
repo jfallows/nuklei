@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.reaktor;
+package org.kaazing.nuklei.reaktor.internal;
 
 import org.kaazing.nuklei.NukleusFactorySpi;
 import org.kaazing.nuklei.Options;

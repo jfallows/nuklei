@@ -14,23 +14,24 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.reaktor;
+package org.kaazing.nuklei.reaktor.internal;
 
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertThat;
+
+import org.junit.Test;
 import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.NukleusFactory;
+import org.kaazing.nuklei.Options;
 
-public final class ReaktorNukleus implements Nukleus
+public class ReaktorNukleusFactorySpiTest
 {
-
-    @Override
-    public void run()
+    @Test
+    public void shouldCreateReaktorNukleus()
     {
-        // TODO Auto-generated method stub
-    }
-
-    @Override
-    public void close() throws Exception
-    {
-        // TODO Auto-generated method stub
+        NukleusFactory factory = NukleusFactory.instantiate();
+        Nukleus nukleus = factory.create("reaktor", new Options());
+        assertThat(nukleus, instanceOf(ReaktorNukleus.class));
     }
 
 }
