@@ -36,7 +36,7 @@
     </properties>
 
     <modules>
-        <module>core</module>
+        <module>common</module>
         <module>reaktor</module>
         <module>tcp</module>
         <module>echo</module>
