@@ -18,7 +18,7 @@ package org.kaazing.nuklei;
 public interface NukleusFactorySpi
 {
 
-    String type();
+    String name();
 
     Nukleus create(Options options);
 }

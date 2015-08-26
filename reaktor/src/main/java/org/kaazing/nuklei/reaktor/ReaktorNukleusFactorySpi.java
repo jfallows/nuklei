@@ -23,7 +23,7 @@ public final class ReaktorNukleusFactorySpi implements NukleusFactorySpi
 {
 
     @Override
-    public String type()
+    public String name()
     {
         return "reaktor";
     }

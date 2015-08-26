@@ -45,7 +45,7 @@ public final class NukleusFactoryTest
         }
 
         @Override
-        public String type()
+        public String name()
         {
             return "test";
         }

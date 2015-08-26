@@ -18,6 +18,7 @@ package org.kaazing.nuklei;
 import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isStatic;
 import static java.util.Collections.unmodifiableMap;
+import static java.util.Objects.requireNonNull;
 import static java.util.ServiceLoader.load;
 
 import java.lang.reflect.InvocationTargetException;
@@ -43,20 +44,26 @@ public final class NukleusFactory
 
     public Nukleus create(String name, Options options)
     {
-        NukleusFactorySpi factorySpi = factorySpisByType.get(name);
+        requireNonNull(name);
+        requireNonNull(options);
+
+        NukleusFactorySpi factorySpi = factorySpisByName.get(name);
         if (factorySpi == null)
         {
             throw new IllegalArgumentException("Unregonized nukleus name: " + name);
         }
+
         return factorySpi.create(options);
     }
 
     private static NukleusFactory instantiate(ServiceLoader<NukleusFactorySpi> factories)
     {
-        Map<String, NukleusFactorySpi> factorySpisByType = new HashMap<>();
-        factories.forEach((factorySpi) -> { factorySpisByType.put(factorySpi.type(), factorySpi); });
-        NukleusFactory factory = new NukleusFactory(unmodifiableMap(factorySpisByType));
-        factorySpisByType.values().forEach((factorySpi) -> { inject(factorySpi, NukleusFactory.class, factory); });
+        Map<String, NukleusFactorySpi> factorySpisByName = new HashMap<>();
+        factories.forEach((factorySpi) -> { factorySpisByName.put(factorySpi.name(), factorySpi); });
+
+        NukleusFactory factory = new NukleusFactory(unmodifiableMap(factorySpisByName));
+        factorySpisByName.values().forEach((factorySpi) -> { inject(factorySpi, NukleusFactory.class, factory); });
+
         return factory;
     }
 
@@ -108,10 +115,10 @@ public final class NukleusFactory
         }
     }
 
-    private final Map<String, NukleusFactorySpi> factorySpisByType;
+    private final Map<String, NukleusFactorySpi> factorySpisByName;
 
-    private NukleusFactory(Map<String, NukleusFactorySpi> factorySpisByType)
+    private NukleusFactory(Map<String, NukleusFactorySpi> factorySpisByName)
     {
-        this.factorySpisByType = factorySpisByType;
+        this.factorySpisByName = factorySpisByName;
     }
 }
