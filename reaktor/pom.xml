@@ -23,7 +23,7 @@
     <dependencies>
         <dependency>
             <groupId>org.kaazing</groupId>
-            <artifactId>nuklei-common</artifactId>
+            <artifactId>nuklei-api</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

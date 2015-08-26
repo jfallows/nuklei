@@ -13,12 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.common;
+package org.kaazing.nuklei;
 
-public interface NukleusFactorySpi
+import java.io.File;
+
+public class Options
 {
 
-    String type();
+    private File configDir;
 
-    Nukleus create(Options options);
+    public void configDir(File configDir)
+    {
+        this.configDir = configDir;
+    }
+
+    public File configDir()
+    {
+        return configDir;
+    }
+
 }

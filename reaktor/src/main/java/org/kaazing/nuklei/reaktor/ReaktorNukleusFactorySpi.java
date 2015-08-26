@@ -16,8 +16,8 @@
 
 package org.kaazing.nuklei.reaktor;
 
-import org.kaazing.nuklei.common.NukleusFactorySpi;
-import org.kaazing.nuklei.common.Options;
+import org.kaazing.nuklei.NukleusFactorySpi;
+import org.kaazing.nuklei.Options;
 
 public final class ReaktorNukleusFactorySpi implements NukleusFactorySpi
 {

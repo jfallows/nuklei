@@ -8,11 +8,11 @@
         <version>develop-SNAPSHOT</version>
     </parent>
 
-    <artifactId>nuklei-common</artifactId>
+    <artifactId>nuklei-api</artifactId>
     <packaging>jar</packaging>
 
-    <name>Nuklei Common</name>
-    <description>Common components</description>
+    <name>Nuklei API</name>
+    <description>Nuklei API</description>
     <url>https://github.com/kaazing/nuklei.git</url>
 
     <scm>

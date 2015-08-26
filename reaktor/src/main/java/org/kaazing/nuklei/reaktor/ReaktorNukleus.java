@@ -16,7 +16,7 @@
 
 package org.kaazing.nuklei.reaktor;
 
-import org.kaazing.nuklei.common.Nukleus;
+import org.kaazing.nuklei.Nukleus;
 
 public final class ReaktorNukleus implements Nukleus
 {
