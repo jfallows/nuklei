@@ -42,7 +42,7 @@ public final class NukleusFactory
         return instantiate(load(NukleusFactorySpi.class, classLoader));
     }
 
-    public Nukleus create(String name, Options options)
+    public Nukleus create(String name, Configuration options)
     {
         requireNonNull(name);
         requireNonNull(options);

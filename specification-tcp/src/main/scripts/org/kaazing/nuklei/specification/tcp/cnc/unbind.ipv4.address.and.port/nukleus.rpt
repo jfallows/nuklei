@@ -1,0 +1,22 @@
+property cncNew ${cnc:mapNew("target/cnc", 1024, 1024)}
+
+accept agrona://stream/bidirectional
+       option reader ${agrona:manyToOneReader(cncNew.nukleus)}
+       option writer ${agrona:broadcastTransmitter(cncNew.controller)}
+
+accepted
+connected
+
+read ([0..4]:correlation)
+read [0x02]
+read [0x07] "nukleus"
+read [0x00 0x00 0x00 0x01]
+
+write ${correlation}
+write [0x82]
+write [0x06] "source"
+write [0x00 0x00 0x00 0x00]
+write [0x0b] "destination"
+write [0x01] [0x7f 0x00 0x00 0x01]
+write [0x1f 0x90]
+write flush

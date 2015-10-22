@@ -20,5 +20,5 @@ public interface NukleusFactorySpi
 
     String name();
 
-    Nukleus create(Options options);
+    Nukleus create(Configuration options);
 }

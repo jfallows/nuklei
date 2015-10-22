@@ -30,7 +30,7 @@ public final class NukleusFactoryTest
     public void shouldLoadAndInject() throws IOException
     {
         NukleusFactory factory = NukleusFactory.instantiate();
-        TestNukleus nukleus = (TestNukleus) factory.create("test", new Options());
+        TestNukleus nukleus = (TestNukleus) factory.create("test", new Configuration());
         assertSame(factory, nukleus.factory());
     }
 
@@ -51,7 +51,7 @@ public final class NukleusFactoryTest
         }
 
         @Override
-        public Nukleus create(Options options)
+        public Nukleus create(Configuration options)
         {
             return new TestNukleus(factory);
         }
@@ -73,13 +73,14 @@ public final class NukleusFactoryTest
         }
 
         @Override
-        public void run()
+        public int doWork()
         {
             // no-op
+            return 0;
         }
 
         @Override
-        public void close() throws Exception
+        public void onClose() throws Exception
         {
             // no-op
         }

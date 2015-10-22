@@ -4,15 +4,15 @@
 
     <parent>
         <groupId>org.kaazing</groupId>
-        <artifactId>nuklei</artifactId>
+        <artifactId>nuklei-specification</artifactId>
         <version>develop-SNAPSHOT</version>
     </parent>
 
-    <artifactId>nuklei-echo</artifactId>
+    <artifactId>nuklei-specification-tcp</artifactId>
     <packaging>jar</packaging>
 
-    <name>Nuklei Echo</name>
-    <description>Nukleus for Echo service</description>
+    <name>Nuklei Specification for TCP</name>
+    <description>Nuklei Specification for TCP Nukleus</description>
     <url>https://github.com/kaazing/nuklei.git</url>
 
     <scm>
@@ -25,6 +25,11 @@
             <groupId>org.kaazing</groupId>
             <artifactId>nuklei-api</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kaazing</groupId>
+            <artifactId>k3po.junit</artifactId>
+            <version>${k3po.version}</version>
         </dependency>
         <dependency>
             <groupId>org.hamcrest</groupId>
@@ -53,6 +58,14 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>src/main/scripts</directory>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

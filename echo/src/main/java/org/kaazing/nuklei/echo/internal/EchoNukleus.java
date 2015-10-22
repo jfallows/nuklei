@@ -13,19 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei;
+package org.kaazing.nuklei.echo.internal;
 
-@FunctionalInterface
-public interface Nukleus
+import org.kaazing.nuklei.Nukleus;
+
+final class EchoNukleus implements Nukleus
 {
-    int doWork() throws Exception;
+    private final Conductor conductor;
 
-    default void onClose() throws Exception
+    EchoNukleus(Context context)
     {
+        this.conductor = new Conductor(context);
     }
 
-    default String name()
+    @Override
+    public int doWork() throws Exception
     {
-        return null;
+        int workCount = 0;
+
+        workCount += conductor.doWork();
+
+        return workCount;
+    }
+
+    @Override
+    public String name()
+    {
+        return "echo";
     }
 }

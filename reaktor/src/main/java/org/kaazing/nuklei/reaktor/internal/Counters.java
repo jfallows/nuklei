@@ -13,19 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei;
 
-@FunctionalInterface
-public interface Nukleus
+package org.kaazing.nuklei.reaktor.internal;
+
+import uk.co.real_logic.agrona.concurrent.AtomicCounter;
+import uk.co.real_logic.agrona.concurrent.CountersManager;
+
+public final class Counters implements AutoCloseable
 {
-    int doWork() throws Exception;
+    private final AtomicCounter example;
 
-    default void onClose() throws Exception
+    Counters(CountersManager countersManager)
     {
+        example = countersManager.newCounter("example");
     }
 
-    default String name()
+    @Override
+    public void close() throws Exception
     {
-        return null;
+        example.close();
+    }
+
+    public AtomicCounter example()
+    {
+        return example;
     }
 }

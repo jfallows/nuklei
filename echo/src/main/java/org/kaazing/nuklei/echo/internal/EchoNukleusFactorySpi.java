@@ -13,19 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei;
 
-@FunctionalInterface
-public interface Nukleus
+package org.kaazing.nuklei.echo.internal;
+
+import org.kaazing.nuklei.Configuration;
+import org.kaazing.nuklei.NukleusFactorySpi;
+
+public final class EchoNukleusFactorySpi implements NukleusFactorySpi
 {
-    int doWork() throws Exception;
 
-    default void onClose() throws Exception
+    @Override
+    public String name()
     {
+        return "echo";
     }
 
-    default String name()
+    @Override
+    public EchoNukleus create(Configuration options)
     {
-        return null;
+        return new EchoNukleus(new Context());
     }
+
 }

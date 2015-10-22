@@ -13,19 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei;
 
-@FunctionalInterface
-public interface Nukleus
+package org.kaazing.nuklei.echo.internal;
+
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertThat;
+
+import org.junit.Test;
+import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.NukleusFactory;
+import org.kaazing.nuklei.Configuration;
+
+public class EchoNukleusFactorySpiTest
 {
-    int doWork() throws Exception;
-
-    default void onClose() throws Exception
+    @Test
+    public void shouldCreateEchoNukleus()
     {
+        NukleusFactory factory = NukleusFactory.instantiate();
+        Nukleus nukleus = factory.create("echo", new Configuration());
+        assertThat(nukleus, instanceOf(EchoNukleus.class));
     }
 
-    default String name()
-    {
-        return null;
-    }
 }

@@ -33,6 +33,7 @@
 
         <!-- animal sniffer does not yet support Java8, see MANIMALSNIFFER-45 -->
         <animal.sniffer.skip>true</animal.sniffer.skip>
+        <k3po.version>3.0.0-alpha-1</k3po.version>
     </properties>
 
     <modules>
@@ -41,11 +42,28 @@
         <module>tcp</module>
         <module>echo</module>
         <module>shell</module>
+        <module>specification-tcp</module>
     </modules>
 
     <build>
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>org.kaazing</groupId>
+                    <artifactId>k3po-maven-plugin</artifactId>
+                    <version>${k3po.version}</version>
+                    <configuration>
+                        <skipTests>${skipITs}</skipTests>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>start</goal>
+                                <goal>stop</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
