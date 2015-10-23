@@ -42,10 +42,10 @@ public final class NukleusFactory
         return instantiate(load(NukleusFactorySpi.class, classLoader));
     }
 
-    public Nukleus create(String name, Configuration options)
+    public Nukleus create(String name, Configuration config)
     {
         requireNonNull(name);
-        requireNonNull(options);
+        requireNonNull(config);
 
         NukleusFactorySpi factorySpi = factorySpisByName.get(name);
         if (factorySpi == null)
@@ -53,7 +53,7 @@ public final class NukleusFactory
             throw new IllegalArgumentException("Unregonized nukleus name: " + name);
         }
 
-        return factorySpi.create(options);
+        return factorySpi.create(config);
     }
 
     private static NukleusFactory instantiate(ServiceLoader<NukleusFactorySpi> factories)

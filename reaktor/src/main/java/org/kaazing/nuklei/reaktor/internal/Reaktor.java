@@ -18,12 +18,9 @@ package org.kaazing.nuklei.reaktor.internal;
 
 import static uk.co.real_logic.agrona.LangUtil.rethrowUnchecked;
 
-import java.io.File;
-
 import org.kaazing.nuklei.Configuration;
 
 import uk.co.real_logic.agrona.ErrorHandler;
-import uk.co.real_logic.agrona.Verify;
 import uk.co.real_logic.agrona.concurrent.AgentRunner;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
@@ -36,14 +33,9 @@ public final class Reaktor implements AutoCloseable
     private final Context context;
     private final AgentRunner runner;
 
-    private Reaktor(Context context)
+    private Reaktor(Configuration config)
     {
-        this.context = context;
-
-        File controlDir = Configuration.directory();
-        Verify.notNull(controlDir, "controlDir");
-
-        context.conclude();
+        this.context = new Context().conclude(config);
 
         IdleStrategy idleStrategy = context.idleStrategy();
         ErrorHandler errorHandler = context.errorHandler();
@@ -78,14 +70,14 @@ public final class Reaktor implements AutoCloseable
         }
     }
 
-    public static Reaktor launch(final Context ctx)
+    public static Reaktor launch(final Configuration config)
     {
-        return new Reaktor(ctx).start();
+        return new Reaktor(config).start();
     }
 
     public static Reaktor launch()
     {
-        return launch(new Context());
+        return launch(new Configuration());
     }
 
     public static void main(final String[] args) throws Exception

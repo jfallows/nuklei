@@ -1,5 +1,4 @@
-property cnc ${cnc:map("target/cnc", 1024, 1024)}
-property nextCorrelation [0x01 0x02 0x03 0x04] # TODO: use broadcast next correlation
+property cnc ${cnc:map("target/nukleus-itests/tcp/cnc", 1024, 1024)}
 
 connect agrona://stream/bidirectional
         option reader ${agrona:broadcastReceiver(cnc.controller)}
@@ -7,8 +6,8 @@ connect agrona://stream/bidirectional
 
 connected
 
-write ${nextCorrelation}
-write [0x01]
+write [0x00 0x00 0x00 0x01]
+write ${cnc.nextCorrelationId()}
 write [0x06] "source"
 write [0x00 0x00 0x00 0x00]
 write [0x0b] "destination"
@@ -16,7 +15,8 @@ write [0x01] [0x7f 0x00 0x00 0x01]
 write [0x1f 0x90]
 write flush
 
-read ${nextCorrelation}
-read [0x81]
+read [0x40 0x00 0x00 0x01]
+read ${cnc.correlationId()}
 read [0x07] "nukleus"
 read [0x00 0x00 0x00 0x01]
+

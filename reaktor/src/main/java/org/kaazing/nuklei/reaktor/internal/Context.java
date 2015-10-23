@@ -23,6 +23,8 @@ import static uk.co.real_logic.agrona.LangUtil.rethrowUnchecked;
 import java.io.File;
 import java.nio.MappedByteBuffer;
 
+import org.kaazing.nuklei.Configuration;
+
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.CountersManager;
@@ -30,8 +32,6 @@ import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
-
-import static org.kaazing.nuklei.Configuration.*;
 
 public final class Context implements AutoCloseable
 {
@@ -123,23 +123,23 @@ public final class Context implements AutoCloseable
         return countersManager;
     }
 
-    public Context conclude()
+    public Context conclude(Configuration config)
     {
         try
         {
             cncByteBuffer = mapNewFile(
                     cncFile(),
                     CncFileDescriptor.computeCncFileLength(
-                        CONDUCTOR_BUFFER_LENGTH + BROADCAST_BUFFER_LENGTH +
-                        COUNTER_LABELS_BUFFER_LENGTH + COUNTER_VALUES_BUFFER_LENGTH));
+                        config.conductorBufferLength() + config.broadcastBufferLength() +
+                        config.counterLabelsBufferLength() + config.counterValuesBufferLength()));
 
             cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
             CncFileDescriptor.fillMetaData(
                 cncMetaDataBuffer,
-                CONDUCTOR_BUFFER_LENGTH,
-                BROADCAST_BUFFER_LENGTH,
-                COUNTER_LABELS_BUFFER_LENGTH,
-                COUNTER_VALUES_BUFFER_LENGTH);
+                config.conductorBufferLength(),
+                config.broadcastBufferLength(),
+                config.counterLabelsBufferLength(),
+                config.counterValuesBufferLength());
 
             toConductorCommands(
                     new ManyToOneRingBuffer(CncFileDescriptor.createToConductorBuffer(cncByteBuffer, cncMetaDataBuffer)));

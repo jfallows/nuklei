@@ -1,4 +1,4 @@
-property cncNew ${cnc:mapNew("target/cnc", 1024, 1024)}
+property cncNew ${cnc:mapNew("target/nukleus-itests/tcp/cnc", 1024, 1024)}
 
 accept agrona://stream/bidirectional
        option reader ${agrona:manyToOneReader(cncNew.nukleus)}
@@ -7,16 +7,17 @@ accept agrona://stream/bidirectional
 accepted
 connected
 
-read ([0..4]:correlation)
-read [0x01]
+read [0x00 0x00 0x00 0x01]
+read ([0..8]:correlation)
 read [0x06] "source"
 read [0x00 0x00 0x00 0x00]
 read [0x0b] "destination"
 read [0x01] [0x7f 0x00 0x00 0x01]
 read [0x1f 0x90]
 
+write [0x40 0x00 0x00 0x01]
 write ${correlation}
-write [0x81]
 write [0x07] "nukleus"
 write [0x00 0x00 0x00 0x01]
 write flush
+

@@ -28,54 +28,132 @@ import org.kaazing.k3po.lang.el.spi.FunctionMapperSpi;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 public final class Functions
 {
 
+    // TODO: compute with alignment
+    private static final int META_DATA_LENGTH = 64;
+
     @Function
     public static Layout mapNew(String filename, int ringCapacity, int broadcastCapacity)
     {
-        return map(filename, ringCapacity, broadcastCapacity, true);
+        return new EagerLayout(true, new File(filename), ringCapacity, broadcastCapacity);
     }
 
     @Function
     public static Layout map(String filename, int ringCapacity, int broadcastCapacity)
     {
-        return map(filename, ringCapacity, broadcastCapacity, false);
+        return new DeferredLayout(false, new File(filename), ringCapacity, broadcastCapacity);
     }
 
-    private static Layout map(String filename, int ringCapacity, int broadcastCapacity, boolean create)
+    private abstract static class Layout
     {
-        File location = new File(filename);
-        int totalRingLength = ringCapacity + RingBufferDescriptor.TRAILER_LENGTH;
-        int totalBroadcastLength = broadcastCapacity + BroadcastBufferDescriptor.TRAILER_LENGTH;
-        MappedByteBuffer buffer = create ? mapNewFile(location, totalRingLength + totalBroadcastLength)
-                                         : mapExistingFile(location, filename);
-        AtomicBuffer ring = new UnsafeBuffer(buffer, 0, totalRingLength);
-        AtomicBuffer broadcast = new UnsafeBuffer(buffer, totalRingLength, totalBroadcastLength);
-        return new Layout(ring, broadcast);
+        private long correlationId;
+
+        public abstract AtomicBuffer getNukleus();
+
+        public abstract AtomicBuffer getController();
+
+        public final long nextCorrelationId()
+        {
+            RingBuffer ring = new ManyToOneRingBuffer(getNukleus());
+            correlationId = ring.nextCorrelationId();
+            return correlationId;
+        }
+
+        public final long correlationId()
+        {
+            return correlationId;
+        }
+
     }
 
-    public static final class Layout
+    public static final class EagerLayout extends Layout
     {
         private final AtomicBuffer nukleus;
         private final AtomicBuffer controller;
 
-        public Layout(AtomicBuffer ring, AtomicBuffer broadcast)
+        public EagerLayout(
+                boolean overwrite,
+                File location,
+                int ringCapacity,
+                int broadcastCapacity)
         {
-            this.nukleus = ring;
-            this.controller = broadcast;
+            File absolute = location.getAbsoluteFile();
+            int metaLength = META_DATA_LENGTH;
+            int ringLength = ringCapacity + RingBufferDescriptor.TRAILER_LENGTH;
+            int broadcastLength = broadcastCapacity + BroadcastBufferDescriptor.TRAILER_LENGTH;
+            MappedByteBuffer buffer = overwrite
+                    ? mapNewFile(absolute, metaLength + ringLength + broadcastLength)
+                    : mapExistingFile(absolute, location.getAbsolutePath());
+            this.nukleus = new UnsafeBuffer(buffer, metaLength, ringLength);
+            this.controller = new UnsafeBuffer(buffer, metaLength + ringLength, broadcastLength);
         }
 
+        @Override
         public AtomicBuffer getNukleus()
         {
             return nukleus;
         }
 
+        @Override
         public AtomicBuffer getController()
         {
             return controller;
+        }
+
+    }
+
+    public static final class DeferredLayout extends Layout
+    {
+        private final boolean overwrite;
+        private final File location;
+        private final int ringCapacity;
+        private final int broadcastCapacity;
+
+        private boolean initialized;
+        private AtomicBuffer nukleus;
+        private AtomicBuffer controller;
+
+        public DeferredLayout(
+            boolean overwrite,
+            File location,
+            int ringCapacity,
+            int broadcastCapacity)
+        {
+            this.overwrite = overwrite;
+            this.location = location;
+            this.ringCapacity = ringCapacity;
+            this.broadcastCapacity = broadcastCapacity;
+        }
+
+        @Override
+        public AtomicBuffer getNukleus()
+        {
+            ensureInitialized();
+            return nukleus;
+        }
+
+        @Override
+        public AtomicBuffer getController()
+        {
+            ensureInitialized();
+            return controller;
+        }
+
+        void ensureInitialized()
+        {
+            if (!initialized)
+            {
+                EagerLayout layout = new EagerLayout(overwrite, location, ringCapacity, broadcastCapacity);
+                this.nukleus = layout.getNukleus();
+                this.controller = layout.getController();
+                this.initialized = true;
+            }
         }
     }
 

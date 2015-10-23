@@ -23,7 +23,17 @@
     <dependencies>
         <dependency>
             <groupId>org.kaazing</groupId>
-            <artifactId>nuklei-core</artifactId>
+            <artifactId>nuklei-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kaazing</groupId>
+            <artifactId>k3po.junit</artifactId>
+            <version>${k3po.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kaazing</groupId>
+            <artifactId>nuklei-specification-tcp</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.echo.internal;
+package org.kaazing.nuklei.tcp.internal;
 
 import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
 import static uk.co.real_logic.agrona.IoUtil.unmap;
@@ -30,6 +30,7 @@ import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.CountersManager;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
@@ -42,9 +43,10 @@ public final class Context implements AutoCloseable
     private AtomicBuffer counterLabelsBuffer;
     private AtomicBuffer counterValuesBuffer;
     private Counters counters;
-    private RingBuffer toConductorCommands;
+    private RingBuffer toNukleusCommands;
     private MappedByteBuffer cncByteBuffer;
     private UnsafeBuffer cncMetaDataBuffer;
+    private BroadcastTransmitter toControllerResponses;
 
     public Context cncFile(File cncFile)
     {
@@ -101,15 +103,26 @@ public final class Context implements AutoCloseable
         return counterValuesBuffer;
     }
 
-    public Context toConductorCommands(RingBuffer toConductorCommands)
+    public Context toNukleusCommands(RingBuffer toNukleusCommands)
     {
-        this.toConductorCommands = toConductorCommands;
+        this.toNukleusCommands = toNukleusCommands;
         return this;
     }
 
-    public RingBuffer toConductorCommands()
+    public RingBuffer toNukleusCommands()
     {
-        return toConductorCommands;
+        return toNukleusCommands;
+    }
+
+    public Context toControllerResponses(BroadcastTransmitter toControllerResponses)
+    {
+        this.toControllerResponses = toControllerResponses;
+        return this;
+    }
+
+    public BroadcastTransmitter toControllerResponses()
+    {
+        return toControllerResponses;
     }
 
     public Context countersManager(CountersManager countersManager)
@@ -127,6 +140,7 @@ public final class Context implements AutoCloseable
     {
         try
         {
+            System.out.println("Context: " + cncFile().getAbsolutePath());
             cncByteBuffer = mapNewFile(
                     cncFile(),
                     CncFileDescriptor.computeCncFileLength(
@@ -141,8 +155,11 @@ public final class Context implements AutoCloseable
                 config.counterLabelsBufferLength(),
                 config.counterValuesBufferLength());
 
-            toConductorCommands(
-                    new ManyToOneRingBuffer(CncFileDescriptor.createToConductorBuffer(cncByteBuffer, cncMetaDataBuffer)));
+            toNukleusCommands(
+                    new ManyToOneRingBuffer(CncFileDescriptor.createToNukleusBuffer(cncByteBuffer, cncMetaDataBuffer)));
+
+            toControllerResponses(
+                    new BroadcastTransmitter(CncFileDescriptor.createToControllerBuffer(cncByteBuffer, cncMetaDataBuffer)));
 
             concludeCounters();
         }
