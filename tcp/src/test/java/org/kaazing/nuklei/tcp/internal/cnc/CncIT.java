@@ -16,19 +16,8 @@
 
 package org.kaazing.nuklei.tcp.internal.cnc;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
 import static org.junit.rules.RuleChain.outerRule;
-import static org.kaazing.nuklei.Configuration.BROADCAST_BUFFER_LENGTH_PROPERTY_NAME;
-import static org.kaazing.nuklei.Configuration.CONDUCTOR_BUFFER_LENGTH_PROPERTY_NAME;
-import static org.kaazing.nuklei.Configuration.COUNTER_VALUES_BUFFER_LENGTH_PROPERTY_NAME;
-import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
-
-import java.io.File;
-import java.util.Properties;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,27 +26,25 @@ import org.junit.rules.TestRule;
 import org.junit.rules.Timeout;
 import org.kaazing.k3po.junit.annotation.Specification;
 import org.kaazing.k3po.junit.rules.K3poRule;
-import org.kaazing.nuklei.Configuration;
-import org.kaazing.nuklei.Nukleus;
-import org.kaazing.nuklei.NukleusFactory;
+import org.kaazing.nuklei.tcp.internal.NukleusRule;
 
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.SleepingIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 public class CncIT
 {
-    private static final int CONDUCTOR_BUFFER_LENGTH = 1024 + RingBufferDescriptor.TRAILER_LENGTH;
-    private static final int BROADCAST_BUFFER_LENGTH = 1024 + BroadcastBufferDescriptor.TRAILER_LENGTH;
-    private static final int COUNTER_VALUES_BUFFER_LENGTH = 1024;
-
     private final K3poRule k3po = new K3poRule().setScriptRoot("org/kaazing/nuklei/specification/tcp/cnc");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
+    private final NukleusRule nukleus = new NukleusRule("tcp")
+            .setDirectory("target/nukleus-itests")
+            .setConductorBufferLength(1024 + RingBufferDescriptor.TRAILER_LENGTH)
+            .setBroadcastBufferLength(1024 + BroadcastBufferDescriptor.TRAILER_LENGTH)
+            .setCounterValuesBufferLength(1024);
+
     @Rule
-    public final TestRule chain = outerRule(k3po).around(timeout);
+    public final TestRule chain = outerRule(k3po).around(timeout).around(nukleus);
 
     @Test
     @Specification({
@@ -65,45 +52,7 @@ public class CncIT
     })
     public void shouldBindIPv4AddressAndPort() throws Exception
     {
-        System.out.println("CncIT: cwd = " + new File(".").getAbsolutePath());
-
-        // TODO: JUnit Rule setup
-        Properties properties = new Properties();
-        properties.setProperty(DIRECTORY_PROPERTY_NAME, "target/nukleus-itests/");
-        properties.setProperty(CONDUCTOR_BUFFER_LENGTH_PROPERTY_NAME, Integer.toString(CONDUCTOR_BUFFER_LENGTH));
-        properties.setProperty(BROADCAST_BUFFER_LENGTH_PROPERTY_NAME, Integer.toString(BROADCAST_BUFFER_LENGTH));
-        properties.setProperty(COUNTER_VALUES_BUFFER_LENGTH_PROPERTY_NAME, Integer.toString(COUNTER_VALUES_BUFFER_LENGTH));
-        NukleusFactory factory = NukleusFactory.instantiate();
-        Configuration config = new Configuration(properties);
-        Nukleus nukleus = factory.create("tcp", config);
-        final AtomicBoolean finished = new AtomicBoolean();
-        final AtomicInteger errorCount = new AtomicInteger();
-        final IdleStrategy idler = new SleepingIdleStrategy(MILLISECONDS.toNanos(50L));
-        Runnable runnable = () ->
-        {
-            while (!finished.get())
-            {
-                try
-                {
-                    int workCount = nukleus.doWork();
-                    idler.idle(workCount);
-                }
-                catch (Exception e)
-                {
-                    errorCount.incrementAndGet();
-                }
-            }
-        };
-        Thread caller = new Thread(runnable);
-        caller.start();
-
         k3po.finish();
-
-        // TODO: JUnit Rule tear down
-        finished.set(true);
-        caller.join();
-
-        assertEquals(0, errorCount.get());
     }
 
     @Test
