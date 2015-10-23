@@ -11,8 +11,8 @@
     <artifactId>nuklei-specification-tcp</artifactId>
     <packaging>jar</packaging>
 
-    <name>Nuklei Specification for TCP</name>
-    <description>Nuklei Specification for TCP Nukleus</description>
+    <name>Nuklei TCP Specification</name>
+    <description>Nuklei TCP Specification</description>
     <url>https://github.com/kaazing/nuklei.git</url>
 
     <scm>

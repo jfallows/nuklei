@@ -19,6 +19,7 @@ package org.kaazing.nuklei.tcp.internal.cnc;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.DisableOnDebug;
@@ -33,7 +34,8 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 public class CncIT
 {
-    private final K3poRule k3po = new K3poRule().setScriptRoot("org/kaazing/nuklei/specification/tcp/cnc");
+    private final K3poRule k3po = new K3poRule()
+            .setScriptRoot("org/kaazing/nuklei/specification/tcp/cnc");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
@@ -58,8 +60,8 @@ public class CncIT
     @Test
     @Specification({
         "unbind.ipv4.address.and.port/controller",
-        "unbind.ipv4.address.and.port/nukleus"
     })
+    @Ignore("not yet implemented")
     public void shouldUnbindIPv4AddressAndPort() throws Exception
     {
         k3po.finish();
