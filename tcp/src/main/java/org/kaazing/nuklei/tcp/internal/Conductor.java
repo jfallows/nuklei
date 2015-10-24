@@ -16,17 +16,20 @@
 
 package org.kaazing.nuklei.tcp.internal;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
+import java.net.Inet4Address;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 
 import org.kaazing.nuklei.tcp.internal.state.Binding;
 import org.kaazing.nuklei.tcp.internal.state.BindingHooks;
 import org.kaazing.nuklei.tcp.internal.state.BindingStateMachine;
-import org.kaazing.nuklei.tcp.internal.types.StringRO;
-import org.kaazing.nuklei.tcp.internal.types.StringRW;
 import org.kaazing.nuklei.tcp.internal.types.control.BindRO;
+import org.kaazing.nuklei.tcp.internal.types.control.BindingRO;
 import org.kaazing.nuklei.tcp.internal.types.control.BoundRW;
 import org.kaazing.nuklei.tcp.internal.types.control.UnbindRO;
+import org.kaazing.nuklei.tcp.internal.types.control.UnboundRW;
 
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.Agent;
@@ -37,10 +40,13 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 public final class Conductor implements Agent
 {
-    private static final int SEND_BUFFER_CAPACITY = 1024;
+    private static final int SEND_BUFFER_CAPACITY = 1024; // TODO: Configuration and Context
+
+    private final BindingRO bindingRO = new BindingRO();
     private final BindRO bindRO = new BindRO();
     private final BoundRW boundRW = new BoundRW();
-    private final StringRO nukleusRO = new StringRW().wrap(new UnsafeBuffer(new byte[4]), 0).set("tcp", UTF_8).asReadOnly();
+    private final UnbindRO unbindRO = new UnbindRO();
+    private final UnboundRW unboundRW = new UnboundRW();
 
     private final RingBuffer toNukleusCommands;
     private final MessageHandler onNukleusCommandFunc;
@@ -58,6 +64,7 @@ public final class Conductor implements Agent
         this.toControllerResponses = context.toControllerResponses();
 
         BindingHooks bindingHooks = new BindingHooks();
+        bindingHooks.whenInitialized = this::whenInitialized;
         bindingHooks.whenBindReceived = this::whenBindReceived;
         bindingHooks.whenUnbindReceived = this::whenUnbindReceived;
         this.machine = new BindingStateMachine(bindingHooks);
@@ -88,38 +95,71 @@ public final class Conductor implements Agent
         case 0x00000001:
             onNukleusBind(buffer, index, length);
             break;
+        case 0x00000002:
+            onNukleusUnbind(buffer, index, length);
+            break;
         default:
             // ignore unrecognized commands
             break;
         }
     }
 
-    private void onNukleusBind(MutableDirectBuffer buffer, int index, int length)
+    private void onNukleusBind(DirectBuffer buffer, int index, int length)
     {
         bindRO.wrap(buffer, index, index + length);
-        Binding newBinding = new Binding();
+
+        Binding newBinding = new Binding(0x01L); // TODO: increment
         machine.start(newBinding);
         machine.received(newBinding, bindRO);
     }
 
+    private void onNukleusUnbind(DirectBuffer buffer, int index, int length)
+    {
+        unbindRO.wrap(buffer, index, index + length);
+        Binding binding = bindings.get(unbindRO.bindingRef());
+        // TODO: default binding when not found
+        machine.received(binding, unbindRO);
+    }
+
+    private void whenInitialized(Binding binding)
+    {
+        bindings.put(binding.reference(), binding);
+    }
+
     private void whenBindReceived(Binding binding, BindRO bind)
     {
-        binding.correlationId = bind.correlationId();
-        binding.reference = 0x01L;  // TODO: increment (when initialized?)
+        BindingRO bindingRO = bind.binding();
 
-        bindings.put(binding.reference, binding);
+        binding.binding(bindingRO);
 
         // TODO: perform actual Socket bind
+        try
+        {
+            byte[] addr = new byte[4];
+            bindingRO.address().ipv4Address().getBytes(0, addr);
+            InetSocketAddress localAddress = new InetSocketAddress(Inet4Address.getByAddress(addr), bindingRO.port());
+            System.out.println("BIND REQUEST: " + localAddress);
+        }
+        catch (UnknownHostException e)
+        {
+            e.printStackTrace();
+        }
 
         boundRW.wrap(sendBuffer, 0)
-               .correlationId(binding.correlationId)
-               .destination(nukleusRO)
-               .bindingRef(binding.reference);
+               .correlationId(bind.correlationId())
+               .bindingRef(binding.reference());
 
         toControllerResponses.transmit(0x40000001, boundRW.buffer(), boundRW.offset(), boundRW.remaining());
     }
 
-    private void whenUnbindReceived(Binding binding, UnbindRO bind)
+    private void whenUnbindReceived(Binding binding, UnbindRO unbind)
     {
+        // TODO: perform actual Socket unbind
+
+        unboundRW.wrap(sendBuffer, 0)
+                 .correlationId(unbind.correlationId())
+                 .binding(bindingRO.wrap(binding.buffer(), binding.offset(), binding.limit()));
+
+        toControllerResponses.transmit(0x40000002, unboundRW.buffer(), unboundRW.offset(), unboundRW.remaining());
     }
 }

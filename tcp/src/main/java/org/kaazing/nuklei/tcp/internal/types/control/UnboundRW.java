@@ -16,38 +16,34 @@
 
 package org.kaazing.nuklei.tcp.internal.types.control;
 
-import org.kaazing.nuklei.tcp.internal.types.StringRW;
-
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public final class UnboundRW extends UnboundType<MutableDirectBuffer>
 {
-    private final StringRW source = new StringRW();
-    private final StringRW destination = new StringRW();
-    private final AddressRW address = new AddressRW();
+    private final BindingRW binding = new BindingRW();
 
     public UnboundRW wrap(MutableDirectBuffer buffer, int offset)
     {
         super.wrap(buffer, offset);
+
         return this;
     }
 
     @Override
-    public StringRW source()
+    public BindingRW binding()
     {
-        return source;
+        return binding;
     }
 
-    @Override
-    public StringRW destination()
+    public UnboundRW correlationId(long correlationId)
     {
-        return destination;
+        buffer().putLong(offset() + FIELD_OFFSET_CORRELATION_ID, correlationId);
+        return this;
     }
 
-    @Override
-    public AddressRW address()
+    public UnboundRW binding(BindingRO binding)
     {
-        return address;
+        this.binding.wrap(buffer(), offset() + FIELD_OFFSET_BINDING, binding);
+        return this;
     }
-
 }

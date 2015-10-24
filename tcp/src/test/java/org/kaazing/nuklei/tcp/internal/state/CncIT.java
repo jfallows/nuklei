@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.cnc;
+package org.kaazing.nuklei.tcp.internal.state;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.DisableOnDebug;
@@ -61,7 +60,6 @@ public class CncIT
     @Specification({
         "unbind.ipv4.address.and.port/controller",
     })
-    @Ignore("not yet implemented")
     public void shouldUnbindIPv4AddressAndPort() throws Exception
     {
         k3po.finish();

@@ -25,6 +25,7 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 public final class AddressRO extends AddressType<DirectBuffer>
 {
     private final StringRO deviceName = new StringRO();
+    private final DirectBuffer ipv4Address = new UnsafeBuffer(new byte[0]);
     private final DirectBuffer ipv6Address = new UnsafeBuffer(new byte[0]);
 
     public AddressRO wrap(DirectBuffer buffer, int offset, int actingLimit)
@@ -37,6 +38,7 @@ public final class AddressRO extends AddressType<DirectBuffer>
             deviceName.wrap(buffer(), offset() + FIELD_OFFSET_ADDRESS, actingLimit);
             break;
         case KIND_IPV4_ADDRESS:
+            ipv4Address.wrap(buffer(), offset() + FIELD_OFFSET_ADDRESS, FIELD_SIZE_IPV4_ADDRESS);
             break;
         case KIND_IPV6_ADDRESS:
             ipv6Address.wrap(buffer(), offset() + FIELD_OFFSET_ADDRESS, FIELD_SIZE_IPV6_ADDRESS);
@@ -54,9 +56,14 @@ public final class AddressRO extends AddressType<DirectBuffer>
     }
 
     @Override
+    public DirectBuffer ipv4Address()
+    {
+        return ipv4Address;
+    }
+
+    @Override
     public DirectBuffer ipv6Address()
     {
         return ipv6Address;
     }
-
 }

@@ -15,8 +15,6 @@
  */
 package org.kaazing.nuklei.tcp.internal.types.control;
 
-import static java.nio.ByteOrder.BIG_ENDIAN;
-
 import org.kaazing.nuklei.tcp.internal.types.StringRW;
 import org.kaazing.nuklei.tcp.internal.types.StringType;
 
@@ -27,6 +25,7 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 public final class AddressRW extends AddressType<MutableDirectBuffer>
 {
     private final StringRW deviceName = new StringRW();
+    private final MutableDirectBuffer ipv4Address = new UnsafeBuffer(new byte[0]);
     private final MutableDirectBuffer ipv6Address = new UnsafeBuffer(new byte[0]);
 
     public AddressRW wrap(MutableDirectBuffer buffer, int offset)
@@ -39,6 +38,12 @@ public final class AddressRW extends AddressType<MutableDirectBuffer>
     public StringRW deviceName()
     {
         return deviceName;
+    }
+
+    @Override
+    public MutableDirectBuffer ipv4Address()
+    {
+        return ipv4Address;
     }
 
     @Override
@@ -55,10 +60,24 @@ public final class AddressRW extends AddressType<MutableDirectBuffer>
         return this;
     }
 
-    public AddressRW ipv4Address(int address)
+    public AddressRW ipv4Address(byte[] ipv4Address)
     {
         kind((byte) KIND_IPV4_ADDRESS);
-        buffer().putInt(offset() + FIELD_OFFSET_ADDRESS, address, BIG_ENDIAN);
+        buffer().putBytes(offset() + FIELD_OFFSET_ADDRESS, ipv4Address, 0, FIELD_SIZE_IPV4_ADDRESS);
+        return this;
+    }
+
+    public AddressRW ipv4Address(DirectBuffer ipv4Address)
+    {
+        kind((byte) KIND_IPV4_ADDRESS);
+        buffer().putBytes(offset() + FIELD_OFFSET_ADDRESS, ipv4Address, 0, FIELD_SIZE_IPV4_ADDRESS);
+        return this;
+    }
+
+    public AddressRW ipv6Address(byte[] ipv6Address)
+    {
+        kind((byte) KIND_IPV6_ADDRESS);
+        buffer().putBytes(offset() + FIELD_OFFSET_ADDRESS, ipv6Address, 0, FIELD_SIZE_IPV6_ADDRESS);
         return this;
     }
 

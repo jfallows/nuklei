@@ -15,8 +15,6 @@
  */
 package org.kaazing.nuklei.tcp.internal.types.control;
 
-import static java.nio.ByteOrder.BIG_ENDIAN;
-
 import org.kaazing.nuklei.tcp.internal.types.StringType;
 import org.kaazing.nuklei.tcp.internal.types.Type;
 
@@ -43,10 +41,7 @@ public abstract class AddressType<T extends DirectBuffer> extends Type<T>
 
     public abstract StringType<T> deviceName();
 
-    public final int ipv4Address()
-    {
-        return buffer().getInt(offset() + FIELD_OFFSET_ADDRESS, BIG_ENDIAN);
-    }
+    public abstract T ipv4Address();
 
     public abstract T ipv6Address();
 

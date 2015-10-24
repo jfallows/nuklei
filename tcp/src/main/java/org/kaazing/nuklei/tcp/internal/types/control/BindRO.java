@@ -16,40 +16,24 @@
 package org.kaazing.nuklei.tcp.internal.types.control;
 
 import static org.kaazing.nuklei.tcp.internal.types.Types.checkLimit;
-
-import org.kaazing.nuklei.tcp.internal.types.StringRO;
-
 import uk.co.real_logic.agrona.DirectBuffer;
 
 public final class BindRO extends BindType<DirectBuffer>
 {
-    private final StringRO source = new StringRO();
-    private final StringRO destination = new StringRO();
-    private final AddressRO address = new AddressRO();
+    private final BindingRO binding = new BindingRO();
 
     public void wrap(DirectBuffer buffer, int offset, int actingLimit)
     {
         super.wrap(buffer, offset);
 
-        this.source.wrap(buffer, offset + FIELD_OFFSET_SOURCE, actingLimit);
-        this.destination.wrap(buffer, source.limit() + FIELD_SIZE_SOURCE_BINDING_REF, actingLimit);
-        this.address.wrap(buffer, destination.limit(), actingLimit);
+        this.binding.wrap(buffer, offset + FIELD_OFFSET_BINDING, actingLimit);
 
         checkLimit(limit(), actingLimit);
     }
 
-    public StringRO source()
+    @Override
+    public BindingRO binding()
     {
-        return source;
-    }
-
-    public StringRO destination()
-    {
-        return destination;
-    }
-
-    public AddressRO address()
-    {
-        return address;
+        return binding;
     }
 }

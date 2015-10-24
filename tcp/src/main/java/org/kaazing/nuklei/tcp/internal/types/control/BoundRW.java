@@ -16,15 +16,10 @@
 
 package org.kaazing.nuklei.tcp.internal.types.control;
 
-import org.kaazing.nuklei.tcp.internal.types.StringRW;
-import org.kaazing.nuklei.tcp.internal.types.StringType;
-
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public final class BoundRW extends BoundType<MutableDirectBuffer>
 {
-    private final StringRW destination = new StringRW();
-
     public BoundRW wrap(MutableDirectBuffer buffer, int offset)
     {
         super.wrap(buffer, offset);
@@ -37,27 +32,9 @@ public final class BoundRW extends BoundType<MutableDirectBuffer>
         return this;
     }
 
-    public BoundRW destination(StringType<?> destination)
-    {
-        this.destination.wrap(buffer(), offset() + FIELD_OFFSET_DESTINATION);
-        this.destination.set(destination);
-        return this;
-    }
-
     public BoundRW bindingRef(long bindingRef)
     {
-        buffer().putLong(destination.limit(), bindingRef);
+        buffer().putLong(offset() + FIELD_OFFSET_BINDING_REF, bindingRef);
         return this;
-    }
-
-    @Override
-    public StringRW destination()
-    {
-        return destination;
-    }
-
-    public int limit()
-    {
-        return destination.limit() + FIELD_SIZE_BINDING_REF;
     }
 }

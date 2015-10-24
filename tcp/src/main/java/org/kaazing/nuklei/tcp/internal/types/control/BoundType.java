@@ -16,7 +16,6 @@
 
 package org.kaazing.nuklei.tcp.internal.types.control;
 
-import org.kaazing.nuklei.tcp.internal.types.StringType;
 import org.kaazing.nuklei.tcp.internal.types.Type;
 
 import uk.co.real_logic.agrona.BitUtil;
@@ -27,13 +26,21 @@ public abstract class BoundType<T extends DirectBuffer> extends Type<T>
     protected static final int FIELD_OFFSET_CORRELATION_ID = 0;
     protected static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
 
-    protected static final int FIELD_OFFSET_DESTINATION = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
+    protected static final int FIELD_OFFSET_BINDING_REF = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
     protected static final int FIELD_SIZE_BINDING_REF = BitUtil.SIZE_OF_LONG;
 
-    public abstract StringType<T> destination();
+    public final long correlationId()
+    {
+        return buffer().getLong(offset() + FIELD_OFFSET_CORRELATION_ID);
+    }
+
+    public long bindingRef()
+    {
+        return buffer().getLong(offset() + FIELD_OFFSET_BINDING_REF);
+    }
 
     public int limit()
     {
-        return destination().limit() + FIELD_SIZE_BINDING_REF;
+        return offset() + FIELD_OFFSET_BINDING_REF + FIELD_SIZE_BINDING_REF;
     }
 }
