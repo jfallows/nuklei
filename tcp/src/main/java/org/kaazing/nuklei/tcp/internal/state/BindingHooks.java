@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.cnc;
+package org.kaazing.nuklei.tcp.internal.state;
 
 import java.util.function.Consumer;
 
-import org.kaazing.nuklei.tcp.internal.cnc.functions.BindingConsumer;
-import org.kaazing.nuklei.tcp.internal.cnc.types.BindRO;
-import org.kaazing.nuklei.tcp.internal.cnc.types.BoundRW;
-import org.kaazing.nuklei.tcp.internal.cnc.types.ErrorRW;
-import org.kaazing.nuklei.tcp.internal.cnc.types.UnbindRO;
-import org.kaazing.nuklei.tcp.internal.cnc.types.UnboundRW;
+import org.kaazing.nuklei.tcp.internal.types.control.BindRO;
+import org.kaazing.nuklei.tcp.internal.types.control.BoundRW;
+import org.kaazing.nuklei.tcp.internal.types.control.ErrorRW;
+import org.kaazing.nuklei.tcp.internal.types.control.UnbindRO;
+import org.kaazing.nuklei.tcp.internal.types.control.UnboundRW;
 
 public class BindingHooks
 {

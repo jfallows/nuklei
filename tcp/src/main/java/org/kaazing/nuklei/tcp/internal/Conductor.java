@@ -18,14 +18,14 @@ package org.kaazing.nuklei.tcp.internal;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import org.kaazing.nuklei.tcp.internal.cnc.Binding;
-import org.kaazing.nuklei.tcp.internal.cnc.BindingHooks;
-import org.kaazing.nuklei.tcp.internal.cnc.BindingStateMachine;
-import org.kaazing.nuklei.tcp.internal.cnc.types.BindRO;
-import org.kaazing.nuklei.tcp.internal.cnc.types.BoundRW;
-import org.kaazing.nuklei.tcp.internal.cnc.types.StringRO;
-import org.kaazing.nuklei.tcp.internal.cnc.types.StringRW;
-import org.kaazing.nuklei.tcp.internal.cnc.types.UnbindRO;
+import org.kaazing.nuklei.tcp.internal.state.Binding;
+import org.kaazing.nuklei.tcp.internal.state.BindingHooks;
+import org.kaazing.nuklei.tcp.internal.state.BindingStateMachine;
+import org.kaazing.nuklei.tcp.internal.types.StringRO;
+import org.kaazing.nuklei.tcp.internal.types.StringRW;
+import org.kaazing.nuklei.tcp.internal.types.control.BindRO;
+import org.kaazing.nuklei.tcp.internal.types.control.BoundRW;
+import org.kaazing.nuklei.tcp.internal.types.control.UnbindRO;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;

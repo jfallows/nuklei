@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.cnc.functions;
+package org.kaazing.nuklei.tcp.internal.state;
 
-import org.kaazing.nuklei.tcp.internal.cnc.Binding;
 
 @FunctionalInterface
 public interface BindingConsumer<T>

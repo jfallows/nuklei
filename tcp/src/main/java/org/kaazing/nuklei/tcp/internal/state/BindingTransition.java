@@ -14,23 +14,9 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.cnc.types;
+package org.kaazing.nuklei.tcp.internal.state;
 
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.DirectBuffer;
-
-public abstract class StringType<T extends DirectBuffer> extends Type<T>
+public enum BindingTransition
 {
-    private static final int FIELD_OFFSET_LENGTH = 0;
-    private static final int FIELD_SIZE_LENGTH = BitUtil.SIZE_OF_BYTE;
-
-    public int length()
-    {
-        return buffer().getByte(offset() + FIELD_OFFSET_LENGTH) & 0xFF;
-    }
-
-    public int limit()
-    {
-        return offset() + FIELD_SIZE_LENGTH + length();
-    }
+    RECEIVED_BIND, RECEIVED_UNBIND, SENT_BOUND, SENT_UNBOUND, SENT_ERROR
 }

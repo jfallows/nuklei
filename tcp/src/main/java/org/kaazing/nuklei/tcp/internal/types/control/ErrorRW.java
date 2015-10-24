@@ -14,23 +14,21 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.cnc.types;
+package org.kaazing.nuklei.tcp.internal.types.control;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public final class UnbindRO extends UnbindType<DirectBuffer>
+public final class ErrorRW extends ErrorType<MutableDirectBuffer>
 {
-    private final StringRO destination = new StringRO();
-
-    public UnbindRO wrap(DirectBuffer buffer, int offset)
+    public ErrorRW wrap(MutableDirectBuffer buffer, int offset)
     {
         super.wrap(buffer, offset);
         return this;
     }
 
-    @Override
-    public StringRO destination()
+    public ErrorRW correlationId(long correlationId)
     {
-        return destination;
+        buffer().putLong(offset() + FIELD_OFFSET_CORRELATION_ID, correlationId);
+        return this;
     }
 }

@@ -14,25 +14,25 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.cnc;
+package org.kaazing.nuklei.tcp.internal.state;
 
 import static java.util.EnumSet.allOf;
-import static org.kaazing.nuklei.tcp.internal.cnc.BindingState.BINDING;
-import static org.kaazing.nuklei.tcp.internal.cnc.BindingState.BOUND;
-import static org.kaazing.nuklei.tcp.internal.cnc.BindingState.END;
-import static org.kaazing.nuklei.tcp.internal.cnc.BindingState.START;
-import static org.kaazing.nuklei.tcp.internal.cnc.BindingState.UNBINDING;
-import static org.kaazing.nuklei.tcp.internal.cnc.BindingTransition.RECEIVED_BIND;
-import static org.kaazing.nuklei.tcp.internal.cnc.BindingTransition.RECEIVED_UNBIND;
-import static org.kaazing.nuklei.tcp.internal.cnc.BindingTransition.SENT_BOUND;
-import static org.kaazing.nuklei.tcp.internal.cnc.BindingTransition.SENT_ERROR;
-import static org.kaazing.nuklei.tcp.internal.cnc.BindingTransition.SENT_UNBOUND;
+import static org.kaazing.nuklei.tcp.internal.state.BindingState.BINDING;
+import static org.kaazing.nuklei.tcp.internal.state.BindingState.BOUND;
+import static org.kaazing.nuklei.tcp.internal.state.BindingState.END;
+import static org.kaazing.nuklei.tcp.internal.state.BindingState.START;
+import static org.kaazing.nuklei.tcp.internal.state.BindingState.UNBINDING;
+import static org.kaazing.nuklei.tcp.internal.state.BindingTransition.RECEIVED_BIND;
+import static org.kaazing.nuklei.tcp.internal.state.BindingTransition.RECEIVED_UNBIND;
+import static org.kaazing.nuklei.tcp.internal.state.BindingTransition.SENT_BOUND;
+import static org.kaazing.nuklei.tcp.internal.state.BindingTransition.SENT_ERROR;
+import static org.kaazing.nuklei.tcp.internal.state.BindingTransition.SENT_UNBOUND;
 
-import org.kaazing.nuklei.tcp.internal.cnc.types.BindRO;
-import org.kaazing.nuklei.tcp.internal.cnc.types.BoundRW;
-import org.kaazing.nuklei.tcp.internal.cnc.types.ErrorRW;
-import org.kaazing.nuklei.tcp.internal.cnc.types.UnbindRO;
-import org.kaazing.nuklei.tcp.internal.cnc.types.UnboundRW;
+import org.kaazing.nuklei.tcp.internal.types.control.BindRO;
+import org.kaazing.nuklei.tcp.internal.types.control.BoundRW;
+import org.kaazing.nuklei.tcp.internal.types.control.ErrorRW;
+import org.kaazing.nuklei.tcp.internal.types.control.UnbindRO;
+import org.kaazing.nuklei.tcp.internal.types.control.UnboundRW;
 
 public final class BindingStateMachine
 {

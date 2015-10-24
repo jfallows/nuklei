@@ -13,22 +13,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.kaazing.nuklei.tcp.internal.types;
 
-package org.kaazing.nuklei.tcp.internal.cnc.types;
+import java.nio.charset.Charset;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public final class ErrorRW extends ErrorType<MutableDirectBuffer>
+public final class StringRW extends StringType<MutableDirectBuffer>
 {
-    public ErrorRW wrap(MutableDirectBuffer buffer, int offset)
+    private final StringRO readonly = new StringRO();
+
+    public StringRW wrap(MutableDirectBuffer buffer, int offset)
     {
         super.wrap(buffer, offset);
         return this;
     }
 
-    public ErrorRW correlationId(long correlationId)
+    public StringRW set(StringType<?> value)
     {
-        buffer().putLong(offset() + FIELD_OFFSET_CORRELATION_ID, correlationId);
+        buffer().putBytes(offset(), value.buffer(), value.offset(), value.remaining());
         return this;
+    }
+
+    public StringRW set(String value, Charset charset)
+    {
+        byte[] charBytes = value.getBytes(charset);
+        buffer().putByte(offset(), (byte) charBytes.length);
+        buffer().putBytes(offset() + 1, charBytes);
+        return this;
+    }
+
+    public StringRO asReadOnly()
+    {
+        readonly.wrap(buffer(), offset());
+        return readonly;
     }
 }

@@ -14,9 +14,17 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.cnc;
+package org.kaazing.nuklei.tcp.internal.types;
 
-public enum BindingTransition
+import static org.kaazing.nuklei.tcp.internal.types.Types.checkLimit;
+import uk.co.real_logic.agrona.DirectBuffer;
+
+public final class StringRO extends StringType<DirectBuffer>
 {
-    RECEIVED_BIND, RECEIVED_UNBIND, SENT_BOUND, SENT_UNBOUND, SENT_ERROR
+    public StringRO wrap(DirectBuffer buffer, int offset, int actingLimit)
+    {
+        super.wrap(buffer, offset);
+        checkLimit(limit(), actingLimit);
+        return this;
+    }
 }

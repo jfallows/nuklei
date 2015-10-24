@@ -13,10 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.kaazing.nuklei.tcp.internal.types.control;
 
-package org.kaazing.nuklei.tcp.internal.cnc;
+import org.kaazing.nuklei.tcp.internal.types.Type;
 
-public enum BindingState
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.DirectBuffer;
+
+public abstract class ErrorType<T extends DirectBuffer> extends Type<T>
 {
-    START, BINDING, BOUND, UNBINDING, END
+    protected static final int FIELD_OFFSET_CORRELATION_ID = 0;
+    protected static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
+
+    public final long correlationId()
+    {
+        return buffer().getLong(offset() + FIELD_OFFSET_CORRELATION_ID);
+    }
+
+    public final int limit()
+    {
+        return offset() + FIELD_SIZE_CORRELATION_ID;
+    }
 }

@@ -13,23 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.tcp.internal.cnc.types;
+
+package org.kaazing.nuklei.tcp.internal.types.control;
+
+import org.kaazing.nuklei.tcp.internal.types.StringType;
+import org.kaazing.nuklei.tcp.internal.types.Type;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 
-public abstract class ErrorType<T extends DirectBuffer> extends Type<T>
+public abstract class UnbindType<T extends DirectBuffer> extends Type<T>
 {
     protected static final int FIELD_OFFSET_CORRELATION_ID = 0;
     protected static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
 
-    public final long correlationId()
-    {
-        return buffer().getLong(offset() + FIELD_OFFSET_CORRELATION_ID);
-    }
+    protected static final int FIELD_OFFSET_DESTINATION = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
+    protected static final int FIELD_SIZE_BINDING_REF = BitUtil.SIZE_OF_LONG;
 
-    public final int limit()
+    public abstract StringType<T> destination();
+
+    public int limit()
     {
-        return offset() + FIELD_SIZE_CORRELATION_ID;
+        return destination().limit() + FIELD_SIZE_BINDING_REF;
     }
 }

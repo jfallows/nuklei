@@ -13,18 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.kaazing.nuklei.tcp.internal.types.data;
 
-package org.kaazing.nuklei.tcp.internal.cnc.types;
+import org.kaazing.nuklei.tcp.internal.types.Type;
 
-import static org.kaazing.nuklei.tcp.internal.cnc.types.Types.checkLimit;
 import uk.co.real_logic.agrona.DirectBuffer;
 
-public final class StringRO extends StringType<DirectBuffer>
+public abstract class BeginType<T extends DirectBuffer> extends Type<T>
 {
-    public StringRO wrap(DirectBuffer buffer, int offset, int actingLimit)
-    {
-        super.wrap(buffer, offset);
-        checkLimit(limit(), actingLimit);
-        return this;
-    }
 }

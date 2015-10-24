@@ -13,39 +13,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.tcp.internal.cnc.types;
 
-import java.nio.charset.Charset;
+package org.kaazing.nuklei.tcp.internal.types.control;
+
+import org.kaazing.nuklei.tcp.internal.types.StringRW;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public final class StringRW extends StringType<MutableDirectBuffer>
+public final class UnboundRW extends UnboundType<MutableDirectBuffer>
 {
-    private final StringRO readonly = new StringRO();
+    private final StringRW source = new StringRW();
+    private final StringRW destination = new StringRW();
+    private final AddressRW address = new AddressRW();
 
-    public StringRW wrap(MutableDirectBuffer buffer, int offset)
+    public UnboundRW wrap(MutableDirectBuffer buffer, int offset)
     {
         super.wrap(buffer, offset);
         return this;
     }
 
-    public StringRW set(StringType<?> value)
+    @Override
+    public StringRW source()
     {
-        buffer().putBytes(offset(), value.buffer(), value.offset(), value.remaining());
-        return this;
+        return source;
     }
 
-    public StringRW set(String value, Charset charset)
+    @Override
+    public StringRW destination()
     {
-        byte[] charBytes = value.getBytes(charset);
-        buffer().putByte(offset(), (byte) charBytes.length);
-        buffer().putBytes(offset() + 1, charBytes);
-        return this;
+        return destination;
     }
 
-    public StringRO asReadOnly()
+    @Override
+    public AddressRW address()
     {
-        readonly.wrap(buffer(), offset());
-        return readonly;
+        return address;
     }
+
 }

@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.cnc.types;
+package org.kaazing.nuklei.tcp.internal.types.control;
+
+import org.kaazing.nuklei.tcp.internal.types.StringRW;
+import org.kaazing.nuklei.tcp.internal.types.StringType;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 

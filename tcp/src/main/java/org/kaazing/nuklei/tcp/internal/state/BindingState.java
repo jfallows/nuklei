@@ -14,36 +14,9 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.cnc.types;
+package org.kaazing.nuklei.tcp.internal.state;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-
-public abstract class Type<T extends DirectBuffer>
+public enum BindingState
 {
-    private T buffer;
-    private int offset;
-
-    public T buffer()
-    {
-        return buffer;
-    }
-
-    public int offset()
-    {
-        return offset;
-    }
-
-    public abstract int limit();
-
-    public final int remaining()
-    {
-        return limit() - offset();
-    }
-
-    protected Type<T> wrap(T buffer, int offset)
-    {
-        this.buffer = buffer;
-        this.offset = offset;
-        return this;
-    }
+    START, BINDING, BOUND, UNBINDING, END
 }

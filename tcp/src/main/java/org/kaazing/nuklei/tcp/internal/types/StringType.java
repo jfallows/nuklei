@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.cnc.types;
+package org.kaazing.nuklei.tcp.internal.types;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 
-public abstract class UnbindType<T extends DirectBuffer> extends Type<T>
+public abstract class StringType<T extends DirectBuffer> extends Type<T>
 {
-    protected static final int FIELD_OFFSET_CORRELATION_ID = 0;
-    protected static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
+    private static final int FIELD_OFFSET_LENGTH = 0;
+    private static final int FIELD_SIZE_LENGTH = BitUtil.SIZE_OF_BYTE;
 
-    protected static final int FIELD_OFFSET_DESTINATION = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
-    protected static final int FIELD_SIZE_BINDING_REF = BitUtil.SIZE_OF_LONG;
-
-    public abstract StringType<T> destination();
+    public int length()
+    {
+        return buffer().getByte(offset() + FIELD_OFFSET_LENGTH) & 0xFF;
+    }
 
     public int limit()
     {
-        return destination().limit() + FIELD_SIZE_BINDING_REF;
+        return offset() + FIELD_SIZE_LENGTH + length();
     }
 }

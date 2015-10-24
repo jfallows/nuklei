@@ -13,12 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.kaazing.nuklei.tcp.internal.types;
 
-package org.kaazing.nuklei.tcp.internal.cnc;
-
-public class Binding
+public final class Types
 {
-    public BindingState state;
-    public long correlationId;
-    public long reference;
+    public static void checkLimit(int limit, int actingLimit)
+    {
+        if (limit > actingLimit)
+        {
+            final String msg = String.format("limit=%d is beyond actingLimit=%d", limit, actingLimit);
+            throw new IndexOutOfBoundsException(msg);
+        }
+    }
+
+    private Types()
+    {
+        // utility, no instances
+    }
+
 }

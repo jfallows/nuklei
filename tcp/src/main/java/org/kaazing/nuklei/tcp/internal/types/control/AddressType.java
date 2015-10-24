@@ -13,9 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.tcp.internal.cnc.types;
+package org.kaazing.nuklei.tcp.internal.types.control;
 
 import static java.nio.ByteOrder.BIG_ENDIAN;
+
+import org.kaazing.nuklei.tcp.internal.types.StringType;
+import org.kaazing.nuklei.tcp.internal.types.Type;
+
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 

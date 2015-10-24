@@ -13,40 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.tcp.internal.cnc.types;
 
-import static org.kaazing.nuklei.tcp.internal.cnc.types.Types.checkLimit;
+package org.kaazing.nuklei.tcp.internal.types.control;
+
+import org.kaazing.nuklei.tcp.internal.types.StringRO;
+
 import uk.co.real_logic.agrona.DirectBuffer;
 
-public final class BindRO extends BindType<DirectBuffer>
+public final class UnbindRO extends UnbindType<DirectBuffer>
 {
-    private final StringRO source = new StringRO();
     private final StringRO destination = new StringRO();
-    private final AddressRO address = new AddressRO();
 
-    public void wrap(DirectBuffer buffer, int offset, int actingLimit)
+    public UnbindRO wrap(DirectBuffer buffer, int offset)
     {
         super.wrap(buffer, offset);
-
-        this.source.wrap(buffer, offset + FIELD_OFFSET_SOURCE, actingLimit);
-        this.destination.wrap(buffer, source.limit() + FIELD_SIZE_SOURCE_BINDING_REF, actingLimit);
-        this.address.wrap(buffer, destination.limit(), actingLimit);
-
-        checkLimit(limit(), actingLimit);
+        return this;
     }
 
-    public StringRO source()
-    {
-        return source;
-    }
-
+    @Override
     public StringRO destination()
     {
         return destination;
-    }
-
-    public AddressRO address()
-    {
-        return address;
     }
 }

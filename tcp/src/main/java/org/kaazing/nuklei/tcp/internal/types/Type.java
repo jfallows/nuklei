@@ -14,23 +14,36 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.cnc.types;
+package org.kaazing.nuklei.tcp.internal.types;
 
-import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 
-public abstract class BoundType<T extends DirectBuffer> extends Type<T>
+public abstract class Type<T extends DirectBuffer>
 {
-    protected static final int FIELD_OFFSET_CORRELATION_ID = 0;
-    protected static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
+    private T buffer;
+    private int offset;
 
-    protected static final int FIELD_OFFSET_DESTINATION = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
-    protected static final int FIELD_SIZE_BINDING_REF = BitUtil.SIZE_OF_LONG;
-
-    public abstract StringType<T> destination();
-
-    public int limit()
+    public T buffer()
     {
-        return destination().limit() + FIELD_SIZE_BINDING_REF;
+        return buffer;
+    }
+
+    public int offset()
+    {
+        return offset;
+    }
+
+    public abstract int limit();
+
+    public final int remaining()
+    {
+        return limit() - offset();
+    }
+
+    protected Type<T> wrap(T buffer, int offset)
+    {
+        this.buffer = buffer;
+        this.offset = offset;
+        return this;
     }
 }
