@@ -16,11 +16,19 @@
 
 package org.kaazing.nuklei.tcp.internal;
 
-import static uk.co.real_logic.agrona.BitUtil.toHex;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
-import java.nio.ByteOrder;
+import org.kaazing.nuklei.tcp.internal.cnc.Binding;
+import org.kaazing.nuklei.tcp.internal.cnc.BindingHooks;
+import org.kaazing.nuklei.tcp.internal.cnc.BindingStateMachine;
+import org.kaazing.nuklei.tcp.internal.cnc.types.BindRO;
+import org.kaazing.nuklei.tcp.internal.cnc.types.BoundRW;
+import org.kaazing.nuklei.tcp.internal.cnc.types.StringRO;
+import org.kaazing.nuklei.tcp.internal.cnc.types.StringRW;
+import org.kaazing.nuklei.tcp.internal.cnc.types.UnbindRO;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -29,15 +37,32 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 public final class Conductor implements Agent
 {
+    private static final int SEND_BUFFER_CAPACITY = 1024;
+    private final BindRO bindRO = new BindRO();
+    private final BoundRW boundRW = new BoundRW();
+    private final StringRO nukleusRO = new StringRW().wrap(new UnsafeBuffer(new byte[4]), 0).set("tcp", UTF_8).asReadOnly();
+
     private final RingBuffer toNukleusCommands;
     private final MessageHandler onNukleusCommandFunc;
     private final BroadcastTransmitter toControllerResponses;
+
+    private final BindingStateMachine machine;
+    private final Long2ObjectHashMap<Binding> bindings;
+
+    private final UnsafeBuffer sendBuffer;
 
     Conductor(Context context)
     {
         this.toNukleusCommands = context.toNukleusCommands();
         this.onNukleusCommandFunc = this::onNukleusCommand;
         this.toControllerResponses = context.toControllerResponses();
+
+        BindingHooks bindingHooks = new BindingHooks();
+        bindingHooks.whenBindReceived = this::whenBindReceived;
+        bindingHooks.whenUnbindReceived = this::whenUnbindReceived;
+        this.machine = new BindingStateMachine(bindingHooks);
+        this.bindings = new Long2ObjectHashMap<>();
+        this.sendBuffer = new UnsafeBuffer(new byte[SEND_BUFFER_CAPACITY]);
     }
 
     @Override
@@ -58,19 +83,43 @@ public final class Conductor implements Agent
 
     private void onNukleusCommand(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
     {
-        // TODO: state machine
-        System.out.println("msgTypeId " + msgTypeId);
-        byte[] dst = new byte[length];
-        buffer.getBytes(index, dst);
-        System.out.println("payload " + toHex(dst));
+        switch (msgTypeId)
+        {
+        case 0x00000001:
+            onNukleusBind(buffer, index, length);
+            break;
+        default:
+            // ignore unrecognized commands
+            break;
+        }
+    }
 
-        UnsafeBuffer responseBuffer = new UnsafeBuffer(new byte[1024]);
-        long correlationId = buffer.getLong(index);
-        responseBuffer.putLong(0, correlationId);
-        responseBuffer.putByte(0x08, (byte) 0x07);
-        responseBuffer.putStringWithoutLengthUtf8(0x09, "nukleus");
-        responseBuffer.putInt(0x10, 0x01, ByteOrder.BIG_ENDIAN);
+    private void onNukleusBind(MutableDirectBuffer buffer, int index, int length)
+    {
+        bindRO.wrap(buffer, index, index + length);
+        Binding newBinding = new Binding();
+        machine.start(newBinding);
+        machine.received(newBinding, bindRO);
+    }
 
-        toControllerResponses.transmit(0x40000001, responseBuffer, 0, 0x14);
+    private void whenBindReceived(Binding binding, BindRO bind)
+    {
+        binding.correlationId = bind.correlationId();
+        binding.reference = 0x01L;  // TODO: increment (when initialized?)
+
+        bindings.put(binding.reference, binding);
+
+        // TODO: perform actual Socket bind
+
+        boundRW.wrap(sendBuffer, 0)
+               .correlationId(binding.correlationId)
+               .destination(nukleusRO)
+               .bindingRef(binding.reference);
+
+        toControllerResponses.transmit(0x40000001, boundRW.buffer(), boundRW.offset(), boundRW.remaining());
+    }
+
+    private void whenUnbindReceived(Binding binding, UnbindRO bind)
+    {
     }
 }

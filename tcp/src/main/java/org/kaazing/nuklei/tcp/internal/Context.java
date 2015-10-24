@@ -140,7 +140,6 @@ public final class Context implements AutoCloseable
     {
         try
         {
-            System.out.println("Context: " + cncFile().getAbsolutePath());
             cncByteBuffer = mapNewFile(
                     cncFile(),
                     CncFileDescriptor.computeCncFileLength(
