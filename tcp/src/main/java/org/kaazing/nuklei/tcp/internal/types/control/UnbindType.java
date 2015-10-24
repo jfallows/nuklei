@@ -43,4 +43,10 @@ public abstract class UnbindType<T extends DirectBuffer> extends Type<T>
     {
         return offset() + FIELD_OFFSET_BINDING_REF + FIELD_SIZE_BINDING_REF;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("[correlationId=%d, bindingRef=%d]", correlationId(), bindingRef());
+    }
 }

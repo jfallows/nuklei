@@ -33,4 +33,10 @@ public abstract class StringType<T extends DirectBuffer> extends Type<T>
     {
         return offset() + FIELD_SIZE_LENGTH + length();
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("\"%s\"", buffer().getStringWithoutLengthUtf8(offset() + FIELD_SIZE_LENGTH, length()));
+    }
 }

@@ -42,24 +42,14 @@ public class Binding
         return this.reference;
     }
 
-    public void binding(BindingRO binding)
+    public void saveBinding(BindingRO binding)
     {
         buffer.putBytes(0, binding.buffer(), binding.offset(), binding.remaining());
         limit = binding.remaining();
     }
 
-    public MutableDirectBuffer buffer()
+    public BindingRO loadBinding(BindingRO binding)
     {
-        return buffer;
-    }
-
-    public int offset()
-    {
-        return offset;
-    }
-
-    public int limit()
-    {
-        return limit;
+        return binding.wrap(buffer, offset, limit);
     }
 }

@@ -34,4 +34,10 @@ public abstract class ErrorType<T extends DirectBuffer> extends Type<T>
     {
         return offset() + FIELD_SIZE_CORRELATION_ID;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("[correlationId=%d]", correlationId());
+    }
 }

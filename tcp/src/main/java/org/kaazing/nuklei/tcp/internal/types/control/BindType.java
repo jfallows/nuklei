@@ -38,4 +38,10 @@ public abstract class BindType<T extends DirectBuffer> extends Type<T>
     {
         return binding().limit();
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("[correlationId=%d, binding=%s]", correlationId(), binding());
+    }
 }

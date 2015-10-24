@@ -16,10 +16,6 @@
 
 package org.kaazing.nuklei.tcp.internal;
 
-import java.net.Inet4Address;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-
 import org.kaazing.nuklei.tcp.internal.state.Binding;
 import org.kaazing.nuklei.tcp.internal.state.BindingHooks;
 import org.kaazing.nuklei.tcp.internal.state.BindingStateMachine;
@@ -128,26 +124,16 @@ public final class Conductor implements Agent
 
     private void whenBindReceived(Binding binding, BindRO bind)
     {
-        BindingRO bindingRO = bind.binding();
-
-        binding.binding(bindingRO);
+        binding.saveBinding(bind.binding());
 
         // TODO: perform actual Socket bind
-        try
-        {
-            byte[] addr = new byte[4];
-            bindingRO.address().ipv4Address().getBytes(0, addr);
-            InetSocketAddress localAddress = new InetSocketAddress(Inet4Address.getByAddress(addr), bindingRO.port());
-            System.out.println("BIND REQUEST: " + localAddress);
-        }
-        catch (UnknownHostException e)
-        {
-            e.printStackTrace();
-        }
+        System.out.println("BIND REQUEST: " + bind);
 
         boundRW.wrap(sendBuffer, 0)
                .correlationId(bind.correlationId())
                .bindingRef(binding.reference());
+
+        System.out.println("BOUND RESPONSE: " + boundRW);
 
         toControllerResponses.transmit(0x40000001, boundRW.buffer(), boundRW.offset(), boundRW.remaining());
     }
@@ -155,10 +141,13 @@ public final class Conductor implements Agent
     private void whenUnbindReceived(Binding binding, UnbindRO unbind)
     {
         // TODO: perform actual Socket unbind
+        System.out.println("UNBIND REQUEST: " + unbind);
 
         unboundRW.wrap(sendBuffer, 0)
                  .correlationId(unbind.correlationId())
-                 .binding(bindingRO.wrap(binding.buffer(), binding.offset(), binding.limit()));
+                 .binding(binding.loadBinding(bindingRO));
+
+        System.out.println("UNBOUND RESPONSE: " + unboundRW);
 
         toControllerResponses.transmit(0x40000002, unboundRW.buffer(), unboundRW.offset(), unboundRW.remaining());
     }

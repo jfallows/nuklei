@@ -51,4 +51,10 @@ public abstract class BindingType<T extends DirectBuffer> extends Type<T>
     {
         return address().limit() + FIELD_SIZE_PORT;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("[source=%s, destination=%s, address=%s, port=%d]", source(), destination(), address(), port());
+    }
 }
