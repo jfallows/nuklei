@@ -94,7 +94,7 @@ public final class NukleusRule implements TestRule
                     {
                         try
                         {
-                            int workCount = nukleus.doWork();
+                            int workCount = nukleus.process();
                             idler.idle(workCount);
                         }
                         catch (Exception e)

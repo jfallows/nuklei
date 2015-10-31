@@ -17,16 +17,19 @@ package org.kaazing.nuklei.tcp.internal.types.control;
 
 import static org.kaazing.nuklei.tcp.internal.types.Types.checkLimit;
 
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+
 import org.kaazing.nuklei.tcp.internal.types.StringRO;
 
 import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public final class AddressRO extends AddressType<DirectBuffer>
 {
     private final StringRO deviceName = new StringRO();
-    private final DirectBuffer ipv4Address = new UnsafeBuffer(new byte[0]);
-    private final DirectBuffer ipv6Address = new UnsafeBuffer(new byte[0]);
+    private final Ipv4AddressRO ipv4Address = new Ipv4AddressRO();
+    private final Ipv6AddressRO ipv6Address = new Ipv6AddressRO();
 
     public AddressRO wrap(DirectBuffer buffer, int offset, int actingLimit)
     {
@@ -38,7 +41,7 @@ public final class AddressRO extends AddressType<DirectBuffer>
             deviceName.wrap(buffer(), offset() + FIELD_OFFSET_ADDRESS, actingLimit);
             break;
         case KIND_IPV4_ADDRESS:
-            ipv4Address.wrap(buffer(), offset() + FIELD_OFFSET_ADDRESS, FIELD_SIZE_IPV4_ADDRESS);
+            ipv4Address.wrap(buffer(), offset() + FIELD_OFFSET_ADDRESS, actingLimit);
             break;
         case KIND_IPV6_ADDRESS:
             ipv6Address.wrap(buffer(), offset() + FIELD_OFFSET_ADDRESS, FIELD_SIZE_IPV6_ADDRESS);
@@ -56,14 +59,38 @@ public final class AddressRO extends AddressType<DirectBuffer>
     }
 
     @Override
-    public DirectBuffer ipv4Address()
+    public Ipv4AddressRO ipv4Address()
     {
         return ipv4Address;
     }
 
     @Override
-    public DirectBuffer ipv6Address()
+    public Ipv6AddressRO ipv6Address()
     {
         return ipv6Address;
+    }
+
+    public InetAddress asInetAddress()
+    {
+        try
+        {
+            switch (kind())
+            {
+            case KIND_DEVICE_NAME:
+                NetworkInterface iface = NetworkInterface.getByName(deviceName.asString());
+                return iface.getInetAddresses().nextElement();
+            case KIND_IPV4_ADDRESS:
+                return ipv4Address.get();
+            case KIND_IPV6_ADDRESS:
+                return ipv6Address.get();
+            default:
+                throw new IllegalStateException("Unrecognized kind: " + kind());
+            }
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+
     }
 }

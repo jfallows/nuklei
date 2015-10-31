@@ -15,18 +15,20 @@
  */
 package org.kaazing.nuklei.tcp.internal.types.control;
 
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+
 import org.kaazing.nuklei.tcp.internal.types.StringRW;
 import org.kaazing.nuklei.tcp.internal.types.StringType;
 
-import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public final class AddressRW extends AddressType<MutableDirectBuffer>
 {
     private final StringRW deviceName = new StringRW();
-    private final MutableDirectBuffer ipv4Address = new UnsafeBuffer(new byte[0]);
-    private final MutableDirectBuffer ipv6Address = new UnsafeBuffer(new byte[0]);
+    private final Ipv4AddressRW ipv4Address = new Ipv4AddressRW();
+    private final Ipv6AddressRW ipv6Address = new Ipv6AddressRW();
 
     public AddressRW wrap(MutableDirectBuffer buffer, int offset)
     {
@@ -41,15 +43,15 @@ public final class AddressRW extends AddressType<MutableDirectBuffer>
     }
 
     @Override
-    public MutableDirectBuffer ipv4Address()
+    public Ipv4AddressRW ipv4Address()
     {
-        return ipv4Address;
+        return ipv4Address.wrap(buffer(), offset() + FIELD_OFFSET_ADDRESS);
     }
 
     @Override
-    public MutableDirectBuffer ipv6Address()
+    public Ipv6AddressRW ipv6Address()
     {
-        return ipv6Address;
+        return ipv6Address.wrap(buffer(), offset() + FIELD_OFFSET_ADDRESS);
     }
 
     public AddressRW deviceName(StringType<?> deviceName)
@@ -60,31 +62,29 @@ public final class AddressRW extends AddressType<MutableDirectBuffer>
         return this;
     }
 
-    public AddressRW ipv4Address(byte[] ipv4Address)
+    public void ipAddress(InetAddress ipAddress)
+    {
+        if (ipAddress instanceof Inet4Address)
+        {
+            ipv4Address(ipAddress);
+        }
+        else if (ipAddress instanceof Inet6Address)
+        {
+            ipv6Address(ipAddress);
+        }
+    }
+
+    public AddressRW ipv4Address(InetAddress ipv4Address)
     {
         kind((byte) KIND_IPV4_ADDRESS);
-        buffer().putBytes(offset() + FIELD_OFFSET_ADDRESS, ipv4Address, 0, FIELD_SIZE_IPV4_ADDRESS);
+        ipv4Address().set(ipv4Address);
         return this;
     }
 
-    public AddressRW ipv4Address(DirectBuffer ipv4Address)
-    {
-        kind((byte) KIND_IPV4_ADDRESS);
-        buffer().putBytes(offset() + FIELD_OFFSET_ADDRESS, ipv4Address, 0, FIELD_SIZE_IPV4_ADDRESS);
-        return this;
-    }
-
-    public AddressRW ipv6Address(byte[] ipv6Address)
+    public AddressRW ipv6Address(InetAddress ipv6Address)
     {
         kind((byte) KIND_IPV6_ADDRESS);
-        buffer().putBytes(offset() + FIELD_OFFSET_ADDRESS, ipv6Address, 0, FIELD_SIZE_IPV6_ADDRESS);
-        return this;
-    }
-
-    public AddressRW ipv6Address(DirectBuffer ipv6Address)
-    {
-        kind((byte) KIND_IPV6_ADDRESS);
-        buffer().putBytes(offset() + FIELD_OFFSET_ADDRESS, ipv6Address, 0, FIELD_SIZE_IPV6_ADDRESS);
+        ipv6Address().set(ipv6Address);
         return this;
     }
 

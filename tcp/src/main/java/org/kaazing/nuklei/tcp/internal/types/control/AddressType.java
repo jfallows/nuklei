@@ -41,9 +41,9 @@ public abstract class AddressType<T extends DirectBuffer> extends Type<T>
 
     public abstract StringType<T> deviceName();
 
-    public abstract T ipv4Address();
+    public abstract Ipv4AddressType<T> ipv4Address();
 
-    public abstract T ipv6Address();
+    public abstract Ipv6AddressType<T> ipv6Address();
 
     public int limit()
     {

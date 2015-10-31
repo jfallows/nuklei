@@ -33,7 +33,8 @@ public final class TcpNukleusFactorySpi implements NukleusFactorySpi
     @Override
     public TcpNukleus create(Configuration config)
     {
-        Context context = new Context().cncFile(new File(config.directory(), "tcp/cnc")).conclude(config);
+        Context context = new Context().cncFile(new File(config.directory(), "tcp/cnc"))
+                                       .conclude(config);
         return new TcpNukleus(context);
     }
 

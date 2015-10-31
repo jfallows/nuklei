@@ -18,9 +18,9 @@ package org.kaazing.nuklei;
 @FunctionalInterface
 public interface Nukleus
 {
-    int doWork() throws Exception;
+    int process() throws Exception;
 
-    default void onClose() throws Exception
+    default void close() throws Exception
     {
     }
 

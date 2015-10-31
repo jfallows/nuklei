@@ -16,6 +16,8 @@
 
 package org.kaazing.nuklei.tcp.internal.types.control;
 
+import static java.nio.ByteOrder.BIG_ENDIAN;
+
 import org.kaazing.nuklei.tcp.internal.types.StringRW;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
@@ -33,32 +35,33 @@ public final class BindingRW extends BindingType<MutableDirectBuffer>
         return this;
     }
 
-    public void wrap(MutableDirectBuffer buffer, int offset, BindingRO binding)
+    public BindingRW sourceBindingRef(long sourceBindingRef)
     {
-        super.wrap(buffer, offset);
+        buffer().putLong(offset() + source().limit(), sourceBindingRef);
+        return this;
+    }
 
-        buffer.putBytes(offset, binding.buffer(), binding.offset(), binding.remaining());
-
-        this.source.wrap(buffer, offset + FIELD_OFFSET_SOURCE);
-        this.destination.wrap(buffer, source.limit() + FIELD_SIZE_SOURCE_BINDING_REF);
-        this.address.wrap(buffer, destination.limit());
+    public BindingRW port(int port)
+    {
+        buffer().putShort(address().limit(), (short)(port & 0xFFFF), BIG_ENDIAN);
+        return this;
     }
 
     @Override
     public StringRW source()
     {
-        return source;
+        return source.wrap(buffer(), offset() + FIELD_OFFSET_SOURCE);
     }
 
     @Override
     public StringRW destination()
     {
-        return destination;
+        return destination.wrap(buffer(), source.limit() + FIELD_SIZE_SOURCE_BINDING_REF);
     }
 
     @Override
     public AddressRW address()
     {
-        return address;
+        return address.wrap(buffer(), destination.limit());
     }
 }

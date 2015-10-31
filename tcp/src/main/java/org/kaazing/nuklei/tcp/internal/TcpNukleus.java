@@ -16,24 +16,41 @@
 package org.kaazing.nuklei.tcp.internal;
 
 import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.tcp.internal.acceptor.Acceptor;
+import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
+import org.kaazing.nuklei.tcp.internal.connector.Connector;
+import org.kaazing.nuklei.tcp.internal.reader.Reader;
+import org.kaazing.nuklei.tcp.internal.writer.Writer;
 
 final class TcpNukleus implements Nukleus
 {
     private final Conductor conductor;
+    private final Acceptor acceptor;
+    private final Connector connector;
+    private final Writer writer;
+    private final Reader reader;
 
     TcpNukleus(Context context)
     {
         this.conductor = new Conductor(context);
+        this.acceptor = new Acceptor(context);
+        this.connector = new Connector(context);
+        this.writer = new Writer(context);
+        this.reader = new Reader(context);
     }
 
     @Override
-    public int doWork() throws Exception
+    public int process() throws Exception
     {
-        int workCount = 0;
+        int weight = 0;
 
-        workCount += conductor.doWork();
+        weight += conductor.process();
+        weight += acceptor.process();
+        weight += connector.process();
+        weight += reader.process();
+        weight += writer.process();
 
-        return workCount;
+        return weight;
     }
 
     @Override

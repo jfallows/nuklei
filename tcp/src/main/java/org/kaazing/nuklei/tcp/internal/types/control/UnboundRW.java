@@ -26,6 +26,8 @@ public final class UnboundRW extends UnboundType<MutableDirectBuffer>
     {
         super.wrap(buffer, offset);
 
+        this.binding.wrap(buffer, offset + FIELD_OFFSET_BINDING);
+
         return this;
     }
 
@@ -38,12 +40,6 @@ public final class UnboundRW extends UnboundType<MutableDirectBuffer>
     public UnboundRW correlationId(long correlationId)
     {
         buffer().putLong(offset() + FIELD_OFFSET_CORRELATION_ID, correlationId);
-        return this;
-    }
-
-    public UnboundRW binding(BindingRO binding)
-    {
-        this.binding.wrap(buffer(), offset() + FIELD_OFFSET_BINDING, binding);
         return this;
     }
 }

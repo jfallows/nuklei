@@ -73,14 +73,14 @@ public final class NukleusFactoryTest
         }
 
         @Override
-        public int doWork()
+        public int process()
         {
             // no-op
             return 0;
         }
 
         @Override
-        public void onClose() throws Exception
+        public void close() throws Exception
         {
             // no-op
         }

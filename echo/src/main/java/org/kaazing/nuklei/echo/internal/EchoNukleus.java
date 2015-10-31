@@ -27,7 +27,7 @@ final class EchoNukleus implements Nukleus
     }
 
     @Override
-    public int doWork() throws Exception
+    public int process() throws Exception
     {
         int workCount = 0;
 

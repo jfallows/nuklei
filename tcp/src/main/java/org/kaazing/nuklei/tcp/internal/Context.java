@@ -24,11 +24,14 @@ import java.io.File;
 import java.nio.MappedByteBuffer;
 
 import org.kaazing.nuklei.Configuration;
+import org.kaazing.nuklei.tcp.internal.acceptor.AcceptorCommand;
+import org.kaazing.nuklei.tcp.internal.acceptor.AcceptorResponse;
 
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.CountersManager;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
+import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -47,6 +50,9 @@ public final class Context implements AutoCloseable
     private MappedByteBuffer cncByteBuffer;
     private UnsafeBuffer cncMetaDataBuffer;
     private BroadcastTransmitter toControllerResponses;
+
+    private OneToOneConcurrentArrayQueue<AcceptorCommand> toAcceptorFromConductorCommands;
+    private OneToOneConcurrentArrayQueue<AcceptorResponse> fromAcceptorToConductorEvents;
 
     public Context cncFile(File cncFile)
     {
@@ -125,6 +131,28 @@ public final class Context implements AutoCloseable
         return toControllerResponses;
     }
 
+    public void acceptorCommandQueue(
+            OneToOneConcurrentArrayQueue<AcceptorCommand> acceptorCommandQueue)
+    {
+        this.toAcceptorFromConductorCommands = acceptorCommandQueue;
+    }
+
+    public OneToOneConcurrentArrayQueue<AcceptorCommand> acceptorCommandQueue()
+    {
+        return toAcceptorFromConductorCommands;
+    }
+
+    public void acceptorResponseQueue(
+            OneToOneConcurrentArrayQueue<AcceptorResponse> acceptorResponseQueue)
+    {
+        this.fromAcceptorToConductorEvents = acceptorResponseQueue;
+    }
+
+    public OneToOneConcurrentArrayQueue<AcceptorResponse> acceptorResponseQueue()
+    {
+        return fromAcceptorToConductorEvents;
+    }
+
     public Context countersManager(CountersManager countersManager)
     {
         this.countersManager = countersManager;
@@ -159,6 +187,12 @@ public final class Context implements AutoCloseable
 
             toControllerResponses(
                     new BroadcastTransmitter(CncFileDescriptor.createToControllerBuffer(cncByteBuffer, cncMetaDataBuffer)));
+
+            acceptorCommandQueue(
+                    new OneToOneConcurrentArrayQueue<AcceptorCommand>(1024));
+
+            acceptorResponseQueue(
+                    new OneToOneConcurrentArrayQueue<AcceptorResponse>(1024));
 
             concludeCounters();
         }
