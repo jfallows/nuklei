@@ -14,24 +14,34 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.acceptor;
+package org.kaazing.nuklei.tcp.internal.writer;
 
+import java.nio.channels.SocketChannel;
 
-public final class UnbindCommand implements AcceptorCommand
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+
+public final class RegisterCommand implements WriterCommand
 {
-    private final long correlationId;
     private final long bindingRef;
+    private final long connectionId;
+    private final SocketChannel channel;
+    private final RingBuffer readBuffer;
 
-    public UnbindCommand(
-        long correlationId,
-        long bindingRef)
+    public RegisterCommand(
+        long bindingRef,
+        long connectionId,
+        SocketChannel channel,
+        RingBuffer readBuffer)
     {
-        this.correlationId = correlationId;
         this.bindingRef = bindingRef;
+        this.connectionId = connectionId;
+        this.channel = channel;
+        this.readBuffer = readBuffer;
     }
 
-    public void execute(Acceptor acceptor)
+    @Override
+    public void execute(Writer writer)
     {
-        acceptor.doUnbind(correlationId, bindingRef);
+        writer.doRegister(bindingRef, connectionId, channel, readBuffer);
     }
 }

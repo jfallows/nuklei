@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.tcp.internal.types.data;
+package org.kaazing.nuklei.tcp.internal.types.stream;
 
 import org.kaazing.nuklei.tcp.internal.types.Type;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 
-public abstract class BeginType<T extends DirectBuffer> extends Type<T>
+public abstract class DataType<T extends DirectBuffer> extends Type<T>
 {
 }

@@ -31,6 +31,7 @@ import org.kaazing.nuklei.tcp.internal.types.control.UnboundRW;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -54,14 +55,14 @@ public final class Conductor implements Nukleus, Consumer<AcceptorResponse>
     private final OneToOneConcurrentArrayQueue<AcceptorResponse> acceptorResponses;
 
     private final BroadcastTransmitter toControllerResponses;
-    private final UnsafeBuffer sendBuffer;
+    private final AtomicBuffer sendBuffer;
 
     public Conductor(Context context)
     {
         this.acceptorProxy = new AcceptorProxy(context);
         this.acceptorResponses = context.acceptorResponseQueue();
         this.toNukleusCommands = context.toNukleusCommands();
-        this.onNukleusCommandFunc = this::onReceiveCommand;
+        this.onNukleusCommandFunc = this::handleCommand;
         this.toControllerResponses = context.toControllerResponses();
         this.sendBuffer = new UnsafeBuffer(new byte[SEND_BUFFER_CAPACITY]);
     }
@@ -94,8 +95,6 @@ public final class Conductor implements Nukleus, Consumer<AcceptorResponse>
         errorRW.wrap(sendBuffer, 0)
                .correlationId(correlationId);
 
-        System.out.println("ERROR RESPONSE: " + errorRW);
-
         toControllerResponses.transmit(0x40000000, errorRW.buffer(), errorRW.offset(), errorRW.remaining());
     }
 
@@ -106,8 +105,6 @@ public final class Conductor implements Nukleus, Consumer<AcceptorResponse>
         boundRW.wrap(sendBuffer, 0)
                .correlationId(correlationId)
                .bindingRef(bindingRef);
-
-        System.out.println("BOUND RESPONSE: " + boundRW);
 
         toControllerResponses.transmit(0x40000001, boundRW.buffer(), boundRW.offset(), boundRW.remaining());
     }
@@ -128,20 +125,18 @@ public final class Conductor implements Nukleus, Consumer<AcceptorResponse>
                      .address(address.getAddress())
                      .port(address.getPort());
 
-        System.out.println("UNBOUND RESPONSE: " + unboundRW);
-
         toControllerResponses.transmit(0x40000002, unboundRW.buffer(), unboundRW.offset(), unboundRW.remaining());
     }
 
-    private void onReceiveCommand(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
+    private void handleCommand(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
     {
         switch (msgTypeId)
         {
         case 0x00000001:
-            onReceiveBindCommand(buffer, index, length);
+            handleBindCommand(buffer, index, length);
             break;
         case 0x00000002:
-            onReceiveUnbindCommand(buffer, index, length);
+            handleUnbindCommand(buffer, index, length);
             break;
         default:
             // ignore unrecognized commands
@@ -149,7 +144,7 @@ public final class Conductor implements Nukleus, Consumer<AcceptorResponse>
         }
     }
 
-    private void onReceiveBindCommand(DirectBuffer buffer, int index, int length)
+    private void handleBindCommand(DirectBuffer buffer, int index, int length)
     {
         bindRO.wrap(buffer, index, index + length);
 
@@ -159,16 +154,16 @@ public final class Conductor implements Nukleus, Consumer<AcceptorResponse>
         String destination = bindRO.binding().destination().asString();
         InetSocketAddress address = new InetSocketAddress(bindRO.binding().address().asInetAddress(), bindRO.binding().port());
 
-        acceptorProxy.onBindCommand(correlationId, source, sourceBindingRef, destination, address);
+        acceptorProxy.doBind(correlationId, source, sourceBindingRef, destination, address);
     }
 
-    private void onReceiveUnbindCommand(DirectBuffer buffer, int index, int length)
+    private void handleUnbindCommand(DirectBuffer buffer, int index, int length)
     {
         unbindRO.wrap(buffer, index, index + length);
 
         long correlationId = unbindRO.correlationId();
         long bindingRef = unbindRO.bindingRef();
 
-        acceptorProxy.onUnbindCommand(correlationId, bindingRef);
+        acceptorProxy.doUnbind(correlationId, bindingRef);
     }
 }

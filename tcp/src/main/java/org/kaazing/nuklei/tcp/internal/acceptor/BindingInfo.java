@@ -17,27 +17,38 @@
 package org.kaazing.nuklei.tcp.internal.acceptor;
 
 import java.net.InetSocketAddress;
+import java.nio.channels.ServerSocketChannel;
 
-public class Binding
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+
+public class BindingInfo
 {
     private final long reference;
     private final String source;
     private final long sourceBindingRef;
     private final String destination;
     private final InetSocketAddress address;
+    private final RingBuffer readBuffer;
+    private final RingBuffer writeBuffer;
 
-    public Binding(
+    private ServerSocketChannel serverChannel;
+
+    public BindingInfo(
         long reference,
         String source,
         long sourceBindingRef,
         String destination,
-        InetSocketAddress address)
+        InetSocketAddress address,
+        RingBuffer readBuffer,
+        RingBuffer writeBuffer)
     {
         this.reference = reference;
         this.source = source;
         this.sourceBindingRef = sourceBindingRef;
         this.destination = destination;
         this.address = address;
+        this.readBuffer = readBuffer;
+        this.writeBuffer = writeBuffer;
     }
 
     public long reference()
@@ -63,6 +74,26 @@ public class Binding
     public InetSocketAddress address()
     {
         return address;
+    }
+
+    public RingBuffer readBuffer()
+    {
+        return readBuffer;
+    }
+
+    public RingBuffer writeBuffer()
+    {
+        return writeBuffer;
+    }
+
+    public void attach(ServerSocketChannel attachment)
+    {
+        this.serverChannel = attachment;
+    }
+
+    public ServerSocketChannel channel()
+    {
+        return serverChannel;
     }
 
     @Override

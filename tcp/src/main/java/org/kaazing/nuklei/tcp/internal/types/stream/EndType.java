@@ -13,25 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.kaazing.nuklei.tcp.internal.types.stream;
 
-package org.kaazing.nuklei.tcp.internal.acceptor;
+import org.kaazing.nuklei.tcp.internal.types.Type;
 
+import uk.co.real_logic.agrona.DirectBuffer;
 
-public final class UnbindCommand implements AcceptorCommand
+public abstract class EndType<T extends DirectBuffer> extends Type<T>
 {
-    private final long correlationId;
-    private final long bindingRef;
-
-    public UnbindCommand(
-        long correlationId,
-        long bindingRef)
-    {
-        this.correlationId = correlationId;
-        this.bindingRef = bindingRef;
-    }
-
-    public void execute(Acceptor acceptor)
-    {
-        acceptor.doUnbind(correlationId, bindingRef);
-    }
 }

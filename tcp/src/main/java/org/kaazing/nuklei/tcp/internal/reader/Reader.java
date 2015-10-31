@@ -16,19 +16,46 @@
 
 package org.kaazing.nuklei.tcp.internal.reader;
 
+import static java.nio.channels.SelectionKey.OP_READ;
+
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
+import java.util.function.Consumer;
+
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.Context;
+import org.kaazing.nuklei.tcp.internal.types.stream.BeginRW;
 
-public final class Reader implements Nukleus
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.agrona.nio.TransportPoller;
+
+public final class Reader extends TransportPoller implements Nukleus, Consumer<ReaderCommand>
 {
+    private static final int SEND_BUFFER_CAPACITY = 1024; // TODO: Configuration and Context
+
+    private final BeginRW beginRW = new BeginRW();
+
+    private final OneToOneConcurrentArrayQueue<ReaderCommand> commandQueue;
+    private final AtomicBuffer sendBuffer;
+
     public Reader(Context context)
     {
+        this.commandQueue = context.readerCommandQueue();
+        this.sendBuffer = new UnsafeBuffer(new byte[SEND_BUFFER_CAPACITY]);
     }
 
     @Override
     public int process() throws Exception
     {
         int weight = 0;
+
+        selector.selectNow();
+        weight += selectedKeySet.forEach(this::processRead);
+        weight += commandQueue.drain(this);
 
         return weight;
     }
@@ -37,5 +64,36 @@ public final class Reader implements Nukleus
     public String name()
     {
         return "reader";
+    }
+
+    @Override
+    public void accept(ReaderCommand command)
+    {
+        command.execute(this);
+    }
+
+    public void doRegister(long bindingRef, long connectionId, SocketChannel channel, RingBuffer writeBuffer)
+    {
+        try
+        {
+            ReaderInfo info = new ReaderInfo(connectionId, channel, writeBuffer);
+            channel.register(selector, OP_READ, info);
+
+            beginRW.wrap(sendBuffer, 0)
+                   .bindingRef(bindingRef)
+                   .connectionId(connectionId);
+
+            writeBuffer.write(beginRW.type(), beginRW.buffer(), beginRW.offset(), beginRW.remaining());
+        }
+        catch (ClosedChannelException e)
+        {
+            // channel already closed
+        }
+    }
+
+    private int processRead(SelectionKey selectionKey)
+    {
+        // TODO
+        return 1;
     }
 }

@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.tcp.internal.types.data;
 
-import org.kaazing.nuklei.tcp.internal.types.Type;
+package org.kaazing.nuklei.tcp.internal.connector;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-
-public abstract class DataType<T extends DirectBuffer> extends Type<T>
+public interface ConnectorCommand
 {
+    void execute(Connector connector);
 }

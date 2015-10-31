@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.tcp.internal.types.data;
 
-import org.kaazing.nuklei.tcp.internal.types.Type;
+package org.kaazing.nuklei.tcp.internal.reader;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-
-public abstract class EndType<T extends DirectBuffer> extends Type<T>
+public interface ReaderCommand
 {
+    void execute(Reader reader);
 }

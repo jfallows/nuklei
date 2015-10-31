@@ -31,7 +31,7 @@ public final class AcceptorProxy
         this.commandQueue = context.acceptorCommandQueue();
     }
 
-    public void onBindCommand(
+    public void doBind(
         long correlationId,
         String source,
         long sourceBindingRef,
@@ -45,7 +45,7 @@ public final class AcceptorProxy
         }
     }
 
-    public void onUnbindCommand(long correlationId, long bindingRef)
+    public void doUnbind(long correlationId, long bindingRef)
     {
         UnbindCommand command = new UnbindCommand(correlationId, bindingRef);
         if (!commandQueue.offer(command))

@@ -14,24 +14,9 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.acceptor;
+package org.kaazing.nuklei.tcp.internal.writer;
 
-
-public final class UnbindCommand implements AcceptorCommand
+public interface WriterCommand
 {
-    private final long correlationId;
-    private final long bindingRef;
-
-    public UnbindCommand(
-        long correlationId,
-        long bindingRef)
-    {
-        this.correlationId = correlationId;
-        this.bindingRef = bindingRef;
-    }
-
-    public void execute(Acceptor acceptor)
-    {
-        acceptor.doUnbind(correlationId, bindingRef);
-    }
+    void execute(Writer writer);
 }

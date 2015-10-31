@@ -26,6 +26,9 @@ import java.nio.MappedByteBuffer;
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.tcp.internal.acceptor.AcceptorCommand;
 import org.kaazing.nuklei.tcp.internal.acceptor.AcceptorResponse;
+import org.kaazing.nuklei.tcp.internal.connector.ConnectorCommand;
+import org.kaazing.nuklei.tcp.internal.reader.ReaderCommand;
+import org.kaazing.nuklei.tcp.internal.writer.WriterCommand;
 
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
@@ -53,6 +56,9 @@ public final class Context implements AutoCloseable
 
     private OneToOneConcurrentArrayQueue<AcceptorCommand> toAcceptorFromConductorCommands;
     private OneToOneConcurrentArrayQueue<AcceptorResponse> fromAcceptorToConductorEvents;
+    private OneToOneConcurrentArrayQueue<ReaderCommand> fromAcceptorToReaderCommands;
+    private OneToOneConcurrentArrayQueue<WriterCommand> fromAcceptorToWriterCommands;
+    private OneToOneConcurrentArrayQueue<ConnectorCommand> toConnectorFromConductorCommands;
 
     public Context cncFile(File cncFile)
     {
@@ -142,15 +148,51 @@ public final class Context implements AutoCloseable
         return toAcceptorFromConductorCommands;
     }
 
-    public void acceptorResponseQueue(
+    public Context acceptorResponseQueue(
             OneToOneConcurrentArrayQueue<AcceptorResponse> acceptorResponseQueue)
     {
         this.fromAcceptorToConductorEvents = acceptorResponseQueue;
+        return this;
     }
 
     public OneToOneConcurrentArrayQueue<AcceptorResponse> acceptorResponseQueue()
     {
         return fromAcceptorToConductorEvents;
+    }
+
+    public void connectorCommandQueue(
+            OneToOneConcurrentArrayQueue<ConnectorCommand> connectorCommandQueue)
+    {
+        this.toConnectorFromConductorCommands = connectorCommandQueue;
+    }
+
+    public OneToOneConcurrentArrayQueue<ConnectorCommand> connectorCommandQueue()
+    {
+        return toConnectorFromConductorCommands;
+    }
+
+    public Context readerCommandQueue(
+            OneToOneConcurrentArrayQueue<ReaderCommand> readerCommandQueue)
+    {
+        this.fromAcceptorToReaderCommands = readerCommandQueue;
+        return this;
+    }
+
+    public OneToOneConcurrentArrayQueue<ReaderCommand> readerCommandQueue()
+    {
+        return fromAcceptorToReaderCommands;
+    }
+
+    public Context writerCommandQueue(
+            OneToOneConcurrentArrayQueue<WriterCommand> writerCommandQueue)
+    {
+        this.fromAcceptorToWriterCommands = writerCommandQueue;
+        return this;
+    }
+
+    public OneToOneConcurrentArrayQueue<WriterCommand> writerCommandQueue()
+    {
+        return fromAcceptorToWriterCommands;
     }
 
     public Context countersManager(CountersManager countersManager)
@@ -193,6 +235,15 @@ public final class Context implements AutoCloseable
 
             acceptorResponseQueue(
                     new OneToOneConcurrentArrayQueue<AcceptorResponse>(1024));
+
+            connectorCommandQueue(
+                    new OneToOneConcurrentArrayQueue<ConnectorCommand>(1024));
+
+            readerCommandQueue(
+                    new OneToOneConcurrentArrayQueue<ReaderCommand>(1024));
+
+            writerCommandQueue(
+                    new OneToOneConcurrentArrayQueue<WriterCommand>(1024));
 
             concludeCounters();
         }

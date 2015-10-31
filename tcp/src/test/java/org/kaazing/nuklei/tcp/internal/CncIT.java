@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.state;
+package org.kaazing.nuklei.tcp.internal;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
@@ -26,7 +26,7 @@ import org.junit.rules.TestRule;
 import org.junit.rules.Timeout;
 import org.kaazing.k3po.junit.annotation.Specification;
 import org.kaazing.k3po.junit.rules.K3poRule;
-import org.kaazing.nuklei.tcp.internal.NukleusRule;
+import org.kaazing.nuklei.test.NukleusRule;
 
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;

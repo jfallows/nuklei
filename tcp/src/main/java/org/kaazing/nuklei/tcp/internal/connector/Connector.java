@@ -16,13 +16,22 @@
 
 package org.kaazing.nuklei.tcp.internal.connector;
 
+import java.nio.channels.SelectionKey;
+import java.util.function.Consumer;
+
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.Context;
 
-public final class Connector implements Nukleus
+import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.nio.TransportPoller;
+
+public final class Connector extends TransportPoller implements Nukleus, Consumer<ConnectorCommand>
 {
+    private final OneToOneConcurrentArrayQueue<ConnectorCommand> commandQueue;
+
     public Connector(Context context)
     {
+        this.commandQueue = context.connectorCommandQueue();
     }
 
     @Override
@@ -30,12 +39,28 @@ public final class Connector implements Nukleus
     {
         int weight = 0;
 
+        selector.selectNow();
+        selectedKeySet.forEach(this::processConnect);
+        weight += commandQueue.drain(this);
+
         return weight;
     }
 
     @Override
     public String name()
     {
-        return "sender";
+        return "connector";
+    }
+
+    @Override
+    public void accept(ConnectorCommand command)
+    {
+        command.execute(this);
+    }
+
+    private int processConnect(SelectionKey selectionKey)
+    {
+        // TODO
+        return 1;
     }
 }

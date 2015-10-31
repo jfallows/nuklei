@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal;
+package org.kaazing.nuklei.test;
 
 import static java.lang.String.valueOf;
 import static java.util.Objects.requireNonNull;
@@ -84,23 +84,29 @@ public final class NukleusRule implements TestRule
             {
                 NukleusFactory factory = NukleusFactory.instantiate();
                 Configuration config = new Configuration(properties);
-                Nukleus nukleus = factory.create(name, config);
                 final AtomicBoolean finished = new AtomicBoolean();
                 final AtomicInteger errorCount = new AtomicInteger();
                 final IdleStrategy idler = new SleepingIdleStrategy(MILLISECONDS.toNanos(50L));
                 Runnable runnable = () ->
                 {
-                    while (!finished.get())
+                    try (Nukleus nukleus = factory.create(name, config))
                     {
-                        try
+                        while (!finished.get())
                         {
-                            int workCount = nukleus.process();
-                            idler.idle(workCount);
+                            try
+                            {
+                                int workCount = nukleus.process();
+                                idler.idle(workCount);
+                            }
+                            catch (Exception e)
+                            {
+                                errorCount.incrementAndGet();
+                            }
                         }
-                        catch (Exception e)
-                        {
-                            errorCount.incrementAndGet();
-                        }
+                    }
+                    catch (Exception e)
+                    {
+                        errorCount.incrementAndGet();
                     }
                 };
                 Thread caller = new Thread(runnable);

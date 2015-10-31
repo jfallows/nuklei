@@ -14,24 +14,27 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.acceptor;
+package org.kaazing.nuklei.tcp.internal.types.stream;
 
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public final class UnbindCommand implements AcceptorCommand
+public final class BeginRW extends BeginType<MutableDirectBuffer>
 {
-    private final long correlationId;
-    private final long bindingRef;
-
-    public UnbindCommand(
-        long correlationId,
-        long bindingRef)
+    public BeginRW wrap(MutableDirectBuffer buffer, int offset)
     {
-        this.correlationId = correlationId;
-        this.bindingRef = bindingRef;
+        super.wrap(buffer, offset);
+        return this;
     }
 
-    public void execute(Acceptor acceptor)
+    public BeginRW connectionId(long connectionId)
     {
-        acceptor.doUnbind(correlationId, bindingRef);
+        buffer().putLong(offset() + FIELD_OFFSET_CONNECTION_ID, connectionId);
+        return this;
+    }
+
+    public BeginRW bindingRef(long bindingRef)
+    {
+        buffer().putLong(offset() + FIELD_OFFSET_BINDING_REF, bindingRef);
+        return this;
     }
 }

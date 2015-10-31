@@ -13,25 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.kaazing.nuklei.tcp.internal.types.control;
+package org.kaazing.nuklei.tcp.internal.types.stream;
 
 import org.kaazing.nuklei.tcp.internal.types.Type;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 
-public abstract class BoundType<T extends DirectBuffer> extends Type<T>
+public abstract class BeginType<T extends DirectBuffer> extends Type<T>
 {
-    protected static final int FIELD_OFFSET_CORRELATION_ID = 0;
-    protected static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
+    protected static final int FIELD_OFFSET_CONNECTION_ID = 0;
+    protected static final int FIELD_SIZE_CONNECTION_ID = BitUtil.SIZE_OF_LONG;
 
-    protected static final int FIELD_OFFSET_BINDING_REF = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
+    protected static final int FIELD_OFFSET_BINDING_REF = FIELD_OFFSET_CONNECTION_ID + FIELD_SIZE_CONNECTION_ID;
     protected static final int FIELD_SIZE_BINDING_REF = BitUtil.SIZE_OF_LONG;
 
-    public final long correlationId()
+    public final int type()
     {
-        return buffer().getLong(offset() + FIELD_OFFSET_CORRELATION_ID);
+        return 0x00000001;
+    }
+
+    public final long connectionId()
+    {
+        return buffer().getLong(offset() + FIELD_OFFSET_CONNECTION_ID);
     }
 
     public final long bindingRef()
@@ -43,11 +47,5 @@ public abstract class BoundType<T extends DirectBuffer> extends Type<T>
     public final int limit()
     {
         return offset() + FIELD_OFFSET_BINDING_REF + FIELD_SIZE_BINDING_REF;
-    }
-
-    @Override
-    public final String toString()
-    {
-        return String.format("[correlationId=%d, bindingRef=%d]", correlationId(), bindingRef());
     }
 }

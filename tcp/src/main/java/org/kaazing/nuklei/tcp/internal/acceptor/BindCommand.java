@@ -42,6 +42,6 @@ public final class BindCommand implements AcceptorCommand
 
     public void execute(Acceptor acceptor)
     {
-        acceptor.onBindCommand(correlationId, source, sourceBindingRef, destination, address);
+        acceptor.doBind(correlationId, source, sourceBindingRef, destination, address);
     }
 }

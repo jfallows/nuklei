@@ -58,4 +58,15 @@ final class TcpNukleus implements Nukleus
     {
         return "tcp";
     }
+
+    @Override
+    public void close() throws Exception
+    {
+        conductor.close();
+        acceptor.close();
+        connector.close();
+        reader.close();
+        writer.close();
+    }
+
 }

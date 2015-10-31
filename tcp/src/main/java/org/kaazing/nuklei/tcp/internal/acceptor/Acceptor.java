@@ -16,26 +16,53 @@
 
 package org.kaazing.nuklei.tcp.internal.acceptor;
 
+import static java.nio.channels.SelectionKey.OP_ACCEPT;
+import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
+
+import java.io.File;
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.function.Consumer;
 
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.Context;
+import org.kaazing.nuklei.tcp.internal.StreamsFileDescriptor;
+import org.kaazing.nuklei.tcp.internal.reader.ReaderProxy;
+import org.kaazing.nuklei.tcp.internal.writer.WriterProxy;
 
+import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
+import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+import uk.co.real_logic.agrona.nio.TransportPoller;
 
-public final class Acceptor implements Nukleus, Consumer<AcceptorCommand>
+public final class Acceptor extends TransportPoller implements Nukleus, Consumer<AcceptorCommand>
 {
     private final ConductorProxy conductorProxy;
+    private final ReaderProxy readerProxy;
+    private final WriterProxy writerProxy;
     private final OneToOneConcurrentArrayQueue<AcceptorCommand> commandQueue;
-    private final Long2ObjectHashMap<Binding> bindings;
+    private final Long2ObjectHashMap<BindingInfo> bindingInfosByRef;
+    private final AtomicCounter connectionsCount;
+    private final File streamsDir;
 
     public Acceptor(Context context)
     {
         this.conductorProxy = new ConductorProxy(context);
+        this.readerProxy = new ReaderProxy(context);
+        this.writerProxy = new WriterProxy(context);
         this.commandQueue = context.acceptorCommandQueue();
-        this.bindings = new Long2ObjectHashMap<>();
+        this.bindingInfosByRef = new Long2ObjectHashMap<>();
+        this.connectionsCount = context.countersManager().newCounter("connections");
+        this.streamsDir = context.cncFile().getParentFile(); // TODO: better abstraction
     }
 
     @Override
@@ -43,6 +70,8 @@ public final class Acceptor implements Nukleus, Consumer<AcceptorCommand>
     {
         int weight = 0;
 
+        selector.selectNow();
+        weight += selectedKeySet.forEach(this::processAccept);
         weight += commandQueue.drain(this);
 
         return weight;
@@ -55,57 +84,126 @@ public final class Acceptor implements Nukleus, Consumer<AcceptorCommand>
     }
 
     @Override
+    public void close()
+    {
+        bindingInfosByRef.values().forEach((bindingInfo) -> {
+            try
+            {
+                bindingInfo.channel().close();
+                selectNowWithoutProcessing();
+            }
+            catch (final Exception ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
+        });
+
+        super.close();
+    }
+
+    @Override
     public void accept(AcceptorCommand command)
     {
         command.execute(this);
     }
 
-    public void onBindCommand(
+    public void doBind(
         long correlationId,
         String source,
         long sourceBindingRef,
         String destination,
         InetSocketAddress address)
     {
-        final Binding newBinding = new Binding(correlationId, source, sourceBindingRef, destination, address);
+        final long reference = correlationId;
 
-        Binding oldBinding = bindings.get(newBinding.reference());
-        if (oldBinding != null)
+        BindingInfo oldInfo = bindingInfosByRef.get(reference);
+        if (oldInfo != null)
         {
             conductorProxy.onErrorResponse(correlationId);
         }
         else
         {
-            bindings.put(newBinding.reference(), newBinding);
+            try
+            {
+                final ServerSocketChannel serverChannel = ServerSocketChannel.open();
+                serverChannel.bind(address);
+                serverChannel.configureBlocking(false);
 
-            // TODO: perform actual Socket bind
-            System.out.println("BIND REQUEST: " + newBinding);
+                // BIND goes first, so Acceptor owns bidirectional streams mapped file lifecycle
+                // TODO: unmap mapped buffer (also cleanup in Context.close())
+                int streamBufferSize = 1024 * 1024 + RingBufferDescriptor.TRAILER_LENGTH;
+                File streamsFile = new File(streamsDir, String.format("%s.accepts", destination));
+                StreamsFileDescriptor streams = new StreamsFileDescriptor(streamBufferSize);
+                MappedByteBuffer streamsBuffer = mapNewFile(streamsFile, streams.length());
+                streams.wrap(new UnsafeBuffer(streamsBuffer), 0);
+                RingBuffer readBuffer = new ManyToOneRingBuffer(streams.readBuffer());
+                RingBuffer writeBuffer = new ManyToOneRingBuffer(streams.writeBuffer());
 
-            conductorProxy.onBoundResponse(correlationId, newBinding.reference());
+                final BindingInfo newBindingInfo =
+                        new BindingInfo(reference, source, sourceBindingRef, destination, address, readBuffer, writeBuffer);
+
+                serverChannel.register(selector, OP_ACCEPT, newBindingInfo);
+                newBindingInfo.attach(serverChannel);
+
+                bindingInfosByRef.put(newBindingInfo.reference(), newBindingInfo);
+
+                conductorProxy.onBoundResponse(correlationId, newBindingInfo.reference());
+            }
+            catch (IOException e)
+            {
+                conductorProxy.onErrorResponse(correlationId);
+                throw new RuntimeException(e);
+            }
         }
     }
 
-    public void onUnbindCommand(
+    public void doUnbind(
         long correlationId,
         long bindingRef)
     {
-        final Binding binding = bindings.remove(bindingRef);
+        final BindingInfo bindingInfo = bindingInfosByRef.remove(bindingRef);
 
-        if (binding == null)
+        if (bindingInfo == null)
         {
             conductorProxy.onErrorResponse(correlationId);
         }
         else
         {
-            // TODO: perform actual Socket unbind
-            System.out.println("UNBIND REQUEST: " + binding);
+            try
+            {
+                ServerSocketChannel serverChannel = bindingInfo.channel();
+                serverChannel.close();
+                selector.selectNow();
 
-            String source = binding.source();
-            long sourceBindingRef = binding.sourceBindingRef();
-            String destination = binding.destination();
-            InetSocketAddress address = binding.address();
+                String source = bindingInfo.source();
+                long sourceBindingRef = bindingInfo.sourceBindingRef();
+                String destination = bindingInfo.destination();
+                InetSocketAddress address = bindingInfo.address();
 
-            conductorProxy.onUnboundResponse(correlationId, source, sourceBindingRef, destination, address);
+                conductorProxy.onUnboundResponse(correlationId, source, sourceBindingRef, destination, address);
+            }
+            catch (IOException e)
+            {
+                conductorProxy.onErrorResponse(correlationId);
+            }
+        }
+    }
+
+    private int processAccept(SelectionKey selectionKey)
+    {
+        try
+        {
+            BindingInfo bindingInfo = (BindingInfo) selectionKey.attachment();
+            ServerSocketChannel serverChannel = bindingInfo.channel();
+            SocketChannel channel = serverChannel.accept();
+            long connectionId = connectionsCount.increment();
+            readerProxy.doRegister(connectionId, bindingInfo.reference(), channel, bindingInfo.writeBuffer());
+            writerProxy.doRegister(connectionId, bindingInfo.reference(), channel, bindingInfo.readBuffer());
+            return 1;
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
         }
     }
 }
