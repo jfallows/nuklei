@@ -124,12 +124,11 @@ public final class Conductor implements Nukleus, Consumer<AcceptorResponse>
         unboundRW.wrap(sendBuffer, 0)
                  .correlationId(correlationId)
                  .binding()
-                     .source().set(source, UTF_8);
-        unboundRW.binding()
+                     .source(source)
                      .sourceBindingRef(sourceBindingRef)
-                     .destination().set(destination, UTF_8);
-        unboundRW.binding().address().ipAddress(address.getAddress());
-        unboundRW.binding().port(address.getPort());
+                     .destination(destination)
+                     .address(address.getAddress())
+                     .port(address.getPort());
 
         System.out.println("UNBOUND RESPONSE: " + unboundRW);
 

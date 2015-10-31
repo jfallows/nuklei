@@ -17,6 +17,9 @@
 package org.kaazing.nuklei.tcp.internal.types.control;
 
 import static java.nio.ByteOrder.BIG_ENDIAN;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import java.net.InetAddress;
 
 import org.kaazing.nuklei.tcp.internal.types.StringRW;
 
@@ -35,9 +38,27 @@ public final class BindingRW extends BindingType<MutableDirectBuffer>
         return this;
     }
 
+    public BindingRW source(String source)
+    {
+        source().set(source, UTF_8);
+        return this;
+    }
+
     public BindingRW sourceBindingRef(long sourceBindingRef)
     {
         buffer().putLong(offset() + source().limit(), sourceBindingRef);
+        return this;
+    }
+
+    public BindingRW destination(String destination)
+    {
+        destination().set(destination, UTF_8);
+        return this;
+    }
+
+    public BindingRW address(InetAddress ipAddress)
+    {
+        address().ipAddress(ipAddress);
         return this;
     }
 
