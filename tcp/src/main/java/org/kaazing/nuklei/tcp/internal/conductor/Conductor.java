@@ -16,8 +16,6 @@
 
 package org.kaazing.nuklei.tcp.internal.conductor;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import java.net.InetSocketAddress;
 import java.util.function.Consumer;
 
