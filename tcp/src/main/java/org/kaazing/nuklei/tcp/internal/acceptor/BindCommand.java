@@ -18,7 +18,7 @@ package org.kaazing.nuklei.tcp.internal.acceptor;
 
 import java.net.InetSocketAddress;
 
-public final class BindRequest implements AcceptorCommand
+public final class BindCommand implements AcceptorCommand
 {
     private final long correlationId;
     private final String source;
@@ -26,7 +26,7 @@ public final class BindRequest implements AcceptorCommand
     private final String destination;
     private final InetSocketAddress address;
 
-    public BindRequest(
+    public BindCommand(
         long correlationId,
         String source,
         long sourceBindingRef,
@@ -42,6 +42,6 @@ public final class BindRequest implements AcceptorCommand
 
     public void execute(Acceptor acceptor)
     {
-        acceptor.onBindRequest(correlationId, source, sourceBindingRef, destination, address);
+        acceptor.onBindCommand(correlationId, source, sourceBindingRef, destination, address);
     }
 }

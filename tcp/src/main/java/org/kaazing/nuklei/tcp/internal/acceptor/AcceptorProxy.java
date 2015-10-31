@@ -31,23 +31,23 @@ public final class AcceptorProxy
         this.commandQueue = context.acceptorCommandQueue();
     }
 
-    public void onBindRequest(
+    public void onBindCommand(
         long correlationId,
         String source,
         long sourceBindingRef,
         String destination,
         InetSocketAddress address)
     {
-        BindRequest command = new BindRequest(correlationId, source, sourceBindingRef, destination, address);
+        BindCommand command = new BindCommand(correlationId, source, sourceBindingRef, destination, address);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");
         }
     }
 
-    public void onUnbindRequest(long correlationId, long bindingRef)
+    public void onUnbindCommand(long correlationId, long bindingRef)
     {
-        UnbindRequest command = new UnbindRequest(correlationId, bindingRef);
+        UnbindCommand command = new UnbindCommand(correlationId, bindingRef);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");

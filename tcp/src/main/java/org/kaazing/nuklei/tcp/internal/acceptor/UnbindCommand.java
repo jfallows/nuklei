@@ -17,12 +17,12 @@
 package org.kaazing.nuklei.tcp.internal.acceptor;
 
 
-public final class UnbindRequest implements AcceptorCommand
+public final class UnbindCommand implements AcceptorCommand
 {
     private final long correlationId;
     private final long bindingRef;
 
-    public UnbindRequest(
+    public UnbindCommand(
         long correlationId,
         long bindingRef)
     {
@@ -32,6 +32,6 @@ public final class UnbindRequest implements AcceptorCommand
 
     public void execute(Acceptor acceptor)
     {
-        acceptor.onUnbindRequest(correlationId, bindingRef);
+        acceptor.onUnbindCommand(correlationId, bindingRef);
     }
 }

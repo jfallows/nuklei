@@ -60,7 +60,7 @@ public final class Acceptor implements Nukleus, Consumer<AcceptorCommand>
         command.execute(this);
     }
 
-    public void onBindRequest(
+    public void onBindCommand(
         long correlationId,
         String source,
         long sourceBindingRef,
@@ -85,7 +85,7 @@ public final class Acceptor implements Nukleus, Consumer<AcceptorCommand>
         }
     }
 
-    public void onUnbindRequest(
+    public void onUnbindCommand(
         long correlationId,
         long bindingRef)
     {

@@ -159,7 +159,7 @@ public final class Conductor implements Nukleus, Consumer<AcceptorResponse>
         String destination = bindRO.binding().destination().asString();
         InetSocketAddress address = new InetSocketAddress(bindRO.binding().address().asInetAddress(), bindRO.binding().port());
 
-        acceptorProxy.onBindRequest(correlationId, source, sourceBindingRef, destination, address);
+        acceptorProxy.onBindCommand(correlationId, source, sourceBindingRef, destination, address);
     }
 
     private void onReceiveUnbindCommand(DirectBuffer buffer, int index, int length)
@@ -169,6 +169,6 @@ public final class Conductor implements Nukleus, Consumer<AcceptorResponse>
         long correlationId = unbindRO.correlationId();
         long bindingRef = unbindRO.bindingRef();
 
-        acceptorProxy.onUnbindRequest(correlationId, bindingRef);
+        acceptorProxy.onUnbindCommand(correlationId, bindingRef);
     }
 }
