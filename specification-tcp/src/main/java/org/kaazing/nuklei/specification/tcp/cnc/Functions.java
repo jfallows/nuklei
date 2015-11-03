@@ -18,6 +18,7 @@ package org.kaazing.nuklei.specification.tcp.cnc;
 
 import static uk.co.real_logic.agrona.IoUtil.mapExistingFile;
 import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
+import static uk.co.real_logic.agrona.IoUtil.unmap;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
@@ -50,7 +51,7 @@ public final class Functions
         return new DeferredLayout(false, new File(filename), ringCapacity, broadcastCapacity);
     }
 
-    private abstract static class Layout
+    private abstract static class Layout implements AutoCloseable
     {
         private long correlationId;
 
@@ -69,11 +70,11 @@ public final class Functions
         {
             return correlationId;
         }
-
     }
 
     public static final class EagerLayout extends Layout
     {
+        private final MappedByteBuffer buffer;
         private final AtomicBuffer nukleus;
         private final AtomicBuffer controller;
 
@@ -87,7 +88,7 @@ public final class Functions
             int metaLength = META_DATA_LENGTH;
             int ringLength = ringCapacity + RingBufferDescriptor.TRAILER_LENGTH;
             int broadcastLength = broadcastCapacity + BroadcastBufferDescriptor.TRAILER_LENGTH;
-            MappedByteBuffer buffer = overwrite
+            this.buffer = overwrite
                     ? mapNewFile(absolute, metaLength + ringLength + broadcastLength)
                     : mapExistingFile(absolute, location.getAbsolutePath());
             this.nukleus = new UnsafeBuffer(buffer, metaLength, ringLength);
@@ -106,6 +107,11 @@ public final class Functions
             return controller;
         }
 
+        @Override
+        public void close()
+        {
+            unmap(buffer);
+        }
     }
 
     public static final class DeferredLayout extends Layout
@@ -115,9 +121,7 @@ public final class Functions
         private final int ringCapacity;
         private final int broadcastCapacity;
 
-        private boolean initialized;
-        private AtomicBuffer nukleus;
-        private AtomicBuffer controller;
+        private EagerLayout delegate;
 
         public DeferredLayout(
             boolean overwrite,
@@ -135,24 +139,30 @@ public final class Functions
         public AtomicBuffer getNukleus()
         {
             ensureInitialized();
-            return nukleus;
+            return delegate.nukleus;
         }
 
         @Override
         public AtomicBuffer getController()
         {
             ensureInitialized();
-            return controller;
+            return delegate.controller;
+        }
+
+        @Override
+        public void close() throws Exception
+        {
+            if (delegate != null)
+            {
+                delegate.close();
+            }
         }
 
         void ensureInitialized()
         {
-            if (!initialized)
+            if (delegate == null)
             {
-                EagerLayout layout = new EagerLayout(overwrite, location, ringCapacity, broadcastCapacity);
-                this.nukleus = layout.getNukleus();
-                this.controller = layout.getController();
-                this.initialized = true;
+                delegate = new EagerLayout(overwrite, location, ringCapacity, broadcastCapacity);
             }
         }
     }
