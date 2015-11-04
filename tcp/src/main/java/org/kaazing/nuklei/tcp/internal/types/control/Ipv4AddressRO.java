@@ -26,5 +26,4 @@ public final class Ipv4AddressRO extends Ipv4AddressType<DirectBuffer>
         checkLimit(limit(), actingLimit);
         return this;
     }
-
 }

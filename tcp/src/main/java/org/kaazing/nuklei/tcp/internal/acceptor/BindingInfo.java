@@ -102,5 +102,4 @@ public class BindingInfo
         return String.format("[reference=%d, source=\"%s\", sourceBindingRef=%d, destination=\"%s\", address=%s]",
                 reference(), source(), sourceBindingRef(), destination(), address());
     }
-
 }

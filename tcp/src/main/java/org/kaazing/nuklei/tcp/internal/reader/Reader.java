@@ -16,8 +16,12 @@
 
 package org.kaazing.nuklei.tcp.internal.reader;
 
+import static java.nio.ByteBuffer.allocateDirect;
+import static java.nio.ByteOrder.nativeOrder;
 import static java.nio.channels.SelectionKey.OP_READ;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -26,7 +30,10 @@ import java.util.function.Consumer;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.Context;
 import org.kaazing.nuklei.tcp.internal.types.stream.BeginRW;
+import org.kaazing.nuklei.tcp.internal.types.stream.DataRW;
+import org.kaazing.nuklei.tcp.internal.types.stream.EndRW;
 
+import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -35,17 +42,21 @@ import uk.co.real_logic.agrona.nio.TransportPoller;
 
 public final class Reader extends TransportPoller implements Nukleus, Consumer<ReaderCommand>
 {
-    private static final int SEND_BUFFER_CAPACITY = 1024; // TODO: Configuration and Context
+    private static final int MAX_RECEIVE_LENGTH = 1024; // TODO: Configuration and Context
 
     private final BeginRW beginRW = new BeginRW();
+    private final DataRW dataRW = new DataRW();
+    private final EndRW endRW = new EndRW();
 
     private final OneToOneConcurrentArrayQueue<ReaderCommand> commandQueue;
-    private final AtomicBuffer sendBuffer;
+    private final ByteBuffer byteBuffer;
+    private final AtomicBuffer atomicBuffer;
 
     public Reader(Context context)
     {
         this.commandQueue = context.readerCommandQueue();
-        this.sendBuffer = new UnsafeBuffer(new byte[SEND_BUFFER_CAPACITY]);
+        this.byteBuffer = allocateDirect(MAX_RECEIVE_LENGTH).order(nativeOrder());
+        this.atomicBuffer = new UnsafeBuffer(byteBuffer);
     }
 
     @Override
@@ -79,9 +90,9 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
             ReaderInfo info = new ReaderInfo(connectionId, channel, writeBuffer);
             channel.register(selector, OP_READ, info);
 
-            beginRW.wrap(sendBuffer, 0)
-                   .bindingRef(bindingRef)
-                   .connectionId(connectionId);
+            beginRW.wrap(atomicBuffer, 0)
+                   .streamId(info.streamId())
+                   .bindingRef(bindingRef);
 
             writeBuffer.write(beginRW.type(), beginRW.buffer(), beginRW.offset(), beginRW.remaining());
         }
@@ -93,7 +104,45 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
 
     private int processRead(SelectionKey selectionKey)
     {
-        // TODO
+        try
+        {
+            final ReaderInfo info = (ReaderInfo) selectionKey.attachment();
+            final SocketChannel channel = info.channel();
+            final long streamId = info.streamId();
+            final RingBuffer writeBuffer = info.ringBuffer();
+
+            dataRW.wrap(atomicBuffer, 0)
+                  .streamId(streamId);
+
+            int readableBytes = channel.read(byteBuffer);
+
+            if (readableBytes == -1)
+            {
+                endRW.wrap(atomicBuffer, 0)
+                     .streamId(streamId);
+
+                if (!writeBuffer.write(endRW.type(), endRW.buffer(), endRW.offset(), endRW.remaining()))
+                {
+                    throw new IllegalStateException("could not write to ring buffer");
+                }
+
+                selectionKey.cancel();
+            }
+            else
+            {
+                dataRW.remaining(readableBytes);
+
+                if (!writeBuffer.write(dataRW.type(), dataRW.buffer(), dataRW.offset(), dataRW.remaining()))
+                {
+                    throw new IllegalStateException("could not write to ring buffer");
+                }
+            }
+        }
+        catch (IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
         return 1;
     }
 }

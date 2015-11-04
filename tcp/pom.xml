@@ -33,6 +33,12 @@
         </dependency>
         <dependency>
             <groupId>org.kaazing</groupId>
+            <artifactId>specification.tcp</artifactId>
+            <version>${k3po.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.kaazing</groupId>
             <artifactId>nuklei-specification-tcp</artifactId>
             <version>${project.version}</version>
         </dependency>

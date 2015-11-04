@@ -13,31 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.kaazing.nuklei.tcp.internal.types.stream;
 
-import org.kaazing.nuklei.tcp.internal.types.Type;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.DirectBuffer;
-
-public abstract class EndType<T extends DirectBuffer> extends Type<T>
+public final class DataRW extends DataType<MutableDirectBuffer>
 {
-    protected static final int FIELD_OFFSET_STREAM_ID = 0;
-    protected static final int FIELD_SIZE_STREAM_ID = BitUtil.SIZE_OF_LONG;
+    private int remaining;
 
-    public final int type()
+    public DataRW wrap(MutableDirectBuffer buffer, int offset)
     {
-        return 0x00000003;
+        super.wrap(buffer, offset);
+        return this;
     }
 
-    public final long streamId()
+    public DataRW streamId(long streamId)
     {
-        return buffer().getLong(offset() + FIELD_OFFSET_STREAM_ID);
+        buffer().putLong(offset() + FIELD_OFFSET_STREAM_ID, streamId);
+        return this;
+    }
+
+    public DataRW remaining(int remaining)
+    {
+        this.remaining = remaining;
+        return this;
     }
 
     @Override
-    public final int limit()
+    public int limit()
     {
-        return offset() + FIELD_SIZE_STREAM_ID;
+        return offset() + remaining;
     }
 }

@@ -15,31 +15,15 @@
  */
 package org.kaazing.nuklei.tcp.internal.types.stream;
 
-import org.kaazing.nuklei.tcp.internal.types.Type;
-
-import uk.co.real_logic.agrona.BitUtil;
+import static org.kaazing.nuklei.tcp.internal.types.Types.checkLimit;
 import uk.co.real_logic.agrona.DirectBuffer;
 
-public abstract class DataType<T extends DirectBuffer> extends Type<T>
+public final class BeginRO extends BeginType<DirectBuffer>
 {
-    protected static final int FIELD_OFFSET_STREAM_ID = 0;
-    protected static final int FIELD_SIZE_STREAM_ID = BitUtil.SIZE_OF_LONG;
-
-    protected static final int FIELD_OFFSET_PAYLOAD = FIELD_OFFSET_STREAM_ID + FIELD_SIZE_STREAM_ID;
-
-    public final int type()
+    public BeginRO wrap(DirectBuffer buffer, int offset, int actingLimit)
     {
-        return 0x00000002;
+        super.wrap(buffer, offset);
+        checkLimit(limit(), actingLimit);
+        return this;
     }
-
-    public final long streamId()
-    {
-        return buffer().getLong(offset() + FIELD_OFFSET_STREAM_ID);
-    }
-
-    public int offsetPayload()
-    {
-        return offset() + FIELD_OFFSET_PAYLOAD;
-    }
-
 }

@@ -14,29 +14,21 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal;
+package org.kaazing.nuklei.tcp.internal.types.stream;
 
-import java.io.File;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-import org.kaazing.nuklei.Configuration;
-import org.kaazing.nuklei.NukleusFactorySpi;
-
-public final class TcpNukleusFactorySpi implements NukleusFactorySpi
+public final class EndRW extends EndType<MutableDirectBuffer>
 {
-
-    @Override
-    public String name()
+    public EndRW wrap(MutableDirectBuffer buffer, int offset)
     {
-        return "tcp";
+        super.wrap(buffer, offset);
+        return this;
     }
 
-    @Override
-    public TcpNukleus create(Configuration config)
+    public EndRW streamId(long streamId)
     {
-        Context context = new Context();
-        context.cncFile(new File(config.directory(), "tcp/cnc"))
-               .conclude(config);
-        return new TcpNukleus(context);
+        buffer().putLong(offset() + FIELD_OFFSET_STREAM_ID, streamId);
+        return this;
     }
-
 }

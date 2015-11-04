@@ -26,9 +26,9 @@ public final class BeginRW extends BeginType<MutableDirectBuffer>
         return this;
     }
 
-    public BeginRW connectionId(long connectionId)
+    public BeginRW streamId(long streamId)
     {
-        buffer().putLong(offset() + FIELD_OFFSET_CONNECTION_ID, connectionId);
+        buffer().putLong(offset() + FIELD_OFFSET_STREAM_ID, streamId);
         return this;
     }
 

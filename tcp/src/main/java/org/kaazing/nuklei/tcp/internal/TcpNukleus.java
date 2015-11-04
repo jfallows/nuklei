@@ -24,6 +24,7 @@ import org.kaazing.nuklei.tcp.internal.writer.Writer;
 
 final class TcpNukleus implements Nukleus
 {
+    private final Context context;
     private final Conductor conductor;
     private final Acceptor acceptor;
     private final Connector connector;
@@ -32,6 +33,7 @@ final class TcpNukleus implements Nukleus
 
     TcpNukleus(Context context)
     {
+        this.context = context;
         this.conductor = new Conductor(context);
         this.acceptor = new Acceptor(context);
         this.connector = new Connector(context);
@@ -67,6 +69,7 @@ final class TcpNukleus implements Nukleus
         connector.close();
         reader.close();
         writer.close();
+        context.close();
     }
 
 }

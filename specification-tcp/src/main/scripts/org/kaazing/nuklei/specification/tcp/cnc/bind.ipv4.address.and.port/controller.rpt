@@ -19,5 +19,7 @@ read [0x40 0x00 0x00 0x01]
 read ${cnc.correlationId()}
 read [0..8]
 
+read notify BOUND
+
 close
 closed

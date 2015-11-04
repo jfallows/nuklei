@@ -16,13 +16,23 @@
 
 package org.kaazing.nuklei.tcp.internal.writer;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.function.Consumer;
 
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.Context;
+import org.kaazing.nuklei.tcp.internal.types.stream.BeginRO;
+import org.kaazing.nuklei.tcp.internal.types.stream.DataRO;
+import org.kaazing.nuklei.tcp.internal.types.stream.EndRO;
 
+import uk.co.real_logic.agrona.LangUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.collections.ArrayUtil;
+import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
+import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.nio.TransportPoller;
@@ -30,10 +40,19 @@ import uk.co.real_logic.agrona.nio.TransportPoller;
 public final class Writer extends TransportPoller implements Nukleus, Consumer<WriterCommand>
 {
     private final OneToOneConcurrentArrayQueue<WriterCommand> commandQueue;
+    private final Long2ObjectHashMap<WriterInfo> infosByStreamId;
+    private final MessageHandler readHandler;
+    private RingBuffer[] readBuffers;
+    private final BeginRO beginRO = new BeginRO();
+    private final EndRO endRO = new EndRO();
+    private final DataRO dataRO = new DataRO();
 
     public Writer(Context context)
     {
         this.commandQueue = context.writerCommandQueue();
+        this.infosByStreamId = new Long2ObjectHashMap<>();
+        this.readBuffers = new RingBuffer[0];
+        this.readHandler = this::handleRead;
     }
 
     @Override
@@ -44,6 +63,11 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         selector.selectNow();
         weight += selectedKeySet.forEach(this::processWrite);
         weight += commandQueue.drain(this);
+
+        for (int i=0; i < readBuffers.length; i++)
+        {
+            weight += readBuffers[i].read(readHandler);
+        }
 
         return weight;
     }
@@ -66,11 +90,85 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         SocketChannel channel,
         RingBuffer readBuffer)
     {
-        // TODO Auto-generated method stub
+        WriterInfo info = new WriterInfo(bindingRef, connectionId, channel, readBuffer);
+
+        // TODO: BiInt2ObjectMap needed or already sufficiently unique?
+        infosByStreamId.put(info.streamId(), info);
+
+        // TODO: prevent duplicate adds
+        ArrayUtil.add(readBuffers, readBuffer);
+    }
+
+    private void handleRead(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
+    {
+        switch (msgTypeId)
+        {
+        case 0x00000001:
+            beginRO.wrap(buffer, index, index + length);
+            WriterInfo newInfo = infosByStreamId.get(beginRO.streamId());
+            if (newInfo == null)
+            {
+                throw new IllegalStateException("stream not found: " + beginRO.streamId());
+            }
+            break;
+
+        case 0x00000002:
+            dataRO.wrap(buffer, index, index + length);
+
+            WriterInfo info = infosByStreamId.get(dataRO.streamId());
+            if (info == null)
+            {
+                throw new IllegalStateException("stream not found: " + dataRO.streamId());
+            }
+
+            try
+            {
+                SocketChannel channel = info.channel();
+                ByteBuffer sendBuffer = info.sendBuffer();
+                sendBuffer.limit(dataRO.limit());
+                sendBuffer.position(dataRO.offsetPayload());
+
+                // send buffer underlying buffer for read buffer
+                final int total = sendBuffer.remaining();
+                final int sent = channel.write(sendBuffer);
+
+                if (sent < total)
+                {
+                    // TODO: support partial writes
+                    throw new IllegalStateException("partial write: " + sent + "/" + length);
+                }
+            }
+            catch (IOException ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
+            break;
+
+        case 0x00000003:
+            endRO.wrap(buffer, index, index + length);
+
+            WriterInfo oldInfo = infosByStreamId.remove(endRO.streamId());
+            if (oldInfo == null)
+            {
+                throw new IllegalStateException("stream not found: " + endRO.streamId());
+            }
+
+            try
+            {
+                SocketChannel channel = oldInfo.channel();
+                channel.close();
+            }
+            catch (IOException ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
+            break;
+        }
     }
 
     private int processWrite(SelectionKey selectionKey)
     {
+        // fulfill partial writes (flow control?)
         return 1;
     }
 }

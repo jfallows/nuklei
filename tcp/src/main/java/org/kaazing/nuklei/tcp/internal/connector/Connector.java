@@ -40,7 +40,7 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
         int weight = 0;
 
         selector.selectNow();
-        selectedKeySet.forEach(this::processConnect);
+        weight += selectedKeySet.forEach(this::processConnect);
         weight += commandQueue.drain(this);
 
         return weight;

@@ -32,7 +32,11 @@ public final class WriterProxy
         this.commandQueue = context.writerCommandQueue();
     }
 
-    public void doRegister(long connectionId, long bindingRef, SocketChannel channel, RingBuffer readBuffer)
+    public void doRegister(
+        long connectionId,
+        long bindingRef,
+        SocketChannel channel,
+        RingBuffer readBuffer)
     {
         RegisterCommand response = new RegisterCommand(bindingRef, connectionId, channel, readBuffer);
         if (!commandQueue.offer(response))

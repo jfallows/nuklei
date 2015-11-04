@@ -20,7 +20,9 @@ import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
 import static uk.co.real_logic.agrona.IoUtil.unmap;
 import static uk.co.real_logic.agrona.LangUtil.rethrowUnchecked;
 
+import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
 import java.nio.MappedByteBuffer;
 
 import org.kaazing.nuklei.Configuration;
@@ -40,7 +42,7 @@ import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-public final class Context implements AutoCloseable
+public final class Context implements Closeable
 {
     private File cncFile;
     private IdleStrategy idleStrategy;
@@ -256,7 +258,7 @@ public final class Context implements AutoCloseable
     }
 
     @Override
-    public void close() throws Exception
+    public void close() throws IOException
     {
         unmap(cncByteBuffer);
     }

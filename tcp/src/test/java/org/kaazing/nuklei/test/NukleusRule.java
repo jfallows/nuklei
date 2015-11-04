@@ -87,22 +87,24 @@ public final class NukleusRule implements TestRule
                 final AtomicBoolean finished = new AtomicBoolean();
                 final AtomicInteger errorCount = new AtomicInteger();
                 final IdleStrategy idler = new SleepingIdleStrategy(MILLISECONDS.toNanos(50L));
+                final Nukleus nukleus = factory.create(name, config);
                 Runnable runnable = () ->
                 {
-                    try (Nukleus nukleus = factory.create(name, config))
+                    while (!finished.get())
                     {
-                        while (!finished.get())
+                        try
                         {
-                            try
-                            {
-                                int workCount = nukleus.process();
-                                idler.idle(workCount);
-                            }
-                            catch (Exception e)
-                            {
-                                errorCount.incrementAndGet();
-                            }
+                            int workCount = nukleus.process();
+                            idler.idle(workCount);
                         }
+                        catch (Exception e)
+                        {
+                            errorCount.incrementAndGet();
+                        }
+                    }
+                    try
+                    {
+                        nukleus.close();
                     }
                     catch (Exception e)
                     {
