@@ -25,23 +25,23 @@ public final class RegisterCommand implements ReaderCommand
     private final long bindingRef;
     private final long connectionId;
     private final SocketChannel channel;
-    private final RingBuffer writeBuffer;
+    private final RingBuffer inputBuffer;
 
     public RegisterCommand(
         long bindingRef,
         long connectionId,
         SocketChannel channel,
-        RingBuffer writeBuffer)
+        RingBuffer inputBuffer)
     {
         this.bindingRef = bindingRef;
         this.connectionId = connectionId;
         this.channel = channel;
-        this.writeBuffer = writeBuffer;
+        this.inputBuffer = inputBuffer;
     }
 
     @Override
     public void execute(Reader reader)
     {
-        reader.doRegister(bindingRef, connectionId, channel, writeBuffer);
+        reader.doRegister(bindingRef, connectionId, channel, inputBuffer);
     }
 }

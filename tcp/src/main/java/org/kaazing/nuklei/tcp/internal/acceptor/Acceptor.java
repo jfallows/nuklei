@@ -136,11 +136,11 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
                 StreamsFileDescriptor streams = new StreamsFileDescriptor(streamBufferSize);
                 MappedByteBuffer streamsBuffer = mapNewFile(streamsFile, streams.length());
                 streams.wrap(new UnsafeBuffer(streamsBuffer), 0);
-                RingBuffer readBuffer = new ManyToOneRingBuffer(streams.readBuffer());
-                RingBuffer writeBuffer = new ManyToOneRingBuffer(streams.writeBuffer());
+                RingBuffer inputBuffer = new ManyToOneRingBuffer(streams.inputBuffer());
+                RingBuffer outputBuffer = new ManyToOneRingBuffer(streams.outputBuffer());
 
-                final BindingInfo newBindingInfo =
-                        new BindingInfo(reference, source, sourceBindingRef, destination, address, readBuffer, writeBuffer);
+                final BindingInfo newBindingInfo = new BindingInfo(reference, source, sourceBindingRef,
+                                                                   destination, address, inputBuffer, outputBuffer);
 
                 serverChannel.register(selector, OP_ACCEPT, newBindingInfo);
                 newBindingInfo.attach(serverChannel);
@@ -197,8 +197,8 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
             ServerSocketChannel serverChannel = bindingInfo.channel();
             SocketChannel channel = serverChannel.accept();
             long connectionId = connectionsCount.increment();
-            readerProxy.doRegister(connectionId, bindingInfo.reference(), channel, bindingInfo.writeBuffer());
-            writerProxy.doRegister(connectionId, bindingInfo.reference(), channel, bindingInfo.readBuffer());
+            readerProxy.doRegister(connectionId, bindingInfo.reference(), channel, bindingInfo.inputBuffer());
+            writerProxy.doRegister(connectionId, bindingInfo.reference(), channel, bindingInfo.outputBuffer());
             return 1;
         }
         catch (Exception e)

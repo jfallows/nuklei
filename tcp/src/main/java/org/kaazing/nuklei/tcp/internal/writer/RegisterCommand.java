@@ -25,23 +25,23 @@ public final class RegisterCommand implements WriterCommand
     private final long bindingRef;
     private final long connectionId;
     private final SocketChannel channel;
-    private final RingBuffer readBuffer;
+    private final RingBuffer outputBuffer;
 
     public RegisterCommand(
         long bindingRef,
         long connectionId,
         SocketChannel channel,
-        RingBuffer readBuffer)
+        RingBuffer outputBuffer)
     {
         this.bindingRef = bindingRef;
         this.connectionId = connectionId;
         this.channel = channel;
-        this.readBuffer = readBuffer;
+        this.outputBuffer = outputBuffer;
     }
 
     @Override
     public void execute(Writer writer)
     {
-        writer.doRegister(bindingRef, connectionId, channel, readBuffer);
+        writer.doRegister(bindingRef, connectionId, channel, outputBuffer);
     }
 }

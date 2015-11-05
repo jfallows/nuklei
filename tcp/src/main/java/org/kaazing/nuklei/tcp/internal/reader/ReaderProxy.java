@@ -32,9 +32,9 @@ public final class ReaderProxy
         this.commandQueue = context.readerCommandQueue();
     }
 
-    public void doRegister(long connectionId, long bindingRef, SocketChannel channel, RingBuffer writeBuffer)
+    public void doRegister(long connectionId, long bindingRef, SocketChannel channel, RingBuffer inputBuffer)
     {
-        RegisterCommand response = new RegisterCommand(bindingRef, connectionId, channel, writeBuffer);
+        RegisterCommand response = new RegisterCommand(bindingRef, connectionId, channel, inputBuffer);
         if (!commandQueue.offer(response))
         {
             throw new IllegalStateException("unable to offer command");

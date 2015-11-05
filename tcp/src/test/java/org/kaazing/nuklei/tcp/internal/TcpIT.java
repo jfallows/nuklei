@@ -50,7 +50,8 @@ public class TcpIT
     @Test
     @Specification({
         "nuklei/specification/tcp/cnc/bind.ipv4.address.and.port/controller",
-        "specification/tcp/rfc793/establish.connection/tcp.client" })
+        "specification/tcp/rfc793/establish.connection/tcp.client",
+        "nuklei/specification/tcp/stream/accept.begin.ipv4.address.and.port/destination" })
     public void establishConnection() throws Exception
     {
         k3po.finish();

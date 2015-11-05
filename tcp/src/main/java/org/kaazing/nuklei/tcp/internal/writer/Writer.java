@@ -42,7 +42,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
     private final OneToOneConcurrentArrayQueue<WriterCommand> commandQueue;
     private final Long2ObjectHashMap<WriterInfo> infosByStreamId;
     private final MessageHandler readHandler;
-    private RingBuffer[] readBuffers;
+    private RingBuffer[] outputBuffers;
     private final BeginRO beginRO = new BeginRO();
     private final EndRO endRO = new EndRO();
     private final DataRO dataRO = new DataRO();
@@ -51,7 +51,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
     {
         this.commandQueue = context.writerCommandQueue();
         this.infosByStreamId = new Long2ObjectHashMap<>();
-        this.readBuffers = new RingBuffer[0];
+        this.outputBuffers = new RingBuffer[0];
         this.readHandler = this::handleRead;
     }
 
@@ -64,9 +64,9 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         weight += selectedKeySet.forEach(this::processWrite);
         weight += commandQueue.drain(this);
 
-        for (int i=0; i < readBuffers.length; i++)
+        for (int i=0; i < outputBuffers.length; i++)
         {
-            weight += readBuffers[i].read(readHandler);
+            weight += outputBuffers[i].read(readHandler);
         }
 
         return weight;
@@ -88,15 +88,15 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         long bindingRef,
         long connectionId,
         SocketChannel channel,
-        RingBuffer readBuffer)
+        RingBuffer outputBuffer)
     {
-        WriterInfo info = new WriterInfo(bindingRef, connectionId, channel, readBuffer);
+        WriterInfo info = new WriterInfo(bindingRef, connectionId, channel, outputBuffer);
 
         // TODO: BiInt2ObjectMap needed or already sufficiently unique?
         infosByStreamId.put(info.streamId(), info);
 
         // TODO: prevent duplicate adds
-        ArrayUtil.add(readBuffers, readBuffer);
+        ArrayUtil.add(outputBuffers, outputBuffer);
     }
 
     private void handleRead(int msgTypeId, MutableDirectBuffer buffer, int index, int length)

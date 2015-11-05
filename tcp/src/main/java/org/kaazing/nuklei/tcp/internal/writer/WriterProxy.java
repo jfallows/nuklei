@@ -36,9 +36,9 @@ public final class WriterProxy
         long connectionId,
         long bindingRef,
         SocketChannel channel,
-        RingBuffer readBuffer)
+        RingBuffer outputBuffer)
     {
-        RegisterCommand response = new RegisterCommand(bindingRef, connectionId, channel, readBuffer);
+        RegisterCommand response = new RegisterCommand(bindingRef, connectionId, channel, outputBuffer);
         if (!commandQueue.offer(response))
         {
             throw new IllegalStateException("unable to offer command");

@@ -28,8 +28,8 @@ public class BindingInfo
     private final long sourceBindingRef;
     private final String destination;
     private final InetSocketAddress address;
-    private final RingBuffer readBuffer;
-    private final RingBuffer writeBuffer;
+    private final RingBuffer inputBuffer;
+    private final RingBuffer outputBuffer;
 
     private ServerSocketChannel serverChannel;
 
@@ -39,16 +39,16 @@ public class BindingInfo
         long sourceBindingRef,
         String destination,
         InetSocketAddress address,
-        RingBuffer readBuffer,
-        RingBuffer writeBuffer)
+        RingBuffer inputBuffer,
+        RingBuffer outputBuffer)
     {
         this.reference = reference;
         this.source = source;
         this.sourceBindingRef = sourceBindingRef;
         this.destination = destination;
         this.address = address;
-        this.readBuffer = readBuffer;
-        this.writeBuffer = writeBuffer;
+        this.inputBuffer = inputBuffer;
+        this.outputBuffer = outputBuffer;
     }
 
     public long reference()
@@ -76,14 +76,14 @@ public class BindingInfo
         return address;
     }
 
-    public RingBuffer readBuffer()
+    public RingBuffer inputBuffer()
     {
-        return readBuffer;
+        return inputBuffer;
     }
 
-    public RingBuffer writeBuffer()
+    public RingBuffer outputBuffer()
     {
-        return writeBuffer;
+        return outputBuffer;
     }
 
     public void attach(ServerSocketChannel attachment)

@@ -24,14 +24,14 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 public final class StreamsFileDescriptor extends Type<DirectBuffer>
 {
     private final int bufferSize;
-    private final AtomicBuffer readBuffer;
-    private final AtomicBuffer writeBuffer;
+    private final AtomicBuffer inputBuffer;
+    private final AtomicBuffer outputBuffer;
 
     public StreamsFileDescriptor(int ringBufferSize)
     {
         this.bufferSize = ringBufferSize;
-        this.readBuffer = new UnsafeBuffer(new byte[0]);
-        this.writeBuffer = new UnsafeBuffer(new byte[0]);
+        this.inputBuffer = new UnsafeBuffer(new byte[0]);
+        this.outputBuffer = new UnsafeBuffer(new byte[0]);
     }
 
     public int length()
@@ -42,19 +42,19 @@ public final class StreamsFileDescriptor extends Type<DirectBuffer>
     public StreamsFileDescriptor wrap(DirectBuffer buffer, int offset)
     {
         super.wrap(buffer, offset);
-        readBuffer.wrap(buffer, offset, bufferSize);
-        writeBuffer.wrap(buffer, offset + bufferSize, bufferSize);
+        inputBuffer.wrap(buffer, offset, bufferSize);
+        outputBuffer.wrap(buffer, offset + bufferSize, bufferSize);
         return this;
     }
 
-    public AtomicBuffer readBuffer()
+    public AtomicBuffer inputBuffer()
     {
-        return readBuffer;
+        return inputBuffer;
     }
 
-    public AtomicBuffer writeBuffer()
+    public AtomicBuffer outputBuffer()
     {
-        return writeBuffer;
+        return outputBuffer;
     }
 
     @Override

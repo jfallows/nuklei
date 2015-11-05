@@ -83,22 +83,27 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
         command.execute(this);
     }
 
-    public void doRegister(long bindingRef, long connectionId, SocketChannel channel, RingBuffer writeBuffer)
+    public void doRegister(long bindingRef, long connectionId, SocketChannel channel, RingBuffer inputBuffer)
     {
         try
         {
-            ReaderInfo info = new ReaderInfo(connectionId, channel, writeBuffer);
+            ReaderInfo info = new ReaderInfo(connectionId, channel, inputBuffer);
+            channel.configureBlocking(false);
             channel.register(selector, OP_READ, info);
 
             beginRW.wrap(atomicBuffer, 0)
                    .streamId(info.streamId())
                    .bindingRef(bindingRef);
 
-            writeBuffer.write(beginRW.type(), beginRW.buffer(), beginRW.offset(), beginRW.remaining());
+            inputBuffer.write(beginRW.type(), beginRW.buffer(), beginRW.offset(), beginRW.remaining());
         }
-        catch (ClosedChannelException e)
+        catch (ClosedChannelException ex)
         {
             // channel already closed
+        }
+        catch (IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 
