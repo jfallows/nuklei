@@ -1,0 +1,15 @@
+property stream ${stream:map("target/nukleus-itests/tcp/destination.accepts", 1024 * 1024)}
+
+connect await BOUND
+        agrona://stream/bidirectional
+        option reader ${agrona:manyToOneReader(stream.output)}
+        option writer ${agrona:manyToOneWriter(stream.input)}
+connected
+
+write [0x00 0x00 0x00 0x01]
+write [0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00]
+write [0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00]
+write flush
+
+close
+closed
