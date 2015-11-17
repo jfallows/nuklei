@@ -9,7 +9,7 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY ERROR_TYPE_ID, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -51,10 +51,10 @@ public final class Context implements Closeable
     private AtomicBuffer counterLabelsBuffer;
     private AtomicBuffer counterValuesBuffer;
     private Counters counters;
-    private RingBuffer toNukleusCommands;
+    private RingBuffer toConductorCommands;
     private MappedByteBuffer cncByteBuffer;
     private UnsafeBuffer cncMetaDataBuffer;
-    private BroadcastTransmitter toControllerResponses;
+    private BroadcastTransmitter fromConductorResponses;
 
     private OneToOneConcurrentArrayQueue<AcceptorCommand> toAcceptorFromConductorCommands;
     private OneToOneConcurrentArrayQueue<AcceptorResponse> fromAcceptorToConductorEvents;
@@ -117,26 +117,26 @@ public final class Context implements Closeable
         return counterValuesBuffer;
     }
 
-    public Context toNukleusCommands(RingBuffer toNukleusCommands)
+    public Context conductorCommands(RingBuffer conductorCommands)
     {
-        this.toNukleusCommands = toNukleusCommands;
+        this.toConductorCommands = conductorCommands;
         return this;
     }
 
-    public RingBuffer toNukleusCommands()
+    public RingBuffer conductorCommands()
     {
-        return toNukleusCommands;
+        return toConductorCommands;
     }
 
-    public Context toControllerResponses(BroadcastTransmitter toControllerResponses)
+    public Context conductorResponses(BroadcastTransmitter conductorResponses)
     {
-        this.toControllerResponses = toControllerResponses;
+        this.fromConductorResponses = conductorResponses;
         return this;
     }
 
-    public BroadcastTransmitter toControllerResponses()
+    public BroadcastTransmitter conductorResponses()
     {
-        return toControllerResponses;
+        return fromConductorResponses;
     }
 
     public void acceptorCommandQueue(
@@ -226,10 +226,10 @@ public final class Context implements Closeable
                 config.counterLabelsBufferLength(),
                 config.counterValuesBufferLength());
 
-            toNukleusCommands(
+            conductorCommands(
                     new ManyToOneRingBuffer(CncFileDescriptor.createToNukleusBuffer(cncByteBuffer, cncMetaDataBuffer)));
 
-            toControllerResponses(
+            conductorResponses(
                     new BroadcastTransmitter(CncFileDescriptor.createToControllerBuffer(cncByteBuffer, cncMetaDataBuffer)));
 
             acceptorCommandQueue(

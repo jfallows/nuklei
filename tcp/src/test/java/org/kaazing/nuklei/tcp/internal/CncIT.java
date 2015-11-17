@@ -9,7 +9,7 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY ERROR_TYPE_ID, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -49,18 +49,18 @@ public class CncIT
 
     @Test
     @Specification({
-        "bind.ipv4.address.and.port/controller"
+        "bind.address.and.port/controller"
     })
-    public void shouldBindIPv4AddressAndPort() throws Exception
+    public void shouldBindAddressAndPort() throws Exception
     {
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "unbind.ipv4.address.and.port/controller",
+        "unbind.address.and.port/controller",
     })
-    public void shouldUnbindIPv4AddressAndPort() throws Exception
+    public void shouldUnbindAddressAndPort() throws Exception
     {
         k3po.finish();
     }

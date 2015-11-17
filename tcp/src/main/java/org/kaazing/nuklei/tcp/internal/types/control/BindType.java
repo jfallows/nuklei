@@ -9,7 +9,7 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY ERROR_TYPE_ID, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -22,10 +22,17 @@ import uk.co.real_logic.agrona.DirectBuffer;
 
 public abstract class BindType<T extends DirectBuffer> extends Type<T>
 {
+    public static final int BIND_TYPE_ID = 0x00000001;
+
     protected static final int FIELD_OFFSET_CORRELATION_ID = 0;
     protected static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
 
     protected static final int FIELD_OFFSET_BINDING = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
+
+    public final int typeId()
+    {
+        return BIND_TYPE_ID;
+    }
 
     public final long correlationId()
     {

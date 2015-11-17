@@ -9,7 +9,7 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY ERROR_TYPE_ID, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -19,7 +19,6 @@ package org.kaazing.nuklei.tcp.internal;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.DisableOnDebug;
@@ -32,7 +31,7 @@ import org.kaazing.nuklei.test.NukleusRule;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
-public class TcpIT
+public class AcceptIT
 {
     private final K3poRule k3po = new K3poRule().setScriptRoot("org/kaazing");
 
@@ -49,70 +48,70 @@ public class TcpIT
 
     @Test
     @Specification({
-        "nuklei/specification/tcp/cnc/bind.ipv4.address.and.port/controller",
-        "specification/tcp/rfc793/establish.connection/tcp.client",
-        "nuklei/specification/tcp/stream/accept.begin.ipv4.address.and.port/destination" })
-    public void establishConnection() throws Exception
+        "nuklei/specification/tcp/cnc/bind.address.and.port/controller",
+        "specification/tcp/rfc793/establish.connection/client",
+        "nuklei/specification/tcp/stream/accepts/establish.connection/handler" })
+    public void shouldEstablishConnection() throws Exception
     {
         k3po.finish();
     }
 
-    @Ignore
     @Test
     @Specification({
-        "server.sent.data/tcp.client",
-        "server.sent.data/tcp.server" })
-    public void serverSentData() throws Exception
+        "nuklei/specification/tcp/cnc/bind.address.and.port/controller",
+        "specification/tcp/rfc793/server.sent.data/client",
+        "nuklei/specification/tcp/stream/accepts/server.sent.data/handler" })
+    public void shouldReceiveServerSentData() throws Exception
     {
         k3po.finish();
     }
 
-    @Ignore
     @Test
     @Specification({
-        "client.sent.data/tcp.client",
-        "client.sent.data/tcp.server" })
-    public void clientSentData() throws Exception
+        "nuklei/specification/tcp/cnc/bind.address.and.port/controller",
+        "specification/tcp/rfc793/client.sent.data/tcp.client",
+        "nuklei/specification/tcp/stream/accepts/client.sent.data/handler" })
+    public void shouldReceiveClientSentData() throws Exception
     {
         k3po.finish();
     }
 
-    @Ignore
     @Test
     @Specification({
-        "bidirectional.data/tcp.client",
-        "bidirectional.data/tcp.server" })
-    public void bidirectionalData() throws Exception
+        "nuklei/specification/tcp/cnc/bind.address.and.port/controller",
+        "specification/tcp/rfc793/echo.data/client",
+        "nuklei/specification/tcp/stream/accepts/echo.data/handler" })
+    public void shouldEchoData() throws Exception
     {
         k3po.finish();
     }
 
-    @Ignore
     @Test
     @Specification({
-        "server.close/tcp.client",
-        "server.close/tcp.server" })
-    public void serverClose() throws Exception
+        "nuklei/specification/tcp/cnc/bind.address.and.port/controller",
+        "specification/tcp/rfc793/server.close/client",
+        "nuklei/specification/tcp/stream/accepts/server.close/handler" })
+    public void shouldInitiateServerClose() throws Exception
     {
         k3po.finish();
     }
 
-    @Ignore
     @Test
     @Specification({
-        "client.close/tcp.client",
-        "client.close/tcp.server" })
-    public void clientClose() throws Exception
+        "nuklei/specification/tcp/cnc/bind.address.and.port/controller",
+        "specification/tcp/rfc793/client.close/client",
+        "nuklei/specification/tcp/stream/accepts/client.close/handler" })
+    public void shouldInitiateClientClose() throws Exception
     {
         k3po.finish();
     }
 
-    @Ignore
     @Test
     @Specification({
-        "concurrent.connections/tcp.client",
-        "concurrent.connections/tcp.server" })
-    public void concurrentConnections() throws Exception
+        "nuklei/specification/tcp/cnc/bind.address.and.port/controller",
+        "specification/tcp/rfc793/concurrent.connections/client",
+        "nuklei/specification/tcp/stream/accepts/concurrent.connections/handler" })
+    public void shouldEstablishConcurrentConnections() throws Exception
     {
         k3po.finish();
     }

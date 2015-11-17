@@ -9,12 +9,15 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY ERROR_TYPE_ID, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
 
 package org.kaazing.nuklei.tcp.internal.conductor;
+
+import static org.kaazing.nuklei.tcp.internal.types.control.BindType.BIND_TYPE_ID;
+import static org.kaazing.nuklei.tcp.internal.types.control.UnbindType.UNBIND_TYPE_ID;
 
 import java.net.InetSocketAddress;
 import java.util.function.Consumer;
@@ -32,7 +35,6 @@ import org.kaazing.nuklei.tcp.internal.types.control.UnboundRW;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
@@ -48,22 +50,20 @@ public final class Conductor implements Nukleus, Consumer<AcceptorResponse>
     private final UnboundRW unboundRW = new UnboundRW();
     private final ErrorRW errorRW = new ErrorRW();
 
-    private final RingBuffer toNukleusCommands;
-    private final MessageHandler onNukleusCommandFunc;
+    private final RingBuffer conductorCommands;
 
     private final AcceptorProxy acceptorProxy;
     private final OneToOneConcurrentArrayQueue<AcceptorResponse> acceptorResponses;
 
-    private final BroadcastTransmitter toControllerResponses;
+    private final BroadcastTransmitter conductorResponses;
     private final AtomicBuffer sendBuffer;
 
     public Conductor(Context context)
     {
         this.acceptorProxy = new AcceptorProxy(context);
         this.acceptorResponses = context.acceptorResponseQueue();
-        this.toNukleusCommands = context.toNukleusCommands();
-        this.onNukleusCommandFunc = this::handleCommand;
-        this.toControllerResponses = context.toControllerResponses();
+        this.conductorCommands = context.conductorCommands();
+        this.conductorResponses = context.conductorResponses();
         this.sendBuffer = new UnsafeBuffer(new byte[SEND_BUFFER_CAPACITY]);
     }
 
@@ -72,7 +72,7 @@ public final class Conductor implements Nukleus, Consumer<AcceptorResponse>
     {
         int weight = 0;
 
-        weight += toNukleusCommands.read(onNukleusCommandFunc);
+        weight += conductorCommands.read(this::handleCommand);
         weight += acceptorResponses.drain(this);
 
         return weight;
@@ -95,7 +95,7 @@ public final class Conductor implements Nukleus, Consumer<AcceptorResponse>
         errorRW.wrap(sendBuffer, 0)
                .correlationId(correlationId);
 
-        toControllerResponses.transmit(0x40000000, errorRW.buffer(), errorRW.offset(), errorRW.remaining());
+        conductorResponses.transmit(errorRW.typeId(), errorRW.buffer(), errorRW.offset(), errorRW.remaining());
     }
 
     public void onBoundResponse(
@@ -106,7 +106,7 @@ public final class Conductor implements Nukleus, Consumer<AcceptorResponse>
                .correlationId(correlationId)
                .bindingRef(bindingRef);
 
-        toControllerResponses.transmit(0x40000001, boundRW.buffer(), boundRW.offset(), boundRW.remaining());
+        conductorResponses.transmit(boundRW.typeId(), boundRW.buffer(), boundRW.offset(), boundRW.remaining());
     }
 
     public void onUnboundResponse(
@@ -125,21 +125,21 @@ public final class Conductor implements Nukleus, Consumer<AcceptorResponse>
                      .address(address.getAddress())
                      .port(address.getPort());
 
-        toControllerResponses.transmit(0x40000002, unboundRW.buffer(), unboundRW.offset(), unboundRW.remaining());
+        conductorResponses.transmit(unboundRW.typeId(), unboundRW.buffer(), unboundRW.offset(), unboundRW.remaining());
     }
 
     private void handleCommand(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
     {
         switch (msgTypeId)
         {
-        case 0x00000001:
+        case BIND_TYPE_ID:
             handleBindCommand(buffer, index, length);
             break;
-        case 0x00000002:
+        case UNBIND_TYPE_ID:
             handleUnbindCommand(buffer, index, length);
             break;
         default:
-            // ignore unrecognized commands
+            // ignore unrecognized commands (forwards compatible)
             break;
         }
     }

@@ -138,7 +138,7 @@ public final class Functions
         @Override
         public String getPrefixName()
         {
-            return "stream";
+            return "streams";
         }
     }
 

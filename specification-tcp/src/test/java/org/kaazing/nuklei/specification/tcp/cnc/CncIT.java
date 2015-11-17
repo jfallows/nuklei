@@ -38,20 +38,20 @@ public class CncIT
 
     @Test
     @Specification({
-        "bind.ipv4.address.and.port/nukleus",
-        "bind.ipv4.address.and.port/controller"
+        "bind.address.and.port/nukleus",
+        "bind.address.and.port/controller"
     })
-    public void shouldBindIPv4AddressAndPort() throws Exception
+    public void shouldBindAddressAndPort() throws Exception
     {
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "unbind.ipv4.address.and.port/controller",
-        "unbind.ipv4.address.and.port/nukleus"
+        "unbind.address.and.port/controller",
+        "unbind.address.and.port/nukleus"
     })
-    public void shouldUnbindIPv4AddressAndPort() throws Exception
+    public void shouldUnbindAddressAndPort() throws Exception
     {
         k3po.finish();
     }
