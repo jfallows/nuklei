@@ -16,6 +16,8 @@
 
 package org.kaazing.nuklei.tcp.internal.acceptor;
 
+import static java.lang.String.format;
+
 import java.net.InetSocketAddress;
 
 public final class BindCommand implements AcceptorCommand
@@ -40,8 +42,16 @@ public final class BindCommand implements AcceptorCommand
         this.address = address;
     }
 
+    @Override
     public void execute(Acceptor acceptor)
     {
         acceptor.doBind(correlationId, source, sourceBindingRef, destination, address);
+    }
+
+    @Override
+    public String toString()
+    {
+        return format("BIND [correlationId=%d, source=\"%s\", sourceBindingRef=%d, destination=\"%s\", address=%s]",
+                correlationId, source, sourceBindingRef, destination, address);
     }
 }

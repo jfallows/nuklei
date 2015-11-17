@@ -69,7 +69,7 @@ public class AcceptIT
     @Test
     @Specification({
         "nuklei/specification/tcp/cnc/bind.address.and.port/controller",
-        "specification/tcp/rfc793/client.sent.data/tcp.client",
+        "specification/tcp/rfc793/client.sent.data/client",
         "nuklei/specification/tcp/stream/accepts/client.sent.data/handler" })
     public void shouldReceiveClientSentData() throws Exception
     {

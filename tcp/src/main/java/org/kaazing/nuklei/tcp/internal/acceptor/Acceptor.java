@@ -17,7 +17,8 @@
 package org.kaazing.nuklei.tcp.internal.acceptor;
 
 import static java.nio.channels.SelectionKey.OP_ACCEPT;
-import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
+import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
+import static uk.co.real_logic.agrona.IoUtil.mapExistingFile;
 
 import java.io.File;
 import java.io.IOException;
@@ -134,10 +135,13 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
                 int streamBufferSize = 1024 * 1024 + RingBufferDescriptor.TRAILER_LENGTH;
                 File streamsFile = new File(streamsDir, String.format("%s.accepts", destination));
                 StreamsFileDescriptor streams = new StreamsFileDescriptor(streamBufferSize);
-                MappedByteBuffer streamsBuffer = mapNewFile(streamsFile, streams.length());
-                streams.wrap(new UnsafeBuffer(streamsBuffer), 0);
-                RingBuffer inputBuffer = new ManyToOneRingBuffer(streams.inputBuffer());
-                RingBuffer outputBuffer = new ManyToOneRingBuffer(streams.outputBuffer());
+                createEmptyFile(streamsFile, streams.totalLength());
+                MappedByteBuffer inputByteBuffer = mapExistingFile(streamsFile, "input",
+                        streams.inputOffset(), streams.inputLength());
+                MappedByteBuffer outputByteBuffer = mapExistingFile(streamsFile, "output",
+                        streams.outputOffset(), streams.outputLength());
+                RingBuffer inputBuffer = new ManyToOneRingBuffer(new UnsafeBuffer(inputByteBuffer));
+                RingBuffer outputBuffer = new ManyToOneRingBuffer(new UnsafeBuffer(outputByteBuffer));
 
                 final BindingInfo newBindingInfo = new BindingInfo(reference, source, sourceBindingRef,
                                                                    destination, address, inputBuffer, outputBuffer);

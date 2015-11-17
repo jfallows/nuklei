@@ -22,14 +22,16 @@ import uk.co.real_logic.agrona.DirectBuffer;
 
 public abstract class DataType<T extends DirectBuffer> extends Type<T>
 {
+    public static final int DATA_TYPE_ID = 0x00000002;
+
     protected static final int FIELD_OFFSET_STREAM_ID = 0;
     protected static final int FIELD_SIZE_STREAM_ID = BitUtil.SIZE_OF_LONG;
 
     protected static final int FIELD_OFFSET_PAYLOAD = FIELD_OFFSET_STREAM_ID + FIELD_SIZE_STREAM_ID;
 
-    public final int type()
+    public final int typeId()
     {
-        return 0x00000002;
+        return DATA_TYPE_ID;
     }
 
     public final long streamId()
@@ -42,4 +44,9 @@ public abstract class DataType<T extends DirectBuffer> extends Type<T>
         return offset() + FIELD_OFFSET_PAYLOAD;
     }
 
+    @Override
+    public String toString()
+    {
+        return String.format("[streamId=%d]", streamId());
+    }
 }

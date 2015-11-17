@@ -17,6 +17,7 @@
 package org.kaazing.nuklei.tcp.internal.acceptor;
 
 import java.net.InetSocketAddress;
+import java.util.logging.Logger;
 
 import org.kaazing.nuklei.tcp.internal.Context;
 
@@ -24,10 +25,12 @@ import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 public final class AcceptorProxy
 {
+    private final Logger logger;
     private final OneToOneConcurrentArrayQueue<AcceptorCommand> commandQueue;
 
     public AcceptorProxy(Context context)
     {
+        this.logger = context.acceptorLogger();
         this.commandQueue = context.acceptorCommandQueue();
     }
 
@@ -43,6 +46,8 @@ public final class AcceptorProxy
         {
             throw new IllegalStateException("unable to offer command");
         }
+
+        logger.finest(() -> { return command.toString(); });
     }
 
     public void doUnbind(long correlationId, long bindingRef)
@@ -52,6 +57,8 @@ public final class AcceptorProxy
         {
             throw new IllegalStateException("unable to offer command");
         }
+
+        logger.finest(() -> { return command.toString(); });
     }
 
 }

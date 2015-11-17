@@ -16,6 +16,7 @@
 
 package org.kaazing.nuklei.tcp.internal.acceptor;
 
+import static java.lang.String.format;
 
 public final class UnbindCommand implements AcceptorCommand
 {
@@ -33,5 +34,11 @@ public final class UnbindCommand implements AcceptorCommand
     public void execute(Acceptor acceptor)
     {
         acceptor.doUnbind(correlationId, bindingRef);
+    }
+
+    @Override
+    public String toString()
+    {
+        return format("UNBIND [correlationId=%d, bindingRef=%d]", correlationId, bindingRef);
     }
 }

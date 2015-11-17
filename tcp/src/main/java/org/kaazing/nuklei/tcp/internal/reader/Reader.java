@@ -95,7 +95,7 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
                    .streamId(info.streamId())
                    .bindingRef(bindingRef);
 
-            inputBuffer.write(beginRW.type(), beginRW.buffer(), beginRW.offset(), beginRW.remaining());
+            inputBuffer.write(beginRW.typeId(), beginRW.buffer(), beginRW.offset(), beginRW.remaining());
         }
         catch (ClosedChannelException ex)
         {
@@ -126,7 +126,7 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
                 endRW.wrap(atomicBuffer, 0)
                      .streamId(streamId);
 
-                if (!writeBuffer.write(endRW.type(), endRW.buffer(), endRW.offset(), endRW.remaining()))
+                if (!writeBuffer.write(endRW.typeId(), endRW.buffer(), endRW.offset(), endRW.remaining()))
                 {
                     throw new IllegalStateException("could not write to ring buffer");
                 }
@@ -137,7 +137,7 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
             {
                 dataRW.remaining(readableBytes);
 
-                if (!writeBuffer.write(dataRW.type(), dataRW.buffer(), dataRW.offset(), dataRW.remaining()))
+                if (!writeBuffer.write(dataRW.typeId(), dataRW.buffer(), dataRW.offset(), dataRW.remaining()))
                 {
                     throw new IllegalStateException("could not write to ring buffer");
                 }

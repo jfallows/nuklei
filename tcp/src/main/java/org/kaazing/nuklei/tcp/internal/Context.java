@@ -24,6 +24,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
+import java.util.logging.Logger;
 
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.tcp.internal.acceptor.AcceptorCommand;
@@ -137,6 +138,11 @@ public final class Context implements Closeable
     public BroadcastTransmitter conductorResponses()
     {
         return fromConductorResponses;
+    }
+
+    public Logger acceptorLogger()
+    {
+        return Logger.getLogger("nuklei.tcp.acceptor");
     }
 
     public void acceptorCommandQueue(

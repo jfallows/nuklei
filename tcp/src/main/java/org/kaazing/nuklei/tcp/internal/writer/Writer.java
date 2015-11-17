@@ -16,6 +16,10 @@
 
 package org.kaazing.nuklei.tcp.internal.writer;
 
+import static org.kaazing.nuklei.tcp.internal.types.stream.BeginType.BEGIN_TYPE_ID;
+import static org.kaazing.nuklei.tcp.internal.types.stream.DataType.DATA_TYPE_ID;
+import static org.kaazing.nuklei.tcp.internal.types.stream.EndType.END_TYPE_ID;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -42,7 +46,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
     private final OneToOneConcurrentArrayQueue<WriterCommand> commandQueue;
     private final Long2ObjectHashMap<WriterInfo> infosByStreamId;
     private final MessageHandler readHandler;
-    private RingBuffer[] outputBuffers;
+    private RingBuffer[] streamBuffers;
     private final BeginRO beginRO = new BeginRO();
     private final EndRO endRO = new EndRO();
     private final DataRO dataRO = new DataRO();
@@ -51,7 +55,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
     {
         this.commandQueue = context.writerCommandQueue();
         this.infosByStreamId = new Long2ObjectHashMap<>();
-        this.outputBuffers = new RingBuffer[0];
+        this.streamBuffers = new RingBuffer[0];
         this.readHandler = this::handleRead;
     }
 
@@ -64,9 +68,9 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         weight += selectedKeySet.forEach(this::processWrite);
         weight += commandQueue.drain(this);
 
-        for (int i=0; i < outputBuffers.length; i++)
+        for (int i=0; i < streamBuffers.length; i++)
         {
-            weight += outputBuffers[i].read(readHandler);
+            weight += streamBuffers[i].read(readHandler);
         }
 
         return weight;
@@ -88,22 +92,22 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         long bindingRef,
         long connectionId,
         SocketChannel channel,
-        RingBuffer outputBuffer)
+        RingBuffer streamBuffer)
     {
-        WriterInfo info = new WriterInfo(bindingRef, connectionId, channel, outputBuffer);
+        WriterInfo info = new WriterInfo(bindingRef, connectionId, channel, streamBuffer);
 
         // TODO: BiInt2ObjectMap needed or already sufficiently unique?
         infosByStreamId.put(info.streamId(), info);
 
         // TODO: prevent duplicate adds
-        ArrayUtil.add(outputBuffers, outputBuffer);
+        streamBuffers = ArrayUtil.add(streamBuffers, streamBuffer);
     }
 
     private void handleRead(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
     {
         switch (msgTypeId)
         {
-        case 0x00000001:
+        case BEGIN_TYPE_ID:
             beginRO.wrap(buffer, index, index + length);
             WriterInfo newInfo = infosByStreamId.get(beginRO.streamId());
             if (newInfo == null)
@@ -112,7 +116,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
             }
             break;
 
-        case 0x00000002:
+        case DATA_TYPE_ID:
             dataRO.wrap(buffer, index, index + length);
 
             WriterInfo info = infosByStreamId.get(dataRO.streamId());
@@ -144,7 +148,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
             }
             break;
 
-        case 0x00000003:
+        case END_TYPE_ID:
             endRO.wrap(buffer, index, index + length);
 
             WriterInfo oldInfo = infosByStreamId.remove(endRO.streamId());

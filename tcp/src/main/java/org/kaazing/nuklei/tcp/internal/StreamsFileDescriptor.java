@@ -15,51 +15,38 @@
  */
 package org.kaazing.nuklei.tcp.internal;
 
-import org.kaazing.nuklei.tcp.internal.types.Type;
-
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
-public final class StreamsFileDescriptor extends Type<DirectBuffer>
+public final class StreamsFileDescriptor
 {
     private final int bufferSize;
-    private final AtomicBuffer inputBuffer;
-    private final AtomicBuffer outputBuffer;
 
     public StreamsFileDescriptor(int ringBufferSize)
     {
         this.bufferSize = ringBufferSize;
-        this.inputBuffer = new UnsafeBuffer(new byte[0]);
-        this.outputBuffer = new UnsafeBuffer(new byte[0]);
     }
 
-    public int length()
+    public int inputOffset()
     {
-        return bufferSize << 1;
+        return 0;
     }
 
-    public StreamsFileDescriptor wrap(DirectBuffer buffer, int offset)
+    public int inputLength()
     {
-        super.wrap(buffer, offset);
-        inputBuffer.wrap(buffer, offset, bufferSize);
-        outputBuffer.wrap(buffer, offset + bufferSize, bufferSize);
-        return this;
+        return bufferSize;
     }
 
-    public AtomicBuffer inputBuffer()
+    public int outputOffset()
     {
-        return inputBuffer;
+        return inputOffset() + inputLength();
     }
 
-    public AtomicBuffer outputBuffer()
+    public int outputLength()
     {
-        return outputBuffer;
+        return bufferSize;
     }
 
-    @Override
-    public int limit()
+    public int totalLength()
     {
-        return offset() + length();
+        return inputLength() + outputLength();
     }
+
 }
