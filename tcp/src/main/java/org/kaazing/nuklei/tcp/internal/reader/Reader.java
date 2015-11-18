@@ -78,6 +78,24 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
     }
 
     @Override
+    public void close()
+    {
+        selector.keys().forEach((key) -> {
+            try
+            {
+                ReaderState state = (ReaderState) key.attachment();
+                state.channel().shutdownInput();
+            }
+            catch (final Exception ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
+        });
+
+        super.close();
+    }
+
+    @Override
     public void accept(ReaderCommand command)
     {
         command.execute(this);

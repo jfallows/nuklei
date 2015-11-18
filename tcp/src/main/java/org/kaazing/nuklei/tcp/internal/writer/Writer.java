@@ -83,6 +83,23 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
     }
 
     @Override
+    public void close()
+    {
+        stateByStreamId.values().forEach((state) -> {
+            try
+            {
+                state.channel().shutdownOutput();
+            }
+            catch (final Exception ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
+        });
+
+        super.close();
+    }
+
+    @Override
     public void accept(WriterCommand command)
     {
         command.execute(this);

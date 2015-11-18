@@ -87,10 +87,10 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
     @Override
     public void close()
     {
-        stateByRef.values().forEach((bindingInfo) -> {
+        stateByRef.values().forEach((state) -> {
             try
             {
-                bindingInfo.channel().close();
+                state.channel().close();
                 selectNowWithoutProcessing();
             }
             catch (final Exception ex)
