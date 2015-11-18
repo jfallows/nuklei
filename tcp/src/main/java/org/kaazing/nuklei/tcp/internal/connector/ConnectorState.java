@@ -14,31 +14,28 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.acceptor;
+package org.kaazing.nuklei.tcp.internal.connector;
 
 import java.net.InetSocketAddress;
-import java.nio.channels.ServerSocketChannel;
 
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-public class AcceptorState
+public class ConnectorState
 {
     private final long reference;
     private final String source;
     private final long sourceRef;
     private final String destination;
-    private final InetSocketAddress localAddress;
+    private final InetSocketAddress remoteAddress;
     private final RingBuffer inputBuffer;
     private final RingBuffer outputBuffer;
 
-    private ServerSocketChannel serverChannel;
-
-    public AcceptorState(
+    public ConnectorState(
         long reference,
         String source,
         long sourceRef,
         String destination,
-        InetSocketAddress localAddress,
+        InetSocketAddress remoteAddress,
         RingBuffer inputBuffer,
         RingBuffer outputBuffer)
     {
@@ -46,7 +43,7 @@ public class AcceptorState
         this.source = source;
         this.sourceRef = sourceRef;
         this.destination = destination;
-        this.localAddress = localAddress;
+        this.remoteAddress = remoteAddress;
         this.inputBuffer = inputBuffer;
         this.outputBuffer = outputBuffer;
     }
@@ -73,7 +70,7 @@ public class AcceptorState
 
     public InetSocketAddress localAddress()
     {
-        return localAddress;
+        return remoteAddress;
     }
 
     public RingBuffer inputBuffer()
@@ -86,20 +83,10 @@ public class AcceptorState
         return outputBuffer;
     }
 
-    public void attach(ServerSocketChannel attachment)
-    {
-        this.serverChannel = attachment;
-    }
-
-    public ServerSocketChannel channel()
-    {
-        return serverChannel;
-    }
-
     @Override
     public String toString()
     {
-        return String.format("[reference=%d, source=\"%s\", sourceRef=%d, destination=\"%s\", localAddress=%s]",
-                reference, source, sourceRef, destination, localAddress);
+        return String.format("[reference=%d, source=\"%s\", sourceRef=%d, destination=\"%s\", remoteAddress=%s]",
+                reference, source, sourceRef, destination, remoteAddress);
     }
 }

@@ -14,26 +14,24 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.acceptor;
-
-import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
+package org.kaazing.nuklei.tcp.internal.conductor;
 
 
-public final class BoundResponse implements AcceptorResponse
+public final class BoundResponse implements ConductorResponse
 {
     private final long correlationId;
-    private final long bindingRef;
+    private final long referenceId;
 
     public BoundResponse(
         long correlationId,
-        long bindingRef)
+        long referenceId)
     {
         this.correlationId = correlationId;
-        this.bindingRef = bindingRef;
+        this.referenceId = referenceId;
     }
 
     public void execute(Conductor conductor)
     {
-        conductor.onBoundResponse(correlationId, bindingRef);
+        conductor.onBoundResponse(correlationId, referenceId);
     }
 }

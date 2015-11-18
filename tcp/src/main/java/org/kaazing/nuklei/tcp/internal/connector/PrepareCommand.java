@@ -14,36 +14,44 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.acceptor;
+package org.kaazing.nuklei.tcp.internal.connector;
+
+import static java.lang.String.format;
 
 import java.net.InetSocketAddress;
 
-import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
-
-public final class UnboundResponse implements AcceptorResponse
+public final class PrepareCommand implements ConnectorCommand
 {
     private final long correlationId;
     private final String source;
-    private final long sourceBindingRef;
+    private final long sourceRef;
     private final String destination;
-    private final InetSocketAddress address;
+    private final InetSocketAddress remoteAddress;
 
-    public UnboundResponse(
+    public PrepareCommand(
         long correlationId,
         String source,
-        long sourceBindingRef,
+        long sourceRef,
         String destination,
-        InetSocketAddress address)
+        InetSocketAddress remoteAddress)
     {
         this.correlationId = correlationId;
         this.source = source;
-        this.sourceBindingRef = sourceBindingRef;
+        this.sourceRef = sourceRef;
         this.destination = destination;
-        this.address = address;
+        this.remoteAddress = remoteAddress;
     }
 
-    public void execute(Conductor conductor)
+    @Override
+    public void execute(Connector connector)
     {
-        conductor.onUnboundResponse(correlationId, source, sourceBindingRef, destination, address);
+        connector.doPrepare(correlationId, source, sourceRef, destination, remoteAddress);
+    }
+
+    @Override
+    public String toString()
+    {
+        return format("PREPARE [correlationId=%d, source=\"%s\", sourceRef=%d, destination=\"%s\", remoteAddress=%s]",
+                correlationId, source, sourceRef, destination, remoteAddress);
     }
 }

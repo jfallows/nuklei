@@ -22,9 +22,9 @@ import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public final class UnbindFW extends Flyweight
+public final class UnprepareFW extends Flyweight
 {
-    public static final int UNBIND_TYPE_ID = 0x00000002;
+    public static final int UNPREPARE_TYPE_ID = 0x00000004;
 
     private static final int FIELD_OFFSET_CORRELATION_ID = 0;
     private static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
@@ -32,7 +32,7 @@ public final class UnbindFW extends Flyweight
     private static final int FIELD_OFFSET_REFERENCE_ID = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
     private static final int FIELD_SIZE_REFERENCE_ID = BitUtil.SIZE_OF_LONG;
 
-    public UnbindFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    public UnprepareFW wrap(DirectBuffer buffer, int offset, int actingLimit)
     {
         super.wrap(buffer, offset);
 
@@ -43,7 +43,7 @@ public final class UnbindFW extends Flyweight
 
     public int typeId()
     {
-        return UNBIND_TYPE_ID;
+        return UNPREPARE_TYPE_ID;
     }
 
     public long correlationId()
@@ -67,11 +67,11 @@ public final class UnbindFW extends Flyweight
         return String.format("[correlationId=%d, referenceId=%d]", correlationId(), referenceId());
     }
 
-    public static final class Builder extends Flyweight.Builder<UnbindFW>
+    public static final class Builder extends Flyweight.Builder<UnprepareFW>
     {
         public Builder()
         {
-            super(new UnbindFW());
+            super(new UnprepareFW());
         }
 
         @Override

@@ -16,11 +16,11 @@
 
 package org.kaazing.nuklei.tcp.internal;
 
+import static org.kaazing.nuklei.tcp.internal.ControlFileDescriptor.createCommandBuffer;
 import static org.kaazing.nuklei.tcp.internal.ControlFileDescriptor.createCounterLabelsBuffer;
 import static org.kaazing.nuklei.tcp.internal.ControlFileDescriptor.createCounterValuesBuffer;
 import static org.kaazing.nuklei.tcp.internal.ControlFileDescriptor.createMetaDataBuffer;
 import static org.kaazing.nuklei.tcp.internal.ControlFileDescriptor.createResponseBuffer;
-import static org.kaazing.nuklei.tcp.internal.ControlFileDescriptor.createCommandBuffer;
 import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
 import static uk.co.real_logic.agrona.IoUtil.unmap;
 import static uk.co.real_logic.agrona.LangUtil.rethrowUnchecked;
@@ -33,7 +33,7 @@ import java.util.logging.Logger;
 
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.tcp.internal.acceptor.AcceptorCommand;
-import org.kaazing.nuklei.tcp.internal.acceptor.AcceptorResponse;
+import org.kaazing.nuklei.tcp.internal.conductor.ConductorResponse;
 import org.kaazing.nuklei.tcp.internal.connector.ConnectorCommand;
 import org.kaazing.nuklei.tcp.internal.reader.ReaderCommand;
 import org.kaazing.nuklei.tcp.internal.writer.WriterCommand;
@@ -63,10 +63,11 @@ public final class Context implements Closeable
     private BroadcastTransmitter fromConductorResponses;
 
     private OneToOneConcurrentArrayQueue<AcceptorCommand> toAcceptorFromConductorCommands;
-    private OneToOneConcurrentArrayQueue<AcceptorResponse> fromAcceptorToConductorEvents;
+    private OneToOneConcurrentArrayQueue<ConductorResponse> fromAcceptorToConductorResponses;
     private OneToOneConcurrentArrayQueue<ReaderCommand> fromAcceptorToReaderCommands;
     private OneToOneConcurrentArrayQueue<WriterCommand> fromAcceptorToWriterCommands;
     private OneToOneConcurrentArrayQueue<ConnectorCommand> toConnectorFromConductorCommands;
+    private OneToOneConcurrentArrayQueue<ConductorResponse> fromConnectorToConductorResponses;
 
     public Context controlFile(File controlFile)
     {
@@ -162,15 +163,15 @@ public final class Context implements Closeable
     }
 
     public Context acceptorResponseQueue(
-            OneToOneConcurrentArrayQueue<AcceptorResponse> acceptorResponseQueue)
+            OneToOneConcurrentArrayQueue<ConductorResponse> acceptorResponseQueue)
     {
-        this.fromAcceptorToConductorEvents = acceptorResponseQueue;
+        this.fromAcceptorToConductorResponses = acceptorResponseQueue;
         return this;
     }
 
-    public OneToOneConcurrentArrayQueue<AcceptorResponse> acceptorResponseQueue()
+    public OneToOneConcurrentArrayQueue<ConductorResponse> acceptorResponseQueue()
     {
-        return fromAcceptorToConductorEvents;
+        return fromAcceptorToConductorResponses;
     }
 
     public void connectorCommandQueue(
@@ -182,6 +183,18 @@ public final class Context implements Closeable
     public OneToOneConcurrentArrayQueue<ConnectorCommand> connectorCommandQueue()
     {
         return toConnectorFromConductorCommands;
+    }
+
+    public Context connectorResponseQueue(
+            OneToOneConcurrentArrayQueue<ConductorResponse> connectorResponseQueue)
+    {
+        this.fromConnectorToConductorResponses = connectorResponseQueue;
+        return this;
+    }
+
+    public OneToOneConcurrentArrayQueue<ConductorResponse> connectorResponseQueue()
+    {
+        return fromConnectorToConductorResponses;
     }
 
     public Context readerCommandQueue(
@@ -247,10 +260,13 @@ public final class Context implements Closeable
                     new OneToOneConcurrentArrayQueue<AcceptorCommand>(1024));
 
             acceptorResponseQueue(
-                    new OneToOneConcurrentArrayQueue<AcceptorResponse>(1024));
+                    new OneToOneConcurrentArrayQueue<ConductorResponse>(1024));
 
             connectorCommandQueue(
                     new OneToOneConcurrentArrayQueue<ConnectorCommand>(1024));
+
+            connectorResponseQueue(
+                    new OneToOneConcurrentArrayQueue<ConductorResponse>(1024));
 
             readerCommandQueue(
                     new OneToOneConcurrentArrayQueue<ReaderCommand>(1024));

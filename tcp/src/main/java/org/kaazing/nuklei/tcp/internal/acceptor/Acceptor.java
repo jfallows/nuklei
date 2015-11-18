@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.Context;
 import org.kaazing.nuklei.tcp.internal.StreamsFileDescriptor;
+import org.kaazing.nuklei.tcp.internal.conductor.ConductorProxy;
 import org.kaazing.nuklei.tcp.internal.reader.ReaderProxy;
 import org.kaazing.nuklei.tcp.internal.writer.WriterProxy;
 
@@ -111,9 +112,9 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
     public void doBind(
         long correlationId,
         String source,
-        long sourceBindingRef,
+        long sourceRef,
         String destination,
-        InetSocketAddress address)
+        InetSocketAddress localAddress)
     {
         final long reference = correlationId;
 
@@ -127,7 +128,7 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
             try
             {
                 final ServerSocketChannel serverChannel = ServerSocketChannel.open();
-                serverChannel.bind(address);
+                serverChannel.bind(localAddress);
                 serverChannel.configureBlocking(false);
 
                 // BIND goes first, so Acceptor owns bidirectional streams mapped file lifecycle
@@ -143,8 +144,8 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
                 RingBuffer inputBuffer = new ManyToOneRingBuffer(new UnsafeBuffer(inputByteBuffer));
                 RingBuffer outputBuffer = new ManyToOneRingBuffer(new UnsafeBuffer(outputByteBuffer));
 
-                final AcceptorState newState = new AcceptorState(reference, source, sourceBindingRef,
-                                                                 destination, address, inputBuffer, outputBuffer);
+                final AcceptorState newState = new AcceptorState(reference, source, sourceRef,
+                                                                 destination, localAddress, inputBuffer, outputBuffer);
 
                 serverChannel.register(selector, OP_ACCEPT, newState);
                 newState.attach(serverChannel);
@@ -163,9 +164,9 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
 
     public void doUnbind(
         long correlationId,
-        long bindingRef)
+        long referenceId)
     {
-        final AcceptorState state = stateByRef.remove(bindingRef);
+        final AcceptorState state = stateByRef.remove(referenceId);
 
         if (state == null)
         {
@@ -180,11 +181,11 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
                 selector.selectNow();
 
                 String source = state.source();
-                long sourceBindingRef = state.sourceBindingRef();
+                long sourceRef = state.sourceRef();
                 String destination = state.destination();
-                InetSocketAddress address = state.address();
+                InetSocketAddress localAddress = state.localAddress();
 
-                conductorProxy.onUnboundResponse(correlationId, source, sourceBindingRef, destination, address);
+                conductorProxy.onUnboundResponse(correlationId, source, sourceRef, destination, localAddress);
             }
             catch (IOException e)
             {

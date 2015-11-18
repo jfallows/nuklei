@@ -17,52 +17,21 @@
 package org.kaazing.nuklei.tcp.internal.connector;
 
 import java.net.InetSocketAddress;
-import java.nio.channels.SelectionKey;
-import java.util.function.Consumer;
+import java.util.logging.Logger;
 
-import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.Context;
 
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.agrona.nio.TransportPoller;
 
-public final class Connector extends TransportPoller implements Nukleus, Consumer<ConnectorCommand>
+public final class ConnectorProxy
 {
+    private final Logger logger;
     private final OneToOneConcurrentArrayQueue<ConnectorCommand> commandQueue;
 
-    public Connector(Context context)
+    public ConnectorProxy(Context context)
     {
+        this.logger = context.acceptorLogger();
         this.commandQueue = context.connectorCommandQueue();
-    }
-
-    @Override
-    public int process() throws Exception
-    {
-        int weight = 0;
-
-        selector.selectNow();
-        weight += selectedKeySet.forEach(this::processConnect);
-        weight += commandQueue.drain(this);
-
-        return weight;
-    }
-
-    @Override
-    public String name()
-    {
-        return "connector";
-    }
-
-    @Override
-    public void accept(ConnectorCommand command)
-    {
-        command.execute(this);
-    }
-
-    private int processConnect(SelectionKey selectionKey)
-    {
-        // TODO
-        return 1;
     }
 
     public void doPrepare(
@@ -72,13 +41,26 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
         String destination,
         InetSocketAddress remoteAddress)
     {
-        // TODO
+        PrepareCommand command = new PrepareCommand(correlationId, source, sourceBindingRef, destination, remoteAddress);
+        if (!commandQueue.offer(command))
+        {
+            throw new IllegalStateException("unable to offer command");
+        }
+
+        logger.finest(() -> { return command.toString(); });
     }
 
     public void doUnprepare(
         long correlationId,
         long referenceId)
     {
-        // TODO
+        UnprepareCommand command = new UnprepareCommand(correlationId, referenceId);
+        if (!commandQueue.offer(command))
+        {
+            throw new IllegalStateException("unable to offer command");
+        }
+
+        logger.finest(() -> { return command.toString(); });
     }
+
 }

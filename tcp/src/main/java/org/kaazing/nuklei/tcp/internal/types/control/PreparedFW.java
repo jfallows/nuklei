@@ -22,9 +22,9 @@ import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public final class UnbindFW extends Flyweight
+public final class PreparedFW extends Flyweight
 {
-    public static final int UNBIND_TYPE_ID = 0x00000002;
+    public static final int PREPARED_TYPE_ID = 0x40000003;
 
     private static final int FIELD_OFFSET_CORRELATION_ID = 0;
     private static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
@@ -32,7 +32,7 @@ public final class UnbindFW extends Flyweight
     private static final int FIELD_OFFSET_REFERENCE_ID = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
     private static final int FIELD_SIZE_REFERENCE_ID = BitUtil.SIZE_OF_LONG;
 
-    public UnbindFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    public PreparedFW wrap(DirectBuffer buffer, int offset, int actingLimit)
     {
         super.wrap(buffer, offset);
 
@@ -43,7 +43,7 @@ public final class UnbindFW extends Flyweight
 
     public int typeId()
     {
-        return UNBIND_TYPE_ID;
+        return PREPARED_TYPE_ID;
     }
 
     public long correlationId()
@@ -67,11 +67,11 @@ public final class UnbindFW extends Flyweight
         return String.format("[correlationId=%d, referenceId=%d]", correlationId(), referenceId());
     }
 
-    public static final class Builder extends Flyweight.Builder<UnbindFW>
+    public static final class Builder extends Flyweight.Builder<PreparedFW>
     {
         public Builder()
         {
-            super(new UnbindFW());
+            super(new PreparedFW());
         }
 
         @Override
@@ -88,9 +88,9 @@ public final class UnbindFW extends Flyweight
             return this;
         }
 
-        public Builder bindingRef(long bindingRef)
+        public Builder referenceId(long referenceId)
         {
-            buffer().putLong(offset() + FIELD_OFFSET_REFERENCE_ID, bindingRef);
+            buffer().putLong(offset() + FIELD_OFFSET_REFERENCE_ID, referenceId);
             return this;
         }
     }

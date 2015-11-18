@@ -14,11 +14,25 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.acceptor;
+package org.kaazing.nuklei.tcp.internal.conductor;
 
-import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
 
-public interface AcceptorResponse
+
+public final class PreparedResponse implements ConductorResponse
 {
-    void execute(Conductor responder);
+    private final long correlationId;
+    private final long referenceId;
+
+    public PreparedResponse(
+        long correlationId,
+        long referenceId)
+    {
+        this.correlationId = correlationId;
+        this.referenceId = referenceId;
+    }
+
+    public void execute(Conductor conductor)
+    {
+        conductor.onPreparedResponse(correlationId, referenceId);
+    }
 }

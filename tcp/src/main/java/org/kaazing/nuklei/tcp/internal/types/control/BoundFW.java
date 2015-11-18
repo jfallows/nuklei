@@ -29,8 +29,8 @@ public final class BoundFW extends Flyweight
     private static final int FIELD_OFFSET_CORRELATION_ID = 0;
     private static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
 
-    private static final int FIELD_OFFSET_BINDING_REF = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
-    private static final int FIELD_SIZE_BINDING_REF = BitUtil.SIZE_OF_LONG;
+    private static final int FIELD_OFFSET_REFERENCE_ID = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
+    private static final int FIELD_SIZE_REFERENCE_ID = BitUtil.SIZE_OF_LONG;
 
     public BoundFW wrap(DirectBuffer buffer, int offset, int actingLimit)
     {
@@ -51,20 +51,20 @@ public final class BoundFW extends Flyweight
         return buffer().getLong(offset() + FIELD_OFFSET_CORRELATION_ID);
     }
 
-    public long bindingRef()
+    public long referenceId()
     {
-        return buffer().getLong(offset() + FIELD_OFFSET_BINDING_REF);
+        return buffer().getLong(offset() + FIELD_OFFSET_REFERENCE_ID);
     }
 
     public int limit()
     {
-        return offset() + FIELD_OFFSET_BINDING_REF + FIELD_SIZE_BINDING_REF;
+        return offset() + FIELD_OFFSET_REFERENCE_ID + FIELD_SIZE_REFERENCE_ID;
     }
 
     @Override
     public String toString()
     {
-        return String.format("[correlationId=%d, bindingRef=%d]", correlationId(), bindingRef());
+        return String.format("[correlationId=%d, referenceId=%d]", correlationId(), referenceId());
     }
 
     public static final class Builder extends Flyweight.Builder<BoundFW>
@@ -88,9 +88,9 @@ public final class BoundFW extends Flyweight
             return this;
         }
 
-        public Builder bindingRef(long bindingRef)
+        public Builder referenceId(long referenceId)
         {
-            buffer().putLong(offset() + FIELD_OFFSET_BINDING_REF, bindingRef);
+            buffer().putLong(offset() + FIELD_OFFSET_REFERENCE_ID, referenceId);
             return this;
         }
     }

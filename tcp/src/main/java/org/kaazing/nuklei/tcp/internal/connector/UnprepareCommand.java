@@ -14,22 +14,31 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.acceptor;
+package org.kaazing.nuklei.tcp.internal.connector;
 
-import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
+import static java.lang.String.format;
 
-public final class ErrorResponse implements AcceptorResponse
+public final class UnprepareCommand implements ConnectorCommand
 {
     private final long correlationId;
+    private final long referenceId;
 
-    public ErrorResponse(
-        long correlationId)
+    public UnprepareCommand(
+        long correlationId,
+        long referenceId)
     {
         this.correlationId = correlationId;
+        this.referenceId = referenceId;
     }
 
-    public void execute(Conductor conductor)
+    public void execute(Connector connector)
     {
-        conductor.onErrorResponse(correlationId);
+        connector.doUnprepare(correlationId, referenceId);
+    }
+
+    @Override
+    public String toString()
+    {
+        return format("UNPREPARE [correlationId=%d, referenceId=%d]", correlationId, referenceId);
     }
 }

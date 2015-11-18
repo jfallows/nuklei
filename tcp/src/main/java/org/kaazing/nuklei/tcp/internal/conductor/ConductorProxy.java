@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.acceptor;
+package org.kaazing.nuklei.tcp.internal.conductor;
 
 import java.net.InetSocketAddress;
 
@@ -24,9 +24,9 @@ import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 public final class ConductorProxy
 {
-    private final OneToOneConcurrentArrayQueue<AcceptorResponse> responseQueue;
+    private final OneToOneConcurrentArrayQueue<ConductorResponse> responseQueue;
 
-    ConductorProxy(Context context)
+    public ConductorProxy(Context context)
     {
         this.responseQueue = context.acceptorResponseQueue();
     }
@@ -42,9 +42,9 @@ public final class ConductorProxy
 
     public void onBoundResponse(
         long correlationId,
-        long bindingRef)
+        long referenceId)
     {
-        BoundResponse response = new BoundResponse(correlationId, bindingRef);
+        BoundResponse response = new BoundResponse(correlationId, referenceId);
         if (!responseQueue.offer(response))
         {
             throw new IllegalStateException("unable to offer response");
@@ -54,11 +54,36 @@ public final class ConductorProxy
     public void onUnboundResponse(
         long correlationId,
         String source,
-        long sourceBindingRef,
+        long sourceRef,
         String destination,
-        InetSocketAddress address)
+        InetSocketAddress localAddress)
     {
-        UnboundResponse response = new UnboundResponse(correlationId, source, sourceBindingRef, destination, address);
+        UnboundResponse response = new UnboundResponse(correlationId, source, sourceRef, destination, localAddress);
+        if (!responseQueue.offer(response))
+        {
+            throw new IllegalStateException("unable to offer response");
+        }
+    }
+
+    public void onPreparedResponse(
+        long correlationId,
+        long referenceId)
+    {
+        PreparedResponse response = new PreparedResponse(correlationId, referenceId);
+        if (!responseQueue.offer(response))
+        {
+            throw new IllegalStateException("unable to offer response");
+        }
+    }
+
+    public void onUnpreparedResponse(
+        long correlationId,
+        String source,
+        long sourceRef,
+        String destination,
+        InetSocketAddress remoteAddress)
+    {
+        UnpreparedResponse response = new UnpreparedResponse(correlationId, source, sourceRef, destination, remoteAddress);
         if (!responseQueue.offer(response))
         {
             throw new IllegalStateException("unable to offer response");

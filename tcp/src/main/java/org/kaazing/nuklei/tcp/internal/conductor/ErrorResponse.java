@@ -14,31 +14,21 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.acceptor;
+package org.kaazing.nuklei.tcp.internal.conductor;
 
-import static java.lang.String.format;
 
-public final class UnbindCommand implements AcceptorCommand
+public final class ErrorResponse implements ConductorResponse
 {
     private final long correlationId;
-    private final long referenceId;
 
-    public UnbindCommand(
-        long correlationId,
-        long referenceId)
+    public ErrorResponse(
+        long correlationId)
     {
         this.correlationId = correlationId;
-        this.referenceId = referenceId;
     }
 
-    public void execute(Acceptor acceptor)
+    public void execute(Conductor conductor)
     {
-        acceptor.doUnbind(correlationId, referenceId);
-    }
-
-    @Override
-    public String toString()
-    {
-        return format("UNBIND [correlationId=%d, referenceId=%d]", correlationId, referenceId);
+        conductor.onErrorResponse(correlationId);
     }
 }

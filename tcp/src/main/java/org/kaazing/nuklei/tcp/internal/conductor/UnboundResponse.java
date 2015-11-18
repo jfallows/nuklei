@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.acceptor;
-
-import static java.lang.String.format;
+package org.kaazing.nuklei.tcp.internal.conductor;
 
 import java.net.InetSocketAddress;
 
-public final class BindCommand implements AcceptorCommand
+public final class UnboundResponse implements ConductorResponse
 {
     private final long correlationId;
     private final String source;
@@ -28,30 +26,22 @@ public final class BindCommand implements AcceptorCommand
     private final String destination;
     private final InetSocketAddress localAddress;
 
-    public BindCommand(
+    public UnboundResponse(
         long correlationId,
         String source,
-        long sourceBindingRef,
+        long sourceRef,
         String destination,
         InetSocketAddress localAddress)
     {
         this.correlationId = correlationId;
         this.source = source;
-        this.sourceRef = sourceBindingRef;
+        this.sourceRef = sourceRef;
         this.destination = destination;
         this.localAddress = localAddress;
     }
 
-    @Override
-    public void execute(Acceptor acceptor)
+    public void execute(Conductor conductor)
     {
-        acceptor.doBind(correlationId, source, sourceRef, destination, localAddress);
-    }
-
-    @Override
-    public String toString()
-    {
-        return format("BIND [correlationId=%d, source=\"%s\", sourceRef=%d, destination=\"%s\", localAddress=%s]",
-                correlationId, source, sourceRef, destination, localAddress);
+        conductor.onUnboundResponse(correlationId, source, sourceRef, destination, localAddress);
     }
 }
