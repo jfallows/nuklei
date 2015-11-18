@@ -51,7 +51,7 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
     private final ReaderProxy readerProxy;
     private final WriterProxy writerProxy;
     private final OneToOneConcurrentArrayQueue<AcceptorCommand> commandQueue;
-    private final Long2ObjectHashMap<BindingInfo> bindingInfosByRef;
+    private final Long2ObjectHashMap<AcceptorState> stateByRef;
     private final AtomicCounter connectionsCount;
     private final File streamsDir;
 
@@ -61,7 +61,7 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
         this.readerProxy = new ReaderProxy(context);
         this.writerProxy = new WriterProxy(context);
         this.commandQueue = context.acceptorCommandQueue();
-        this.bindingInfosByRef = new Long2ObjectHashMap<>();
+        this.stateByRef = new Long2ObjectHashMap<>();
         this.connectionsCount = context.countersManager().newCounter("connections");
         this.streamsDir = context.controlFile().getParentFile(); // TODO: better abstraction
     }
@@ -87,7 +87,7 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
     @Override
     public void close()
     {
-        bindingInfosByRef.values().forEach((bindingInfo) -> {
+        stateByRef.values().forEach((bindingInfo) -> {
             try
             {
                 bindingInfo.channel().close();
@@ -117,8 +117,8 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
     {
         final long reference = correlationId;
 
-        BindingInfo oldInfo = bindingInfosByRef.get(reference);
-        if (oldInfo != null)
+        AcceptorState oldState = stateByRef.get(reference);
+        if (oldState != null)
         {
             conductorProxy.onErrorResponse(correlationId);
         }
@@ -143,15 +143,15 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
                 RingBuffer inputBuffer = new ManyToOneRingBuffer(new UnsafeBuffer(inputByteBuffer));
                 RingBuffer outputBuffer = new ManyToOneRingBuffer(new UnsafeBuffer(outputByteBuffer));
 
-                final BindingInfo newBindingInfo = new BindingInfo(reference, source, sourceBindingRef,
-                                                                   destination, address, inputBuffer, outputBuffer);
+                final AcceptorState newState = new AcceptorState(reference, source, sourceBindingRef,
+                                                                 destination, address, inputBuffer, outputBuffer);
 
-                serverChannel.register(selector, OP_ACCEPT, newBindingInfo);
-                newBindingInfo.attach(serverChannel);
+                serverChannel.register(selector, OP_ACCEPT, newState);
+                newState.attach(serverChannel);
 
-                bindingInfosByRef.put(newBindingInfo.reference(), newBindingInfo);
+                stateByRef.put(newState.reference(), newState);
 
-                conductorProxy.onBoundResponse(correlationId, newBindingInfo.reference());
+                conductorProxy.onBoundResponse(correlationId, newState.reference());
             }
             catch (IOException e)
             {
@@ -165,9 +165,9 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
         long correlationId,
         long bindingRef)
     {
-        final BindingInfo bindingInfo = bindingInfosByRef.remove(bindingRef);
+        final AcceptorState state = stateByRef.remove(bindingRef);
 
-        if (bindingInfo == null)
+        if (state == null)
         {
             conductorProxy.onErrorResponse(correlationId);
         }
@@ -175,14 +175,14 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
         {
             try
             {
-                ServerSocketChannel serverChannel = bindingInfo.channel();
+                ServerSocketChannel serverChannel = state.channel();
                 serverChannel.close();
                 selector.selectNow();
 
-                String source = bindingInfo.source();
-                long sourceBindingRef = bindingInfo.sourceBindingRef();
-                String destination = bindingInfo.destination();
-                InetSocketAddress address = bindingInfo.address();
+                String source = state.source();
+                long sourceBindingRef = state.sourceBindingRef();
+                String destination = state.destination();
+                InetSocketAddress address = state.address();
 
                 conductorProxy.onUnboundResponse(correlationId, source, sourceBindingRef, destination, address);
             }
@@ -197,13 +197,13 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
     {
         try
         {
-            BindingInfo bindingInfo = (BindingInfo) selectionKey.attachment();
-            ServerSocketChannel serverChannel = bindingInfo.channel();
+            AcceptorState state = (AcceptorState) selectionKey.attachment();
+            ServerSocketChannel serverChannel = state.channel();
             SocketChannel channel = serverChannel.accept();
             long connectionId = connectionsCount.increment();
 
-            readerProxy.doRegister(connectionId, bindingInfo.reference(), channel, bindingInfo.inputBuffer());
-            writerProxy.doRegister(connectionId, bindingInfo.reference(), channel, bindingInfo.outputBuffer());
+            readerProxy.doRegister(connectionId, state.reference(), channel, state.inputBuffer());
+            writerProxy.doRegister(connectionId, state.reference(), channel, state.outputBuffer());
 
             return 1;
         }

@@ -14,39 +14,26 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal.writer;
+package org.kaazing.nuklei.tcp.internal.reader;
 
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-public class WriterInfo
+public class ReaderState
 {
-    private final long bindingRef;
     private final long streamId;
     private final SocketChannel channel;
-    private final ByteBuffer writeBuffer;
+    private final RingBuffer streamBuffer;
 
-    public WriterInfo(
-        long bindingRef,
+    public ReaderState(
         long streamId,
         SocketChannel channel,
         RingBuffer streamBuffer)
     {
-        this.bindingRef = bindingRef;
         this.streamId = streamId;
         this.channel = channel;
-
-        AtomicBuffer atomicBuffer = streamBuffer.buffer();
-        byte[] byteArray = atomicBuffer.byteArray();
-        this.writeBuffer = (byteArray != null) ? ByteBuffer.wrap(byteArray) : atomicBuffer.byteBuffer().duplicate();
-    }
-
-    public long bindingRef()
-    {
-        return this.bindingRef;
+        this.streamBuffer = streamBuffer;
     }
 
     public long streamId()
@@ -59,9 +46,9 @@ public class WriterInfo
         return channel;
     }
 
-    public ByteBuffer writeBuffer()
+    public RingBuffer streamBuffer()
     {
-        return writeBuffer;
+        return streamBuffer;
     }
 
     @Override

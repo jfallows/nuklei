@@ -21,7 +21,7 @@ import java.nio.channels.ServerSocketChannel;
 
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-public class BindingInfo
+public class AcceptorState
 {
     private final long reference;
     private final String source;
@@ -33,7 +33,7 @@ public class BindingInfo
 
     private ServerSocketChannel serverChannel;
 
-    public BindingInfo(
+    public AcceptorState(
         long reference,
         String source,
         long sourceBindingRef,

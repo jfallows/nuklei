@@ -85,10 +85,10 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
 
     public void doRegister(long bindingRef, long connectionId, SocketChannel channel, RingBuffer streamBuffer)
     {
-        ReaderInfo info = new ReaderInfo(connectionId, channel, streamBuffer);
+        ReaderState state = new ReaderState(connectionId, channel, streamBuffer);
 
         beginRW.wrap(atomicBuffer, 0)
-               .streamId(info.streamId())
+               .streamId(state.streamId())
                .bindingRef(bindingRef);
 
         streamBuffer.write(beginRW.typeId(), beginRW.buffer(), beginRW.offset(), beginRW.remaining());
@@ -96,13 +96,13 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
         try
         {
             channel.configureBlocking(false);
-            channel.register(selector, OP_READ, info);
+            channel.register(selector, OP_READ, state);
         }
         catch (ClosedChannelException ex)
         {
             // channel already closed (deterministic stream begin & end)
             endRW.wrap(atomicBuffer, 0)
-                 .streamId(info.streamId());
+                 .streamId(state.streamId());
 
             if (!streamBuffer.write(endRW.typeId(), endRW.buffer(), endRW.offset(), endRW.remaining()))
             {
@@ -119,10 +119,10 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
     {
         try
         {
-            final ReaderInfo info = (ReaderInfo) selectionKey.attachment();
-            final SocketChannel channel = info.channel();
-            final long streamId = info.streamId();
-            final RingBuffer writeBuffer = info.streamBuffer();
+            final ReaderState state = (ReaderState) selectionKey.attachment();
+            final SocketChannel channel = state.channel();
+            final long streamId = state.streamId();
+            final RingBuffer writeBuffer = state.streamBuffer();
 
             dataRW.wrap(atomicBuffer, 0)
                   .streamId(streamId);

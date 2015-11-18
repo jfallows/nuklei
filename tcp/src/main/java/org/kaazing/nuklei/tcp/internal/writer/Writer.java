@@ -44,7 +44,7 @@ import uk.co.real_logic.agrona.nio.TransportPoller;
 public final class Writer extends TransportPoller implements Nukleus, Consumer<WriterCommand>
 {
     private final OneToOneConcurrentArrayQueue<WriterCommand> commandQueue;
-    private final Long2ObjectHashMap<WriterInfo> infosByStreamId;
+    private final Long2ObjectHashMap<WriterState> stateByStreamId;
     private final MessageHandler readHandler;
     private RingBuffer[] streamBuffers;
     private final BeginRO beginRO = new BeginRO();
@@ -54,7 +54,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
     public Writer(Context context)
     {
         this.commandQueue = context.writerCommandQueue();
-        this.infosByStreamId = new Long2ObjectHashMap<>();
+        this.stateByStreamId = new Long2ObjectHashMap<>();
         this.streamBuffers = new RingBuffer[0];
         this.readHandler = this::handleRead;
     }
@@ -94,10 +94,10 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         SocketChannel channel,
         RingBuffer streamBuffer)
     {
-        WriterInfo info = new WriterInfo(bindingRef, connectionId, channel, streamBuffer);
+        WriterState state = new WriterState(bindingRef, connectionId, channel, streamBuffer);
 
         // TODO: BiInt2ObjectMap needed or already sufficiently unique?
-        infosByStreamId.put(info.streamId(), info);
+        stateByStreamId.put(state.streamId(), state);
 
         // TODO: prevent duplicate adds
         streamBuffers = ArrayUtil.add(streamBuffers, streamBuffer);
@@ -109,8 +109,8 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         {
         case BEGIN_TYPE_ID:
             beginRO.wrap(buffer, index, index + length);
-            WriterInfo newInfo = infosByStreamId.get(beginRO.streamId());
-            if (newInfo == null)
+            WriterState newState = stateByStreamId.get(beginRO.streamId());
+            if (newState == null)
             {
                 throw new IllegalStateException("stream not found: " + beginRO.streamId());
             }
@@ -119,16 +119,16 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         case DATA_TYPE_ID:
             dataRO.wrap(buffer, index, index + length);
 
-            WriterInfo info = infosByStreamId.get(dataRO.streamId());
-            if (info == null)
+            WriterState state = stateByStreamId.get(dataRO.streamId());
+            if (state == null)
             {
                 throw new IllegalStateException("stream not found: " + dataRO.streamId());
             }
 
             try
             {
-                SocketChannel channel = info.channel();
-                ByteBuffer writeBuffer = info.writeBuffer();
+                SocketChannel channel = state.channel();
+                ByteBuffer writeBuffer = state.writeBuffer();
                 writeBuffer.limit(dataRO.limit());
                 writeBuffer.position(dataRO.payloadOffset());
 
@@ -151,15 +151,15 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         case END_TYPE_ID:
             endRO.wrap(buffer, index, index + length);
 
-            WriterInfo oldInfo = infosByStreamId.remove(endRO.streamId());
-            if (oldInfo == null)
+            WriterState oldState = stateByStreamId.remove(endRO.streamId());
+            if (oldState == null)
             {
                 throw new IllegalStateException("stream not found: " + endRO.streamId());
             }
 
             try
             {
-                SocketChannel channel = oldInfo.channel();
+                SocketChannel channel = oldState.channel();
                 channel.close();
             }
             catch (IOException ex)
