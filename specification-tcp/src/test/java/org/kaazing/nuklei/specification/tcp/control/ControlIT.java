@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.specification.tcp.cnc;
+package org.kaazing.nuklei.specification.tcp.control;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
@@ -27,7 +27,7 @@ import org.junit.rules.Timeout;
 import org.kaazing.k3po.junit.annotation.Specification;
 import org.kaazing.k3po.junit.rules.K3poRule;
 
-public class CncIT
+public class ControlIT
 {
     private final K3poRule k3po = new K3poRule();
 

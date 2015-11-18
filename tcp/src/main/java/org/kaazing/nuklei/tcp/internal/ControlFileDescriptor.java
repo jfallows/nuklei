@@ -25,13 +25,13 @@ import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public final class CncFileDescriptor
+public final class ControlFileDescriptor
 {
-    public static final String CNC_FILE = "cnc";
+    public static final String CONTROL_FILE = "control";
 
-    public static final int CNC_VERSION = 1;
+    public static final int CONTROL_VERSION = 1;
 
-    public static final int CNC_VERSION_FIELD_OFFSET;
+    public static final int CONTROL_VERSION_FIELD_OFFSET;
     public static final int META_DATA_OFFSET;
 
     /* Meta Data Offsets (offsets within the meta data section) */
@@ -43,8 +43,8 @@ public final class CncFileDescriptor
 
     static
     {
-        CNC_VERSION_FIELD_OFFSET = 0;
-        META_DATA_OFFSET = CNC_VERSION_FIELD_OFFSET + BitUtil.SIZE_OF_INT;
+        CONTROL_VERSION_FIELD_OFFSET = 0;
+        META_DATA_OFFSET = CONTROL_VERSION_FIELD_OFFSET + BitUtil.SIZE_OF_INT;
 
         TO_NUKLEUS_BUFFER_LENGTH_FIELD_OFFSET = 0;
         TO_CONTROLLER_BUFFER_LENGTH_FIELD_OFFSET = TO_NUKLEUS_BUFFER_LENGTH_FIELD_OFFSET + BitUtil.SIZE_OF_INT;
@@ -57,27 +57,27 @@ public final class CncFileDescriptor
     public static final int END_OF_META_DATA_OFFSET = align(BitUtil.SIZE_OF_INT + META_DATA_LENGTH, BitUtil.CACHE_LINE_LENGTH);
 
     /**
-     * Compute the length of the cnc file and return it.
+     * Compute the length of the control file and return it.
      *
      * @param totalLengthOfBuffers in bytes
-     * @return cnc file length in bytes
+     * @return control file length in bytes
      */
-    public static int computeCncFileLength(final int totalLengthOfBuffers)
+    public static int computeControlFileLength(final int totalLengthOfBuffers)
     {
         return END_OF_META_DATA_OFFSET + totalLengthOfBuffers;
     }
 
-    public static int cncVersionOffset(final int baseOffset)
+    public static int controlVersionOffset(final int baseOffset)
     {
-        return baseOffset + CNC_VERSION_FIELD_OFFSET;
+        return baseOffset + CONTROL_VERSION_FIELD_OFFSET;
     }
 
-    public static int toNukleusBufferLengthOffset(final int baseOffset)
+    public static int commandBufferLengthOffset(final int baseOffset)
     {
         return baseOffset + META_DATA_OFFSET + TO_NUKLEUS_BUFFER_LENGTH_FIELD_OFFSET;
     }
 
-    public static int toControllerBufferLengthOffset(final int baseOffset)
+    public static int responseBufferLengthOffset(final int baseOffset)
     {
         return baseOffset + META_DATA_OFFSET + TO_CONTROLLER_BUFFER_LENGTH_FIELD_OFFSET;
     }
@@ -98,36 +98,36 @@ public final class CncFileDescriptor
     }
 
     public static void fillMetaData(
-        final UnsafeBuffer cncMetaDataBuffer,
-        final int toNukleusBufferLength,
-        final int toControllerBufferLength,
+        final UnsafeBuffer controlMetaDataBuffer,
+        final int commandBufferLength,
+        final int responseBufferLength,
         final int counterLabelsBufferLength,
         final int counterValuesBufferLength)
     {
-        cncMetaDataBuffer.putInt(cncVersionOffset(0), CncFileDescriptor.CNC_VERSION);
-        cncMetaDataBuffer.putInt(toNukleusBufferLengthOffset(0), toNukleusBufferLength);
-        cncMetaDataBuffer.putInt(toControllerBufferLengthOffset(0), toControllerBufferLength);
-        cncMetaDataBuffer.putInt(counterLabelsBufferLengthOffset(0), counterLabelsBufferLength);
-        cncMetaDataBuffer.putInt(counterValuesBufferLengthOffset(0), counterValuesBufferLength);
+        controlMetaDataBuffer.putInt(controlVersionOffset(0), ControlFileDescriptor.CONTROL_VERSION);
+        controlMetaDataBuffer.putInt(commandBufferLengthOffset(0), commandBufferLength);
+        controlMetaDataBuffer.putInt(responseBufferLengthOffset(0), responseBufferLength);
+        controlMetaDataBuffer.putInt(counterLabelsBufferLengthOffset(0), counterLabelsBufferLength);
+        controlMetaDataBuffer.putInt(counterValuesBufferLengthOffset(0), counterValuesBufferLength);
     }
 
-    public static UnsafeBuffer createToNukleusBuffer(final ByteBuffer buffer, final DirectBuffer metaDataBuffer)
+    public static UnsafeBuffer createCommandBuffer(final ByteBuffer buffer, final DirectBuffer metaDataBuffer)
     {
-        return new UnsafeBuffer(buffer, END_OF_META_DATA_OFFSET, metaDataBuffer.getInt(toNukleusBufferLengthOffset(0)));
+        return new UnsafeBuffer(buffer, END_OF_META_DATA_OFFSET, metaDataBuffer.getInt(commandBufferLengthOffset(0)));
     }
 
-    public static UnsafeBuffer createToControllerBuffer(final ByteBuffer buffer, final DirectBuffer metaDataBuffer)
+    public static UnsafeBuffer createResponseBuffer(final ByteBuffer buffer, final DirectBuffer metaDataBuffer)
     {
-        final int offset = END_OF_META_DATA_OFFSET + metaDataBuffer.getInt(toNukleusBufferLengthOffset(0));
+        final int offset = END_OF_META_DATA_OFFSET + metaDataBuffer.getInt(commandBufferLengthOffset(0));
 
-        return new UnsafeBuffer(buffer, offset, metaDataBuffer.getInt(toControllerBufferLengthOffset(0)));
+        return new UnsafeBuffer(buffer, offset, metaDataBuffer.getInt(responseBufferLengthOffset(0)));
     }
 
     public static UnsafeBuffer createCounterLabelsBuffer(final ByteBuffer buffer, final DirectBuffer metaDataBuffer)
     {
         final int offset = END_OF_META_DATA_OFFSET +
-            metaDataBuffer.getInt(toNukleusBufferLengthOffset(0)) +
-            metaDataBuffer.getInt(toControllerBufferLengthOffset(0));
+            metaDataBuffer.getInt(commandBufferLengthOffset(0)) +
+            metaDataBuffer.getInt(responseBufferLengthOffset(0));
 
         return new UnsafeBuffer(buffer, offset, metaDataBuffer.getInt(counterLabelsBufferLengthOffset(0)));
     }
@@ -135,14 +135,14 @@ public final class CncFileDescriptor
     public static UnsafeBuffer createCounterValuesBuffer(final ByteBuffer buffer, final DirectBuffer metaDataBuffer)
     {
         final int offset = END_OF_META_DATA_OFFSET +
-            metaDataBuffer.getInt(toNukleusBufferLengthOffset(0)) +
-            metaDataBuffer.getInt(toControllerBufferLengthOffset(0)) +
+            metaDataBuffer.getInt(commandBufferLengthOffset(0)) +
+            metaDataBuffer.getInt(responseBufferLengthOffset(0)) +
             metaDataBuffer.getInt(counterLabelsBufferLengthOffset(0));
 
         return new UnsafeBuffer(buffer, offset, metaDataBuffer.getInt(counterValuesBufferLengthOffset(0)));
     }
 
-    private CncFileDescriptor()
+    private ControlFileDescriptor()
     {
         // utility class, no instances
     }

@@ -34,7 +34,7 @@ public final class TcpNukleusFactorySpi implements NukleusFactorySpi
     public TcpNukleus create(Configuration config)
     {
         Context context = new Context();
-        context.cncFile(new File(config.directory(), "tcp/cnc"))
+        context.controlFile(new File(config.directory(), "tcp/control"))
                .conclude(config);
         return new TcpNukleus(context);
     }

@@ -128,18 +128,18 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
             try
             {
                 SocketChannel channel = info.channel();
-                ByteBuffer sendBuffer = info.sendBuffer();
-                sendBuffer.limit(dataRO.limit());
-                sendBuffer.position(dataRO.payloadOffset());
+                ByteBuffer writeBuffer = info.writeBuffer();
+                writeBuffer.limit(dataRO.limit());
+                writeBuffer.position(dataRO.payloadOffset());
 
                 // send buffer underlying buffer for read buffer
-                final int total = sendBuffer.remaining();
-                final int sent = channel.write(sendBuffer);
+                final int totalBytes = writeBuffer.remaining();
+                final int bytesWritten = channel.write(writeBuffer);
 
-                if (sent < total)
+                if (bytesWritten < totalBytes)
                 {
                     // TODO: support partial writes
-                    throw new IllegalStateException("partial write: " + sent + "/" + length);
+                    throw new IllegalStateException("partial write: " + bytesWritten + "/" + totalBytes);
                 }
             }
             catch (IOException ex)

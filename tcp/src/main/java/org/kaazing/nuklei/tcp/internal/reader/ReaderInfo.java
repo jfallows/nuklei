@@ -24,16 +24,16 @@ public class ReaderInfo
 {
     private final long streamId;
     private final SocketChannel channel;
-    private final RingBuffer ringBuffer;
+    private final RingBuffer streamBuffer;
 
     public ReaderInfo(
         long streamId,
         SocketChannel channel,
-        RingBuffer ringBuffer)
+        RingBuffer streamBuffer)
     {
         this.streamId = streamId;
         this.channel = channel;
-        this.ringBuffer = ringBuffer;
+        this.streamBuffer = streamBuffer;
     }
 
     public long streamId()
@@ -46,9 +46,9 @@ public class ReaderInfo
         return channel;
     }
 
-    public RingBuffer ringBuffer()
+    public RingBuffer streamBuffer()
     {
-        return ringBuffer;
+        return streamBuffer;
     }
 
     @Override

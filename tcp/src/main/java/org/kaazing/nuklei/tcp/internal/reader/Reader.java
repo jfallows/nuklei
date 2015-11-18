@@ -83,23 +83,31 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
         command.execute(this);
     }
 
-    public void doRegister(long bindingRef, long connectionId, SocketChannel channel, RingBuffer inputBuffer)
+    public void doRegister(long bindingRef, long connectionId, SocketChannel channel, RingBuffer streamBuffer)
     {
+        ReaderInfo info = new ReaderInfo(connectionId, channel, streamBuffer);
+
+        beginRW.wrap(atomicBuffer, 0)
+               .streamId(info.streamId())
+               .bindingRef(bindingRef);
+
+        streamBuffer.write(beginRW.typeId(), beginRW.buffer(), beginRW.offset(), beginRW.remaining());
+
         try
         {
-            ReaderInfo info = new ReaderInfo(connectionId, channel, inputBuffer);
             channel.configureBlocking(false);
             channel.register(selector, OP_READ, info);
-
-            beginRW.wrap(atomicBuffer, 0)
-                   .streamId(info.streamId())
-                   .bindingRef(bindingRef);
-
-            inputBuffer.write(beginRW.typeId(), beginRW.buffer(), beginRW.offset(), beginRW.remaining());
         }
         catch (ClosedChannelException ex)
         {
-            // channel already closed
+            // channel already closed (deterministic stream begin & end)
+            endRW.wrap(atomicBuffer, 0)
+                 .streamId(info.streamId());
+
+            if (!streamBuffer.write(endRW.typeId(), endRW.buffer(), endRW.offset(), endRW.remaining()))
+            {
+                throw new IllegalStateException("could not write to ring buffer");
+            }
         }
         catch (IOException ex)
         {
@@ -114,7 +122,7 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
             final ReaderInfo info = (ReaderInfo) selectionKey.attachment();
             final SocketChannel channel = info.channel();
             final long streamId = info.streamId();
-            final RingBuffer writeBuffer = info.ringBuffer();
+            final RingBuffer writeBuffer = info.streamBuffer();
 
             dataRW.wrap(atomicBuffer, 0)
                   .streamId(streamId);

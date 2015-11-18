@@ -27,21 +27,21 @@ public class WriterInfo
     private final long bindingRef;
     private final long streamId;
     private final SocketChannel channel;
-    private final ByteBuffer sendBuffer;
+    private final ByteBuffer writeBuffer;
 
     public WriterInfo(
         long bindingRef,
         long streamId,
         SocketChannel channel,
-        RingBuffer readBuffer)
+        RingBuffer streamBuffer)
     {
         this.bindingRef = bindingRef;
         this.streamId = streamId;
         this.channel = channel;
 
-        AtomicBuffer sendAtomicBuffer = readBuffer.buffer();
-        byte[] sendByteArray = sendAtomicBuffer.byteArray();
-        this.sendBuffer = (sendByteArray != null) ? ByteBuffer.wrap(sendByteArray) : sendAtomicBuffer.byteBuffer().duplicate();
+        AtomicBuffer atomicBuffer = streamBuffer.buffer();
+        byte[] byteArray = atomicBuffer.byteArray();
+        this.writeBuffer = (byteArray != null) ? ByteBuffer.wrap(byteArray) : atomicBuffer.byteBuffer().duplicate();
     }
 
     public long bindingRef()
@@ -59,9 +59,9 @@ public class WriterInfo
         return channel;
     }
 
-    public ByteBuffer sendBuffer()
+    public ByteBuffer writeBuffer()
     {
-        return sendBuffer;
+        return writeBuffer;
     }
 
     @Override

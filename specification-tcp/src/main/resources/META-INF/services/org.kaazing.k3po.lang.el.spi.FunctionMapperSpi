@@ -1,2 +1,2 @@
-org.kaazing.nuklei.specification.tcp.cnc.Functions$Mapper
+org.kaazing.nuklei.specification.tcp.control.Functions$Mapper
 org.kaazing.nuklei.specification.tcp.stream.Functions$Mapper

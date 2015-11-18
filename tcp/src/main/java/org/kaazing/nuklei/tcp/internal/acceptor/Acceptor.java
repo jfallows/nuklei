@@ -63,7 +63,7 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
         this.commandQueue = context.acceptorCommandQueue();
         this.bindingInfosByRef = new Long2ObjectHashMap<>();
         this.connectionsCount = context.countersManager().newCounter("connections");
-        this.streamsDir = context.cncFile().getParentFile(); // TODO: better abstraction
+        this.streamsDir = context.controlFile().getParentFile(); // TODO: better abstraction
     }
 
     @Override
@@ -201,8 +201,10 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
             ServerSocketChannel serverChannel = bindingInfo.channel();
             SocketChannel channel = serverChannel.accept();
             long connectionId = connectionsCount.increment();
+
             readerProxy.doRegister(connectionId, bindingInfo.reference(), channel, bindingInfo.inputBuffer());
             writerProxy.doRegister(connectionId, bindingInfo.reference(), channel, bindingInfo.outputBuffer());
+
             return 1;
         }
         catch (Exception e)

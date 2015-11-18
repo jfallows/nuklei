@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.specification.tcp.cnc;
+package org.kaazing.nuklei.specification.tcp.control;
 
 import static uk.co.real_logic.agrona.IoUtil.mapExistingFile;
 import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
@@ -177,7 +177,7 @@ public final class Functions
         @Override
         public String getPrefixName()
         {
-            return "cnc";
+            return "control";
         }
     }
 

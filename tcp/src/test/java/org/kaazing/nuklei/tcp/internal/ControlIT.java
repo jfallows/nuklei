@@ -31,10 +31,10 @@ import org.kaazing.nuklei.test.NukleusRule;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
-public class CncIT
+public class ControlIT
 {
     private final K3poRule k3po = new K3poRule()
-            .setScriptRoot("org/kaazing/nuklei/specification/tcp/cnc");
+            .setScriptRoot("org/kaazing/nuklei/specification/tcp/control");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 

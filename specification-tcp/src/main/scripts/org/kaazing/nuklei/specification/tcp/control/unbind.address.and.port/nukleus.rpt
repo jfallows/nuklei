@@ -1,8 +1,8 @@
-property cncNew ${cnc:mapNew("target/nukleus-itests/tcp/cnc", 1024, 1024)}
+property controlNew ${control:mapNew("target/nukleus-itests/tcp/control", 1024, 1024)}
 
 accept agrona://stream/bidirectional
-       option reader ${agrona:manyToOneReader(cncNew.nukleus)}
-       option writer ${agrona:broadcastTransmitter(cncNew.controller)}
+       option reader ${agrona:manyToOneReader(controlNew.nukleus)}
+       option writer ${agrona:broadcastTransmitter(controlNew.controller)}
 
 accepted
 connected

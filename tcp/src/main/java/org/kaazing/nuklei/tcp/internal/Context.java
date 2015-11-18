@@ -16,6 +16,11 @@
 
 package org.kaazing.nuklei.tcp.internal;
 
+import static org.kaazing.nuklei.tcp.internal.ControlFileDescriptor.createCounterLabelsBuffer;
+import static org.kaazing.nuklei.tcp.internal.ControlFileDescriptor.createCounterValuesBuffer;
+import static org.kaazing.nuklei.tcp.internal.ControlFileDescriptor.createMetaDataBuffer;
+import static org.kaazing.nuklei.tcp.internal.ControlFileDescriptor.createResponseBuffer;
+import static org.kaazing.nuklei.tcp.internal.ControlFileDescriptor.createCommandBuffer;
 import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
 import static uk.co.real_logic.agrona.IoUtil.unmap;
 import static uk.co.real_logic.agrona.LangUtil.rethrowUnchecked;
@@ -45,7 +50,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 public final class Context implements Closeable
 {
-    private File cncFile;
+    private File controlFile;
     private IdleStrategy idleStrategy;
     private ErrorHandler errorHandler;
     private CountersManager countersManager;
@@ -53,8 +58,8 @@ public final class Context implements Closeable
     private AtomicBuffer counterValuesBuffer;
     private Counters counters;
     private RingBuffer toConductorCommands;
-    private MappedByteBuffer cncByteBuffer;
-    private UnsafeBuffer cncMetaDataBuffer;
+    private MappedByteBuffer controlByteBuffer;
+    private UnsafeBuffer controlMetaDataBuffer;
     private BroadcastTransmitter fromConductorResponses;
 
     private OneToOneConcurrentArrayQueue<AcceptorCommand> toAcceptorFromConductorCommands;
@@ -63,15 +68,15 @@ public final class Context implements Closeable
     private OneToOneConcurrentArrayQueue<WriterCommand> fromAcceptorToWriterCommands;
     private OneToOneConcurrentArrayQueue<ConnectorCommand> toConnectorFromConductorCommands;
 
-    public Context cncFile(File cncFile)
+    public Context controlFile(File controlFile)
     {
-        this.cncFile = cncFile;
+        this.controlFile = controlFile;
         return this;
     }
 
-    public File cncFile()
+    public File controlFile()
     {
-        return cncFile;
+        return controlFile;
     }
 
     public Context idleStrategy(IdleStrategy idleStrategy)
@@ -218,25 +223,25 @@ public final class Context implements Closeable
     {
         try
         {
-            cncByteBuffer = mapNewFile(
-                    cncFile(),
-                    CncFileDescriptor.computeCncFileLength(
+            controlByteBuffer = mapNewFile(
+                    controlFile(),
+                    ControlFileDescriptor.computeControlFileLength(
                         config.conductorBufferLength() + config.broadcastBufferLength() +
                         config.counterLabelsBufferLength() + config.counterValuesBufferLength()));
 
-            cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
-            CncFileDescriptor.fillMetaData(
-                cncMetaDataBuffer,
+            controlMetaDataBuffer = createMetaDataBuffer(controlByteBuffer);
+            ControlFileDescriptor.fillMetaData(
+                controlMetaDataBuffer,
                 config.conductorBufferLength(),
                 config.broadcastBufferLength(),
                 config.counterLabelsBufferLength(),
                 config.counterValuesBufferLength());
 
             conductorCommands(
-                    new ManyToOneRingBuffer(CncFileDescriptor.createToNukleusBuffer(cncByteBuffer, cncMetaDataBuffer)));
+                    new ManyToOneRingBuffer(createCommandBuffer(controlByteBuffer, controlMetaDataBuffer)));
 
             conductorResponses(
-                    new BroadcastTransmitter(CncFileDescriptor.createToControllerBuffer(cncByteBuffer, cncMetaDataBuffer)));
+                    new BroadcastTransmitter(createResponseBuffer(controlByteBuffer, controlMetaDataBuffer)));
 
             acceptorCommandQueue(
                     new OneToOneConcurrentArrayQueue<AcceptorCommand>(1024));
@@ -266,7 +271,7 @@ public final class Context implements Closeable
     @Override
     public void close() throws IOException
     {
-        unmap(cncByteBuffer);
+        unmap(controlByteBuffer);
     }
 
     private void concludeCounters()
@@ -275,12 +280,12 @@ public final class Context implements Closeable
         {
             if (counterLabelsBuffer() == null)
             {
-                counterLabelsBuffer(CncFileDescriptor.createCounterLabelsBuffer(cncByteBuffer, cncMetaDataBuffer));
+                counterLabelsBuffer(createCounterLabelsBuffer(controlByteBuffer, controlMetaDataBuffer));
             }
 
             if (counterValuesBuffer() == null)
             {
-                counterValuesBuffer(CncFileDescriptor.createCounterValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
+                counterValuesBuffer(createCounterValuesBuffer(controlByteBuffer, controlMetaDataBuffer));
             }
 
             countersManager(new CountersManager(counterLabelsBuffer(), counterValuesBuffer()));
