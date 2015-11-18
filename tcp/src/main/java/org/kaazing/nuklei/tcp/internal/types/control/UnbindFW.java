@@ -20,6 +20,7 @@ import org.kaazing.nuklei.tcp.internal.types.Flyweight;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public final class UnbindFW extends Flyweight
 {
@@ -64,5 +65,33 @@ public final class UnbindFW extends Flyweight
     public String toString()
     {
         return String.format("[correlationId=%d, bindingRef=%d]", correlationId(), bindingRef());
+    }
+
+    public static final class Builder extends Flyweight.Builder<UnbindFW>
+    {
+        public Builder()
+        {
+            super(new UnbindFW());
+        }
+
+        @Override
+        public Builder wrap(MutableDirectBuffer buffer, int offset, int maxLimit)
+        {
+            super.wrap(buffer, offset, maxLimit);
+
+            return this;
+        }
+
+        public Builder correlationId(long correlationId)
+        {
+            buffer().putLong(offset() + FIELD_OFFSET_CORRELATION_ID, correlationId);
+            return this;
+        }
+
+        public Builder bindingRef(long bindingRef)
+        {
+            buffer().putLong(offset() + FIELD_OFFSET_BINDING_REF, bindingRef);
+            return this;
+        }
     }
 }
