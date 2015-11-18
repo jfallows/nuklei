@@ -29,9 +29,9 @@ import java.util.function.Consumer;
 
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.Context;
-import org.kaazing.nuklei.tcp.internal.types.stream.BeginRW;
-import org.kaazing.nuklei.tcp.internal.types.stream.DataRW;
-import org.kaazing.nuklei.tcp.internal.types.stream.EndRW;
+import org.kaazing.nuklei.tcp.internal.types.stream.BeginFW;
+import org.kaazing.nuklei.tcp.internal.types.stream.DataFW;
+import org.kaazing.nuklei.tcp.internal.types.stream.EndFW;
 
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
@@ -44,9 +44,9 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
 {
     private static final int MAX_RECEIVE_LENGTH = 1024; // TODO: Configuration and Context
 
-    private final BeginRW beginRW = new BeginRW();
-    private final DataRW dataRW = new DataRW();
-    private final EndRW endRW = new EndRW();
+    private final BeginFW.Builder beginRW = new BeginFW.Builder();
+    private final DataFW.Builder dataRW = new DataFW.Builder();
+    private final EndFW.Builder endRW = new EndFW.Builder();
 
     private final OneToOneConcurrentArrayQueue<ReaderCommand> commandQueue;
     private final ByteBuffer byteBuffer;
@@ -105,11 +105,12 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
     {
         ReaderState state = new ReaderState(connectionId, channel, streamBuffer);
 
-        beginRW.wrap(atomicBuffer, 0)
-               .streamId(state.streamId())
-               .bindingRef(bindingRef);
+        BeginFW beginRO = beginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                 .streamId(state.streamId())
+                                 .bindingRef(bindingRef)
+                                 .build();
 
-        streamBuffer.write(beginRW.typeId(), beginRW.buffer(), beginRW.offset(), beginRW.remaining());
+        streamBuffer.write(beginRO.typeId(), beginRO.buffer(), beginRO.offset(), beginRO.remaining());
 
         try
         {
@@ -119,10 +120,11 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
         catch (ClosedChannelException ex)
         {
             // channel already closed (deterministic stream begin & end)
-            endRW.wrap(atomicBuffer, 0)
-                 .streamId(state.streamId());
+            EndFW endRO = endRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                               .streamId(state.streamId())
+                               .build();
 
-            if (!streamBuffer.write(endRW.typeId(), endRW.buffer(), endRW.offset(), endRW.remaining()))
+            if (!streamBuffer.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.remaining()))
             {
                 throw new IllegalStateException("could not write to ring buffer");
             }
@@ -142,7 +144,7 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
             final long streamId = state.streamId();
             final RingBuffer writeBuffer = state.streamBuffer();
 
-            dataRW.wrap(atomicBuffer, 0)
+            dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                   .streamId(streamId);
 
             // TODO: limit maximum bytes read
@@ -151,10 +153,11 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
 
             if (bytesRead == -1)
             {
-                endRW.wrap(atomicBuffer, 0)
-                     .streamId(streamId);
+                EndFW endRO = endRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                        .streamId(state.streamId())
+                        .build();
 
-                if (!writeBuffer.write(endRW.typeId(), endRW.buffer(), endRW.offset(), endRW.remaining()))
+                if (!writeBuffer.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.remaining()))
                 {
                     throw new IllegalStateException("could not write to ring buffer");
                 }
@@ -163,9 +166,9 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
             }
             else if (bytesRead != 0)
             {
-                dataRW.payloadLength(bytesRead);
+                DataFW dataRO = dataRW.payloadLength(bytesRead).build();
 
-                if (!writeBuffer.write(dataRW.typeId(), dataRW.buffer(), dataRW.offset(), dataRW.remaining()))
+                if (!writeBuffer.write(dataRO.typeId(), dataRO.buffer(), dataRO.offset(), dataRO.remaining()))
                 {
                     throw new IllegalStateException("could not write to ring buffer");
                 }

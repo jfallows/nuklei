@@ -16,8 +16,8 @@
 
 package org.kaazing.nuklei.tcp.internal.conductor;
 
-import static org.kaazing.nuklei.tcp.internal.types.control.BindType.BIND_TYPE_ID;
-import static org.kaazing.nuklei.tcp.internal.types.control.UnbindType.UNBIND_TYPE_ID;
+import static org.kaazing.nuklei.tcp.internal.types.control.BindFW.BIND_TYPE_ID;
+import static org.kaazing.nuklei.tcp.internal.types.control.UnbindFW.UNBIND_TYPE_ID;
 
 import java.net.InetSocketAddress;
 import java.util.function.Consumer;
@@ -26,11 +26,11 @@ import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.Context;
 import org.kaazing.nuklei.tcp.internal.acceptor.AcceptorProxy;
 import org.kaazing.nuklei.tcp.internal.acceptor.AcceptorResponse;
-import org.kaazing.nuklei.tcp.internal.types.control.BindRO;
-import org.kaazing.nuklei.tcp.internal.types.control.BoundRW;
-import org.kaazing.nuklei.tcp.internal.types.control.ErrorRW;
-import org.kaazing.nuklei.tcp.internal.types.control.UnbindRO;
-import org.kaazing.nuklei.tcp.internal.types.control.UnboundRW;
+import org.kaazing.nuklei.tcp.internal.types.control.BindFW;
+import org.kaazing.nuklei.tcp.internal.types.control.BoundFW;
+import org.kaazing.nuklei.tcp.internal.types.control.ErrorFW;
+import org.kaazing.nuklei.tcp.internal.types.control.UnbindFW;
+import org.kaazing.nuklei.tcp.internal.types.control.UnboundFW;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
@@ -44,11 +44,12 @@ public final class Conductor implements Nukleus, Consumer<AcceptorResponse>
 {
     private static final int SEND_BUFFER_CAPACITY = 1024; // TODO: Configuration and Context
 
-    private final BindRO bindRO = new BindRO();
-    private final BoundRW boundRW = new BoundRW();
-    private final UnbindRO unbindRO = new UnbindRO();
-    private final UnboundRW unboundRW = new UnboundRW();
-    private final ErrorRW errorRW = new ErrorRW();
+    private final BindFW bindRO = new BindFW();
+    private final UnbindFW unbindRO = new UnbindFW();
+
+    private final BoundFW.Builder boundRW = new BoundFW.Builder();
+    private final UnboundFW.Builder unboundRW = new UnboundFW.Builder();
+    private final ErrorFW.Builder errorRW = new ErrorFW.Builder();
 
     private final RingBuffer conductorCommands;
 
@@ -92,21 +93,23 @@ public final class Conductor implements Nukleus, Consumer<AcceptorResponse>
 
     public void onErrorResponse(long correlationId)
     {
-        errorRW.wrap(sendBuffer, 0)
-               .correlationId(correlationId);
+        ErrorFW errorRO = errorRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                                 .correlationId(correlationId)
+                                 .build();
 
-        conductorResponses.transmit(errorRW.typeId(), errorRW.buffer(), errorRW.offset(), errorRW.remaining());
+        conductorResponses.transmit(errorRO.typeId(), errorRO.buffer(), errorRO.offset(), errorRO.remaining());
     }
 
     public void onBoundResponse(
         long correlationId,
         long bindingRef)
     {
-        boundRW.wrap(sendBuffer, 0)
-               .correlationId(correlationId)
-               .bindingRef(bindingRef);
+        BoundFW boundRO = boundRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                                 .correlationId(correlationId)
+                                 .bindingRef(bindingRef)
+                                 .build();
 
-        conductorResponses.transmit(boundRW.typeId(), boundRW.buffer(), boundRW.offset(), boundRW.remaining());
+        conductorResponses.transmit(boundRO.typeId(), boundRO.buffer(), boundRO.offset(), boundRO.remaining());
     }
 
     public void onUnboundResponse(
@@ -116,7 +119,7 @@ public final class Conductor implements Nukleus, Consumer<AcceptorResponse>
         String destination,
         InetSocketAddress address)
     {
-        unboundRW.wrap(sendBuffer, 0)
+        unboundRW.wrap(sendBuffer, 0, sendBuffer.capacity())
                  .correlationId(correlationId)
                  .binding()
                      .source(source)
@@ -124,8 +127,9 @@ public final class Conductor implements Nukleus, Consumer<AcceptorResponse>
                      .destination(destination)
                      .address(address.getAddress())
                      .port(address.getPort());
+        UnboundFW unboundRO = unboundRW.build();
 
-        conductorResponses.transmit(unboundRW.typeId(), unboundRW.buffer(), unboundRW.offset(), unboundRW.remaining());
+        conductorResponses.transmit(unboundRO.typeId(), unboundRO.buffer(), unboundRO.offset(), unboundRO.remaining());
     }
 
     private void handleCommand(int msgTypeId, MutableDirectBuffer buffer, int index, int length)

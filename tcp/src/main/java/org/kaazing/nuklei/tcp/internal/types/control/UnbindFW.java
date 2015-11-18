@@ -16,44 +16,52 @@
 
 package org.kaazing.nuklei.tcp.internal.types.control;
 
-import org.kaazing.nuklei.tcp.internal.types.Type;
+import org.kaazing.nuklei.tcp.internal.types.Flyweight;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 
-public abstract class BoundType<T extends DirectBuffer> extends Type<T>
+public final class UnbindFW extends Flyweight
 {
-    public static final int BOUND_TYPE_ID = 0x40000001;
+    public static final int UNBIND_TYPE_ID = 0x00000002;
 
-    protected static final int FIELD_OFFSET_CORRELATION_ID = 0;
-    protected static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
+    private static final int FIELD_OFFSET_CORRELATION_ID = 0;
+    private static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
 
-    protected static final int FIELD_OFFSET_BINDING_REF = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
-    protected static final int FIELD_SIZE_BINDING_REF = BitUtil.SIZE_OF_LONG;
+    private static final int FIELD_OFFSET_BINDING_REF = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
+    private static final int FIELD_SIZE_BINDING_REF = BitUtil.SIZE_OF_LONG;
 
-    public final int typeId()
+    public UnbindFW wrap(DirectBuffer buffer, int offset, int actingLimit)
     {
-        return BOUND_TYPE_ID;
+        super.wrap(buffer, offset);
+
+        checkLimit(limit(), actingLimit);
+
+        return this;
     }
 
-    public final long correlationId()
+    public int typeId()
+    {
+        return UNBIND_TYPE_ID;
+    }
+
+    public long correlationId()
     {
         return buffer().getLong(offset() + FIELD_OFFSET_CORRELATION_ID);
     }
 
-    public final long bindingRef()
+    public long bindingRef()
     {
         return buffer().getLong(offset() + FIELD_OFFSET_BINDING_REF);
     }
 
-    @Override
-    public final int limit()
+    public int limit()
     {
         return offset() + FIELD_OFFSET_BINDING_REF + FIELD_SIZE_BINDING_REF;
     }
 
     @Override
-    public final String toString()
+    public String toString()
     {
         return String.format("[correlationId=%d, bindingRef=%d]", correlationId(), bindingRef());
     }

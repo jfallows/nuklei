@@ -15,29 +15,40 @@
  */
 package org.kaazing.nuklei.tcp.internal.types.control;
 
-import org.kaazing.nuklei.tcp.internal.types.Type;
+import org.kaazing.nuklei.tcp.internal.types.Flyweight;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public abstract class ErrorType<T extends DirectBuffer> extends Type<T>
+public final class ErrorFW extends Flyweight
 {
     public static final int ERROR_TYPE_ID = 0x40000000;
 
-    protected static final int FIELD_OFFSET_CORRELATION_ID = 0;
-    protected static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
+    private static final int FIELD_OFFSET_CORRELATION_ID = 0;
+    private static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
 
-    public final int typeId()
+    @Override
+    public ErrorFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    {
+        super.wrap(buffer, offset);
+
+        checkLimit(limit(), actingLimit);
+
+        return this;
+    }
+
+    public int typeId()
     {
         return ERROR_TYPE_ID;
     }
 
-    public final long correlationId()
+    public long correlationId()
     {
         return buffer().getLong(offset() + FIELD_OFFSET_CORRELATION_ID);
     }
 
-    public final int limit()
+    public int limit()
     {
         return offset() + FIELD_SIZE_CORRELATION_ID;
     }
@@ -46,5 +57,27 @@ public abstract class ErrorType<T extends DirectBuffer> extends Type<T>
     public String toString()
     {
         return String.format("[correlationId=%d]", correlationId());
+    }
+
+    public static final class Builder extends Flyweight.Builder<ErrorFW>
+    {
+        public Builder()
+        {
+            super(new ErrorFW());
+        }
+
+        @Override
+        public Builder wrap(MutableDirectBuffer buffer, int offset, int maxLimit)
+        {
+            super.wrap(buffer, offset, maxLimit);
+
+            return this;
+        }
+
+        public Builder correlationId(long correlationId)
+        {
+            buffer().putLong(offset() + FIELD_OFFSET_CORRELATION_ID, correlationId);
+            return this;
+        }
     }
 }

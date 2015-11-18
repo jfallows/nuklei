@@ -15,30 +15,40 @@
  */
 package org.kaazing.nuklei.tcp.internal.types.stream;
 
-import org.kaazing.nuklei.tcp.internal.types.Type;
+import org.kaazing.nuklei.tcp.internal.types.Flyweight;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public abstract class EndType<T extends DirectBuffer> extends Type<T>
+public final class EndFW extends Flyweight
 {
     public static final int END_TYPE_ID = 0x00000003;
 
-    protected static final int FIELD_OFFSET_STREAM_ID = 0;
-    protected static final int FIELD_SIZE_STREAM_ID = BitUtil.SIZE_OF_LONG;
+    private static final int FIELD_OFFSET_STREAM_ID = 0;
+    private static final int FIELD_SIZE_STREAM_ID = BitUtil.SIZE_OF_LONG;
 
-    public final int typeId()
+    public EndFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    {
+        super.wrap(buffer, offset);
+
+        checkLimit(limit(), actingLimit);
+
+        return this;
+    }
+
+    public int typeId()
     {
         return END_TYPE_ID;
     }
 
-    public final long streamId()
+    public long streamId()
     {
         return buffer().getLong(offset() + FIELD_OFFSET_STREAM_ID);
     }
 
     @Override
-    public final int limit()
+    public int limit()
     {
         return offset() + FIELD_SIZE_STREAM_ID;
     }
@@ -47,5 +57,26 @@ public abstract class EndType<T extends DirectBuffer> extends Type<T>
     public String toString()
     {
         return String.format("[streamId=%d]", streamId());
+    }
+
+    public static final class Builder extends Flyweight.Builder<EndFW>
+    {
+        public Builder()
+        {
+            super(new EndFW());
+        }
+
+        @Override
+        public Builder wrap(MutableDirectBuffer buffer, int offset, int maxLimit)
+        {
+            super.wrap(buffer, offset, maxLimit);
+            return this;
+        }
+
+        public Builder streamId(long streamId)
+        {
+            buffer().putLong(offset() + FIELD_OFFSET_STREAM_ID, streamId);
+            return this;
+        }
     }
 }

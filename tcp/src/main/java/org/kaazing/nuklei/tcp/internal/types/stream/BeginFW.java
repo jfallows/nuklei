@@ -15,12 +15,13 @@
  */
 package org.kaazing.nuklei.tcp.internal.types.stream;
 
-import org.kaazing.nuklei.tcp.internal.types.Type;
+import org.kaazing.nuklei.tcp.internal.types.Flyweight;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public abstract class BeginType<T extends DirectBuffer> extends Type<T>
+public final class BeginFW extends Flyweight
 {
     public static final int BEGIN_TYPE_ID = 0x00000001;
 
@@ -30,30 +31,66 @@ public abstract class BeginType<T extends DirectBuffer> extends Type<T>
     protected static final int FIELD_OFFSET_BINDING_REF = FIELD_OFFSET_STREAM_ID + FIELD_SIZE_STREAM_ID;
     protected static final int FIELD_SIZE_BINDING_REF = BitUtil.SIZE_OF_LONG;
 
-    public final int typeId()
+    public int typeId()
     {
         return BEGIN_TYPE_ID;
     }
 
-    public final long streamId()
+    public long streamId()
     {
         return buffer().getLong(offset() + FIELD_OFFSET_STREAM_ID);
     }
 
-    public final long bindingRef()
+    public long bindingRef()
     {
         return buffer().getLong(offset() + FIELD_OFFSET_BINDING_REF);
     }
 
     @Override
-    public final int limit()
+    public int limit()
     {
         return offset() + FIELD_OFFSET_BINDING_REF + FIELD_SIZE_BINDING_REF;
+    }
+
+    public BeginFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    {
+        super.wrap(buffer, offset);
+
+        checkLimit(limit(), actingLimit);
+
+        return this;
     }
 
     @Override
     public String toString()
     {
         return String.format("[streamId=%d, bindingRef=%d]", streamId(), bindingRef());
+    }
+
+    public static final class Builder extends Flyweight.Builder<BeginFW>
+    {
+        public Builder()
+        {
+            super(new BeginFW());
+        }
+
+        @Override
+        public Builder wrap(MutableDirectBuffer buffer, int offset, int maxLimit)
+        {
+            super.wrap(buffer, offset, maxLimit);
+            return this;
+        }
+
+        public Builder streamId(long streamId)
+        {
+            buffer().putLong(offset() + FIELD_OFFSET_STREAM_ID, streamId);
+            return this;
+        }
+
+        public Builder bindingRef(long bindingRef)
+        {
+            buffer().putLong(offset() + FIELD_OFFSET_BINDING_REF, bindingRef);
+            return this;
+        }
     }
 }

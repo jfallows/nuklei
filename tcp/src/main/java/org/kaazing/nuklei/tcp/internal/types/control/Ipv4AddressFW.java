@@ -18,15 +18,25 @@ package org.kaazing.nuklei.tcp.internal.types.control;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import org.kaazing.nuklei.tcp.internal.types.Type;
+import org.kaazing.nuklei.tcp.internal.types.Flyweight;
 
 import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public abstract class Ipv4AddressType<T extends DirectBuffer> extends Type<T>
+public final class Ipv4AddressFW extends Flyweight
 {
-    protected static final int FIELD_SIZE_IPV4_ADDRESS = 4;
+    private static final int FIELD_SIZE_IPV4_ADDRESS = 4;
 
     private final byte[] address = new byte[FIELD_SIZE_IPV4_ADDRESS];
+
+    public Ipv4AddressFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    {
+        super.wrap(buffer, offset);
+
+        checkLimit(limit(), actingLimit);
+
+        return this;
+    }
 
     public int limit()
     {
@@ -50,5 +60,34 @@ public abstract class Ipv4AddressType<T extends DirectBuffer> extends Type<T>
     public String toString()
     {
         return String.format("%s", get());
+    }
+
+    public static final class Builder extends Flyweight.Builder<Ipv4AddressFW>
+    {
+        public Builder()
+        {
+            super(new Ipv4AddressFW());
+        }
+
+        @Override
+        public Builder wrap(MutableDirectBuffer buffer, int offset, int maxLimit)
+        {
+            super.wrap(buffer, offset, maxLimit);
+            return this;
+        }
+
+        public Builder set(InetAddress address)
+        {
+            try
+            {
+                byte[] ipv4Address = address.getAddress();
+                buffer().putBytes(offset(), ipv4Address, 0, FIELD_SIZE_IPV4_ADDRESS);
+                return this;
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

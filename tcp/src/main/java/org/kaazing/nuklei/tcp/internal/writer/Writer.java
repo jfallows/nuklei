@@ -16,9 +16,9 @@
 
 package org.kaazing.nuklei.tcp.internal.writer;
 
-import static org.kaazing.nuklei.tcp.internal.types.stream.BeginType.BEGIN_TYPE_ID;
-import static org.kaazing.nuklei.tcp.internal.types.stream.DataType.DATA_TYPE_ID;
-import static org.kaazing.nuklei.tcp.internal.types.stream.EndType.END_TYPE_ID;
+import static org.kaazing.nuklei.tcp.internal.types.stream.BeginFW.BEGIN_TYPE_ID;
+import static org.kaazing.nuklei.tcp.internal.types.stream.DataFW.DATA_TYPE_ID;
+import static org.kaazing.nuklei.tcp.internal.types.stream.EndFW.END_TYPE_ID;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -28,9 +28,9 @@ import java.util.function.Consumer;
 
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.Context;
-import org.kaazing.nuklei.tcp.internal.types.stream.BeginRO;
-import org.kaazing.nuklei.tcp.internal.types.stream.DataRO;
-import org.kaazing.nuklei.tcp.internal.types.stream.EndRO;
+import org.kaazing.nuklei.tcp.internal.types.stream.BeginFW;
+import org.kaazing.nuklei.tcp.internal.types.stream.DataFW;
+import org.kaazing.nuklei.tcp.internal.types.stream.EndFW;
 
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
@@ -43,13 +43,14 @@ import uk.co.real_logic.agrona.nio.TransportPoller;
 
 public final class Writer extends TransportPoller implements Nukleus, Consumer<WriterCommand>
 {
+    private final BeginFW beginRO = new BeginFW();
+    private final EndFW endRO = new EndFW();
+    private final DataFW dataRO = new DataFW();
+
     private final OneToOneConcurrentArrayQueue<WriterCommand> commandQueue;
     private final Long2ObjectHashMap<WriterState> stateByStreamId;
     private final MessageHandler readHandler;
     private RingBuffer[] streamBuffers;
-    private final BeginRO beginRO = new BeginRO();
-    private final EndRO endRO = new EndRO();
-    private final DataRO dataRO = new DataRO();
 
     public Writer(Context context)
     {
