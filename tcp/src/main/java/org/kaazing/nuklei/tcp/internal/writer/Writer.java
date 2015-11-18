@@ -130,7 +130,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
                 SocketChannel channel = info.channel();
                 ByteBuffer sendBuffer = info.sendBuffer();
                 sendBuffer.limit(dataRO.limit());
-                sendBuffer.position(dataRO.offsetPayload());
+                sendBuffer.position(dataRO.payloadOffset());
 
                 // send buffer underlying buffer for read buffer
                 final int total = sendBuffer.remaining();

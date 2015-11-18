@@ -39,7 +39,7 @@ public abstract class DataType<T extends DirectBuffer> extends Type<T>
         return buffer().getLong(offset() + FIELD_OFFSET_STREAM_ID);
     }
 
-    public int offsetPayload()
+    public int payloadOffset()
     {
         return offset() + FIELD_OFFSET_PAYLOAD;
     }
@@ -47,6 +47,6 @@ public abstract class DataType<T extends DirectBuffer> extends Type<T>
     @Override
     public String toString()
     {
-        return String.format("[streamId=%d]", streamId());
+        return String.format("[streamId=%d,remaining=%d]", streamId(), remaining());
     }
 }

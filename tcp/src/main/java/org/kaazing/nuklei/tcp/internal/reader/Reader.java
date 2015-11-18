@@ -56,7 +56,7 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
     {
         this.commandQueue = context.readerCommandQueue();
         this.byteBuffer = allocateDirect(MAX_RECEIVE_LENGTH).order(nativeOrder());
-        this.atomicBuffer = new UnsafeBuffer(byteBuffer);
+        this.atomicBuffer = new UnsafeBuffer(byteBuffer.duplicate());
     }
 
     @Override
@@ -119,9 +119,11 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
             dataRW.wrap(atomicBuffer, 0)
                   .streamId(streamId);
 
-            int readableBytes = channel.read(byteBuffer);
+            // TODO: limit maximum bytes read
+            byteBuffer.position(dataRW.payloadOffset());
+            int bytesRead = channel.read(byteBuffer);
 
-            if (readableBytes == -1)
+            if (bytesRead == -1)
             {
                 endRW.wrap(atomicBuffer, 0)
                      .streamId(streamId);
@@ -133,9 +135,9 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
 
                 selectionKey.cancel();
             }
-            else
+            else if (bytesRead != 0)
             {
-                dataRW.remaining(readableBytes);
+                dataRW.payloadLength(bytesRead);
 
                 if (!writeBuffer.write(dataRW.typeId(), dataRW.buffer(), dataRW.offset(), dataRW.remaining()))
                 {

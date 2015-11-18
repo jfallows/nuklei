@@ -20,7 +20,7 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public final class DataRW extends DataType<MutableDirectBuffer>
 {
-    private int remaining;
+    private int payloadLength;
 
     public DataRW wrap(MutableDirectBuffer buffer, int offset)
     {
@@ -34,15 +34,22 @@ public final class DataRW extends DataType<MutableDirectBuffer>
         return this;
     }
 
-    public DataRW remaining(int remaining)
+    public DataRW payloadLength(int payloadLength)
     {
-        this.remaining = remaining;
+        assert (payloadLength >= 0);
+
+        this.payloadLength = payloadLength;
         return this;
     }
 
     @Override
     public int limit()
     {
-        return offset() + remaining;
+        return payloadOffset() + payloadLength;
+    }
+
+    public int payloadLength()
+    {
+        return payloadLength;
     }
 }
