@@ -101,13 +101,13 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
         command.execute(this);
     }
 
-    public void doRegister(long bindingRef, long connectionId, SocketChannel channel, RingBuffer streamBuffer)
+    public void doRegister(long referenceId, long connectionId, SocketChannel channel, RingBuffer streamBuffer)
     {
         ReaderState state = new ReaderState(connectionId, channel, streamBuffer);
 
         BeginFW beginRO = beginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                                  .streamId(state.streamId())
-                                 .bindingRef(bindingRef)
+                                 .referenceId(referenceId)
                                  .build();
 
         streamBuffer.write(beginRO.typeId(), beginRO.buffer(), beginRO.offset(), beginRO.remaining());
