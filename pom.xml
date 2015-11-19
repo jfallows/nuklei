@@ -44,6 +44,7 @@
         <module>echo</module>
         <module>shell</module>
         <module>reaktor</module>
+        <module>bench</module>
     </modules>
 
     <dependencyManagement>
@@ -148,3 +149,4 @@
         </pluginManagement>
     </build>
 </project>
+
