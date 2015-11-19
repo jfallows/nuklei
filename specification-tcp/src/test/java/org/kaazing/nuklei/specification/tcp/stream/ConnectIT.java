@@ -23,6 +23,7 @@ import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
 import java.io.File;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.DisableOnDebug;
@@ -60,6 +61,76 @@ public class ConnectIT
         "connects/establish.connection/handler"
     })
     public void shouldEstablishConnection() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("PREPARED");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "connects/server.sent.data/nukleus",
+        "connects/server.sent.data/handler"
+    })
+    public void shouldReceiveServerSentData() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("PREPARED");
+        k3po.finish();
+    }
+
+
+    @Test
+    @Specification({
+        "connects/client.sent.data/nukleus",
+        "connects/client.sent.data/handler" })
+    public void shouldReceiveClientSentData() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("PREPARED");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "connects/echo.data/nukleus",
+        "connects/echo.data/handler"
+    })
+    public void shouldEchoData() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("PREPARED");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "connects/server.close/nukleus",
+        "connects/server.close/handler" })
+    public void shouldInitiateServerClose() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("PREPARED");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "connects/client.close/nukleus",
+        "connects/client.close/handler" })
+    public void shouldInitiateClientClose() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("PREPARED");
+        k3po.finish();
+    }
+
+    @Ignore
+    @Test
+    @Specification({
+        "connects/concurrent.connections/nukleus",
+        "connects/concurrent.connections/handler" })
+    public void shouldEstablishConcurrentConnections() throws Exception
     {
         k3po.start();
         k3po.notifyBarrier("PREPARED");
