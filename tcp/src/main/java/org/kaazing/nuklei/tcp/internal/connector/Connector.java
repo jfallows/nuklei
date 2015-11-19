@@ -15,21 +15,19 @@
  */
 package org.kaazing.nuklei.tcp.internal.connector;
 
+import static java.lang.String.format;
 import static java.nio.channels.SelectionKey.OP_CONNECT;
-import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
-import static uk.co.real_logic.agrona.IoUtil.mapExistingFile;
 
 import java.io.File;
 import java.net.InetSocketAddress;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.function.Consumer;
 
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.Context;
-import org.kaazing.nuklei.tcp.internal.StreamsFileDescriptor;
 import org.kaazing.nuklei.tcp.internal.conductor.ConductorProxy;
+import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
 import org.kaazing.nuklei.tcp.internal.reader.ReaderProxy;
 import org.kaazing.nuklei.tcp.internal.writer.WriterProxy;
 
@@ -37,10 +35,8 @@ import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.agrona.nio.TransportPoller;
 
 public final class Connector extends TransportPoller implements Nukleus, Consumer<ConnectorCommand>
@@ -108,19 +104,21 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
             {
                 // PREPARE goes first, so Connector owns bidirectional streams mapped file lifecycle
                 // TODO: unmap mapped buffer (also cleanup in Context.close())
-                int streamBufferSize = 1024 * 1024 + RingBufferDescriptor.TRAILER_LENGTH;
-                File streamsFile = new File(streamsDir, String.format("%s.connects", destination));
-                StreamsFileDescriptor streams = new StreamsFileDescriptor(streamBufferSize);
-                createEmptyFile(streamsFile, streams.totalLength());
-                MappedByteBuffer inputByteBuffer = mapExistingFile(streamsFile, "input",
-                        streams.inputOffset(), streams.inputLength());
-                MappedByteBuffer outputByteBuffer = mapExistingFile(streamsFile, "output",
-                        streams.outputOffset(), streams.outputLength());
-                RingBuffer inputBuffer = new ManyToOneRingBuffer(new UnsafeBuffer(inputByteBuffer));
-                RingBuffer outputBuffer = new ManyToOneRingBuffer(new UnsafeBuffer(outputByteBuffer));
 
-                final ConnectorState newState = new ConnectorState(reference, destination, destinationRef,
-                                                                   source, remoteAddress, inputBuffer, outputBuffer);
+                int streamCapacity = 1024 * 1024; // TODO: Configuration, Context
+                File streamsFile = new File(streamsDir, format("%s.connects", destination));
+
+                StreamsLayout.Builder streamsRW = new StreamsLayout.Builder();
+                StreamsLayout streamsRO = streamsRW.streamsFile(streamsFile)
+                                                   .streamCapacity(streamCapacity)
+                                                   .mapNewFile();
+
+                // TODO: verify offsets, etc with underlying ByteBuffer for Reader and Writer
+                RingBuffer inputBuffer = new ManyToOneRingBuffer(streamsRO.inputBuffer());
+                RingBuffer outputBuffer = new ManyToOneRingBuffer(streamsRO.outputBuffer());
+
+                final ConnectorState newState = new ConnectorState(reference, destination, destinationRef, source,
+                                                                   remoteAddress, inputBuffer, outputBuffer);
 
                 stateByRef.put(newState.reference(), newState);
 

@@ -39,12 +39,12 @@ public final class AddressFW extends Flyweight
     public static final int KIND_IPV4_ADDRESS = 0x01;
     public static final int KIND_IPV6_ADDRESS = 0x02;
 
-    protected static final int FIELD_OFFSET_KIND = 0;
-    protected static final int FIELD_SIZE_KIND = BitUtil.SIZE_OF_BYTE;
+    private static final int FIELD_OFFSET_KIND = 0;
+    private static final int FIELD_SIZE_KIND = BitUtil.SIZE_OF_BYTE;
 
-    protected static final int FIELD_OFFSET_ADDRESS = FIELD_OFFSET_KIND + FIELD_SIZE_KIND;
-    protected static final int FIELD_SIZE_IPV4_ADDRESS = 4;
-    protected static final int FIELD_SIZE_IPV6_ADDRESS = 16;
+    private static final int FIELD_OFFSET_ADDRESS = FIELD_OFFSET_KIND + FIELD_SIZE_KIND;
+    private static final int FIELD_SIZE_IPV4_ADDRESS = 4;
+    private static final int FIELD_SIZE_IPV6_ADDRESS = 16;
 
     public AddressFW wrap(DirectBuffer buffer, int offset, int actingLimit)
     {

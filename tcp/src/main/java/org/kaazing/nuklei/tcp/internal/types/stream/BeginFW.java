@@ -25,11 +25,11 @@ public final class BeginFW extends Flyweight
 {
     public static final int BEGIN_TYPE_ID = 0x00000001;
 
-    protected static final int FIELD_OFFSET_STREAM_ID = 0;
-    protected static final int FIELD_SIZE_STREAM_ID = BitUtil.SIZE_OF_LONG;
+    private static final int FIELD_OFFSET_STREAM_ID = 0;
+    private static final int FIELD_SIZE_STREAM_ID = BitUtil.SIZE_OF_LONG;
 
-    protected static final int FIELD_OFFSET_REFERENCE_ID = FIELD_OFFSET_STREAM_ID + FIELD_SIZE_STREAM_ID;
-    protected static final int FIELD_SIZE_BINDING_REF = BitUtil.SIZE_OF_LONG;
+    private static final int FIELD_OFFSET_REFERENCE_ID = FIELD_OFFSET_STREAM_ID + FIELD_SIZE_STREAM_ID;
+    private static final int FIELD_SIZE_BINDING_REF = BitUtil.SIZE_OF_LONG;
 
     public int typeId()
     {
