@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.tcp.internal;
+package org.kaazing.nuklei.tcp.internal.control;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
