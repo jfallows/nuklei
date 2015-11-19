@@ -39,11 +39,22 @@
     <modules>
         <module>specification-tcp</module>
         <module>api</module>
+        <module>test</module>
         <module>tcp</module>
         <module>echo</module>
         <module>shell</module>
         <module>reaktor</module>
     </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.12</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <pluginManagement>
