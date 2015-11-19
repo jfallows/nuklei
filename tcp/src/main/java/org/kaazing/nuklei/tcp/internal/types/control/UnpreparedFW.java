@@ -28,16 +28,16 @@ public final class UnpreparedFW extends Flyweight
     private static final int FIELD_OFFSET_CORRELATION_ID = 0;
     private static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
 
-    private static final int FIELD_OFFSET_BINDING = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
+    private static final int FIELD_OFFSET_PREPARATION = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
 
-    private final BindingFW bindingRO = new BindingFW();
+    private final PreparationFW preparationRO = new PreparationFW();
 
     @Override
     public UnpreparedFW wrap(DirectBuffer buffer, int offset, int actingLimit)
     {
         super.wrap(buffer, offset);
 
-        this.bindingRO.wrap(buffer, offset + FIELD_OFFSET_BINDING, actingLimit);
+        this.preparationRO.wrap(buffer, offset + FIELD_OFFSET_PREPARATION, actingLimit);
 
         checkLimit(limit(), actingLimit);
 
@@ -47,7 +47,7 @@ public final class UnpreparedFW extends Flyweight
     @Override
     public int limit()
     {
-        return binding().limit();
+        return preparation().limit();
     }
 
     public int typeId()
@@ -60,20 +60,20 @@ public final class UnpreparedFW extends Flyweight
         return buffer().getLong(offset() + FIELD_OFFSET_CORRELATION_ID);
     }
 
-    public BindingFW binding()
+    public PreparationFW preparation()
     {
-        return bindingRO;
+        return preparationRO;
     }
 
     @Override
     public String toString()
     {
-        return String.format("[correlationId=%d, bindingRO=%s]", correlationId(), binding());
+        return String.format("[correlationId=%d, preparationRO=%s]", correlationId(), preparation());
     }
 
     public static final class Builder extends Flyweight.Builder<UnpreparedFW>
     {
-        private final BindingFW.Builder bindingRW = new BindingFW.Builder();
+        private final PreparationFW.Builder preparationRW = new PreparationFW.Builder();
 
         public Builder()
         {
@@ -85,7 +85,7 @@ public final class UnpreparedFW extends Flyweight
         {
             super.wrap(buffer, offset, maxLimit);
 
-            this.bindingRW.wrap(buffer, offset + FIELD_OFFSET_BINDING, maxLimit);
+            this.preparationRW.wrap(buffer, offset + FIELD_OFFSET_PREPARATION, maxLimit);
 
             return this;
         }
@@ -96,9 +96,9 @@ public final class UnpreparedFW extends Flyweight
             return this;
         }
 
-        public BindingFW.Builder binding()
+        public PreparationFW.Builder preparation()
         {
-            return bindingRW;
+            return preparationRW;
         }
     }
 }

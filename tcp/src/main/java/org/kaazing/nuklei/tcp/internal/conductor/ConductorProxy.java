@@ -78,12 +78,23 @@ public final class ConductorProxy
 
     public void onUnpreparedResponse(
         long correlationId,
-        String source,
-        long sourceRef,
         String destination,
+        long destinationRef,
+        String source,
         InetSocketAddress remoteAddress)
     {
-        UnpreparedResponse response = new UnpreparedResponse(correlationId, source, sourceRef, destination, remoteAddress);
+        UnpreparedResponse response = new UnpreparedResponse(correlationId, destination, destinationRef, source, remoteAddress);
+        if (!responseQueue.offer(response))
+        {
+            throw new IllegalStateException("unable to offer response");
+        }
+    }
+
+    public void onConnectedResponse(
+        long correlationId,
+        long connectionId)
+    {
+        ConnectedResponse response = new ConnectedResponse(correlationId, connectionId);
         if (!responseQueue.offer(response))
         {
             throw new IllegalStateException("unable to offer response");

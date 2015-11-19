@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.kaazing.nuklei.tcp.internal.types.control;
 
 import org.kaazing.nuklei.tcp.internal.types.Flyweight;
@@ -21,38 +22,28 @@ import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public final class PrepareFW extends Flyweight
+public final class ConnectFW extends Flyweight
 {
-    public static final int PREPARE_TYPE_ID = 0x00000003;
+    public static final int CONNECT_TYPE_ID = 0x00000005;
 
     private static final int FIELD_OFFSET_CORRELATION_ID = 0;
     private static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
 
-    private static final int FIELD_OFFSET_PREPARATION = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
+    private static final int FIELD_OFFSET_REFERENCE_ID = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
+    private static final int FIELD_SIZE_REFERENCE_ID = BitUtil.SIZE_OF_LONG;
 
-    private final PreparationFW preparationRO = new PreparationFW();
-
-    @Override
-    public PrepareFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    public ConnectFW wrap(DirectBuffer buffer, int offset, int actingLimit)
     {
         super.wrap(buffer, offset);
-
-        this.preparationRO.wrap(buffer, offset + FIELD_OFFSET_PREPARATION, actingLimit);
 
         checkLimit(limit(), actingLimit);
 
         return this;
     }
 
-    @Override
-    public int limit()
-    {
-        return preparation().limit();
-    }
-
     public int typeId()
     {
-        return PREPARE_TYPE_ID;
+        return CONNECT_TYPE_ID;
     }
 
     public long correlationId()
@@ -60,32 +51,33 @@ public final class PrepareFW extends Flyweight
         return buffer().getLong(offset() + FIELD_OFFSET_CORRELATION_ID);
     }
 
-    public PreparationFW preparation()
+    public long referenceId()
     {
-        return preparationRO;
+        return buffer().getLong(offset() + FIELD_OFFSET_REFERENCE_ID);
+    }
+
+    public int limit()
+    {
+        return offset() + FIELD_OFFSET_REFERENCE_ID + FIELD_SIZE_REFERENCE_ID;
     }
 
     @Override
     public String toString()
     {
-        return String.format("[correlationId=%d, preparationRO=%s]", correlationId(), preparation());
+        return String.format("[correlationId=%d, referenceId=%d]", correlationId(), referenceId());
     }
 
-    public static final class Builder extends Flyweight.Builder<PrepareFW>
+    public static final class Builder extends Flyweight.Builder<ConnectFW>
     {
-        private final PreparationFW.Builder preparationRW = new PreparationFW.Builder();
-
         public Builder()
         {
-            super(new PrepareFW());
+            super(new ConnectFW());
         }
 
         @Override
         public Builder wrap(MutableDirectBuffer buffer, int offset, int maxLimit)
         {
             super.wrap(buffer, offset, maxLimit);
-
-            this.preparationRW.wrap(buffer, offset + FIELD_OFFSET_PREPARATION, maxLimit);
 
             return this;
         }
@@ -96,9 +88,10 @@ public final class PrepareFW extends Flyweight
             return this;
         }
 
-        public PreparationFW.Builder preparation()
+        public Builder referenceId(long referenceId)
         {
-            return preparationRW;
+            buffer().putLong(offset() + FIELD_OFFSET_REFERENCE_ID, referenceId);
+            return this;
         }
     }
 }

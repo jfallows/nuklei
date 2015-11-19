@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
-package org.kaazing.nuklei.specification.tcp.control;
+package org.kaazing.nuklei.specification.tcp.stream;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
+import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
 
+import java.io.File;
+
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.DisableOnDebug;
@@ -27,7 +31,9 @@ import org.junit.rules.Timeout;
 import org.kaazing.k3po.junit.annotation.Specification;
 import org.kaazing.k3po.junit.rules.K3poRule;
 
-public class ControlIT
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+
+public class ConnectIT
 {
     private final K3poRule k3po = new K3poRule();
 
@@ -36,55 +42,27 @@ public class ControlIT
     @Rule
     public final TestRule chain = outerRule(k3po).around(timeout);
 
-    @Test
-    @Specification({
-        "bind.address.and.port/nukleus",
-        "bind.address.and.port/controller"
-    })
-    public void shouldBindAddressAndPort() throws Exception
+    @Before
+    public void setupStreamFile() throws Exception
     {
-        k3po.finish();
+        File location = new File("target/nukleus-itests/tcp/destination.connects");
+        int streamCapacity = 1024 * 1024;
+
+        File absolute = location.getAbsoluteFile();
+        int sourceLength = streamCapacity + RingBufferDescriptor.TRAILER_LENGTH;
+        int destinationLength = streamCapacity + RingBufferDescriptor.TRAILER_LENGTH;
+        createEmptyFile(absolute, sourceLength + destinationLength);
     }
 
     @Test
     @Specification({
-        "unbind.address.and.port/controller",
-        "unbind.address.and.port/nukleus"
+        "connects/establish.connection/nukleus",
+        "connects/establish.connection/handler"
     })
-    public void shouldUnbindAddressAndPort() throws Exception
-    {
-        k3po.finish();
-    }
-
-    @Test
-    @Specification({
-        "prepare.address.and.port/controller",
-        "prepare.address.and.port/nukleus"
-    })
-    public void shouldPrepareAddressAndPort() throws Exception
-    {
-        k3po.finish();
-    }
-
-    @Test
-    @Specification({
-        "unprepare.address.and.port/controller",
-        "unprepare.address.and.port/nukleus"
-    })
-    public void shouldUnprepareAddressAndPort() throws Exception
-    {
-        k3po.finish();
-    }
-
-    @Test
-    @Specification({
-        "connect.address.and.port/controller",
-        "connect.address.and.port/nukleus"
-    })
-    public void shouldConnectAddressAndPort() throws Exception
+    public void shouldEstablishConnection() throws Exception
     {
         k3po.start();
-        k3po.notifyBarrier("BOUND");
+        k3po.notifyBarrier("PREPARED");
         k3po.finish();
     }
 }

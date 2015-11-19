@@ -36,12 +36,12 @@ public final class ConnectorProxy
 
     public void doPrepare(
         long correlationId,
-        String source,
-        long sourceBindingRef,
         String destination,
+        long destinationRef,
+        String source,
         InetSocketAddress remoteAddress)
     {
-        PrepareCommand command = new PrepareCommand(correlationId, source, sourceBindingRef, destination, remoteAddress);
+        PrepareCommand command = new PrepareCommand(correlationId, destination, destinationRef, source, remoteAddress);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");
@@ -63,4 +63,16 @@ public final class ConnectorProxy
         logger.finest(() -> { return command.toString(); });
     }
 
+    public void doConnect(
+        long correlationId,
+        long referenceId)
+    {
+        ConnectCommand command = new ConnectCommand(correlationId, referenceId);
+        if (!commandQueue.offer(command))
+        {
+            throw new IllegalStateException("unable to offer command");
+        }
+
+        logger.finest(() -> { return command.toString(); });
+    }
 }

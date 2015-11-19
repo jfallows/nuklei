@@ -88,9 +88,9 @@ public final class UnbindFW extends Flyweight
             return this;
         }
 
-        public Builder bindingRef(long bindingRef)
+        public Builder referenceId(long referenceId)
         {
-            buffer().putLong(offset() + FIELD_OFFSET_REFERENCE_ID, bindingRef);
+            buffer().putLong(offset() + FIELD_OFFSET_REFERENCE_ID, referenceId);
             return this;
         }
     }

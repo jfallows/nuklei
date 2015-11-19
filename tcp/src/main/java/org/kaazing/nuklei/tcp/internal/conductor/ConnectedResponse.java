@@ -16,32 +16,21 @@
 
 package org.kaazing.nuklei.tcp.internal.conductor;
 
-import java.net.InetSocketAddress;
-
-public final class UnpreparedResponse implements ConductorResponse
+public final class ConnectedResponse implements ConductorResponse
 {
     private final long correlationId;
-    private final String destination;
-    private final long destinationRef;
-    private final String source;
-    private final InetSocketAddress remoteAddress;
+    private final long connectionId;
 
-    public UnpreparedResponse(
+    public ConnectedResponse(
         long correlationId,
-        String destination,
-        long destinationRef,
-        String source,
-        InetSocketAddress remoteAddress)
+        long connectionId)
     {
         this.correlationId = correlationId;
-        this.destination = destination;
-        this.destinationRef = destinationRef;
-        this.source = source;
-        this.remoteAddress = remoteAddress;
+        this.connectionId = connectionId;
     }
 
     public void execute(Conductor conductor)
     {
-        conductor.onUnpreparedResponse(correlationId, destination, destinationRef, source, remoteAddress);
+        conductor.onConnectedResponse(correlationId, connectionId);
     }
 }

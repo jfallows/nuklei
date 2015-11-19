@@ -18,40 +18,27 @@ package org.kaazing.nuklei.tcp.internal.connector;
 
 import static java.lang.String.format;
 
-import java.net.InetSocketAddress;
-
-public final class PrepareCommand implements ConnectorCommand
+public final class ConnectCommand implements ConnectorCommand
 {
     private final long correlationId;
-    private final String source;
-    private final long destinationRef;
-    private final String destination;
-    private final InetSocketAddress remoteAddress;
+    private final long referenceId;
 
-    public PrepareCommand(
+    public ConnectCommand(
         long correlationId,
-        String destination,
-        long destinationRef,
-        String source,
-        InetSocketAddress remoteAddress)
+        long referenceId)
     {
         this.correlationId = correlationId;
-        this.destination = destination;
-        this.destinationRef = destinationRef;
-        this.source = source;
-        this.remoteAddress = remoteAddress;
+        this.referenceId = referenceId;
     }
 
-    @Override
     public void execute(Connector connector)
     {
-        connector.doPrepare(correlationId, destination, destinationRef, source, remoteAddress);
+        connector.doConnect(correlationId, referenceId);
     }
 
     @Override
     public String toString()
     {
-        return format("PREPARE [correlationId=%d, destination=\"%s\", destinationRef=%d, source=\"%s\", remoteAddress=%s]",
-                correlationId, destination, destinationRef, source, remoteAddress);
+        return format("CONNECT [correlationId=%d, referenceId=%d]", correlationId, referenceId);
     }
 }

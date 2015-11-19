@@ -24,7 +24,7 @@ public class ConnectorState
 {
     private final long reference;
     private final String source;
-    private final long sourceRef;
+    private final long destinationRef;
     private final String destination;
     private final InetSocketAddress remoteAddress;
     private final RingBuffer inputBuffer;
@@ -32,17 +32,17 @@ public class ConnectorState
 
     public ConnectorState(
         long reference,
-        String source,
-        long sourceRef,
         String destination,
+        long destinationRef,
+        String source,
         InetSocketAddress remoteAddress,
         RingBuffer inputBuffer,
         RingBuffer outputBuffer)
     {
         this.reference = reference;
-        this.source = source;
-        this.sourceRef = sourceRef;
         this.destination = destination;
+        this.destinationRef = destinationRef;
+        this.source = source;
         this.remoteAddress = remoteAddress;
         this.inputBuffer = inputBuffer;
         this.outputBuffer = outputBuffer;
@@ -53,22 +53,22 @@ public class ConnectorState
         return this.reference;
     }
 
-    public String source()
-    {
-        return source;
-    }
-
-    public long sourceRef()
-    {
-        return sourceRef;
-    }
-
     public String destination()
     {
         return destination;
     }
 
-    public InetSocketAddress localAddress()
+    public long destinationRef()
+    {
+        return destinationRef;
+    }
+
+    public String source()
+    {
+        return source;
+    }
+
+    public InetSocketAddress remoteAddress()
     {
         return remoteAddress;
     }
@@ -86,7 +86,7 @@ public class ConnectorState
     @Override
     public String toString()
     {
-        return String.format("[reference=%d, source=\"%s\", sourceRef=%d, destination=\"%s\", remoteAddress=%s]",
-                reference, source, sourceRef, destination, remoteAddress);
+        return String.format("[reference=%d, destinationRef=%d, destination=\"%s\", source=\"%s\", remoteAddress=%s]",
+                reference, destination, destinationRef, source, remoteAddress);
     }
 }

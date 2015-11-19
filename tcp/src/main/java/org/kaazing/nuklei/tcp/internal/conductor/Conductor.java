@@ -17,6 +17,7 @@
 package org.kaazing.nuklei.tcp.internal.conductor;
 
 import static org.kaazing.nuklei.tcp.internal.types.control.BindFW.BIND_TYPE_ID;
+import static org.kaazing.nuklei.tcp.internal.types.control.ConnectFW.CONNECT_TYPE_ID;
 import static org.kaazing.nuklei.tcp.internal.types.control.PrepareFW.PREPARE_TYPE_ID;
 import static org.kaazing.nuklei.tcp.internal.types.control.UnbindFW.UNBIND_TYPE_ID;
 import static org.kaazing.nuklei.tcp.internal.types.control.UnprepareFW.UNPREPARE_TYPE_ID;
@@ -31,7 +32,10 @@ import org.kaazing.nuklei.tcp.internal.connector.ConnectorProxy;
 import org.kaazing.nuklei.tcp.internal.types.control.BindFW;
 import org.kaazing.nuklei.tcp.internal.types.control.BindingFW;
 import org.kaazing.nuklei.tcp.internal.types.control.BoundFW;
+import org.kaazing.nuklei.tcp.internal.types.control.ConnectFW;
+import org.kaazing.nuklei.tcp.internal.types.control.ConnectedFW;
 import org.kaazing.nuklei.tcp.internal.types.control.ErrorFW;
+import org.kaazing.nuklei.tcp.internal.types.control.PreparationFW;
 import org.kaazing.nuklei.tcp.internal.types.control.PrepareFW;
 import org.kaazing.nuklei.tcp.internal.types.control.PreparedFW;
 import org.kaazing.nuklei.tcp.internal.types.control.UnbindFW;
@@ -55,12 +59,14 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
     private final UnbindFW unbindRO = new UnbindFW();
     private final PrepareFW prepareRO = new PrepareFW();
     private final UnprepareFW unprepareRO = new UnprepareFW();
+    private final ConnectFW connectRO = new ConnectFW();
 
     private final ErrorFW.Builder errorRW = new ErrorFW.Builder();
     private final BoundFW.Builder boundRW = new BoundFW.Builder();
     private final UnboundFW.Builder unboundRW = new UnboundFW.Builder();
     private final PreparedFW.Builder preparedRW = new PreparedFW.Builder();
     private final UnpreparedFW.Builder unpreparedRW = new UnpreparedFW.Builder();
+    private final ConnectedFW.Builder connectedRW = new ConnectedFW.Builder();
 
     private final RingBuffer conductorCommands;
 
@@ -162,23 +168,35 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
 
     public void onUnpreparedResponse(
         long correlationId,
-        String source,
-        long sourceRef,
         String destination,
+        long destinationRef,
+        String source,
         InetSocketAddress remoteAddress)
     {
         unpreparedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
                     .correlationId(correlationId)
-                    .binding()
-                        .source(source)
-                        .sourceRef(sourceRef)
+                    .preparation()
                         .destination(destination)
+                        .destinationRef(destinationRef)
+                        .source(source)
                         .address(remoteAddress.getAddress())
                         .port(remoteAddress.getPort());
         UnpreparedFW unpreparedRO = unpreparedRW.build();
 
         conductorResponses.transmit(
             unpreparedRO.typeId(), unpreparedRO.buffer(), unpreparedRO.offset(), unpreparedRO.remaining());
+    }
+
+    public void onConnectedResponse(
+        long correlationId,
+        long connectionId)
+    {
+        ConnectedFW connectedRO = connectedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                                             .correlationId(correlationId)
+                                             .connectionId(connectionId)
+                                             .build();
+
+        conductorResponses.transmit(connectedRO.typeId(), connectedRO.buffer(), connectedRO.offset(), connectedRO.remaining());
     }
 
     private void handleCommand(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
@@ -196,6 +214,9 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
             break;
         case UNPREPARE_TYPE_ID:
             handleUnprepareCommand(buffer, index, length);
+            break;
+        case CONNECT_TYPE_ID:
+            handleConnectCommand(buffer, index, length);
             break;
         default:
             // ignore unrecognized commands (forwards compatible)
@@ -233,14 +254,14 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         prepareRO.wrap(buffer, index, index + length);
 
         long correlationId = prepareRO.correlationId();
-        BindingFW binding = prepareRO.binding();
+        PreparationFW preparation = prepareRO.preparation();
 
-        String source = binding.source().asString();
-        long sourceRef = binding.sourceRef();
-        String destination = binding.destination().asString();
-        InetSocketAddress address = new InetSocketAddress(binding.address().asInetAddress(), binding.port());
+        String destination = preparation.destination().asString();
+        long destinationRef = preparation.destinationRef();
+        String source = preparation.source().asString();
+        InetSocketAddress address = new InetSocketAddress(preparation.address().asInetAddress(), preparation.port());
 
-        connectorProxy.doPrepare(correlationId, source, sourceRef, destination, address);
+        connectorProxy.doPrepare(correlationId, destination, destinationRef, source, address);
     }
 
     private void handleUnprepareCommand(DirectBuffer buffer, int index, int length)
@@ -251,5 +272,15 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long referenceId = unprepareRO.referenceId();
 
         connectorProxy.doUnprepare(correlationId, referenceId);
+    }
+
+    private void handleConnectCommand(DirectBuffer buffer, int index, int length)
+    {
+        connectRO.wrap(buffer, index, index + length);
+
+        long correlationId = connectRO.correlationId();
+        long referenceId = connectRO.referenceId();
+
+        connectorProxy.doConnect(correlationId, referenceId);
     }
 }

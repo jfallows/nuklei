@@ -53,7 +53,7 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
     private final WriterProxy writerProxy;
     private final OneToOneConcurrentArrayQueue<AcceptorCommand> commandQueue;
     private final Long2ObjectHashMap<AcceptorState> stateByRef;
-    private final AtomicCounter connectionsCount;
+    private final AtomicCounter acceptedCount;
     private final File streamsDir;
 
     public Acceptor(Context context)
@@ -63,7 +63,7 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
         this.writerProxy = new WriterProxy(context);
         this.commandQueue = context.acceptorCommandQueue();
         this.stateByRef = new Long2ObjectHashMap<>();
-        this.connectionsCount = context.countersManager().newCounter("connections");
+        this.acceptedCount = context.countersManager().newCounter("accepted");
         this.streamsDir = context.controlFile().getParentFile(); // TODO: better abstraction
     }
 
@@ -201,16 +201,16 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
             AcceptorState state = (AcceptorState) selectionKey.attachment();
             ServerSocketChannel serverChannel = state.channel();
             SocketChannel channel = serverChannel.accept();
-            long connectionId = connectionsCount.increment();
+            long connectionId = acceptedCount.increment();
 
             readerProxy.doRegister(connectionId, state.reference(), channel, state.inputBuffer());
             writerProxy.doRegister(connectionId, state.reference(), channel, state.outputBuffer());
-
-            return 1;
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            throw new RuntimeException(e);
+            LangUtil.rethrowUnchecked(ex);
         }
+
+        return 1;
     }
 }

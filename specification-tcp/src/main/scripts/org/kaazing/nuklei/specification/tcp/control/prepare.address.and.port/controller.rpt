@@ -1,0 +1,25 @@
+property control ${control:map("target/nukleus-itests/tcp/control", 1024, 1024)}
+
+connect agrona://stream/bidirectional
+        option reader ${agrona:broadcastReceiver(control.controller)}
+        option writer ${agrona:manyToOneWriter(control.nukleus)}
+
+connected
+
+write [0x00 0x00 0x00 0x03]
+write ${control.nextCorrelationId()}
+write [0x0b] "destination"
+write [0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00]
+write [0x06] "source"
+write [0x01] [0x7f 0x00 0x00 0x01]
+write [0x1f 0x90]
+write flush
+
+read [0x40 0x00 0x00 0x03]
+read ${control.correlationId()}
+read [0..8]
+
+read notify PREPARED
+
+close
+closed

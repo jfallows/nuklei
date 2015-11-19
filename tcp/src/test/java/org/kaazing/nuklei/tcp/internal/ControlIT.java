@@ -65,4 +65,22 @@ public class ControlIT
         k3po.finish();
     }
 
+    @Test
+    @Specification({
+        "prepare.address.and.port/controller",
+    })
+    public void shouldPrepareAddressAndPort() throws Exception
+    {
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "unprepare.address.and.port/controller",
+    })
+    public void shouldUnprepareAddressAndPort() throws Exception
+    {
+        k3po.finish();
+    }
+
 }
