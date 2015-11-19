@@ -40,7 +40,7 @@ import org.openjdk.jmh.infra.Control;
 @Warmup(iterations = 5, time = 1, timeUnit = SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = SECONDS)
 @OutputTimeUnit(NANOSECONDS)
-public class BaselinePingPong
+public class Baseline
 {
     private final AtomicBoolean flag = new AtomicBoolean();
 
