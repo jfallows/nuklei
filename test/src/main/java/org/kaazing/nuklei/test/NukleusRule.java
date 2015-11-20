@@ -19,9 +19,9 @@ import static java.lang.String.valueOf;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
-import static org.kaazing.nuklei.Configuration.BROADCAST_BUFFER_LENGTH_PROPERTY_NAME;
-import static org.kaazing.nuklei.Configuration.CONDUCTOR_BUFFER_LENGTH_PROPERTY_NAME;
-import static org.kaazing.nuklei.Configuration.COUNTER_VALUES_BUFFER_LENGTH_PROPERTY_NAME;
+import static org.kaazing.nuklei.Configuration.RESPONSE_BUFFER_CAPACITY_PROPERTY_NAME;
+import static org.kaazing.nuklei.Configuration.COMMAND_BUFFER_CAPACITY_PROPERTY_NAME;
+import static org.kaazing.nuklei.Configuration.COUNTER_VALUES_BUFFER_CAPACITY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
 
 import java.util.Properties;
@@ -55,21 +55,21 @@ public final class NukleusRule implements TestRule
         return this;
     }
 
-    public NukleusRule setConductorBufferLength(int conductorBufferLength)
+    public NukleusRule setCommandBufferCapacity(int commandBufferCapacity)
     {
-        properties.setProperty(CONDUCTOR_BUFFER_LENGTH_PROPERTY_NAME, valueOf(conductorBufferLength));
+        properties.setProperty(COMMAND_BUFFER_CAPACITY_PROPERTY_NAME, valueOf(commandBufferCapacity));
         return this;
     }
 
-    public NukleusRule setBroadcastBufferLength(int broadcastBufferLength)
+    public NukleusRule setResponseBufferCapacity(int responseBufferCapacity)
     {
-        properties.setProperty(BROADCAST_BUFFER_LENGTH_PROPERTY_NAME, valueOf(broadcastBufferLength));
+        properties.setProperty(RESPONSE_BUFFER_CAPACITY_PROPERTY_NAME, valueOf(responseBufferCapacity));
         return this;
     }
 
-    public NukleusRule setCounterValuesBufferLength(int counterValuesBufferLength)
+    public NukleusRule setCounterValuesBufferCapacity(int counterValuesBufferCapacity)
     {
-        properties.setProperty(COUNTER_VALUES_BUFFER_LENGTH_PROPERTY_NAME, valueOf(counterValuesBufferLength));
+        properties.setProperty(COUNTER_VALUES_BUFFER_CAPACITY_PROPERTY_NAME, valueOf(counterValuesBufferCapacity));
         return this;
     }
 

@@ -15,25 +15,18 @@
  */
 package org.kaazing.nuklei.tcp.internal;
 
-import static org.kaazing.nuklei.tcp.internal.ControlFileDescriptor.createCommandBuffer;
-import static org.kaazing.nuklei.tcp.internal.ControlFileDescriptor.createCounterLabelsBuffer;
-import static org.kaazing.nuklei.tcp.internal.ControlFileDescriptor.createCounterValuesBuffer;
-import static org.kaazing.nuklei.tcp.internal.ControlFileDescriptor.createMetaDataBuffer;
-import static org.kaazing.nuklei.tcp.internal.ControlFileDescriptor.createResponseBuffer;
-import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
-import static uk.co.real_logic.agrona.IoUtil.unmap;
 import static uk.co.real_logic.agrona.LangUtil.rethrowUnchecked;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.nio.MappedByteBuffer;
 import java.util.logging.Logger;
 
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.tcp.internal.acceptor.AcceptorCommand;
 import org.kaazing.nuklei.tcp.internal.conductor.ConductorResponse;
 import org.kaazing.nuklei.tcp.internal.connector.ConnectorCommand;
+import org.kaazing.nuklei.tcp.internal.layouts.ControlLayout;
 import org.kaazing.nuklei.tcp.internal.reader.ReaderCommand;
 import org.kaazing.nuklei.tcp.internal.writer.WriterCommand;
 
@@ -42,23 +35,20 @@ import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.CountersManager;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 public final class Context implements Closeable
 {
-    private File controlFile;
+    private final ControlLayout.Builder controlRW = new ControlLayout.Builder();
+
+    private ControlLayout controlRO;
     private IdleStrategy idleStrategy;
     private ErrorHandler errorHandler;
     private CountersManager countersManager;
-    private AtomicBuffer counterLabelsBuffer;
-    private AtomicBuffer counterValuesBuffer;
     private Counters counters;
     private RingBuffer toConductorCommands;
-    private MappedByteBuffer controlByteBuffer;
-    private UnsafeBuffer controlMetaDataBuffer;
     private BroadcastTransmitter fromConductorResponses;
 
     private OneToOneConcurrentArrayQueue<AcceptorCommand> toAcceptorFromConductorCommands;
@@ -70,13 +60,13 @@ public final class Context implements Closeable
 
     public Context controlFile(File controlFile)
     {
-        this.controlFile = controlFile;
+        this.controlRW.controlFile(controlFile);
         return this;
     }
 
     public File controlFile()
     {
-        return controlFile;
+        return controlRW.controlFile();
     }
 
     public Context idleStrategy(IdleStrategy idleStrategy)
@@ -103,24 +93,14 @@ public final class Context implements Closeable
 
     public Context counterLabelsBuffer(AtomicBuffer counterLabelsBuffer)
     {
-        this.counterLabelsBuffer = counterLabelsBuffer;
+        controlRW.counterLabelsBuffer(counterLabelsBuffer);
         return this;
-    }
-
-    public AtomicBuffer counterLabelsBuffer()
-    {
-        return counterLabelsBuffer;
     }
 
     public Context counterValuesBuffer(AtomicBuffer counterValuesBuffer)
     {
-        this.counterValuesBuffer = counterValuesBuffer;
+        controlRW.counterValuesBuffer(counterValuesBuffer);
         return this;
-    }
-
-    public AtomicBuffer counterValuesBuffer()
-    {
-        return counterValuesBuffer;
     }
 
     public Context conductorCommands(RingBuffer conductorCommands)
@@ -235,25 +215,18 @@ public final class Context implements Closeable
     {
         try
         {
-            controlByteBuffer = mapNewFile(
-                    controlFile(),
-                    ControlFileDescriptor.computeControlFileLength(
-                        config.conductorBufferLength() + config.broadcastBufferLength() +
-                        config.counterLabelsBufferLength() + config.counterValuesBufferLength()));
-
-            controlMetaDataBuffer = createMetaDataBuffer(controlByteBuffer);
-            ControlFileDescriptor.fillMetaData(
-                controlMetaDataBuffer,
-                config.conductorBufferLength(),
-                config.broadcastBufferLength(),
-                config.counterLabelsBufferLength(),
-                config.counterValuesBufferLength());
+            this.controlRO = controlRW.controlFile(controlFile())
+                                      .commandBufferCapacity(config.commandBufferCapacity())
+                                      .responseBufferCapacity(config.responseBufferCapacity())
+                                      .counterLabelsBufferCapacity(config.counterLabelsBufferLength())
+                                      .counterValuesBufferCapacity(config.counterValuesBufferLength())
+                                      .mapNewFile();
 
             conductorCommands(
-                    new ManyToOneRingBuffer(createCommandBuffer(controlByteBuffer, controlMetaDataBuffer)));
+                    new ManyToOneRingBuffer(controlRO.commandBuffer()));
 
             conductorResponses(
-                    new BroadcastTransmitter(createResponseBuffer(controlByteBuffer, controlMetaDataBuffer)));
+                    new BroadcastTransmitter(controlRO.responseBuffer()));
 
             acceptorCommandQueue(
                     new OneToOneConcurrentArrayQueue<AcceptorCommand>(1024));
@@ -286,27 +259,20 @@ public final class Context implements Closeable
     @Override
     public void close() throws IOException
     {
-        unmap(controlByteBuffer);
+        if (controlRO != null)
+        {
+            controlRO.close();
+        }
     }
 
     private void concludeCounters()
     {
-        if (countersManager() == null)
+        if (countersManager == null)
         {
-            if (counterLabelsBuffer() == null)
-            {
-                counterLabelsBuffer(createCounterLabelsBuffer(controlByteBuffer, controlMetaDataBuffer));
-            }
-
-            if (counterValuesBuffer() == null)
-            {
-                counterValuesBuffer(createCounterValuesBuffer(controlByteBuffer, controlMetaDataBuffer));
-            }
-
-            countersManager(new CountersManager(counterLabelsBuffer(), counterValuesBuffer()));
+            countersManager(new CountersManager(controlRO.counterLabelsBuffer(), controlRO.counterValuesBuffer()));
         }
 
-        if (null == counters)
+        if (counters == null)
         {
             counters = new Counters(countersManager);
         }

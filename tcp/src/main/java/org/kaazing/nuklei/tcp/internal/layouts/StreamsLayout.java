@@ -15,13 +15,12 @@
  */
 package org.kaazing.nuklei.tcp.internal.layouts;
 
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
+import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
+import static uk.co.real_logic.agrona.IoUtil.mapExistingFile;
+import static uk.co.real_logic.agrona.IoUtil.unmap;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.IoUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import java.io.File;
+
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
@@ -30,32 +29,6 @@ public final class StreamsLayout extends Layout
 {
     private final AtomicBuffer inputBuffer = new UnsafeBuffer(new byte[0]);
     private final AtomicBuffer outputBuffer = new UnsafeBuffer(new byte[0]);
-
-    private int limit;
-
-    public StreamsLayout wrap(DirectBuffer buffer, int offset, int actingLimit)
-    {
-        super.wrap(buffer, offset);
-
-        this.limit = actingLimit;
-
-        checkLimit(limit(), actingLimit);
-
-        int ringBufferLength = remaining() >> 1;
-
-        // TODO: maintain alignment for Reader / Writer but without slice() to reset position to zero
-        ByteBuffer byteBuffer = buffer().byteBuffer().duplicate();
-
-        byteBuffer.limit(offset() + ringBufferLength);
-        byteBuffer.position(offset());
-        inputBuffer.wrap(byteBuffer.slice());
-
-        byteBuffer.limit(offset() + ringBufferLength + ringBufferLength);
-        byteBuffer.position(offset() + ringBufferLength);
-        outputBuffer.wrap(byteBuffer.slice());
-
-        return this;
-    }
 
     public AtomicBuffer inputBuffer()
     {
@@ -68,15 +41,10 @@ public final class StreamsLayout extends Layout
     }
 
     @Override
-    public int limit()
+    public void close()
     {
-        return limit;
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format("[streamCapacity=%d]", remaining() >> 1 - RingBufferDescriptor.TRAILER_LENGTH);
+        unmap(inputBuffer.byteBuffer());
+        unmap(outputBuffer.byteBuffer());
     }
 
     public static final class Builder extends Layout.Builder<StreamsLayout>
@@ -105,10 +73,11 @@ public final class StreamsLayout extends Layout
         @Override
         public StreamsLayout mapNewFile()
         {
-            int streamsSize = (streamCapacity + RingBufferDescriptor.TRAILER_LENGTH) << 1;
-            MappedByteBuffer byteBuffer = IoUtil.mapNewFile(streamsFile, streamsSize);
-            MutableDirectBuffer buffer = new UnsafeBuffer(byteBuffer);
-            return layout.wrap(buffer, 0, buffer.capacity());
+            int ringBufferLength = streamCapacity + RingBufferDescriptor.TRAILER_LENGTH;
+            createEmptyFile(streamsFile, ringBufferLength << 1);
+            layout.inputBuffer.wrap(mapExistingFile(streamsFile, "input", 0, ringBufferLength));
+            layout.outputBuffer.wrap(mapExistingFile(streamsFile, "output", ringBufferLength, ringBufferLength));
+            return layout;
         }
     }
 }

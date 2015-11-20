@@ -28,9 +28,6 @@ import org.kaazing.k3po.junit.annotation.Specification;
 import org.kaazing.k3po.junit.rules.K3poRule;
 import org.kaazing.nuklei.test.NukleusRule;
 
-import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
-
 public class AcceptIT
 {
     private final K3poRule k3po = new K3poRule().setScriptRoot("org/kaazing");
@@ -39,9 +36,9 @@ public class AcceptIT
 
     private final NukleusRule nukleus = new NukleusRule("tcp")
             .setDirectory("target/nukleus-itests")
-            .setConductorBufferLength(1024 + RingBufferDescriptor.TRAILER_LENGTH)
-            .setBroadcastBufferLength(1024 + BroadcastBufferDescriptor.TRAILER_LENGTH)
-            .setCounterValuesBufferLength(1024);
+            .setCommandBufferCapacity(1024)
+            .setResponseBufferCapacity(1024)
+            .setCounterValuesBufferCapacity(1024);
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);

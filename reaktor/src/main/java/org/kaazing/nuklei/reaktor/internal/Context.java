@@ -129,14 +129,14 @@ public final class Context implements AutoCloseable
             cncByteBuffer = mapNewFile(
                     cncFile(),
                     CncFileDescriptor.computeCncFileLength(
-                        config.conductorBufferLength() + config.broadcastBufferLength() +
+                        config.commandBufferCapacity() + config.responseBufferCapacity() +
                         config.counterLabelsBufferLength() + config.counterValuesBufferLength()));
 
             cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
             CncFileDescriptor.fillMetaData(
                 cncMetaDataBuffer,
-                config.conductorBufferLength(),
-                config.broadcastBufferLength(),
+                config.commandBufferCapacity(),
+                config.responseBufferCapacity(),
                 config.counterLabelsBufferLength(),
                 config.counterValuesBufferLength());
 
