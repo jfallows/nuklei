@@ -46,8 +46,9 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
     private final WriterProxy writerProxy;
     private final OneToOneConcurrentArrayQueue<ConnectorCommand> commandQueue;
     private final Long2ObjectHashMap<ConnectorState> stateByRef;
-    private final File streamsDir;
     private final AtomicCounter connectedCount;
+    private final File streamsDirectory;
+    private final int streamsCapacity;
 
     public Connector(Context context)
     {
@@ -56,8 +57,9 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
         this.writerProxy = new WriterProxy(context);
         this.commandQueue = context.connectorCommandQueue();
         this.stateByRef = new Long2ObjectHashMap<>();
-        this.streamsDir = context.controlFile().getParentFile(); // TODO: better abstraction
         this.connectedCount = context.countersManager().newCounter("connected");
+        this.streamsDirectory = context.streamsDirectory();
+        this.streamsCapacity = context.streamsCapacity();
     }
 
     @Override
@@ -105,15 +107,13 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
                 // PREPARE goes first, so Connector owns bidirectional streams mapped file lifecycle
                 // TODO: unmap mapped buffer (also cleanup in Context.close())
 
-                int streamCapacity = 1024 * 1024; // TODO: Configuration, Context
-                File streamsFile = new File(streamsDir, format("%s.connects", destination));
+                File streamsFile = new File(streamsDirectory, format("%s.connects", destination));
 
                 StreamsLayout.Builder streamsRW = new StreamsLayout.Builder();
                 StreamsLayout streamsRO = streamsRW.streamsFile(streamsFile)
-                                                   .streamCapacity(streamCapacity)
+                                                   .streamsCapacity(streamsCapacity)
                                                    .mapNewFile();
 
-                // TODO: verify offsets, etc with underlying ByteBuffer for Reader and Writer
                 RingBuffer inputBuffer = new ManyToOneRingBuffer(streamsRO.inputBuffer());
                 RingBuffer outputBuffer = new ManyToOneRingBuffer(streamsRO.outputBuffer());
 

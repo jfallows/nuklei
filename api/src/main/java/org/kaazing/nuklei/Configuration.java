@@ -24,11 +24,15 @@ public class Configuration
 {
     public static final String DIRECTORY_PROPERTY_NAME = "nuklei.directory";
 
+    public static final String STREAMS_CAPACITY_PROPERTY_NAME = "nuklei.streams.capacity";
+
     public static final String COMMAND_BUFFER_CAPACITY_PROPERTY_NAME = "nuklei.command.buffer.capacity";
 
     public static final String RESPONSE_BUFFER_CAPACITY_PROPERTY_NAME = "nuklei.response.buffer.capacity";
 
     public static final String COUNTER_VALUES_BUFFER_CAPACITY_PROPERTY_NAME = "nuklei.counters.buffer.capacity";
+
+    public static final int STREAMS_CAPACITY_DEFAULT = 1024 * 1024;
 
     public static final int COMMAND_BUFFER_CAPACITY_DEFAULT = 1024 * 1024;
 
@@ -53,6 +57,11 @@ public class Configuration
     public File directory()
     {
         return new File(getProperty(DIRECTORY_PROPERTY_NAME, "./"));
+    }
+
+    public int streamsCapacity()
+    {
+        return getInteger(STREAMS_CAPACITY_PROPERTY_NAME, STREAMS_CAPACITY_DEFAULT);
     }
 
     public int commandBufferCapacity()

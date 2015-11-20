@@ -44,6 +44,7 @@ public final class Context implements Closeable
     private final ControlLayout.Builder controlRW = new ControlLayout.Builder();
 
     private ControlLayout controlRO;
+    private int streamsCapacity;
     private IdleStrategy idleStrategy;
     private ErrorHandler errorHandler;
     private CountersManager countersManager;
@@ -64,9 +65,14 @@ public final class Context implements Closeable
         return this;
     }
 
-    public File controlFile()
+    public int streamsCapacity()
     {
-        return controlRW.controlFile();
+        return streamsCapacity;
+    }
+
+    public File streamsDirectory()
+    {
+        return controlRW.controlFile().getParentFile();
     }
 
     public Context idleStrategy(IdleStrategy idleStrategy)
@@ -215,12 +221,13 @@ public final class Context implements Closeable
     {
         try
         {
-            this.controlRO = controlRW.controlFile(controlFile())
-                                      .commandBufferCapacity(config.commandBufferCapacity())
+            this.controlRO = controlRW.commandBufferCapacity(config.commandBufferCapacity())
                                       .responseBufferCapacity(config.responseBufferCapacity())
                                       .counterLabelsBufferCapacity(config.counterLabelsBufferLength())
                                       .counterValuesBufferCapacity(config.counterValuesBufferLength())
                                       .mapNewFile();
+
+            streamsCapacity = config.streamsCapacity();
 
             conductorCommands(
                     new ManyToOneRingBuffer(controlRO.commandBuffer()));

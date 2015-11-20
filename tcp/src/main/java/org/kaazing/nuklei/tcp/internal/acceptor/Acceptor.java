@@ -49,7 +49,8 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
     private final OneToOneConcurrentArrayQueue<AcceptorCommand> commandQueue;
     private final Long2ObjectHashMap<AcceptorState> stateByRef;
     private final AtomicCounter acceptedCount;
-    private final File streamsDir;
+    private final File streamsDirectory;
+    private final int streamsCapacity;
 
     public Acceptor(Context context)
     {
@@ -59,7 +60,8 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
         this.commandQueue = context.acceptorCommandQueue();
         this.stateByRef = new Long2ObjectHashMap<>();
         this.acceptedCount = context.countersManager().newCounter("accepted");
-        this.streamsDir = context.controlFile().getParentFile(); // TODO: better abstraction
+        this.streamsDirectory = context.streamsDirectory();
+        this.streamsCapacity = context.streamsCapacity();
     }
 
     @Override
@@ -129,12 +131,11 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
                 // BIND goes first, so Acceptor owns bidirectional streams mapped file lifecycle
                 // TODO: unmap mapped buffer (also cleanup in Context.close())
 
-                int streamCapacity = 1024 * 1024; // TODO: Configuration, Context
-                File streamsFile = new File(streamsDir, format("%s.accepts", destination));
+                File streamsFile = new File(streamsDirectory, format("%s.accepts", destination));
 
                 StreamsLayout.Builder streamsRW = new StreamsLayout.Builder();
                 StreamsLayout streamsRO = streamsRW.streamsFile(streamsFile)
-                                                   .streamCapacity(streamCapacity)
+                                                   .streamsCapacity(streamsCapacity)
                                                    .mapNewFile();
 
                 RingBuffer inputBuffer = new ManyToOneRingBuffer(streamsRO.inputBuffer());

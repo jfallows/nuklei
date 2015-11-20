@@ -50,7 +50,7 @@ public final class StreamsLayout extends Layout
     public static final class Builder extends Layout.Builder<StreamsLayout>
     {
         private final StreamsLayout layout;
-        private int streamCapacity;
+        private int streamsCapacity;
         private File streamsFile;
 
         public Builder()
@@ -58,9 +58,9 @@ public final class StreamsLayout extends Layout
             this.layout = new StreamsLayout();
         }
 
-        public Builder streamCapacity(int streamCapacity)
+        public Builder streamsCapacity(int streamsCapacity)
         {
-            this.streamCapacity = streamCapacity;
+            this.streamsCapacity = streamsCapacity;
             return this;
         }
 
@@ -73,7 +73,7 @@ public final class StreamsLayout extends Layout
         @Override
         public StreamsLayout mapNewFile()
         {
-            int ringBufferLength = streamCapacity + RingBufferDescriptor.TRAILER_LENGTH;
+            int ringBufferLength = streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH;
             createEmptyFile(streamsFile, ringBufferLength << 1);
             layout.inputBuffer.wrap(mapExistingFile(streamsFile, "input", 0, ringBufferLength));
             layout.outputBuffer.wrap(mapExistingFile(streamsFile, "output", ringBufferLength, ringBufferLength));
