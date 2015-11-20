@@ -137,7 +137,6 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
                                                    .streamCapacity(streamCapacity)
                                                    .mapNewFile();
 
-                // TODO: verify offsets, etc with underlying ByteBuffer for Reader and Writer
                 RingBuffer inputBuffer = new ManyToOneRingBuffer(streamsRO.inputBuffer());
                 RingBuffer outputBuffer = new ManyToOneRingBuffer(streamsRO.outputBuffer());
 
