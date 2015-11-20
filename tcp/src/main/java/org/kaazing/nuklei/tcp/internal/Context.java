@@ -225,7 +225,7 @@ public final class Context implements Closeable
                                       .responseBufferCapacity(config.responseBufferCapacity())
                                       .counterLabelsBufferCapacity(config.counterLabelsBufferLength())
                                       .counterValuesBufferCapacity(config.counterValuesBufferLength())
-                                      .mapNewFile();
+                                      .build();
 
             streamsCapacity = config.streamsCapacity();
 

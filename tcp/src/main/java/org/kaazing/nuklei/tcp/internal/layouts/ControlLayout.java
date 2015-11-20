@@ -153,7 +153,7 @@ public final class ControlLayout extends Layout
         }
 
         @Override
-        public ControlLayout mapNewFile()
+        public ControlLayout build()
         {
             int commandBufferLength = commandBufferCapacity + RingBufferDescriptor.TRAILER_LENGTH;
             int responseBufferLength = responseBufferCapacity + BroadcastBufferDescriptor.TRAILER_LENGTH;

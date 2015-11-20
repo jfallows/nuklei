@@ -38,6 +38,6 @@ public abstract class Layout
 
     public abstract static class Builder<T extends Layout>
     {
-        public abstract T mapNewFile();
+        public abstract T build();
     }
 }

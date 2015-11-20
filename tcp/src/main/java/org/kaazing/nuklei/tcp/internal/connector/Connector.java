@@ -35,7 +35,6 @@ import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.nio.TransportPoller;
 
@@ -112,10 +111,10 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
                 StreamsLayout.Builder streamsRW = new StreamsLayout.Builder();
                 StreamsLayout streamsRO = streamsRW.streamsFile(streamsFile)
                                                    .streamsCapacity(streamsCapacity)
-                                                   .mapNewFile();
+                                                   .build();
 
-                RingBuffer inputBuffer = new ManyToOneRingBuffer(streamsRO.inputBuffer());
-                RingBuffer outputBuffer = new ManyToOneRingBuffer(streamsRO.outputBuffer());
+                RingBuffer inputBuffer = streamsRO.inputBuffer();
+                RingBuffer outputBuffer = streamsRO.outputBuffer();
 
                 final ConnectorState newState = new ConnectorState(reference, destination, destinationRef, source,
                                                                    remoteAddress, inputBuffer, outputBuffer);

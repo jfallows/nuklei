@@ -20,22 +20,33 @@ import static uk.co.real_logic.agrona.IoUtil.mapExistingFile;
 import static uk.co.real_logic.agrona.IoUtil.unmap;
 
 import java.io.File;
+import java.nio.MappedByteBuffer;
 
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 public final class StreamsLayout extends Layout
 {
-    private final AtomicBuffer inputBuffer = new UnsafeBuffer(new byte[0]);
-    private final AtomicBuffer outputBuffer = new UnsafeBuffer(new byte[0]);
+    private final RingBuffer inputBuffer;
+    private final RingBuffer outputBuffer;
 
-    public AtomicBuffer inputBuffer()
+    private StreamsLayout(
+        RingBuffer inputBuffer,
+        RingBuffer outputBuffer)
+    {
+        this.inputBuffer = inputBuffer;
+        this.outputBuffer = outputBuffer;
+    }
+
+    public RingBuffer inputBuffer()
     {
         return inputBuffer;
     }
 
-    public AtomicBuffer outputBuffer()
+    public RingBuffer outputBuffer()
     {
         return outputBuffer;
     }
@@ -43,20 +54,14 @@ public final class StreamsLayout extends Layout
     @Override
     public void close()
     {
-        unmap(inputBuffer.byteBuffer());
-        unmap(outputBuffer.byteBuffer());
+        unmap(inputBuffer.buffer().byteBuffer());
+        unmap(outputBuffer.buffer().byteBuffer());
     }
 
     public static final class Builder extends Layout.Builder<StreamsLayout>
     {
-        private final StreamsLayout layout;
         private int streamsCapacity;
         private File streamsFile;
-
-        public Builder()
-        {
-            this.layout = new StreamsLayout();
-        }
 
         public Builder streamsCapacity(int streamsCapacity)
         {
@@ -71,13 +76,15 @@ public final class StreamsLayout extends Layout
         }
 
         @Override
-        public StreamsLayout mapNewFile()
+        public StreamsLayout build()
         {
             int ringBufferLength = streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH;
             createEmptyFile(streamsFile, ringBufferLength << 1);
-            layout.inputBuffer.wrap(mapExistingFile(streamsFile, "input", 0, ringBufferLength));
-            layout.outputBuffer.wrap(mapExistingFile(streamsFile, "output", ringBufferLength, ringBufferLength));
-            return layout;
+            MappedByteBuffer inputByteBuffer = mapExistingFile(streamsFile, "input", 0, ringBufferLength);
+            MappedByteBuffer outputByteBuffer = mapExistingFile(streamsFile, "output", ringBufferLength, ringBufferLength);
+            AtomicBuffer inputBuffer = new UnsafeBuffer(inputByteBuffer);
+            AtomicBuffer outputBuffer = new UnsafeBuffer(outputByteBuffer);
+            return new StreamsLayout(new ManyToOneRingBuffer(inputBuffer), new ManyToOneRingBuffer(outputBuffer));
         }
     }
 }
