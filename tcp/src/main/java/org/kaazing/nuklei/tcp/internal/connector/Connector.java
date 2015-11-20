@@ -106,12 +106,10 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
                 // PREPARE goes first, so Connector owns bidirectional streams mapped file lifecycle
                 // TODO: unmap mapped buffer (also cleanup in Context.close())
 
-                File streamsFile = new File(streamsDirectory, format("%s.connects", destination));
-
-                StreamsLayout.Builder streamsRW = new StreamsLayout.Builder();
-                StreamsLayout streamsRO = streamsRW.streamsFile(streamsFile)
-                                                   .streamsCapacity(streamsCapacity)
-                                                   .build();
+                StreamsLayout streamsRO = new StreamsLayout.Builder().streamsDirectory(streamsDirectory)
+                                                                     .streamsFilename(format("%s.connects", destination))
+                                                                     .streamsCapacity(streamsCapacity)
+                                                                     .build();
 
                 RingBuffer inputBuffer = streamsRO.inputBuffer();
                 RingBuffer outputBuffer = streamsRO.outputBuffer();

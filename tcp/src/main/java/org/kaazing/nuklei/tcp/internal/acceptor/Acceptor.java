@@ -130,12 +130,10 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
                 // BIND goes first, so Acceptor owns bidirectional streams mapped file lifecycle
                 // TODO: unmap mapped buffer (also cleanup in Context.close())
 
-                File streamsFile = new File(streamsDirectory, format("%s.accepts", destination));
-
-                StreamsLayout.Builder streamsRW = new StreamsLayout.Builder();
-                StreamsLayout streamsRO = streamsRW.streamsFile(streamsFile)
-                                                   .streamsCapacity(streamsCapacity)
-                                                   .build();
+                StreamsLayout streamsRO = new StreamsLayout.Builder().streamsDirectory(streamsDirectory)
+                                                                     .streamsFilename(format("%s.accepts", destination))
+                                                                     .streamsCapacity(streamsCapacity)
+                                                                     .build();
 
                 RingBuffer inputBuffer = streamsRO.inputBuffer();
                 RingBuffer outputBuffer = streamsRO.outputBuffer();

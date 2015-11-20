@@ -61,7 +61,8 @@ public final class StreamsLayout extends Layout
     public static final class Builder extends Layout.Builder<StreamsLayout>
     {
         private int streamsCapacity;
-        private File streamsFile;
+        private File streamsDirectory;
+        private String streamsFilename;
 
         public Builder streamsCapacity(int streamsCapacity)
         {
@@ -69,9 +70,15 @@ public final class StreamsLayout extends Layout
             return this;
         }
 
-        public Builder streamsFile(File streamsFile)
+        public Builder streamsDirectory(File streamsDirectory)
         {
-            this.streamsFile = streamsFile;
+            this.streamsDirectory = streamsDirectory;
+            return this;
+        }
+
+        public Builder streamsFilename(String streamsFilename)
+        {
+            this.streamsFilename = streamsFilename;
             return this;
         }
 
@@ -79,6 +86,8 @@ public final class StreamsLayout extends Layout
         public StreamsLayout build()
         {
             int ringBufferLength = streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH;
+            File streamsFile = new File(streamsDirectory, streamsFilename);
+
             createEmptyFile(streamsFile, ringBufferLength << 1);
             MappedByteBuffer inputByteBuffer = mapExistingFile(streamsFile, "input", 0, ringBufferLength);
             MappedByteBuffer outputByteBuffer = mapExistingFile(streamsFile, "output", ringBufferLength, ringBufferLength);
