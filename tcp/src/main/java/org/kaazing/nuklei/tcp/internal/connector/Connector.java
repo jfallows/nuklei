@@ -56,7 +56,7 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
         this.writerProxy = new WriterProxy(context);
         this.commandQueue = context.connectorCommandQueue();
         this.stateByRef = new Long2ObjectHashMap<>();
-        this.connectedCount = context.countersManager().newCounter("connected");
+        this.connectedCount = context.counters().connectedCount();
         this.streamsDirectory = context.streamsDirectory();
         this.streamsCapacity = context.streamsCapacity();
     }

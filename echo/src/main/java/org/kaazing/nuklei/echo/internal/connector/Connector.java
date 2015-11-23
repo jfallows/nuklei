@@ -13,41 +13,48 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.echo.internal;
+package org.kaazing.nuklei.echo.internal.connector;
+
+import java.util.function.Consumer;
+
+import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.echo.internal.Context;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.Agent;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-public final class Conductor implements Agent
+public final class Connector implements Nukleus, Consumer<ConnectorCommand>
 {
-    private final RingBuffer toConductorCommands;
-    private final MessageHandler onConductorCommandFunc;
+    private final RingBuffer conductorCommands;
 
-    Conductor(Context context)
+    public Connector(Context context)
     {
-        this.toConductorCommands = context.toConductorCommands();
-        this.onConductorCommandFunc = this::onConductorCommand;
+        this.conductorCommands = context.conductorCommands();
     }
 
     @Override
-    public int doWork() throws Exception
+    public int process() throws Exception
     {
-        int workCount = 0;
+        int weight = 0;
 
-        workCount += toConductorCommands.read(onConductorCommandFunc);
+        weight += conductorCommands.read(this::handleCommand);
 
-        return workCount;
+        return weight;
     }
 
     @Override
-    public String roleName()
+    public String name()
     {
         return "conductor";
     }
 
-    private void onConductorCommand(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
+    @Override
+    public void accept(ConnectorCommand command)
+    {
+        // TODO Auto-generated method stub
+    }
+
+    private void handleCommand(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
     {
         // TODO
     }

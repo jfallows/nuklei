@@ -58,7 +58,7 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
         this.writerProxy = new WriterProxy(context);
         this.commandQueue = context.acceptorCommandQueue();
         this.stateByRef = new Long2ObjectHashMap<>();
-        this.acceptedCount = context.countersManager().newCounter("accepted");
+        this.acceptedCount = context.counters().acceptedCount();
         this.streamsDirectory = context.streamsDirectory();
         this.streamsCapacity = context.streamsCapacity();
     }

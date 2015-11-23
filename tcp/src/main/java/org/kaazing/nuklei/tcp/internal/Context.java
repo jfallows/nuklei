@@ -217,6 +217,11 @@ public final class Context implements Closeable
         return countersManager;
     }
 
+    public Counters counters()
+    {
+        return counters;
+    }
+
     public Context conclude(Configuration config)
     {
         try

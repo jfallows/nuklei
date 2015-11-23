@@ -15,45 +15,64 @@
  */
 package org.kaazing.nuklei.echo.internal;
 
-import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
-import static uk.co.real_logic.agrona.IoUtil.unmap;
 import static uk.co.real_logic.agrona.LangUtil.rethrowUnchecked;
 
+import java.io.Closeable;
 import java.io.File;
-import java.nio.MappedByteBuffer;
+import java.io.IOException;
+import java.util.logging.Logger;
 
 import org.kaazing.nuklei.Configuration;
+import org.kaazing.nuklei.echo.internal.acceptor.AcceptorCommand;
+import org.kaazing.nuklei.echo.internal.conductor.ConductorResponse;
+import org.kaazing.nuklei.echo.internal.connector.ConnectorCommand;
+import org.kaazing.nuklei.echo.internal.layout.ControlLayout;
+import org.kaazing.nuklei.echo.internal.reader.ReaderCommand;
+import org.kaazing.nuklei.echo.internal.writer.WriterCommand;
 
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.CountersManager;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-public final class Context implements AutoCloseable
+public final class Context implements Closeable
 {
-    private File cncFile;
+    private final ControlLayout.Builder controlRW = new ControlLayout.Builder();
+
+    private ControlLayout controlRO;
+    private int streamsCapacity;
     private IdleStrategy idleStrategy;
     private ErrorHandler errorHandler;
     private CountersManager countersManager;
-    private AtomicBuffer counterLabelsBuffer;
-    private AtomicBuffer counterValuesBuffer;
     private Counters counters;
     private RingBuffer toConductorCommands;
-    private MappedByteBuffer cncByteBuffer;
-    private UnsafeBuffer cncMetaDataBuffer;
+    private BroadcastTransmitter fromConductorResponses;
 
-    public Context cncFile(File cncFile)
+    private OneToOneConcurrentArrayQueue<AcceptorCommand> toAcceptorFromConductorCommands;
+    private OneToOneConcurrentArrayQueue<ConductorResponse> fromAcceptorToConductorResponses;
+    private OneToOneConcurrentArrayQueue<ReaderCommand> fromAcceptorToReaderCommands;
+    private OneToOneConcurrentArrayQueue<WriterCommand> fromAcceptorToWriterCommands;
+    private OneToOneConcurrentArrayQueue<ConnectorCommand> toConnectorFromConductorCommands;
+    private OneToOneConcurrentArrayQueue<ConductorResponse> fromConnectorToConductorResponses;
+
+    public Context controlFile(File controlFile)
     {
-        this.cncFile = cncFile;
+        this.controlRW.controlFile(controlFile);
         return this;
     }
 
-    public File cncFile()
+    public int streamsCapacity()
     {
-        return cncFile;
+        return streamsCapacity;
+    }
+
+    public File streamsDirectory()
+    {
+        return controlRW.controlFile().getParentFile();
     }
 
     public Context idleStrategy(IdleStrategy idleStrategy)
@@ -80,35 +99,111 @@ public final class Context implements AutoCloseable
 
     public Context counterLabelsBuffer(AtomicBuffer counterLabelsBuffer)
     {
-        this.counterLabelsBuffer = counterLabelsBuffer;
+        controlRW.counterLabelsBuffer(counterLabelsBuffer);
         return this;
-    }
-
-    public AtomicBuffer counterLabelsBuffer()
-    {
-        return counterLabelsBuffer;
     }
 
     public Context counterValuesBuffer(AtomicBuffer counterValuesBuffer)
     {
-        this.counterValuesBuffer = counterValuesBuffer;
+        controlRW.counterValuesBuffer(counterValuesBuffer);
         return this;
     }
 
-    public AtomicBuffer counterValuesBuffer()
+    public Context conductorCommands(RingBuffer conductorCommands)
     {
-        return counterValuesBuffer;
-    }
-
-    public Context toConductorCommands(RingBuffer toConductorCommands)
-    {
-        this.toConductorCommands = toConductorCommands;
+        this.toConductorCommands = conductorCommands;
         return this;
     }
 
-    public RingBuffer toConductorCommands()
+    public RingBuffer conductorCommands()
     {
         return toConductorCommands;
+    }
+
+    public Context conductorResponses(BroadcastTransmitter conductorResponses)
+    {
+        this.fromConductorResponses = conductorResponses;
+        return this;
+    }
+
+    public BroadcastTransmitter conductorResponses()
+    {
+        return fromConductorResponses;
+    }
+
+    public Logger acceptorLogger()
+    {
+        return Logger.getLogger("nuklei.tcp.acceptor");
+    }
+
+    public void acceptorCommandQueue(
+            OneToOneConcurrentArrayQueue<AcceptorCommand> acceptorCommandQueue)
+    {
+        this.toAcceptorFromConductorCommands = acceptorCommandQueue;
+    }
+
+    public OneToOneConcurrentArrayQueue<AcceptorCommand> acceptorCommandQueue()
+    {
+        return toAcceptorFromConductorCommands;
+    }
+
+    public Context acceptorResponseQueue(
+            OneToOneConcurrentArrayQueue<ConductorResponse> acceptorResponseQueue)
+    {
+        this.fromAcceptorToConductorResponses = acceptorResponseQueue;
+        return this;
+    }
+
+    public OneToOneConcurrentArrayQueue<ConductorResponse> acceptorResponseQueue()
+    {
+        return fromAcceptorToConductorResponses;
+    }
+
+    public void connectorCommandQueue(
+            OneToOneConcurrentArrayQueue<ConnectorCommand> connectorCommandQueue)
+    {
+        this.toConnectorFromConductorCommands = connectorCommandQueue;
+    }
+
+    public OneToOneConcurrentArrayQueue<ConnectorCommand> connectorCommandQueue()
+    {
+        return toConnectorFromConductorCommands;
+    }
+
+    public Context connectorResponseQueue(
+            OneToOneConcurrentArrayQueue<ConductorResponse> connectorResponseQueue)
+    {
+        this.fromConnectorToConductorResponses = connectorResponseQueue;
+        return this;
+    }
+
+    public OneToOneConcurrentArrayQueue<ConductorResponse> connectorResponseQueue()
+    {
+        return fromConnectorToConductorResponses;
+    }
+
+    public Context readerCommandQueue(
+            OneToOneConcurrentArrayQueue<ReaderCommand> readerCommandQueue)
+    {
+        this.fromAcceptorToReaderCommands = readerCommandQueue;
+        return this;
+    }
+
+    public OneToOneConcurrentArrayQueue<ReaderCommand> readerCommandQueue()
+    {
+        return fromAcceptorToReaderCommands;
+    }
+
+    public Context writerCommandQueue(
+            OneToOneConcurrentArrayQueue<WriterCommand> writerCommandQueue)
+    {
+        this.fromAcceptorToWriterCommands = writerCommandQueue;
+        return this;
+    }
+
+    public OneToOneConcurrentArrayQueue<WriterCommand> writerCommandQueue()
+    {
+        return fromAcceptorToWriterCommands;
     }
 
     public Context countersManager(CountersManager countersManager)
@@ -122,26 +217,46 @@ public final class Context implements AutoCloseable
         return countersManager;
     }
 
+    public Counters counters()
+    {
+        return counters;
+    }
+
     public Context conclude(Configuration config)
     {
         try
         {
-            cncByteBuffer = mapNewFile(
-                    cncFile(),
-                    CncFileDescriptor.computeCncFileLength(
-                        config.commandBufferCapacity() + config.responseBufferCapacity() +
-                        config.counterLabelsBufferLength() + config.counterValuesBufferLength()));
+            this.controlRO = controlRW.commandBufferCapacity(config.commandBufferCapacity())
+                                      .responseBufferCapacity(config.responseBufferCapacity())
+                                      .counterLabelsBufferCapacity(config.counterLabelsBufferLength())
+                                      .counterValuesBufferCapacity(config.counterValuesBufferLength())
+                                      .build();
 
-            cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
-            CncFileDescriptor.fillMetaData(
-                cncMetaDataBuffer,
-                config.commandBufferCapacity(),
-                config.responseBufferCapacity(),
-                config.counterLabelsBufferLength(),
-                config.counterValuesBufferLength());
+            streamsCapacity = config.streamsCapacity();
 
-            toConductorCommands(
-                    new ManyToOneRingBuffer(CncFileDescriptor.createToConductorBuffer(cncByteBuffer, cncMetaDataBuffer)));
+            conductorCommands(
+                    new ManyToOneRingBuffer(controlRO.commandBuffer()));
+
+            conductorResponses(
+                    new BroadcastTransmitter(controlRO.responseBuffer()));
+
+            acceptorCommandQueue(
+                    new OneToOneConcurrentArrayQueue<AcceptorCommand>(1024));
+
+            acceptorResponseQueue(
+                    new OneToOneConcurrentArrayQueue<ConductorResponse>(1024));
+
+            connectorCommandQueue(
+                    new OneToOneConcurrentArrayQueue<ConnectorCommand>(1024));
+
+            connectorResponseQueue(
+                    new OneToOneConcurrentArrayQueue<ConductorResponse>(1024));
+
+            readerCommandQueue(
+                    new OneToOneConcurrentArrayQueue<ReaderCommand>(1024));
+
+            writerCommandQueue(
+                    new OneToOneConcurrentArrayQueue<WriterCommand>(1024));
 
             concludeCounters();
         }
@@ -154,29 +269,22 @@ public final class Context implements AutoCloseable
     }
 
     @Override
-    public void close() throws Exception
+    public void close() throws IOException
     {
-        unmap(cncByteBuffer);
+        if (controlRO != null)
+        {
+            controlRO.close();
+        }
     }
 
     private void concludeCounters()
     {
-        if (countersManager() == null)
+        if (countersManager == null)
         {
-            if (counterLabelsBuffer() == null)
-            {
-                counterLabelsBuffer(CncFileDescriptor.createCounterLabelsBuffer(cncByteBuffer, cncMetaDataBuffer));
-            }
-
-            if (counterValuesBuffer() == null)
-            {
-                counterValuesBuffer(CncFileDescriptor.createCounterValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
-            }
-
-            countersManager(new CountersManager(counterLabelsBuffer(), counterValuesBuffer()));
+            countersManager(new CountersManager(controlRO.counterLabelsBuffer(), controlRO.counterValuesBuffer()));
         }
 
-        if (null == counters)
+        if (counters == null)
         {
             counters = new Counters(countersManager);
         }
