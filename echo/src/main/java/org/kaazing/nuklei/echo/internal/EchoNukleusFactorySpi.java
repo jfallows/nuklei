@@ -15,6 +15,8 @@
  */
 package org.kaazing.nuklei.echo.internal;
 
+import java.io.File;
+
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.NukleusFactorySpi;
 
@@ -28,9 +30,12 @@ public final class EchoNukleusFactorySpi implements NukleusFactorySpi
     }
 
     @Override
-    public EchoNukleus create(Configuration options)
+    public EchoNukleus create(Configuration config)
     {
-        return new EchoNukleus(new Context());
+        Context context = new Context();
+        context.controlFile(new File(config.directory(), "echo/control"))
+               .conclude(config);
+        return new EchoNukleus(context);
     }
 
 }

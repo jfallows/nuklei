@@ -27,14 +27,26 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest-all</artifactId>
-            <version>1.3</version>
+            <groupId>org.kaazing</groupId>
+            <artifactId>nuklei-test</artifactId>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
+            <groupId>org.kaazing</groupId>
+            <artifactId>nuklei-specification-echo</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kaazing</groupId>
+            <artifactId>k3po.junit</artifactId>
+            <version>${k3po.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-all</artifactId>
+            <version>1.3</version>
             <scope>test</scope>
         </dependency>
         <dependency>

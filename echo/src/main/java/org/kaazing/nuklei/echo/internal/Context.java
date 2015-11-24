@@ -26,9 +26,8 @@ import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.echo.internal.acceptor.AcceptorCommand;
 import org.kaazing.nuklei.echo.internal.conductor.ConductorResponse;
 import org.kaazing.nuklei.echo.internal.connector.ConnectorCommand;
-import org.kaazing.nuklei.echo.internal.layout.ControlLayout;
-import org.kaazing.nuklei.echo.internal.reader.ReaderCommand;
-import org.kaazing.nuklei.echo.internal.writer.WriterCommand;
+import org.kaazing.nuklei.echo.internal.layouts.ControlLayout;
+import org.kaazing.nuklei.echo.internal.reflector.ReflectorCommand;
 
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
@@ -54,8 +53,7 @@ public final class Context implements Closeable
 
     private OneToOneConcurrentArrayQueue<AcceptorCommand> toAcceptorFromConductorCommands;
     private OneToOneConcurrentArrayQueue<ConductorResponse> fromAcceptorToConductorResponses;
-    private OneToOneConcurrentArrayQueue<ReaderCommand> fromAcceptorToReaderCommands;
-    private OneToOneConcurrentArrayQueue<WriterCommand> fromAcceptorToWriterCommands;
+    private OneToOneConcurrentArrayQueue<ReflectorCommand> fromAcceptorToReflectorCommands;
     private OneToOneConcurrentArrayQueue<ConnectorCommand> toConnectorFromConductorCommands;
     private OneToOneConcurrentArrayQueue<ConductorResponse> fromConnectorToConductorResponses;
 
@@ -182,28 +180,16 @@ public final class Context implements Closeable
         return fromConnectorToConductorResponses;
     }
 
-    public Context readerCommandQueue(
-            OneToOneConcurrentArrayQueue<ReaderCommand> readerCommandQueue)
+    public Context reflectorCommandQueue(
+            OneToOneConcurrentArrayQueue<ReflectorCommand> reflectorCommandQueue)
     {
-        this.fromAcceptorToReaderCommands = readerCommandQueue;
+        this.fromAcceptorToReflectorCommands = reflectorCommandQueue;
         return this;
     }
 
-    public OneToOneConcurrentArrayQueue<ReaderCommand> readerCommandQueue()
+    public OneToOneConcurrentArrayQueue<ReflectorCommand> reflectorCommandQueue()
     {
-        return fromAcceptorToReaderCommands;
-    }
-
-    public Context writerCommandQueue(
-            OneToOneConcurrentArrayQueue<WriterCommand> writerCommandQueue)
-    {
-        this.fromAcceptorToWriterCommands = writerCommandQueue;
-        return this;
-    }
-
-    public OneToOneConcurrentArrayQueue<WriterCommand> writerCommandQueue()
-    {
-        return fromAcceptorToWriterCommands;
+        return fromAcceptorToReflectorCommands;
     }
 
     public Context countersManager(CountersManager countersManager)
@@ -252,11 +238,8 @@ public final class Context implements Closeable
             connectorResponseQueue(
                     new OneToOneConcurrentArrayQueue<ConductorResponse>(1024));
 
-            readerCommandQueue(
-                    new OneToOneConcurrentArrayQueue<ReaderCommand>(1024));
-
-            writerCommandQueue(
-                    new OneToOneConcurrentArrayQueue<WriterCommand>(1024));
+            reflectorCommandQueue(
+                    new OneToOneConcurrentArrayQueue<ReflectorCommand>(1024));
 
             concludeCounters();
         }

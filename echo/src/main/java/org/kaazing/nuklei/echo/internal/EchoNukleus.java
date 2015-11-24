@@ -19,24 +19,21 @@ import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.echo.internal.acceptor.Acceptor;
 import org.kaazing.nuklei.echo.internal.conductor.Conductor;
 import org.kaazing.nuklei.echo.internal.connector.Connector;
-import org.kaazing.nuklei.echo.internal.reader.Reader;
-import org.kaazing.nuklei.echo.internal.writer.Writer;
+import org.kaazing.nuklei.echo.internal.reflector.Reflector;
 
 final class EchoNukleus implements Nukleus
 {
     private final Conductor conductor;
     private final Acceptor acceptor;
     private final Connector connector;
-    private final Reader reader;
-    private final Writer writer;
+    private final Reflector reflector;
 
     EchoNukleus(Context context)
     {
         this.conductor = new Conductor(context);
         this.acceptor = new Acceptor(context);
         this.connector = new Connector(context);
-        this.reader = new Reader(context);
-        this.writer = new Writer(context);
+        this.reflector = new Reflector(context);
     }
 
     @Override
@@ -47,8 +44,7 @@ final class EchoNukleus implements Nukleus
         weight += conductor.process();
         weight += acceptor.process();
         weight += connector.process();
-        weight += reader.process();
-        weight += writer.process();
+        weight += reflector.process();
 
         return weight;
     }

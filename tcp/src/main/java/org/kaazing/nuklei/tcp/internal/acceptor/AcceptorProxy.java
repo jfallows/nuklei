@@ -36,11 +36,11 @@ public final class AcceptorProxy
     public void doBind(
         long correlationId,
         String source,
-        long sourceBindingRef,
+        long sourceRef,
         String destination,
         InetSocketAddress address)
     {
-        BindCommand command = new BindCommand(correlationId, source, sourceBindingRef, destination, address);
+        BindCommand command = new BindCommand(correlationId, source, sourceRef, destination, address);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");
@@ -49,9 +49,11 @@ public final class AcceptorProxy
         logger.finest(() -> { return command.toString(); });
     }
 
-    public void doUnbind(long correlationId, long bindingRef)
+    public void doUnbind(
+        long correlationId,
+        long referenceId)
     {
-        UnbindCommand command = new UnbindCommand(correlationId, bindingRef);
+        UnbindCommand command = new UnbindCommand(correlationId, referenceId);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");

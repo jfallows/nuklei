@@ -38,6 +38,7 @@
 
     <modules>
         <module>specification-tcp</module>
+        <module>specification-echo</module>
         <module>api</module>
         <module>test</module>
         <module>tcp</module>
