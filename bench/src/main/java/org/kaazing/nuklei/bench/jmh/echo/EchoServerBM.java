@@ -38,6 +38,7 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.infra.Control;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -109,9 +110,12 @@ public class EchoServerBM
     @Benchmark
     @Group("process")
     @GroupThreads(1)
-    public void handler() throws Exception
+    public void handler(Control control) throws Exception
     {
-        this.streams.data(streamId, sendBuffer, 0, sendBuffer.capacity());
-        this.streams.drain();
+        while (!control.stopMeasurement)
+        {
+            this.streams.data(streamId, sendBuffer, 0, sendBuffer.capacity());
+            this.streams.drain();
+        }
     }
 }
