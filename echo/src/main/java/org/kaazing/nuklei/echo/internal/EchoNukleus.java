@@ -21,14 +21,14 @@ import org.kaazing.nuklei.echo.internal.conductor.Conductor;
 import org.kaazing.nuklei.echo.internal.connector.Connector;
 import org.kaazing.nuklei.echo.internal.reflector.Reflector;
 
-final class EchoNukleus implements Nukleus
+public final class EchoNukleus implements Nukleus
 {
     private final Conductor conductor;
     private final Acceptor acceptor;
     private final Connector connector;
     private final Reflector reflector;
 
-    EchoNukleus(Context context)
+    public EchoNukleus(Context context)
     {
         this.conductor = new Conductor(context);
         this.acceptor = new Acceptor(context);

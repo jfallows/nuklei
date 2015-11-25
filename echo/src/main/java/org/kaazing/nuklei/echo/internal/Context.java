@@ -42,6 +42,7 @@ public final class Context implements Closeable
 {
     private final ControlLayout.Builder controlRW = new ControlLayout.Builder();
 
+    private boolean readonly;
     private ControlLayout controlRO;
     private int streamsCapacity;
     private IdleStrategy idleStrategy;
@@ -49,6 +50,7 @@ public final class Context implements Closeable
     private CountersManager countersManager;
     private Counters counters;
     private RingBuffer toConductorCommands;
+    private AtomicBuffer fromConductorResponseBuffer;
     private BroadcastTransmitter fromConductorResponses;
 
     private OneToOneConcurrentArrayQueue<AcceptorCommand> toAcceptorFromConductorCommands;
@@ -56,6 +58,18 @@ public final class Context implements Closeable
     private OneToOneConcurrentArrayQueue<ReflectorCommand> fromAcceptorToReflectorCommands;
     private OneToOneConcurrentArrayQueue<ConnectorCommand> toConnectorFromConductorCommands;
     private OneToOneConcurrentArrayQueue<ConductorResponse> fromConnectorToConductorResponses;
+
+    public Context readonly(
+        boolean readonly)
+    {
+        this.readonly = readonly;
+        return this;
+    }
+
+    public boolean readonly()
+    {
+        return readonly;
+    }
 
     public Context controlFile(File controlFile)
     {
@@ -116,6 +130,17 @@ public final class Context implements Closeable
     public RingBuffer conductorCommands()
     {
         return toConductorCommands;
+    }
+
+    public Context conductorResponseBuffer(AtomicBuffer conductorResponseBuffer)
+    {
+        this.fromConductorResponseBuffer = conductorResponseBuffer;
+        return this;
+    }
+
+    public AtomicBuffer conductorResponseBuffer()
+    {
+        return fromConductorResponseBuffer;
     }
 
     public Context conductorResponses(BroadcastTransmitter conductorResponses)
@@ -216,6 +241,7 @@ public final class Context implements Closeable
                                       .responseBufferCapacity(config.responseBufferCapacity())
                                       .counterLabelsBufferCapacity(config.counterLabelsBufferLength())
                                       .counterValuesBufferCapacity(config.counterValuesBufferLength())
+                                      .readonly(readonly())
                                       .build();
 
             streamsCapacity = config.streamsCapacity();
@@ -223,8 +249,10 @@ public final class Context implements Closeable
             conductorCommands(
                     new ManyToOneRingBuffer(controlRO.commandBuffer()));
 
+            conductorResponseBuffer(controlRO.responseBuffer());
+
             conductorResponses(
-                    new BroadcastTransmitter(controlRO.responseBuffer()));
+                    new BroadcastTransmitter(conductorResponseBuffer()));
 
             acceptorCommandQueue(
                     new OneToOneConcurrentArrayQueue<AcceptorCommand>(1024));

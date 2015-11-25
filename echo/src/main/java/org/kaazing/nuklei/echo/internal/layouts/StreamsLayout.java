@@ -60,9 +60,16 @@ public final class StreamsLayout extends Layout
 
     public static final class Builder extends Layout.Builder<StreamsLayout>
     {
+        private boolean readonly;
         private int streamsCapacity;
         private File streamsDirectory;
         private String streamsFilename;
+
+        public Builder readonly(boolean readonly)
+        {
+            this.readonly = readonly;
+            return this;
+        }
 
         public Builder streamsCapacity(int streamsCapacity)
         {
@@ -88,7 +95,11 @@ public final class StreamsLayout extends Layout
             int ringBufferLength = streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH;
             File streamsFile = new File(streamsDirectory, streamsFilename);
 
-            createEmptyFile(streamsFile, ringBufferLength << 1);
+            if (!readonly)
+            {
+                createEmptyFile(streamsFile, ringBufferLength << 1);
+            }
+
             MappedByteBuffer inputByteBuffer = mapExistingFile(streamsFile, "input", 0, ringBufferLength);
             MappedByteBuffer outputByteBuffer = mapExistingFile(streamsFile, "output", ringBufferLength, ringBufferLength);
             AtomicBuffer inputBuffer = new UnsafeBuffer(inputByteBuffer);

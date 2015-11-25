@@ -33,6 +33,7 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.collections.ArrayUtil;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -55,6 +56,7 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
     private final AtomicBuffer atomicBuffer;
     private final MessageHandler readAcceptHandler;
     private final MessageHandler readConnectHandler;
+    private final AtomicCounter reflectedBytes;
 
     private RingBuffer[] readAcceptBuffers;
     private RingBuffer[] readConnectBuffers;
@@ -62,6 +64,7 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
     public Reflector(Context context)
     {
         this.commandQueue = context.reflectorCommandQueue();
+        this.reflectedBytes = context.counters().reflectedBytes();
         this.stateByReferenceId = new Long2ObjectHashMap<>();
         this.stateByStreamId = new Long2ObjectHashMap<>();
         this.atomicBuffer = new UnsafeBuffer(allocateDirect(MAX_RECEIVE_LENGTH).order(nativeOrder()));
@@ -186,6 +189,8 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
             {
                 throw new IllegalStateException("stream not found: " + dataRO.streamId());
             }
+
+            reflectedBytes.add(length);
 
             if (!state.writeBuffer().write(dataRO.typeId(), dataRO.buffer(), dataRO.offset(), dataRO.remaining()))
             {

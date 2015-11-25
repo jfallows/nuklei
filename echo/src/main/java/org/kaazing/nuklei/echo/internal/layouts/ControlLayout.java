@@ -102,6 +102,8 @@ public final class ControlLayout extends Layout
         private AtomicBuffer counterLabelsBuffer;
         private AtomicBuffer counterValuesBuffer;
 
+        private boolean readonly;
+
         public Builder()
         {
             this.layout = new ControlLayout();
@@ -142,14 +144,22 @@ public final class ControlLayout extends Layout
             return this;
         }
 
-        public void counterLabelsBuffer(AtomicBuffer counterLabelsBuffer)
+        public Builder counterLabelsBuffer(AtomicBuffer counterLabelsBuffer)
         {
             this.counterLabelsBuffer = counterLabelsBuffer;
+            return this;
         }
 
-        public void counterValuesBuffer(AtomicBuffer counterValuesBuffer)
+        public Builder counterValuesBuffer(AtomicBuffer counterValuesBuffer)
         {
             this.counterValuesBuffer = counterValuesBuffer;
+            return this;
+        }
+
+        public Builder readonly(boolean readonly)
+        {
+            this.readonly = readonly;
+            return this;
         }
 
         @Override
@@ -160,16 +170,19 @@ public final class ControlLayout extends Layout
             int counterLabelsBufferLength = counterLabelsBufferCapacity;
             int counterValuesBufferLength = counterValuesBufferCapacity;
 
-            createEmptyFile(controlFile, END_OF_META_DATA_OFFSET +
-                    commandBufferLength + responseBufferLength + counterLabelsBufferLength + counterValuesBufferLength);
+            if (!readonly)
+            {
+                createEmptyFile(controlFile, END_OF_META_DATA_OFFSET +
+                        commandBufferLength + responseBufferLength + counterLabelsBufferLength + counterValuesBufferLength);
 
-            MappedByteBuffer metadata = mapExistingFile(controlFile, "metadata", 0, END_OF_META_DATA_OFFSET);
-            metadata.putInt(FIELD_OFFSET_VERSION, CONTROL_VERSION);
-            metadata.putInt(FIELD_OFFSET_COMMAND_BUFFER_LENGTH, commandBufferCapacity);
-            metadata.putInt(FIELD_OFFSET_RESPONSE_BUFFER_LENGTH, responseBufferCapacity);
-            metadata.putInt(FIELD_OFFSET_COUNTER_LABELS_BUFFER_LENGTH, counterLabelsBufferCapacity);
-            metadata.putInt(FIELD_OFFSET_COUNTER_VALUES_BUFFER_LENGTH, counterValuesBufferCapacity);
-            unmap(metadata);
+                MappedByteBuffer metadata = mapExistingFile(controlFile, "metadata", 0, END_OF_META_DATA_OFFSET);
+                metadata.putInt(FIELD_OFFSET_VERSION, CONTROL_VERSION);
+                metadata.putInt(FIELD_OFFSET_COMMAND_BUFFER_LENGTH, commandBufferCapacity);
+                metadata.putInt(FIELD_OFFSET_RESPONSE_BUFFER_LENGTH, responseBufferCapacity);
+                metadata.putInt(FIELD_OFFSET_COUNTER_LABELS_BUFFER_LENGTH, counterLabelsBufferCapacity);
+                metadata.putInt(FIELD_OFFSET_COUNTER_VALUES_BUFFER_LENGTH, counterValuesBufferCapacity);
+                unmap(metadata);
+            }
 
             int commandBufferOffset = END_OF_META_DATA_OFFSET;
             layout.commandBuffer.wrap(mapExistingFile(controlFile, "commands", commandBufferOffset, commandBufferLength));

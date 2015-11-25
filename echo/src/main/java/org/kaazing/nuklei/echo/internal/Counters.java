@@ -22,11 +22,13 @@ public final class Counters implements AutoCloseable
 {
     private final AtomicCounter acceptedCount;
     private final AtomicCounter connectedCount;
+    private final AtomicCounter reflectedBytes;
 
     Counters(CountersManager countersManager)
     {
         acceptedCount = countersManager.newCounter("acceptedCount");
         connectedCount = countersManager.newCounter("connectedCount");
+        reflectedBytes = countersManager.newCounter("reflectedBytes");
     }
 
     @Override
@@ -34,6 +36,7 @@ public final class Counters implements AutoCloseable
     {
         acceptedCount.close();
         connectedCount.close();
+        reflectedBytes.close();
     }
 
     public AtomicCounter acceptedCount()
@@ -44,5 +47,10 @@ public final class Counters implements AutoCloseable
     public AtomicCounter connectedCount()
     {
         return connectedCount;
+    }
+
+    public AtomicCounter reflectedBytes()
+    {
+        return reflectedBytes;
     }
 }
