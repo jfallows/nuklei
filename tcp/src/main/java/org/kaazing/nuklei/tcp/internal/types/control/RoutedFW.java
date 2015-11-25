@@ -15,7 +15,8 @@
  */
 package org.kaazing.nuklei.tcp.internal.types.control;
 
-import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_UNBIND_COMMAND;
+import static java.lang.String.format;
+import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_ROUTED_RESPONSE;
 
 import org.kaazing.nuklei.tcp.internal.types.Flyweight;
 
@@ -23,15 +24,12 @@ import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public final class UnbindFW extends Flyweight
+public final class RoutedFW extends Flyweight
 {
     private static final int FIELD_OFFSET_CORRELATION_ID = 0;
     private static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
 
-    private static final int FIELD_OFFSET_REFERENCE_ID = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
-    private static final int FIELD_SIZE_REFERENCE_ID = BitUtil.SIZE_OF_LONG;
-
-    public UnbindFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    public RoutedFW wrap(DirectBuffer buffer, int offset, int actingLimit)
     {
         super.wrap(buffer, offset);
 
@@ -42,7 +40,7 @@ public final class UnbindFW extends Flyweight
 
     public int typeId()
     {
-        return TYPE_ID_UNBIND_COMMAND;
+        return TYPE_ID_ROUTED_RESPONSE;
     }
 
     public long correlationId()
@@ -50,27 +48,22 @@ public final class UnbindFW extends Flyweight
         return buffer().getLong(offset() + FIELD_OFFSET_CORRELATION_ID);
     }
 
-    public long referenceId()
-    {
-        return buffer().getLong(offset() + FIELD_OFFSET_REFERENCE_ID);
-    }
-
     public int limit()
     {
-        return offset() + FIELD_OFFSET_REFERENCE_ID + FIELD_SIZE_REFERENCE_ID;
+        return offset() + FIELD_SIZE_CORRELATION_ID;
     }
 
     @Override
     public String toString()
     {
-        return String.format("[correlationId=%d, referenceId=%d]", correlationId(), referenceId());
+        return format("ROUTED [correlationId=%d]", correlationId());
     }
 
-    public static final class Builder extends Flyweight.Builder<UnbindFW>
+    public static final class Builder extends Flyweight.Builder<RoutedFW>
     {
         public Builder()
         {
-            super(new UnbindFW());
+            super(new RoutedFW());
         }
 
         @Override
@@ -84,12 +77,6 @@ public final class UnbindFW extends Flyweight
         public Builder correlationId(long correlationId)
         {
             buffer().putLong(offset() + FIELD_OFFSET_CORRELATION_ID, correlationId);
-            return this;
-        }
-
-        public Builder referenceId(long referenceId)
-        {
-            buffer().putLong(offset() + FIELD_OFFSET_REFERENCE_ID, referenceId);
             return this;
         }
     }

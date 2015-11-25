@@ -15,34 +15,51 @@
  */
 package org.kaazing.nuklei.tcp.internal.types.control;
 
-import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_UNBIND_COMMAND;
+import static java.lang.String.format;
+import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_ROUTE_COMMAND;
+
+import java.nio.charset.StandardCharsets;
 
 import org.kaazing.nuklei.tcp.internal.types.Flyweight;
+import org.kaazing.nuklei.tcp.internal.types.StringFW;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public final class UnbindFW extends Flyweight
+public final class RouteFW extends Flyweight
 {
     private static final int FIELD_OFFSET_CORRELATION_ID = 0;
     private static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
 
-    private static final int FIELD_OFFSET_REFERENCE_ID = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
-    private static final int FIELD_SIZE_REFERENCE_ID = BitUtil.SIZE_OF_LONG;
+    private static final int FIELD_OFFSET_ENDPOINT_ROLE = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
+    private static final int FIELD_SIZE_ROLE = BitUtil.SIZE_OF_BYTE;
 
-    public UnbindFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    private static final int FIELD_OFFSET_ENDPOINT = FIELD_OFFSET_ENDPOINT_ROLE + FIELD_SIZE_ROLE;
+
+    private final StringFW endpointRO = new StringFW();
+
+    @Override
+    public RouteFW wrap(DirectBuffer buffer, int offset, int actingLimit)
     {
         super.wrap(buffer, offset);
+
+        this.endpointRO.wrap(buffer, offset + FIELD_OFFSET_ENDPOINT, actingLimit);
 
         checkLimit(limit(), actingLimit);
 
         return this;
     }
 
+    @Override
+    public int limit()
+    {
+        return endpoint().limit();
+    }
+
     public int typeId()
     {
-        return TYPE_ID_UNBIND_COMMAND;
+        return TYPE_ID_ROUTE_COMMAND;
     }
 
     public long correlationId()
@@ -50,33 +67,37 @@ public final class UnbindFW extends Flyweight
         return buffer().getLong(offset() + FIELD_OFFSET_CORRELATION_ID);
     }
 
-    public long referenceId()
+    public int endpointRole()
     {
-        return buffer().getLong(offset() + FIELD_OFFSET_REFERENCE_ID);
+        return buffer().getByte(offset() + FIELD_OFFSET_ENDPOINT_ROLE);
     }
 
-    public int limit()
+    public StringFW endpoint()
     {
-        return offset() + FIELD_OFFSET_REFERENCE_ID + FIELD_SIZE_REFERENCE_ID;
+        return endpointRO;
     }
 
     @Override
     public String toString()
     {
-        return String.format("[correlationId=%d, referenceId=%d]", correlationId(), referenceId());
+        return format("ROUTE [correlationId=%d, endpointRole=%s, endpoint=%s]", correlationId(), endpointRole(), endpoint());
     }
 
-    public static final class Builder extends Flyweight.Builder<UnbindFW>
+    public static final class Builder extends Flyweight.Builder<RouteFW>
     {
+        private final StringFW.Builder endpointRW = new StringFW.Builder();
+
         public Builder()
         {
-            super(new UnbindFW());
+            super(new RouteFW());
         }
 
         @Override
         public Builder wrap(MutableDirectBuffer buffer, int offset, int maxLimit)
         {
             super.wrap(buffer, offset, maxLimit);
+
+            this.endpointRW.wrap(buffer, offset + FIELD_OFFSET_ENDPOINT, maxLimit);
 
             return this;
         }
@@ -87,9 +108,15 @@ public final class UnbindFW extends Flyweight
             return this;
         }
 
-        public Builder referenceId(long referenceId)
+        public Builder endpointRole(int endpointRole)
         {
-            buffer().putLong(offset() + FIELD_OFFSET_REFERENCE_ID, referenceId);
+            buffer().putByte(offset() + FIELD_OFFSET_ENDPOINT_ROLE, (byte) endpointRole);
+            return this;
+        }
+
+        public Builder endpoint(String endpoint)
+        {
+            endpointRW.set(endpoint, StandardCharsets.UTF_8);
             return this;
         }
     }

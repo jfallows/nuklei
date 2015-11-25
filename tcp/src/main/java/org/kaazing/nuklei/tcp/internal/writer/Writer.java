@@ -15,9 +15,7 @@
  */
 package org.kaazing.nuklei.tcp.internal.writer;
 
-import static org.kaazing.nuklei.tcp.internal.types.stream.BeginFW.BEGIN_TYPE_ID;
-import static org.kaazing.nuklei.tcp.internal.types.stream.DataFW.DATA_TYPE_ID;
-import static org.kaazing.nuklei.tcp.internal.types.stream.EndFW.END_TYPE_ID;
+import static org.kaazing.nuklei.tcp.internal.types.stream.Types.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -124,7 +122,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
     {
         switch (msgTypeId)
         {
-        case BEGIN_TYPE_ID:
+        case TYPE_ID_BEGIN:
             beginRO.wrap(buffer, index, index + length);
             WriterState newState = stateByStreamId.get(beginRO.streamId());
             if (newState == null)
@@ -133,7 +131,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
             }
             break;
 
-        case DATA_TYPE_ID:
+        case TYPE_ID_DATA:
             dataRO.wrap(buffer, index, index + length);
 
             WriterState state = stateByStreamId.get(dataRO.streamId());
@@ -165,7 +163,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
             }
             break;
 
-        case END_TYPE_ID:
+        case TYPE_ID_END:
             endRO.wrap(buffer, index, index + length);
 
             WriterState oldState = stateByStreamId.remove(endRO.streamId());

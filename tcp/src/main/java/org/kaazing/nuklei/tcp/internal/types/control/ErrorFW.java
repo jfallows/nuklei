@@ -15,6 +15,8 @@
  */
 package org.kaazing.nuklei.tcp.internal.types.control;
 
+import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_ERROR_RESPONSE;
+
 import org.kaazing.nuklei.tcp.internal.types.Flyweight;
 
 import uk.co.real_logic.agrona.BitUtil;
@@ -23,8 +25,6 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public final class ErrorFW extends Flyweight
 {
-    public static final int ERROR_TYPE_ID = 0x40000000;
-
     private static final int FIELD_OFFSET_CORRELATION_ID = 0;
     private static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
 
@@ -40,7 +40,7 @@ public final class ErrorFW extends Flyweight
 
     public int typeId()
     {
-        return ERROR_TYPE_ID;
+        return TYPE_ID_ERROR_RESPONSE;
     }
 
     public long correlationId()
