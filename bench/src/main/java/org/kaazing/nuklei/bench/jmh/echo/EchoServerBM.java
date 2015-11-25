@@ -19,7 +19,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.STREAMS_CAPACITY_PROPERTY_NAME;
 
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
@@ -64,19 +63,20 @@ public class EchoServerBM
         properties.setProperty(DIRECTORY_PROPERTY_NAME, "target/nukleus-benchmarks");
         properties.setProperty(STREAMS_CAPACITY_PROPERTY_NAME, Long.toString(1024 * 1024 * 16));
         final Configuration config = new Configuration(properties);
+
         final Context context = new Context();
-        context.controlFile(new File(config.directory(), "echo/control"))
-               .conclude(config);
+        context.conclude(config);
 
         this.nukleus = new EchoNukleus(context);
         this.controller = new EchoController(context);
 
-        long bindCorrelationId = controller.bind("source", 1234L);
+        final long sourceRef = (long) Math.random() * Long.MAX_VALUE;
+        final long bindCorrelationId = controller.bind("source", sourceRef);
         while (this.nukleus.process() != 0L)
         {
             // intentional
         }
-        long bindRef = controller.supplyResponse(bindCorrelationId);
+        final long bindRef = controller.supplyResponse(bindCorrelationId);
 
         this.streams = new EchoStreams(context, "source.accepts");
 

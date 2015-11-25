@@ -71,12 +71,6 @@ public final class Context implements Closeable
         return readonly;
     }
 
-    public Context controlFile(File controlFile)
-    {
-        this.controlRW.controlFile(controlFile);
-        return this;
-    }
-
     public int streamsCapacity()
     {
         return streamsCapacity;
@@ -237,7 +231,8 @@ public final class Context implements Closeable
     {
         try
         {
-            this.controlRO = controlRW.commandBufferCapacity(config.commandBufferCapacity())
+            this.controlRO = controlRW.controlFile(new File(config.directory(), "echo/control"))
+                                      .commandBufferCapacity(config.commandBufferCapacity())
                                       .responseBufferCapacity(config.responseBufferCapacity())
                                       .counterLabelsBufferCapacity(config.counterLabelsBufferLength())
                                       .counterValuesBufferCapacity(config.counterValuesBufferLength())
