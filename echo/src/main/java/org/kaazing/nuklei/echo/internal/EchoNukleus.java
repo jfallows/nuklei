@@ -54,4 +54,24 @@ public final class EchoNukleus implements Nukleus
     {
         return "echo";
     }
+
+    public Nukleus conductor()
+    {
+        return conductor;
+    }
+
+    public Nukleus acceptor()
+    {
+        return acceptor;
+    }
+
+    public Nukleus connector()
+    {
+        return connector;
+    }
+
+    public Nukleus reflector()
+    {
+        return reflector;
+    }
 }

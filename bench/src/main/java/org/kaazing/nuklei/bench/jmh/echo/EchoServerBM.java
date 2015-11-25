@@ -41,6 +41,7 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 @State(Scope.Benchmark)
@@ -56,6 +57,7 @@ public class EchoServerBM
     private EchoStreams streams;
     private MutableDirectBuffer sendBuffer;
     private long streamId;
+    private AtomicCounter reflectedBytes;
 
     @Setup
     public void create() throws Exception
@@ -68,6 +70,7 @@ public class EchoServerBM
         context.controlFile(new File(config.directory(), "echo/control"))
                .conclude(config);
 
+        this.reflectedBytes = context.counters().reflectedBytes();
         this.nukleus = new EchoNukleus(context);
         this.controller = new EchoController(context);
 
@@ -82,14 +85,20 @@ public class EchoServerBM
 
         long streamId = (long) Math.random() * Long.MAX_VALUE;
         this.streams.begin(bindRef, streamId);
+        while (this.nukleus.process() != 0L)
+        {
+            // intentional
+        }
         this.streams.drain();
 
-        this.sendBuffer = new UnsafeBuffer("Hello, world".getBytes(StandardCharsets.UTF_8));
+        byte[] byteArray = "Hello, world".getBytes(StandardCharsets.UTF_8);
+        this.sendBuffer = new UnsafeBuffer(byteArray);
     }
 
     @TearDown
     public void close() throws Exception
     {
+        System.out.println("reflectedBytes = " + reflectedBytes.get());
         this.nukleus.close();
     }
 
@@ -98,7 +107,7 @@ public class EchoServerBM
     @GroupThreads(1)
     public void nukleus() throws Exception
     {
-        this.nukleus.process();
+        this.nukleus.reflector().process();
     }
 
     @Benchmark
