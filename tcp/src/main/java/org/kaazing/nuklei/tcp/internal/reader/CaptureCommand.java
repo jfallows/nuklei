@@ -13,25 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.tcp.internal.writer;
+package org.kaazing.nuklei.tcp.internal.reader;
 
 
-public final class CaptureCommand implements WriterCommand
+public final class CaptureCommand implements ReaderCommand
 {
     private final long correlationId;
-    private final String source;
+    private final String handler;
 
     public CaptureCommand(
         long correlationId,
-        String source)
+        String handler)
     {
         this.correlationId = correlationId;
-        this.source = source;
+        this.handler = handler;
     }
 
     @Override
-    public void execute(Writer writer)
+    public void execute(Reader reader)
     {
-        writer.doCapture(correlationId, source);
+        reader.doCapture(correlationId, handler);
     }
 }

@@ -30,36 +30,36 @@ public final class WriterProxy
         this.commandQueue = context.writerCommandQueue();
     }
 
-    public void doCapture(
-            long correlationId,
-            String source)
+    public void doRoute(
+        long correlationId,
+        String handler)
     {
-        CaptureCommand response = new CaptureCommand(correlationId, source);
-        if (!commandQueue.offer(response))
+        RouteCommand command = new RouteCommand(correlationId, handler);
+        if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");
         }
     }
 
-    public void doUncapture(
-            long correlationId,
-            String source)
+    public void doUnroute(
+        long correlationId,
+        String handler)
     {
-        UncaptureCommand response = new UncaptureCommand(correlationId, source);
-        if (!commandQueue.offer(response))
+        UnrouteCommand command = new UnrouteCommand(correlationId, handler);
+        if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");
         }
     }
 
     public void doRegister(
+        String handler,
+        long handlerRef,
         long streamId,
-        String source,
-        long sourceRef,
         SocketChannel channel)
     {
-        RegisterCommand response = new RegisterCommand(streamId, source, sourceRef, channel);
-        if (!commandQueue.offer(response))
+        RegisterCommand command = new RegisterCommand(handler, handlerRef, streamId, channel);
+        if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");
         }

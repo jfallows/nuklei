@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.tcp.internal.reader;
+package org.kaazing.nuklei.tcp.internal.writer;
 
 
-public final class UnrouteCommand implements ReaderCommand
+public final class UnrouteCommand implements WriterCommand
 {
     private final long correlationId;
     private final String destination;
@@ -30,8 +30,8 @@ public final class UnrouteCommand implements ReaderCommand
     }
 
     @Override
-    public void execute(Reader reader)
+    public void execute(Writer writer)
     {
-        reader.doUnroute(correlationId, destination);
+        writer.doUnroute(correlationId, destination);
     }
 }

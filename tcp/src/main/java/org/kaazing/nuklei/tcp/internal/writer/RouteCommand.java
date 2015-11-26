@@ -15,22 +15,23 @@
  */
 package org.kaazing.nuklei.tcp.internal.writer;
 
-public final class UncaptureCommand implements WriterCommand
+
+public final class RouteCommand implements WriterCommand
 {
     private final long correlationId;
-    private final String source;
+    private final String destination;
 
-    public UncaptureCommand(
+    public RouteCommand(
         long correlationId,
-        String source)
+        String destination)
     {
         this.correlationId = correlationId;
-        this.source = source;
+        this.destination = destination;
     }
 
     @Override
     public void execute(Writer writer)
     {
-        writer.doUncapture(correlationId, source);
+        writer.doRoute(correlationId, destination);
     }
 }

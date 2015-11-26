@@ -20,25 +20,25 @@ import java.nio.channels.SocketChannel;
 public final class RegisterCommand implements WriterCommand
 {
     private final long streamId;
-    private final String source;
-    private final long sourceRef;
+    private final String handler;
+    private final long handlerRef;
     private final SocketChannel channel;
 
     public RegisterCommand(
+        String handler,
+        long handlerRef,
         long streamId,
-        String source,
-        long sourceRef,
         SocketChannel channel)
     {
         this.streamId = streamId;
-        this.source = source;
-        this.sourceRef = sourceRef;
+        this.handler = handler;
+        this.handlerRef = handlerRef;
         this.channel = channel;
     }
 
     @Override
     public void execute(Writer writer)
     {
-        writer.doRegister(streamId, source, sourceRef, channel);
+        writer.doRegister(streamId, handler, handlerRef, channel);
     }
 }

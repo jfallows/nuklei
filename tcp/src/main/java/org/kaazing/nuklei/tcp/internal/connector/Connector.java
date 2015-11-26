@@ -161,8 +161,11 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
                 {
                     long connectionId = connectedCount.increment();
 
-                    readerProxy.doRegister(connectionId, state.destination(), state.destinationRef(), channel);
-                    writerProxy.doRegister(connectionId, state.destination(), state.destinationRef(), channel);
+                    String handler = state.destination();
+                    long handlerRef = state.destinationRef();
+
+                    readerProxy.doRegister(handler, handlerRef, connectionId, channel);
+                    writerProxy.doRegister(handler, handlerRef, connectionId, channel);
 
                     conductorProxy.onConnectedResponse(correlationId, connectionId);
                 }
@@ -196,8 +199,8 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
 
             long connectionId = connectedCount.increment();
 
-            readerProxy.doRegister(connectionId, handler, handlerRef, channel);
-            writerProxy.doRegister(connectionId, handler, handlerRef, channel);
+            readerProxy.doRegister(handler, handlerRef, connectionId, channel);
+            writerProxy.doRegister(handler, handlerRef, connectionId, channel);
 
             conductorProxy.onConnectedResponse(correlationId, connectionId);
 

@@ -313,7 +313,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long correlationId = captureRO.correlationId();
         String source = captureRO.source().asString();
 
-        writerProxy.doCapture(correlationId, source);
+        readerProxy.doCapture(correlationId, source);
     }
 
     private void handleUncaptureCommand(DirectBuffer buffer, int index, int length)
@@ -323,7 +323,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long correlationId = uncaptureRO.correlationId();
         String source = uncaptureRO.source().asString();
 
-        writerProxy.doUncapture(correlationId, source);
+        readerProxy.doUncapture(correlationId, source);
     }
 
     private void handleRouteCommand(DirectBuffer buffer, int index, int length)
@@ -333,7 +333,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long correlationId = routeRO.correlationId();
         String destination = routeRO.destination().asString();
 
-        readerProxy.doRoute(correlationId, destination);
+        writerProxy.doRoute(correlationId, destination);
     }
 
     private void handleUnrouteCommand(DirectBuffer buffer, int index, int length)
@@ -343,7 +343,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long correlationId = unrouteRO.correlationId();
         String destination = unrouteRO.destination().asString();
 
-        readerProxy.doUnroute(correlationId, destination);
+        writerProxy.doUnroute(correlationId, destination);
     }
 
     private void handleBindCommand(DirectBuffer buffer, int index, int length)

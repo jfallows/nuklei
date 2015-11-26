@@ -180,8 +180,8 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
             SocketChannel channel = serverChannel.accept();
             long connectionId = acceptedCount.increment();
 
-            readerProxy.doRegister(connectionId, handler, handlerRef, channel);
-            writerProxy.doRegister(connectionId, handler, handlerRef, channel);
+            readerProxy.doRegister(handler, handlerRef, connectionId, channel);
+            writerProxy.doRegister(handler, handlerRef, connectionId, channel);
         }
         catch (Exception ex)
         {

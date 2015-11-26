@@ -25,9 +25,9 @@ public final class RegisterCommand implements ReaderCommand
     private final SocketChannel channel;
 
     public RegisterCommand(
-        long streamId,
         String handler,
         long handlerRef,
+        long streamId,
         SocketChannel channel)
     {
         this.streamId = streamId;
@@ -39,6 +39,6 @@ public final class RegisterCommand implements ReaderCommand
     @Override
     public void execute(Reader reader)
     {
-        reader.doRegister(streamId, handler, handlerRef, channel);
+        reader.doRegister(handler, handlerRef, streamId, channel);
     }
 }

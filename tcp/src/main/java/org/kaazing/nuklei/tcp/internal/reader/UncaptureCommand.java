@@ -15,23 +15,22 @@
  */
 package org.kaazing.nuklei.tcp.internal.reader;
 
-
-public final class RouteCommand implements ReaderCommand
+public final class UncaptureCommand implements ReaderCommand
 {
     private final long correlationId;
-    private final String destination;
+    private final String handler;
 
-    public RouteCommand(
+    public UncaptureCommand(
         long correlationId,
-        String destination)
+        String handler)
     {
         this.correlationId = correlationId;
-        this.destination = destination;
+        this.handler = handler;
     }
 
     @Override
     public void execute(Reader reader)
     {
-        reader.doRoute(correlationId, destination);
+        reader.doUncapture(correlationId, handler);
     }
 }

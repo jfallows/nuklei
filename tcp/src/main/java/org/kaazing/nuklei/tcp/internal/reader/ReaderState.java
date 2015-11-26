@@ -15,24 +15,30 @@
  */
 package org.kaazing.nuklei.tcp.internal.reader;
 
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 public class ReaderState
 {
     private final long streamId;
     private final SocketChannel channel;
-    private final RingBuffer streamBuffer;
+    private final ByteBuffer writeBuffer;
 
     public ReaderState(
-        RingBuffer streamBuffer,
+        long handlerRef,
         long streamId,
+        RingBuffer streamBuffer,
         SocketChannel channel)
     {
         this.streamId = streamId;
         this.channel = channel;
-        this.streamBuffer = streamBuffer;
+
+        AtomicBuffer atomicBuffer = streamBuffer.buffer();
+        byte[] byteArray = atomicBuffer.byteArray();
+        this.writeBuffer = (byteArray != null) ? ByteBuffer.wrap(byteArray) : atomicBuffer.byteBuffer().duplicate();
     }
 
     public long streamId()
@@ -45,9 +51,9 @@ public class ReaderState
         return channel;
     }
 
-    public RingBuffer streamBuffer()
+    public ByteBuffer writeBuffer()
     {
-        return streamBuffer;
+        return writeBuffer;
     }
 
     @Override

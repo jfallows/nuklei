@@ -15,13 +15,14 @@
  */
 package org.kaazing.nuklei.tcp.internal.writer;
 
-import static org.kaazing.nuklei.tcp.internal.types.stream.Types.TYPE_ID_BEGIN;
-import static org.kaazing.nuklei.tcp.internal.types.stream.Types.TYPE_ID_DATA;
-import static org.kaazing.nuklei.tcp.internal.types.stream.Types.TYPE_ID_END;
+import static java.nio.ByteBuffer.allocateDirect;
+import static java.nio.ByteOrder.nativeOrder;
+import static java.nio.channels.SelectionKey.OP_READ;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
@@ -37,39 +38,40 @@ import org.kaazing.nuklei.tcp.internal.types.stream.DataFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.EndFW;
 
 import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.collections.ArrayUtil;
-import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.nio.TransportPoller;
 
 public final class Writer extends TransportPoller implements Nukleus, Consumer<WriterCommand>
 {
-    private final BeginFW beginRO = new BeginFW();
-    private final EndFW endRO = new EndFW();
-    private final DataFW dataRO = new DataFW();
+    private static final int MAX_RECEIVE_LENGTH = 1024; // TODO: Configuration and Context
 
-    private final ConductorProxy.FromReader conductorProxy;
+    private final BeginFW.Builder beginRW = new BeginFW.Builder();
+    private final DataFW.Builder dataRW = new DataFW.Builder();
+    private final EndFW.Builder endRW = new EndFW.Builder();
+
+    private final ConductorProxy.FromWriter conductorProxy;
     private final OneToOneConcurrentArrayQueue<WriterCommand> commandQueue;
-    private final Long2ObjectHashMap<WriterState> stateByStreamId;
-    private final MessageHandler readHandler;
-    private RingBuffer[] streamBuffers;
+    private final ByteBuffer byteBuffer;
+    private final AtomicBuffer atomicBuffer;
+
     private Function<String, File> streamsFile;
+
     private int streamsCapacity;
-    private HashMap<String, StreamsLayout> layoutsBySource;
+
+    private HashMap<String, StreamsLayout> layoutsByHandler;
 
     public Writer(Context context)
     {
-        this.conductorProxy = new ConductorProxy.FromReader(context);
+        this.conductorProxy = new ConductorProxy.FromWriter(context);
         this.commandQueue = context.writerCommandQueue();
-        this.stateByStreamId = new Long2ObjectHashMap<>();
-        this.streamBuffers = new RingBuffer[0];
-        this.readHandler = this::handleRead;
-        this.streamsFile = context.captureStreamsFile();
+        this.byteBuffer = allocateDirect(MAX_RECEIVE_LENGTH).order(nativeOrder());
+        this.atomicBuffer = new UnsafeBuffer(byteBuffer.duplicate());
+        this.streamsFile = context.routeStreamsFile();
         this.streamsCapacity = context.streamsCapacity();
-        this.layoutsBySource = new HashMap<>();
+        this.layoutsByHandler = new HashMap<>();
     }
 
     @Override
@@ -78,13 +80,8 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         int weight = 0;
 
         selector.selectNow();
-        weight += selectedKeySet.forEach(this::processWrite);
+        weight += selectedKeySet.forEach(this::processRead);
         weight += commandQueue.drain(this);
-
-        for (int i=0; i < streamBuffers.length; i++)
-        {
-            weight += streamBuffers[i].read(readHandler);
-        }
 
         return weight;
     }
@@ -92,16 +89,17 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
     @Override
     public String name()
     {
-        return "writer";
+        return "reader";
     }
 
     @Override
     public void close()
     {
-        stateByStreamId.values().forEach((state) -> {
+        selector.keys().forEach((key) -> {
             try
             {
-                state.channel().shutdownOutput();
+                WriterState state = (WriterState) key.attachment();
+                state.channel().shutdownInput();
             }
             catch (final Exception ex)
             {
@@ -109,7 +107,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
             }
         });
 
-        layoutsBySource.values().forEach((layout) -> {
+        layoutsByHandler.values().forEach((layout) -> {
             try
             {
                 layout.close();
@@ -129,11 +127,11 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         command.execute(this);
     }
 
-    public void doCapture(
+    public void doRoute(
         long correlationId,
-        String source)
+        String destination)
     {
-        StreamsLayout layout = layoutsBySource.get(source);
+        StreamsLayout layout = layoutsByHandler.get(destination);
         if (layout != null)
         {
             conductorProxy.onErrorResponse(correlationId);
@@ -142,16 +140,13 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         {
             try
             {
-                StreamsLayout newLayout = new StreamsLayout.Builder().streamsFile(streamsFile.apply(source))
+                StreamsLayout newLayout = new StreamsLayout.Builder().streamsFile(streamsFile.apply(destination))
                                                                      .streamsCapacity(streamsCapacity)
-                                                                     .readonly(false)
+                                                                     .readonly(true)
                                                                      .build();
 
-                layoutsBySource.put(source, newLayout);
-
-                streamBuffers = ArrayUtil.add(streamBuffers, newLayout.buffer());
-
-                conductorProxy.onCapturedResponse(correlationId);
+                layoutsByHandler.put(destination, newLayout);
+                conductorProxy.onRoutedResponse(correlationId);
             }
             catch (Exception ex)
             {
@@ -161,11 +156,11 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         }
     }
 
-    public void doUncapture(
+    public void doUnroute(
         long correlationId,
-        String source)
+        String destination)
     {
-        StreamsLayout oldLayout = layoutsBySource.remove(source);
+        StreamsLayout oldLayout = layoutsByHandler.remove(destination);
         if (oldLayout == null)
         {
             conductorProxy.onErrorResponse(correlationId);
@@ -174,9 +169,8 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         {
             try
             {
-                streamBuffers = ArrayUtil.remove(streamBuffers, oldLayout.buffer());
                 oldLayout.close();
-                conductorProxy.onUncapturedResponse(correlationId);
+                conductorProxy.onUnroutedResponse(correlationId);
             }
             catch (Exception ex)
             {
@@ -186,93 +180,93 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         }
     }
 
-    public void doRegister(
-        long streamId,
-        String source,
-        long sourceRef,
-        SocketChannel channel)
+    public void doRegister(long streamId, String handler, long handlerRef, SocketChannel channel)
     {
-        StreamsLayout layout = layoutsBySource.get(source);
+        StreamsLayout layout = layoutsByHandler.get(handler);
+
+        // TODO
         assert layout != null;
 
-        RingBuffer streamBuffer = layout.buffer();
+        RingBuffer writeBuffer = layout.buffer();
 
-        WriterState state = new WriterState(streamBuffer, streamId, channel);
+        WriterState state = new WriterState(writeBuffer, streamId, channel);
 
-        // TODO: BiInt2ObjectMap needed or already sufficiently unique?
-        stateByStreamId.put(state.streamId(), state);
-    }
+        BeginFW beginRO = beginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                 .streamId(state.streamId())
+                                 .referenceId(handlerRef)
+                                 .build();
 
-    private void handleRead(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
-    {
-        switch (msgTypeId)
+        writeBuffer.write(beginRO.typeId(), beginRO.buffer(), beginRO.offset(), beginRO.remaining());
+
+        try
         {
-        case TYPE_ID_BEGIN:
-            beginRO.wrap(buffer, index, index + length);
-            WriterState newState = stateByStreamId.get(beginRO.streamId());
-            if (newState == null)
+            channel.configureBlocking(false);
+            channel.register(selector, OP_READ, state);
+        }
+        catch (ClosedChannelException ex)
+        {
+            // channel already closed (deterministic stream begin & end)
+            EndFW endRO = endRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                               .streamId(state.streamId())
+                               .build();
+
+            if (!writeBuffer.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.remaining()))
             {
-                throw new IllegalStateException("stream not found: " + beginRO.streamId());
+                throw new IllegalStateException("could not write to ring buffer");
             }
-            break;
-
-        case TYPE_ID_DATA:
-            dataRO.wrap(buffer, index, index + length);
-
-            WriterState state = stateByStreamId.get(dataRO.streamId());
-            if (state == null)
-            {
-                throw new IllegalStateException("stream not found: " + dataRO.streamId());
-            }
-
-            try
-            {
-                SocketChannel channel = state.channel();
-                ByteBuffer writeBuffer = state.writeBuffer();
-                writeBuffer.limit(dataRO.limit());
-                writeBuffer.position(dataRO.payloadOffset());
-
-                // send buffer underlying buffer for read buffer
-                final int totalBytes = writeBuffer.remaining();
-                final int bytesWritten = channel.write(writeBuffer);
-
-                if (bytesWritten < totalBytes)
-                {
-                    // TODO: support partial writes
-                    throw new IllegalStateException("partial write: " + bytesWritten + "/" + totalBytes);
-                }
-            }
-            catch (IOException ex)
-            {
-                LangUtil.rethrowUnchecked(ex);
-            }
-            break;
-
-        case TYPE_ID_END:
-            endRO.wrap(buffer, index, index + length);
-
-            WriterState oldState = stateByStreamId.remove(endRO.streamId());
-            if (oldState == null)
-            {
-                throw new IllegalStateException("stream not found: " + endRO.streamId());
-            }
-
-            try
-            {
-                SocketChannel channel = oldState.channel();
-                channel.close();
-            }
-            catch (IOException ex)
-            {
-                LangUtil.rethrowUnchecked(ex);
-            }
-            break;
+        }
+        catch (IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 
-    private int processWrite(SelectionKey selectionKey)
+    private int processRead(SelectionKey selectionKey)
     {
-        // fulfill partial writes (flow control?)
+        try
+        {
+            final WriterState state = (WriterState) selectionKey.attachment();
+            final SocketChannel channel = state.channel();
+            final long streamId = state.streamId();
+            final RingBuffer writeBuffer = state.streamBuffer();
+
+            dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                  .streamId(streamId);
+
+            // TODO: limit maximum bytes read
+            byteBuffer.position(dataRW.payloadOffset());
+            int bytesRead = channel.read(byteBuffer);
+
+            if (bytesRead == -1)
+            {
+                EndFW endRO = endRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                   .streamId(state.streamId())
+                                   .build();
+
+                if (!writeBuffer.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.remaining()))
+                {
+                    throw new IllegalStateException("could not write to ring buffer");
+                }
+
+                selectionKey.cancel();
+            }
+            else if (bytesRead != 0)
+            {
+                DataFW dataRO = dataRW.payloadLength(bytesRead).build();
+
+                if (!writeBuffer.write(dataRO.typeId(), dataRO.buffer(), dataRO.offset(), dataRO.remaining()))
+                {
+                    throw new IllegalStateException("could not write to ring buffer");
+                }
+            }
+
+            return 1;
+        }
+        catch (IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
         return 1;
     }
 }

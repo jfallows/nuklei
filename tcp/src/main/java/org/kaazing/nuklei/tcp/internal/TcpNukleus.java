@@ -37,8 +37,8 @@ final class TcpNukleus implements Nukleus
         this.conductor = new Conductor(context);
         this.acceptor = new Acceptor(context);
         this.connector = new Connector(context);
-        this.writer = new Writer(context);
         this.reader = new Reader(context);
+        this.writer = new Writer(context);
     }
 
     @Override

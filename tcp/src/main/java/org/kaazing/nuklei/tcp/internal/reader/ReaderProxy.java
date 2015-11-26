@@ -30,31 +30,35 @@ public final class ReaderProxy
         this.commandQueue = context.readerCommandQueue();
     }
 
-    public void doRoute(
-            long correlationId,
-            String destination)
+    public void doCapture(
+        long correlationId,
+        String handler)
     {
-        RouteCommand response = new RouteCommand(correlationId, destination);
-        if (!commandQueue.offer(response))
+        CaptureCommand command = new CaptureCommand(correlationId, handler);
+        if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");
         }
     }
 
-    public void doUnroute(
-            long correlationId,
-            String destination)
+    public void doUncapture(
+        long correlationId,
+        String handler)
     {
-        UnrouteCommand response = new UnrouteCommand(correlationId, destination);
-        if (!commandQueue.offer(response))
+        UncaptureCommand command = new UncaptureCommand(correlationId, handler);
+        if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");
         }
     }
 
-    public void doRegister(long streamId, String handler, long handlerRef, SocketChannel channel)
+    public void doRegister(
+        String handler,
+        long handlerRef,
+        long streamId,
+        SocketChannel channel)
     {
-        RegisterCommand response = new RegisterCommand(streamId, handler, handlerRef, channel);
+        RegisterCommand response = new RegisterCommand(handler, handlerRef, streamId, channel);
         if (!commandQueue.offer(response))
         {
             throw new IllegalStateException("unable to offer command");
