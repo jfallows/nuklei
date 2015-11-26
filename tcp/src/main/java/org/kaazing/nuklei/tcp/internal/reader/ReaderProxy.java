@@ -58,8 +58,8 @@ public final class ReaderProxy
         long streamId,
         SocketChannel channel)
     {
-        RegisterCommand response = new RegisterCommand(handler, handlerRef, streamId, channel);
-        if (!commandQueue.offer(response))
+        RegisterCommand command = new RegisterCommand(handler, handlerRef, streamId, channel);
+        if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");
         }

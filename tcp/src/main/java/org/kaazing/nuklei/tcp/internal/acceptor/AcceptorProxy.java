@@ -35,12 +35,10 @@ public final class AcceptorProxy
 
     public void doBind(
         long correlationId,
-        String source,
-        long sourceRef,
-        String destination,
-        InetSocketAddress address)
+        String handler,
+        InetSocketAddress localAddress)
     {
-        BindCommand command = new BindCommand(correlationId, source, sourceRef, destination, address);
+        BindCommand command = new BindCommand(correlationId, handler, localAddress);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");

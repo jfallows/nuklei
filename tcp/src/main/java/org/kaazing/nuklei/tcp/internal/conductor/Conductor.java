@@ -41,7 +41,6 @@ import org.kaazing.nuklei.tcp.internal.types.control.CapturedFW;
 import org.kaazing.nuklei.tcp.internal.types.control.ConnectFW;
 import org.kaazing.nuklei.tcp.internal.types.control.ConnectedFW;
 import org.kaazing.nuklei.tcp.internal.types.control.ErrorFW;
-import org.kaazing.nuklei.tcp.internal.types.control.PreparationFW;
 import org.kaazing.nuklei.tcp.internal.types.control.PrepareFW;
 import org.kaazing.nuklei.tcp.internal.types.control.PreparedFW;
 import org.kaazing.nuklei.tcp.internal.types.control.RouteFW;
@@ -206,17 +205,13 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
 
     public void onUnboundResponse(
         long correlationId,
-        String source,
-        long sourceRef,
-        String destination,
+        String handler,
         InetSocketAddress localAddress)
     {
         unboundRW.wrap(sendBuffer, 0, sendBuffer.capacity())
                  .correlationId(correlationId)
                  .binding()
-                     .source(source)
-                     .sourceRef(sourceRef)
-                     .destination(destination)
+                     .handler(handler)
                      .address(localAddress.getAddress())
                      .port(localAddress.getPort());
         UnboundFW unboundRO = unboundRW.build();
@@ -238,17 +233,13 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
 
     public void onUnpreparedResponse(
         long correlationId,
-        String destination,
-        long destinationRef,
-        String source,
+        String handler,
         InetSocketAddress remoteAddress)
     {
         unpreparedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
                     .correlationId(correlationId)
-                    .preparation()
-                        .destination(destination)
-                        .destinationRef(destinationRef)
-                        .source(source)
+                    .binding()
+                        .handler(handler)
                         .address(remoteAddress.getAddress())
                         .port(remoteAddress.getPort());
         UnpreparedFW unpreparedRO = unpreparedRW.build();
@@ -353,12 +344,10 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long correlationId = bindRO.correlationId();
         BindingFW binding = bindRO.binding();
 
-        String source = binding.source().asString();
-        long sourceBindingRef = binding.sourceRef();
-        String destination = binding.destination().asString();
+        String handler = binding.handler().asString();
         InetSocketAddress address = new InetSocketAddress(binding.address().asInetAddress(), binding.port());
 
-        acceptorProxy.doBind(correlationId, source, sourceBindingRef, destination, address);
+        acceptorProxy.doBind(correlationId, handler, address);
     }
 
     private void handleUnbindCommand(DirectBuffer buffer, int index, int length)
@@ -376,14 +365,12 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         prepareRO.wrap(buffer, index, index + length);
 
         long correlationId = prepareRO.correlationId();
-        PreparationFW preparation = prepareRO.preparation();
+        BindingFW binding = prepareRO.binding();
 
-        String destination = preparation.destination().asString();
-        long destinationRef = preparation.destinationRef();
-        String source = preparation.source().asString();
-        InetSocketAddress address = new InetSocketAddress(preparation.address().asInetAddress(), preparation.port());
+        String handler = binding.handler().asString();
+        InetSocketAddress remoteAddress = new InetSocketAddress(binding.address().asInetAddress(), binding.port());
 
-        connectorProxy.doPrepare(correlationId, destination, destinationRef, source, address);
+        connectorProxy.doPrepare(correlationId, handler, remoteAddress);
     }
 
     private void handleUnprepareCommand(DirectBuffer buffer, int index, int length)

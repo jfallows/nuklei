@@ -99,9 +99,7 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
 
     public void doBind(
         long correlationId,
-        String source,
-        long sourceRef,
-        String destination,
+        String handler,
         InetSocketAddress localAddress)
     {
         final long reference = correlationId;
@@ -119,7 +117,7 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
                 serverChannel.bind(localAddress);
                 serverChannel.configureBlocking(false);
 
-                AcceptorState newState = new AcceptorState(reference, source, sourceRef, destination, localAddress);
+                AcceptorState newState = new AcceptorState(reference, handler, localAddress);
 
                 serverChannel.register(selector, OP_ACCEPT, newState);
                 newState.attach(serverChannel);
@@ -154,12 +152,10 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
                 serverChannel.close();
                 selector.selectNow();
 
-                String source = state.source();
-                long sourceRef = state.sourceRef();
                 String destination = state.destination();
                 InetSocketAddress localAddress = state.localAddress();
 
-                conductorProxy.onUnboundResponse(correlationId, source, sourceRef, destination, localAddress);
+                conductorProxy.onUnboundResponse(correlationId, destination, localAddress);
             }
             catch (IOException e)
             {

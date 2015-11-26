@@ -21,8 +21,6 @@ import java.nio.channels.ServerSocketChannel;
 public class AcceptorState
 {
     private final long reference;
-    private final String source;
-    private final long sourceRef;
     private final String destination;
     private final InetSocketAddress localAddress;
 
@@ -30,14 +28,10 @@ public class AcceptorState
 
     public AcceptorState(
         long reference,
-        String source,
-        long sourceRef,
         String destination,
         InetSocketAddress localAddress)
     {
         this.reference = reference;
-        this.source = source;
-        this.sourceRef = sourceRef;
         this.destination = destination;
         this.localAddress = localAddress;
     }
@@ -45,16 +39,6 @@ public class AcceptorState
     public long reference()
     {
         return this.reference;
-    }
-
-    public String source()
-    {
-        return source;
-    }
-
-    public long sourceRef()
-    {
-        return sourceRef;
     }
 
     public String destination()
@@ -80,7 +64,6 @@ public class AcceptorState
     @Override
     public String toString()
     {
-        return String.format("[reference=%d, source=\"%s\", sourceRef=%d, destination=\"%s\", localAddress=%s]",
-                reference, source, sourceRef, destination, localAddress);
+        return String.format("[reference=%d, destination=\"%s\", localAddress=%s]", reference, destination, localAddress);
     }
 }

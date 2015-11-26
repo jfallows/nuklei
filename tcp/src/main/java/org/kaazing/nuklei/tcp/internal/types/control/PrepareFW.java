@@ -30,14 +30,14 @@ public final class PrepareFW extends Flyweight
 
     private static final int FIELD_OFFSET_PREPARATION = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
 
-    private final PreparationFW preparationRO = new PreparationFW();
+    private final BindingFW bindingRO = new BindingFW();
 
     @Override
     public PrepareFW wrap(DirectBuffer buffer, int offset, int actingLimit)
     {
         super.wrap(buffer, offset);
 
-        this.preparationRO.wrap(buffer, offset + FIELD_OFFSET_PREPARATION, actingLimit);
+        this.bindingRO.wrap(buffer, offset + FIELD_OFFSET_PREPARATION, actingLimit);
 
         checkLimit(limit(), actingLimit);
 
@@ -47,7 +47,7 @@ public final class PrepareFW extends Flyweight
     @Override
     public int limit()
     {
-        return preparation().limit();
+        return binding().limit();
     }
 
     public int typeId()
@@ -60,20 +60,20 @@ public final class PrepareFW extends Flyweight
         return buffer().getLong(offset() + FIELD_OFFSET_CORRELATION_ID);
     }
 
-    public PreparationFW preparation()
+    public BindingFW binding()
     {
-        return preparationRO;
+        return bindingRO;
     }
 
     @Override
     public String toString()
     {
-        return String.format("[correlationId=%d, preparationRO=%s]", correlationId(), preparation());
+        return String.format("[correlationId=%d, binding=%s]", correlationId(), binding());
     }
 
     public static final class Builder extends Flyweight.Builder<PrepareFW>
     {
-        private final PreparationFW.Builder preparationRW = new PreparationFW.Builder();
+        private final BindingFW.Builder bindingRW = new BindingFW.Builder();
 
         public Builder()
         {
@@ -85,7 +85,7 @@ public final class PrepareFW extends Flyweight
         {
             super.wrap(buffer, offset, maxLimit);
 
-            this.preparationRW.wrap(buffer, offset + FIELD_OFFSET_PREPARATION, maxLimit);
+            this.bindingRW.wrap(buffer, offset + FIELD_OFFSET_PREPARATION, maxLimit);
 
             return this;
         }
@@ -96,9 +96,9 @@ public final class PrepareFW extends Flyweight
             return this;
         }
 
-        public PreparationFW.Builder preparation()
+        public BindingFW.Builder binding()
         {
-            return preparationRW;
+            return bindingRW;
         }
     }
 }

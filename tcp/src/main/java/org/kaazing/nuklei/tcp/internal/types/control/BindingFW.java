@@ -30,21 +30,18 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public final class BindingFW extends Flyweight
 {
-    private static final int FIELD_OFFSET_SOURCE = 0;
-    private static final int FIELD_SIZE_SOURCE_BINDING_REF = BitUtil.SIZE_OF_LONG;
+    private static final int FIELD_OFFSET_HANDLER = 0;
     private static final int FIELD_SIZE_PORT = BitUtil.SIZE_OF_SHORT;
 
-    private final StringFW sourceRO = new StringFW();
-    private final StringFW destinationRO = new StringFW();
+    private final StringFW handlerRO = new StringFW();
     private final AddressFW addressRO = new AddressFW();
 
     public BindingFW wrap(DirectBuffer buffer, int offset, int actingLimit)
     {
         super.wrap(buffer, offset);
 
-        this.sourceRO.wrap(buffer, offset + FIELD_OFFSET_SOURCE, actingLimit);
-        this.destinationRO.wrap(buffer, sourceRO.limit() + FIELD_SIZE_SOURCE_BINDING_REF, actingLimit);
-        this.addressRO.wrap(buffer, destinationRO.limit(), actingLimit);
+        this.handlerRO.wrap(buffer, offset + FIELD_OFFSET_HANDLER, actingLimit);
+        this.addressRO.wrap(buffer, handlerRO.limit(), actingLimit);
 
         checkLimit(limit(), actingLimit);
 
@@ -56,19 +53,9 @@ public final class BindingFW extends Flyweight
         return address().limit() + FIELD_SIZE_PORT;
     }
 
-    public StringFW source()
+    public StringFW handler()
     {
-        return sourceRO;
-    }
-
-    public long sourceRef()
-    {
-        return buffer().getLong(offset() + source().limit());
-    }
-
-    public StringFW destination()
-    {
-        return destinationRO;
+        return handlerRO;
     }
 
     public AddressFW address()
@@ -84,14 +71,13 @@ public final class BindingFW extends Flyweight
     @Override
     public String toString()
     {
-        return format("[sourceRO=%s, destinationRO=%s, addressRO=%s, port=%d]", source(), destination(), address(), port());
+        return format("[handler=%s, address=%s, port=%d]", handler(), address(), port());
     }
 
     public static final class Builder extends Flyweight.Builder<BindingFW>
     {
         private final AddressFW.Builder addressRW = new AddressFW.Builder();
-        private final StringFW.Builder sourceRW = new StringFW.Builder();
-        private final StringFW.Builder destinationRW = new StringFW.Builder();
+        private final StringFW.Builder handlerRW = new StringFW.Builder();
 
         public Builder()
         {
@@ -105,21 +91,9 @@ public final class BindingFW extends Flyweight
             return this;
         }
 
-        public Builder source(String source)
+        public Builder handler(String handler)
         {
-            source().set(source, UTF_8);
-            return this;
-        }
-
-        public Builder sourceRef(long sourceRef)
-        {
-            buffer().putLong(offset() + source().build().limit(), sourceRef);
-            return this;
-        }
-
-        public Builder destination(String destination)
-        {
-            destination().set(destination, UTF_8);
+            handler().set(handler, UTF_8);
             return this;
         }
 
@@ -135,19 +109,14 @@ public final class BindingFW extends Flyweight
             return this;
         }
 
-        public StringFW.Builder source()
+        public StringFW.Builder handler()
         {
-            return sourceRW.wrap(buffer(), offset() + FIELD_OFFSET_SOURCE, maxLimit());
-        }
-
-        public StringFW.Builder destination()
-        {
-            return destinationRW.wrap(buffer(), source().build().limit() + FIELD_SIZE_SOURCE_BINDING_REF, maxLimit());
+            return handlerRW.wrap(buffer(), offset() + FIELD_OFFSET_HANDLER, maxLimit());
         }
 
         public AddressFW.Builder address()
         {
-            return addressRW.wrap(buffer(), destination().build().limit(), maxLimit());
+            return addressRW.wrap(buffer(), handler().build().limit(), maxLimit());
         }
     }
 }

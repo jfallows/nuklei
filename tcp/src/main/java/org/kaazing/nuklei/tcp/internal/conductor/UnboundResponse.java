@@ -20,27 +20,21 @@ import java.net.InetSocketAddress;
 public final class UnboundResponse implements ConductorResponse
 {
     private final long correlationId;
-    private final String source;
-    private final long sourceRef;
     private final String destination;
     private final InetSocketAddress localAddress;
 
     public UnboundResponse(
         long correlationId,
-        String source,
-        long sourceRef,
         String destination,
         InetSocketAddress localAddress)
     {
         this.correlationId = correlationId;
-        this.source = source;
-        this.sourceRef = sourceRef;
         this.destination = destination;
         this.localAddress = localAddress;
     }
 
     public void execute(Conductor conductor)
     {
-        conductor.onUnboundResponse(correlationId, source, sourceRef, destination, localAddress);
+        conductor.onUnboundResponse(correlationId, destination, localAddress);
     }
 }

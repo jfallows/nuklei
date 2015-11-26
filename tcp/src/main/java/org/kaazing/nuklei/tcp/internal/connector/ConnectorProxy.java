@@ -35,12 +35,10 @@ public final class ConnectorProxy
 
     public void doPrepare(
         long correlationId,
-        String destination,
-        long destinationRef,
-        String source,
+        String handler,
         InetSocketAddress remoteAddress)
     {
-        PrepareCommand command = new PrepareCommand(correlationId, destination, destinationRef, source, remoteAddress);
+        PrepareCommand command = new PrepareCommand(correlationId, handler, remoteAddress);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");

@@ -79,9 +79,7 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
 
     public void doPrepare(
         long correlationId,
-        String destination,
-        long destinationRef,
-        String source,
+        String handler,
         InetSocketAddress remoteAddress)
     {
         final long reference = correlationId;
@@ -95,8 +93,7 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
         {
             try
             {
-                final ConnectorState newState = new ConnectorState(reference, destination, destinationRef, source,
-                                                                   remoteAddress);
+                final ConnectorState newState = new ConnectorState(reference, handler, remoteAddress);
 
                 stateByRef.put(newState.reference(), newState);
 
@@ -124,12 +121,10 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
         {
             try
             {
-                String destination = state.destination();
-                long destinationRef = state.destinationRef();
-                String source = state.source();
-                InetSocketAddress localAddress = state.remoteAddress();
+                String handler = state.handler();
+                InetSocketAddress remoteAddress = state.remoteAddress();
 
-                conductorProxy.onUnpreparedResponse(correlationId, destination, destinationRef, source, localAddress);
+                conductorProxy.onUnpreparedResponse(correlationId, handler, remoteAddress);
             }
             catch (Exception ex)
             {
@@ -161,8 +156,8 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
                 {
                     long connectionId = connectedCount.increment();
 
-                    String handler = state.destination();
-                    long handlerRef = state.destinationRef();
+                    String handler = state.handler();
+                    long handlerRef = state.reference();
 
                     readerProxy.doRegister(handler, handlerRef, connectionId, channel);
                     writerProxy.doRegister(handler, handlerRef, connectionId, channel);
@@ -192,7 +187,7 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
 
         try
         {
-            String handler = state.source();
+            String handler = state.handler();
             long handlerRef = state.reference();
 
             channel.finishConnect();

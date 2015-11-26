@@ -111,12 +111,10 @@ public abstract class ConductorProxy
 
         public void onUnboundResponse(
             long correlationId,
-            String source,
-            long sourceRef,
             String destination,
             InetSocketAddress localAddress)
         {
-            UnboundResponse response = new UnboundResponse(correlationId, source, sourceRef, destination, localAddress);
+            UnboundResponse response = new UnboundResponse(correlationId, destination, localAddress);
             if (!responseQueue.offer(response))
             {
                 throw new IllegalStateException("unable to offer response");
@@ -144,13 +142,10 @@ public abstract class ConductorProxy
 
         public void onUnpreparedResponse(
             long correlationId,
-            String destination,
-            long destinationRef,
-            String source,
+            String handler,
             InetSocketAddress remoteAddress)
         {
-            UnpreparedResponse response =
-                    new UnpreparedResponse(correlationId, destination, destinationRef, source, remoteAddress);
+            UnpreparedResponse response = new UnpreparedResponse(correlationId, handler, remoteAddress);
             if (!responseQueue.offer(response))
             {
                 throw new IllegalStateException("unable to offer response");

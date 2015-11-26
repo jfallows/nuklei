@@ -20,6 +20,7 @@ import static uk.co.real_logic.agrona.IoUtil.unmap;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
+import java.util.Random;
 
 import org.kaazing.k3po.lang.el.Function;
 import org.kaazing.k3po.lang.el.spi.FunctionMapperSpi;
@@ -30,6 +31,19 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 public final class Functions
 {
+    private static final Random RANDOM = new Random();
+
+    @Function
+    public static byte[] randomBytes(int length)
+    {
+        byte[] bytes = new byte[length];
+        for (int i = 0; i < length; i++)
+        {
+            bytes[i] = (byte) RANDOM.nextInt(0x100);
+        }
+        return bytes;
+    }
+
     @Function
     public static Layout map(String filename, int streamCapacity)
     {

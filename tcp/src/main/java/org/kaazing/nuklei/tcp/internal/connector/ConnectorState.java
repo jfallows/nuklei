@@ -20,22 +20,16 @@ import java.net.InetSocketAddress;
 public class ConnectorState
 {
     private final long reference;
-    private final String source;
-    private final long destinationRef;
-    private final String destination;
+    private final String handler;
     private final InetSocketAddress remoteAddress;
 
     public ConnectorState(
         long reference,
-        String destination,
-        long destinationRef,
-        String source,
+        String handler,
         InetSocketAddress remoteAddress)
     {
         this.reference = reference;
-        this.destination = destination;
-        this.destinationRef = destinationRef;
-        this.source = source;
+        this.handler = handler;
         this.remoteAddress = remoteAddress;
     }
 
@@ -44,19 +38,9 @@ public class ConnectorState
         return this.reference;
     }
 
-    public String destination()
+    public String handler()
     {
-        return destination;
-    }
-
-    public long destinationRef()
-    {
-        return destinationRef;
-    }
-
-    public String source()
-    {
-        return source;
+        return handler;
     }
 
     public InetSocketAddress remoteAddress()
@@ -67,7 +51,6 @@ public class ConnectorState
     @Override
     public String toString()
     {
-        return String.format("[reference=%d, destinationRef=%d, destination=\"%s\", source=\"%s\", remoteAddress=%s]",
-                reference, destination, destinationRef, source, remoteAddress);
+        return String.format("[reference=%d, handler=\"%s\", remoteAddress=%s]", reference, handler, remoteAddress);
     }
 }
