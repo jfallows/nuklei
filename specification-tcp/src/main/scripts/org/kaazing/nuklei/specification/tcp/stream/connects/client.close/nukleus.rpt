@@ -14,27 +14,31 @@
 # limitations under the License.
 #
 
-property streams ${streams:map("target/nukleus-itests/tcp/destination.connects", 1024 * 1024)}
+property handler ${streams:map("target/nukleus-itests/handler/streams/tcp", 1024 * 1024)}
+property nukleus ${streams:map("target/nukleus-itests/tcp/streams/handler", 1024 * 1024)}
+
+property newStreamId ${streams:randomBytes(8)}
+property newReferenceId ${streams:randomBytes(8)}
 
 connect await PREPARED
         agrona://stream/bidirectional
-        option reader ${agrona:manyToOneReader(streams.output)}
-        option writer ${agrona:manyToOneWriter(streams.input)}
+        option reader ${agrona:manyToOneReader(nukleus.buffer)}
+        option writer ${agrona:manyToOneWriter(handler.buffer)}
 connected
 
 write [0x00 0x00 0x00 0x01]
-write [0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00]
-write [0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00]
+write ${newStreamId}
+write ${newReferenceId}
 write flush
 
 read [0x00 0x00 0x00 0x01]
-read [0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00]
-read [0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00]
+read ${streamId}
+read [0..8]
 
 read notify CLOSEABLE
 
 read [0x00 0x00 0x00 0x03]
-read [0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00]
+read ${streamId}
 
 close
 closed

@@ -19,15 +19,20 @@ import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 import static java.nio.channels.SelectionKey.OP_READ;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.HashMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.Context;
+import org.kaazing.nuklei.tcp.internal.conductor.ConductorProxy;
+import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
 import org.kaazing.nuklei.tcp.internal.types.stream.BeginFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.DataFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.EndFW;
@@ -47,15 +52,26 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
     private final DataFW.Builder dataRW = new DataFW.Builder();
     private final EndFW.Builder endRW = new EndFW.Builder();
 
+    private final ConductorProxy.FromWriter conductorProxy;
     private final OneToOneConcurrentArrayQueue<ReaderCommand> commandQueue;
     private final ByteBuffer byteBuffer;
     private final AtomicBuffer atomicBuffer;
 
+    private Function<String, File> streamsFile;
+
+    private int streamsCapacity;
+
+    private HashMap<String, StreamsLayout> layoutsByHandler;
+
     public Reader(Context context)
     {
+        this.conductorProxy = new ConductorProxy.FromWriter(context);
         this.commandQueue = context.readerCommandQueue();
         this.byteBuffer = allocateDirect(MAX_RECEIVE_LENGTH).order(nativeOrder());
         this.atomicBuffer = new UnsafeBuffer(byteBuffer.duplicate());
+        this.streamsFile = context.routeStreamsFile();
+        this.streamsCapacity = context.streamsCapacity();
+        this.layoutsByHandler = new HashMap<>();
     }
 
     @Override
@@ -91,6 +107,17 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
             }
         });
 
+        layoutsByHandler.values().forEach((layout) -> {
+            try
+            {
+                layout.close();
+            }
+            catch (final Exception ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
+        });
+
         super.close();
     }
 
@@ -100,16 +127,76 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
         command.execute(this);
     }
 
-    public void doRegister(long referenceId, long connectionId, SocketChannel channel, RingBuffer streamBuffer)
+    public void doRoute(
+        long correlationId,
+        String destination)
     {
-        ReaderState state = new ReaderState(connectionId, channel, streamBuffer);
+        StreamsLayout layout = layoutsByHandler.get(destination);
+        if (layout != null)
+        {
+            conductorProxy.onErrorResponse(correlationId);
+        }
+        else
+        {
+            try
+            {
+                StreamsLayout newLayout = new StreamsLayout.Builder().streamsFile(streamsFile.apply(destination))
+                                                                     .streamsCapacity(streamsCapacity)
+                                                                     .readonly(true)
+                                                                     .build();
+
+                layoutsByHandler.put(destination, newLayout);
+                conductorProxy.onRoutedResponse(correlationId);
+            }
+            catch (Exception ex)
+            {
+                conductorProxy.onErrorResponse(correlationId);
+                LangUtil.rethrowUnchecked(ex);
+            }
+        }
+    }
+
+    public void doUnroute(
+        long correlationId,
+        String destination)
+    {
+        StreamsLayout oldLayout = layoutsByHandler.remove(destination);
+        if (oldLayout == null)
+        {
+            conductorProxy.onErrorResponse(correlationId);
+        }
+        else
+        {
+            try
+            {
+                oldLayout.close();
+                conductorProxy.onUnroutedResponse(correlationId);
+            }
+            catch (Exception ex)
+            {
+                conductorProxy.onErrorResponse(correlationId);
+                LangUtil.rethrowUnchecked(ex);
+            }
+        }
+    }
+
+    public void doRegister(long streamId, String handler, long handlerRef, SocketChannel channel)
+    {
+        StreamsLayout layout = layoutsByHandler.get(handler);
+
+        // TODO
+        assert layout != null;
+
+        RingBuffer writeBuffer = layout.buffer();
+
+        ReaderState state = new ReaderState(writeBuffer, streamId, channel);
 
         BeginFW beginRO = beginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                                  .streamId(state.streamId())
-                                 .referenceId(referenceId)
+                                 .referenceId(handlerRef)
                                  .build();
 
-        streamBuffer.write(beginRO.typeId(), beginRO.buffer(), beginRO.offset(), beginRO.remaining());
+        writeBuffer.write(beginRO.typeId(), beginRO.buffer(), beginRO.offset(), beginRO.remaining());
 
         try
         {
@@ -123,7 +210,7 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
                                .streamId(state.streamId())
                                .build();
 
-            if (!streamBuffer.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.remaining()))
+            if (!writeBuffer.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.remaining()))
             {
                 throw new IllegalStateException("could not write to ring buffer");
             }
@@ -153,8 +240,8 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
             if (bytesRead == -1)
             {
                 EndFW endRO = endRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                        .streamId(state.streamId())
-                        .build();
+                                   .streamId(state.streamId())
+                                   .build();
 
                 if (!writeBuffer.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.remaining()))
                 {
@@ -172,6 +259,8 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
                     throw new IllegalStateException("could not write to ring buffer");
                 }
             }
+
+            return 1;
         }
         catch (IOException ex)
         {

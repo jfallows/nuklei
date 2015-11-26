@@ -20,7 +20,6 @@ import java.nio.channels.SocketChannel;
 import org.kaazing.nuklei.tcp.internal.Context;
 
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 public final class ReaderProxy
 {
@@ -31,9 +30,31 @@ public final class ReaderProxy
         this.commandQueue = context.readerCommandQueue();
     }
 
-    public void doRegister(long connectionId, long bindingRef, SocketChannel channel, RingBuffer inputBuffer)
+    public void doRoute(
+            long correlationId,
+            String destination)
     {
-        RegisterCommand response = new RegisterCommand(bindingRef, connectionId, channel, inputBuffer);
+        RouteCommand response = new RouteCommand(correlationId, destination);
+        if (!commandQueue.offer(response))
+        {
+            throw new IllegalStateException("unable to offer command");
+        }
+    }
+
+    public void doUnroute(
+            long correlationId,
+            String destination)
+    {
+        UnrouteCommand response = new UnrouteCommand(correlationId, destination);
+        if (!commandQueue.offer(response))
+        {
+            throw new IllegalStateException("unable to offer command");
+        }
+    }
+
+    public void doRegister(long streamId, String handler, long handlerRef, SocketChannel channel)
+    {
+        RegisterCommand response = new RegisterCommand(streamId, handler, handlerRef, channel);
         if (!commandQueue.offer(response))
         {
             throw new IllegalStateException("unable to offer command");

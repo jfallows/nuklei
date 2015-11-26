@@ -15,11 +15,13 @@
  */
 package org.kaazing.nuklei.tcp.internal;
 
+import static java.lang.String.format;
 import static uk.co.real_logic.agrona.LangUtil.rethrowUnchecked;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Function;
 import java.util.logging.Logger;
 
 import org.kaazing.nuklei.Configuration;
@@ -43,8 +45,11 @@ public final class Context implements Closeable
 {
     private final ControlLayout.Builder controlRW = new ControlLayout.Builder();
 
+    private File configDirectory;
     private ControlLayout controlRO;
     private int streamsCapacity;
+    private Function<String, File> captureStreamsFile;
+    private Function<String, File> routeStreamsFile;
     private IdleStrategy idleStrategy;
     private ErrorHandler errorHandler;
     private CountersManager countersManager;
@@ -54,8 +59,10 @@ public final class Context implements Closeable
 
     private OneToOneConcurrentArrayQueue<AcceptorCommand> toAcceptorFromConductorCommands;
     private OneToOneConcurrentArrayQueue<ConductorResponse> fromAcceptorToConductorResponses;
-    private OneToOneConcurrentArrayQueue<ReaderCommand> fromAcceptorToReaderCommands;
-    private OneToOneConcurrentArrayQueue<WriterCommand> fromAcceptorToWriterCommands;
+    private OneToOneConcurrentArrayQueue<ReaderCommand> toReaderFromAcceptorCommands;
+    private OneToOneConcurrentArrayQueue<ConductorResponse> fromReaderToConductorResponses;
+    private OneToOneConcurrentArrayQueue<WriterCommand> toWriterFromAcceptorCommands;
+    private OneToOneConcurrentArrayQueue<ConductorResponse> fromWriterToConductorResponses;
     private OneToOneConcurrentArrayQueue<ConnectorCommand> toConnectorFromConductorCommands;
     private OneToOneConcurrentArrayQueue<ConductorResponse> fromConnectorToConductorResponses;
 
@@ -70,9 +77,26 @@ public final class Context implements Closeable
         return streamsCapacity;
     }
 
-    public File streamsDirectory()
+    public Context captureStreamsFile(Function<String, File> captureStreamsFile)
     {
-        return controlRW.controlFile().getParentFile();
+        this.captureStreamsFile = captureStreamsFile;
+        return this;
+    }
+
+    public Function<String, File> captureStreamsFile()
+    {
+        return captureStreamsFile;
+    }
+
+    public Context routeStreamsFile(Function<String, File> routeStreamsFile)
+    {
+        this.routeStreamsFile = routeStreamsFile;
+        return this;
+    }
+
+    public Function<String, File> routeStreamsFile()
+    {
+        return routeStreamsFile;
     }
 
     public Context idleStrategy(IdleStrategy idleStrategy)
@@ -185,25 +209,49 @@ public final class Context implements Closeable
     public Context readerCommandQueue(
             OneToOneConcurrentArrayQueue<ReaderCommand> readerCommandQueue)
     {
-        this.fromAcceptorToReaderCommands = readerCommandQueue;
+        this.toReaderFromAcceptorCommands = readerCommandQueue;
         return this;
     }
 
     public OneToOneConcurrentArrayQueue<ReaderCommand> readerCommandQueue()
     {
-        return fromAcceptorToReaderCommands;
+        return toReaderFromAcceptorCommands;
+    }
+
+    public Context readerResponseQueue(
+            OneToOneConcurrentArrayQueue<ConductorResponse> readerResponseQueue)
+    {
+        this.fromReaderToConductorResponses = readerResponseQueue;
+        return this;
+    }
+
+    public OneToOneConcurrentArrayQueue<ConductorResponse> readerResponseQueue()
+    {
+        return fromReaderToConductorResponses;
     }
 
     public Context writerCommandQueue(
             OneToOneConcurrentArrayQueue<WriterCommand> writerCommandQueue)
     {
-        this.fromAcceptorToWriterCommands = writerCommandQueue;
+        this.toWriterFromAcceptorCommands = writerCommandQueue;
         return this;
     }
 
     public OneToOneConcurrentArrayQueue<WriterCommand> writerCommandQueue()
     {
-        return fromAcceptorToWriterCommands;
+        return toWriterFromAcceptorCommands;
+    }
+
+    public Context writerResponseQueue(
+            OneToOneConcurrentArrayQueue<ConductorResponse> writerResponseQueue)
+    {
+        this.fromWriterToConductorResponses = writerResponseQueue;
+        return this;
+    }
+
+    public OneToOneConcurrentArrayQueue<ConductorResponse> writerResponseQueue()
+    {
+        return fromWriterToConductorResponses;
     }
 
     public Context countersManager(CountersManager countersManager)
@@ -226,13 +274,24 @@ public final class Context implements Closeable
     {
         try
         {
-            this.controlRO = controlRW.commandBufferCapacity(config.commandBufferCapacity())
+            this.configDirectory = config.directory();
+
+            this.streamsCapacity = config.streamsCapacity();
+
+            captureStreamsFile((source) -> {
+                return new File(configDirectory, format("tcp/streams/%s", source));
+            });
+
+            routeStreamsFile((destination) -> {
+                return new File(configDirectory, format("%s/streams/tcp", destination));
+            });
+
+            this.controlRO = controlRW.controlFile(new File(configDirectory, "tcp/control"))
+                                      .commandBufferCapacity(config.commandBufferCapacity())
                                       .responseBufferCapacity(config.responseBufferCapacity())
                                       .counterLabelsBufferCapacity(config.counterLabelsBufferLength())
                                       .counterValuesBufferCapacity(config.counterValuesBufferLength())
                                       .build();
-
-            streamsCapacity = config.streamsCapacity();
 
             conductorCommands(
                     new ManyToOneRingBuffer(controlRO.commandBuffer()));
@@ -255,8 +314,14 @@ public final class Context implements Closeable
             readerCommandQueue(
                     new OneToOneConcurrentArrayQueue<ReaderCommand>(1024));
 
+            readerResponseQueue(
+                    new OneToOneConcurrentArrayQueue<ConductorResponse>(1024));
+
             writerCommandQueue(
                     new OneToOneConcurrentArrayQueue<WriterCommand>(1024));
+
+            writerResponseQueue(
+                    new OneToOneConcurrentArrayQueue<ConductorResponse>(1024));
 
             concludeCounters();
         }

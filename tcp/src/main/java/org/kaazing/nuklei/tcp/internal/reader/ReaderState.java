@@ -26,9 +26,9 @@ public class ReaderState
     private final RingBuffer streamBuffer;
 
     public ReaderState(
+        RingBuffer streamBuffer,
         long streamId,
-        SocketChannel channel,
-        RingBuffer streamBuffer)
+        SocketChannel channel)
     {
         this.streamId = streamId;
         this.channel = channel;

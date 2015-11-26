@@ -20,6 +20,7 @@ import static uk.co.real_logic.agrona.IoUtil.unmap;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
+import java.util.Random;
 
 import org.kaazing.k3po.lang.el.Function;
 import org.kaazing.k3po.lang.el.spi.FunctionMapperSpi;
@@ -30,6 +31,19 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 public final class Functions
 {
+    private static final Random RANDOM = new Random();
+
+    @Function
+    public static byte[] randomBytes(int length)
+    {
+        byte[] bytes = new byte[length];
+        for (int i = 0; i < length; i++)
+        {
+            bytes[i] = (byte) RANDOM.nextInt(0x100);
+        }
+        return bytes;
+    }
+
     @Function
     public static Layout map(String filename, int streamCapacity)
     {
@@ -38,45 +52,34 @@ public final class Functions
 
     private abstract static class Layout implements AutoCloseable
     {
-        public abstract AtomicBuffer getInput();
-
-        public abstract AtomicBuffer getOutput();
+        public abstract AtomicBuffer getBuffer();
     }
 
     public static final class EagerLayout extends Layout
     {
-        private final MappedByteBuffer buffer;
-        private final AtomicBuffer input;
-        private final AtomicBuffer output;
+        private final MappedByteBuffer byteBuffer;
+        private final AtomicBuffer atomicBuffer;
 
         public EagerLayout(
-                File location,
-                int streamCapacity)
+            File location,
+            int streamCapacity)
         {
             File absolute = location.getAbsoluteFile();
-            int sourceLength = streamCapacity + RingBufferDescriptor.TRAILER_LENGTH;
-            int destinationLength = streamCapacity + RingBufferDescriptor.TRAILER_LENGTH;
-            this.buffer = mapExistingFile(absolute, location.getAbsolutePath());
-            this.input = new UnsafeBuffer(buffer, 0, sourceLength);
-            this.output = new UnsafeBuffer(buffer, sourceLength, destinationLength);
+            int length = streamCapacity + RingBufferDescriptor.TRAILER_LENGTH;
+            this.byteBuffer = mapExistingFile(absolute, location.getAbsolutePath());
+            this.atomicBuffer = new UnsafeBuffer(byteBuffer, 0, length);
         }
 
         @Override
-        public AtomicBuffer getInput()
+        public AtomicBuffer getBuffer()
         {
-            return input;
-        }
-
-        @Override
-        public AtomicBuffer getOutput()
-        {
-            return output;
+            return atomicBuffer;
         }
 
         @Override
         public void close()
         {
-            unmap(buffer);
+            unmap(byteBuffer);
         }
     }
 
@@ -96,17 +99,10 @@ public final class Functions
         }
 
         @Override
-        public AtomicBuffer getInput()
+        public AtomicBuffer getBuffer()
         {
             ensureInitialized();
-            return delegate.input;
-        }
-
-        @Override
-        public AtomicBuffer getOutput()
-        {
-            ensureInitialized();
-            return delegate.output;
+            return delegate.atomicBuffer;
         }
 
         @Override
@@ -116,6 +112,12 @@ public final class Functions
             {
                 delegate.close();
             }
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("Layout [%s]", location);
         }
 
         void ensureInitialized()

@@ -16,10 +16,14 @@
 package org.kaazing.nuklei.tcp.internal.conductor;
 
 import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_BIND_COMMAND;
+import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_CAPTURE_COMMAND;
 import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_CONNECT_COMMAND;
 import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_PREPARE_COMMAND;
+import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_ROUTE_COMMAND;
 import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_UNBIND_COMMAND;
+import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_UNCAPTURE_COMMAND;
 import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_UNPREPARE_COMMAND;
+import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_UNROUTE_COMMAND;
 
 import java.net.InetSocketAddress;
 import java.util.function.Consumer;
@@ -28,19 +32,29 @@ import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.Context;
 import org.kaazing.nuklei.tcp.internal.acceptor.AcceptorProxy;
 import org.kaazing.nuklei.tcp.internal.connector.ConnectorProxy;
+import org.kaazing.nuklei.tcp.internal.reader.ReaderProxy;
 import org.kaazing.nuklei.tcp.internal.types.control.BindFW;
 import org.kaazing.nuklei.tcp.internal.types.control.BindingFW;
 import org.kaazing.nuklei.tcp.internal.types.control.BoundFW;
+import org.kaazing.nuklei.tcp.internal.types.control.CaptureFW;
+import org.kaazing.nuklei.tcp.internal.types.control.CapturedFW;
 import org.kaazing.nuklei.tcp.internal.types.control.ConnectFW;
 import org.kaazing.nuklei.tcp.internal.types.control.ConnectedFW;
 import org.kaazing.nuklei.tcp.internal.types.control.ErrorFW;
 import org.kaazing.nuklei.tcp.internal.types.control.PreparationFW;
 import org.kaazing.nuklei.tcp.internal.types.control.PrepareFW;
 import org.kaazing.nuklei.tcp.internal.types.control.PreparedFW;
+import org.kaazing.nuklei.tcp.internal.types.control.RouteFW;
+import org.kaazing.nuklei.tcp.internal.types.control.RoutedFW;
 import org.kaazing.nuklei.tcp.internal.types.control.UnbindFW;
 import org.kaazing.nuklei.tcp.internal.types.control.UnboundFW;
+import org.kaazing.nuklei.tcp.internal.types.control.UncaptureFW;
+import org.kaazing.nuklei.tcp.internal.types.control.UncapturedFW;
 import org.kaazing.nuklei.tcp.internal.types.control.UnprepareFW;
 import org.kaazing.nuklei.tcp.internal.types.control.UnpreparedFW;
+import org.kaazing.nuklei.tcp.internal.types.control.UnrouteFW;
+import org.kaazing.nuklei.tcp.internal.types.control.UnroutedFW;
+import org.kaazing.nuklei.tcp.internal.writer.WriterProxy;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
@@ -54,6 +68,10 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
 {
     private static final int SEND_BUFFER_CAPACITY = 1024; // TODO: Configuration and Context
 
+    private final CaptureFW captureRO = new CaptureFW();
+    private final UncaptureFW uncaptureRO = new UncaptureFW();
+    private final RouteFW routeRO = new RouteFW();
+    private final UnrouteFW unrouteRO = new UnrouteFW();
     private final BindFW bindRO = new BindFW();
     private final UnbindFW unbindRO = new UnbindFW();
     private final PrepareFW prepareRO = new PrepareFW();
@@ -61,6 +79,10 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
     private final ConnectFW connectRO = new ConnectFW();
 
     private final ErrorFW.Builder errorRW = new ErrorFW.Builder();
+    private final CapturedFW.Builder capturedRW = new CapturedFW.Builder();
+    private final UncapturedFW.Builder uncapturedRW = new UncapturedFW.Builder();
+    private final RoutedFW.Builder routedRW = new RoutedFW.Builder();
+    private final UnroutedFW.Builder unroutedRW = new UnroutedFW.Builder();
     private final BoundFW.Builder boundRW = new BoundFW.Builder();
     private final UnboundFW.Builder unboundRW = new UnboundFW.Builder();
     private final PreparedFW.Builder preparedRW = new PreparedFW.Builder();
@@ -71,8 +93,12 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
 
     private final AcceptorProxy acceptorProxy;
     private final ConnectorProxy connectorProxy;
+    private final ReaderProxy readerProxy;
+    private final WriterProxy writerProxy;
     private final OneToOneConcurrentArrayQueue<ConductorResponse> acceptorResponses;
     private final OneToOneConcurrentArrayQueue<ConductorResponse> connectorResponses;
+    private final OneToOneConcurrentArrayQueue<ConductorResponse> readerResponses;
+    private final OneToOneConcurrentArrayQueue<ConductorResponse> writerResponses;
 
     private final BroadcastTransmitter conductorResponses;
     private final AtomicBuffer sendBuffer;
@@ -81,10 +107,16 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
     {
         this.acceptorProxy = new AcceptorProxy(context);
         this.connectorProxy = new ConnectorProxy(context);
+        this.readerProxy = new ReaderProxy(context);
+        this.writerProxy = new WriterProxy(context);
+
         this.acceptorResponses = context.acceptorResponseQueue();
         this.connectorResponses = context.connectorResponseQueue();
+        this.readerResponses = context.readerResponseQueue();
+        this.writerResponses = context.writerResponseQueue();
         this.conductorCommands = context.conductorCommands();
         this.conductorResponses = context.conductorResponses();
+
         this.sendBuffer = new UnsafeBuffer(new byte[SEND_BUFFER_CAPACITY]);
     }
 
@@ -96,6 +128,8 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         weight += conductorCommands.read(this::handleCommand);
         weight += acceptorResponses.drain(this);
         weight += connectorResponses.drain(this);
+        weight += readerResponses.drain(this);
+        weight += writerResponses.drain(this);
 
         return weight;
     }
@@ -119,6 +153,43 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
                                  .build();
 
         conductorResponses.transmit(errorRO.typeId(), errorRO.buffer(), errorRO.offset(), errorRO.remaining());
+    }
+
+    public void onCapturedResponse(long correlationId)
+    {
+        CapturedFW capturedRO = capturedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                                          .correlationId(correlationId)
+                                          .build();
+
+        conductorResponses.transmit(capturedRO.typeId(), capturedRO.buffer(), capturedRO.offset(), capturedRO.remaining());
+    }
+
+    public void onUncapturedResponse(long correlationId)
+    {
+        UncapturedFW uncapturedRO = uncapturedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                                                .correlationId(correlationId)
+                                                .build();
+
+        conductorResponses.transmit(
+                uncapturedRO.typeId(), uncapturedRO.buffer(), uncapturedRO.offset(), uncapturedRO.remaining());
+    }
+
+    public void onRoutedResponse(long correlationId)
+    {
+        RoutedFW routedRO = routedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                                    .correlationId(correlationId)
+                                    .build();
+
+        conductorResponses.transmit(routedRO.typeId(), routedRO.buffer(), routedRO.offset(), routedRO.remaining());
+    }
+
+    public void onUnroutedResponse(long correlationId)
+    {
+        UnroutedFW unroutedRO = unroutedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                                          .correlationId(correlationId)
+                                          .build();
+
+        conductorResponses.transmit(unroutedRO.typeId(), unroutedRO.buffer(), unroutedRO.offset(), unroutedRO.remaining());
     }
 
     public void onBoundResponse(
@@ -202,6 +273,18 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
     {
         switch (msgTypeId)
         {
+        case TYPE_ID_CAPTURE_COMMAND:
+            handleCaptureCommand(buffer, index, length);
+            break;
+        case TYPE_ID_UNCAPTURE_COMMAND:
+            handleUncaptureCommand(buffer, index, length);
+            break;
+        case TYPE_ID_ROUTE_COMMAND:
+            handleRouteCommand(buffer, index, length);
+            break;
+        case TYPE_ID_UNROUTE_COMMAND:
+            handleUnrouteCommand(buffer, index, length);
+            break;
         case TYPE_ID_BIND_COMMAND:
             handleBindCommand(buffer, index, length);
             break;
@@ -221,6 +304,46 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
             // ignore unrecognized commands (forwards compatible)
             break;
         }
+    }
+
+    private void handleCaptureCommand(DirectBuffer buffer, int index, int length)
+    {
+        captureRO.wrap(buffer, index, index + length);
+
+        long correlationId = captureRO.correlationId();
+        String source = captureRO.source().asString();
+
+        writerProxy.doCapture(correlationId, source);
+    }
+
+    private void handleUncaptureCommand(DirectBuffer buffer, int index, int length)
+    {
+        uncaptureRO.wrap(buffer, index, index + length);
+
+        long correlationId = uncaptureRO.correlationId();
+        String source = uncaptureRO.source().asString();
+
+        writerProxy.doUncapture(correlationId, source);
+    }
+
+    private void handleRouteCommand(DirectBuffer buffer, int index, int length)
+    {
+        routeRO.wrap(buffer, index, index + length);
+
+        long correlationId = routeRO.correlationId();
+        String destination = routeRO.destination().asString();
+
+        readerProxy.doRoute(correlationId, destination);
+    }
+
+    private void handleUnrouteCommand(DirectBuffer buffer, int index, int length)
+    {
+        unrouteRO.wrap(buffer, index, index + length);
+
+        long correlationId = unrouteRO.correlationId();
+        String destination = unrouteRO.destination().asString();
+
+        readerProxy.doUnroute(correlationId, destination);
     }
 
     private void handleBindCommand(DirectBuffer buffer, int index, int length)

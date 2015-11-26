@@ -15,10 +15,8 @@
  */
 package org.kaazing.nuklei.tcp.internal.connector;
 
-import static java.lang.String.format;
 import static java.nio.channels.SelectionKey.OP_CONNECT;
 
-import java.io.File;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -27,7 +25,6 @@ import java.util.function.Consumer;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.Context;
 import org.kaazing.nuklei.tcp.internal.conductor.ConductorProxy;
-import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
 import org.kaazing.nuklei.tcp.internal.reader.ReaderProxy;
 import org.kaazing.nuklei.tcp.internal.writer.WriterProxy;
 
@@ -35,30 +32,25 @@ import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.nio.TransportPoller;
 
 public final class Connector extends TransportPoller implements Nukleus, Consumer<ConnectorCommand>
 {
-    private final ConductorProxy conductorProxy;
+    private final ConductorProxy.FromConnector conductorProxy;
     private final ReaderProxy readerProxy;
     private final WriterProxy writerProxy;
     private final OneToOneConcurrentArrayQueue<ConnectorCommand> commandQueue;
     private final Long2ObjectHashMap<ConnectorState> stateByRef;
     private final AtomicCounter connectedCount;
-    private final File streamsDirectory;
-    private final int streamsCapacity;
 
     public Connector(Context context)
     {
-        this.conductorProxy = new ConductorProxy(context);
+        this.conductorProxy = new ConductorProxy.FromConnector(context);
         this.readerProxy = new ReaderProxy(context);
         this.writerProxy = new WriterProxy(context);
         this.commandQueue = context.connectorCommandQueue();
         this.stateByRef = new Long2ObjectHashMap<>();
         this.connectedCount = context.counters().connectedCount();
-        this.streamsDirectory = context.streamsDirectory();
-        this.streamsCapacity = context.streamsCapacity();
     }
 
     @Override
@@ -103,19 +95,8 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
         {
             try
             {
-                // PREPARE goes first, so Connector owns bidirectional streams mapped file lifecycle
-                // TODO: unmap mapped buffer (also cleanup in Context.close())
-
-                StreamsLayout streamsRO = new StreamsLayout.Builder().streamsDirectory(streamsDirectory)
-                                                                     .streamsFilename(format("%s.connects", destination))
-                                                                     .streamsCapacity(streamsCapacity)
-                                                                     .build();
-
-                RingBuffer inputBuffer = streamsRO.inputBuffer();
-                RingBuffer outputBuffer = streamsRO.outputBuffer();
-
                 final ConnectorState newState = new ConnectorState(reference, destination, destinationRef, source,
-                                                                   remoteAddress, inputBuffer, outputBuffer);
+                                                                   remoteAddress);
 
                 stateByRef.put(newState.reference(), newState);
 
@@ -180,8 +161,8 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
                 {
                     long connectionId = connectedCount.increment();
 
-                    readerProxy.doRegister(connectionId, state.reference(), channel, state.inputBuffer());
-                    writerProxy.doRegister(connectionId, state.reference(), channel, state.outputBuffer());
+                    readerProxy.doRegister(connectionId, state.destination(), state.destinationRef(), channel);
+                    writerProxy.doRegister(connectionId, state.destination(), state.destinationRef(), channel);
 
                     conductorProxy.onConnectedResponse(correlationId, connectionId);
                 }
@@ -208,12 +189,15 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
 
         try
         {
+            String handler = state.source();
+            long handlerRef = state.reference();
+
             channel.finishConnect();
 
             long connectionId = connectedCount.increment();
 
-            readerProxy.doRegister(connectionId, state.reference(), channel, state.inputBuffer());
-            writerProxy.doRegister(connectionId, state.reference(), channel, state.outputBuffer());
+            readerProxy.doRegister(connectionId, handler, handlerRef, channel);
+            writerProxy.doRegister(connectionId, handler, handlerRef, channel);
 
             conductorProxy.onConnectedResponse(correlationId, connectionId);
 

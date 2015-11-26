@@ -20,7 +20,6 @@ import java.nio.channels.SocketChannel;
 import org.kaazing.nuklei.tcp.internal.Context;
 
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 public final class WriterProxy
 {
@@ -31,13 +30,35 @@ public final class WriterProxy
         this.commandQueue = context.writerCommandQueue();
     }
 
-    public void doRegister(
-        long connectionId,
-        long bindingRef,
-        SocketChannel channel,
-        RingBuffer outputBuffer)
+    public void doCapture(
+            long correlationId,
+            String source)
     {
-        RegisterCommand response = new RegisterCommand(bindingRef, connectionId, channel, outputBuffer);
+        CaptureCommand response = new CaptureCommand(correlationId, source);
+        if (!commandQueue.offer(response))
+        {
+            throw new IllegalStateException("unable to offer command");
+        }
+    }
+
+    public void doUncapture(
+            long correlationId,
+            String source)
+    {
+        UncaptureCommand response = new UncaptureCommand(correlationId, source);
+        if (!commandQueue.offer(response))
+        {
+            throw new IllegalStateException("unable to offer command");
+        }
+    }
+
+    public void doRegister(
+        long streamId,
+        String source,
+        long sourceRef,
+        SocketChannel channel)
+    {
+        RegisterCommand response = new RegisterCommand(streamId, source, sourceRef, channel);
         if (!commandQueue.offer(response))
         {
             throw new IllegalStateException("unable to offer command");

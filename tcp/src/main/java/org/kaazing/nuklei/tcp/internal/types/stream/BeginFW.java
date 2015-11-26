@@ -29,7 +29,7 @@ public final class BeginFW extends Flyweight
     private static final int FIELD_SIZE_STREAM_ID = BitUtil.SIZE_OF_LONG;
 
     private static final int FIELD_OFFSET_REFERENCE_ID = FIELD_OFFSET_STREAM_ID + FIELD_SIZE_STREAM_ID;
-    private static final int FIELD_SIZE_BINDING_REF = BitUtil.SIZE_OF_LONG;
+    private static final int FIELD_SIZE_REFERENCE_ID = BitUtil.SIZE_OF_LONG;
 
     public int typeId()
     {
@@ -49,7 +49,7 @@ public final class BeginFW extends Flyweight
     @Override
     public int limit()
     {
-        return offset() + FIELD_OFFSET_REFERENCE_ID + FIELD_SIZE_BINDING_REF;
+        return offset() + FIELD_OFFSET_REFERENCE_ID + FIELD_SIZE_REFERENCE_ID;
     }
 
     public BeginFW wrap(DirectBuffer buffer, int offset, int actingLimit)
@@ -64,7 +64,7 @@ public final class BeginFW extends Flyweight
     @Override
     public String toString()
     {
-        return String.format("[streamId=%d, bindingRef=%d]", streamId(), referenceId());
+        return String.format("[streamId=%d, referenceId=%d]", streamId(), referenceId());
     }
 
     public static final class Builder extends Flyweight.Builder<BeginFW>

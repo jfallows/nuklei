@@ -18,8 +18,6 @@ package org.kaazing.nuklei.tcp.internal.acceptor;
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
 
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
-
 public class AcceptorState
 {
     private final long reference;
@@ -27,8 +25,6 @@ public class AcceptorState
     private final long sourceRef;
     private final String destination;
     private final InetSocketAddress localAddress;
-    private final RingBuffer inputBuffer;
-    private final RingBuffer outputBuffer;
 
     private ServerSocketChannel serverChannel;
 
@@ -37,17 +33,13 @@ public class AcceptorState
         String source,
         long sourceRef,
         String destination,
-        InetSocketAddress localAddress,
-        RingBuffer inputBuffer,
-        RingBuffer outputBuffer)
+        InetSocketAddress localAddress)
     {
         this.reference = reference;
         this.source = source;
         this.sourceRef = sourceRef;
         this.destination = destination;
         this.localAddress = localAddress;
-        this.inputBuffer = inputBuffer;
-        this.outputBuffer = outputBuffer;
     }
 
     public long reference()
@@ -73,16 +65,6 @@ public class AcceptorState
     public InetSocketAddress localAddress()
     {
         return localAddress;
-    }
-
-    public RingBuffer inputBuffer()
-    {
-        return inputBuffer;
-    }
-
-    public RingBuffer outputBuffer()
-    {
-        return outputBuffer;
     }
 
     public void attach(ServerSocketChannel attachment)

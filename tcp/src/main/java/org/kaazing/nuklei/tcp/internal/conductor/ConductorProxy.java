@@ -21,13 +21,13 @@ import org.kaazing.nuklei.tcp.internal.Context;
 
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
-public final class ConductorProxy
+public abstract class ConductorProxy
 {
-    private final OneToOneConcurrentArrayQueue<ConductorResponse> responseQueue;
+    protected final OneToOneConcurrentArrayQueue<ConductorResponse> responseQueue;
 
-    public ConductorProxy(Context context)
+    protected ConductorProxy(OneToOneConcurrentArrayQueue<ConductorResponse> responseQueue)
     {
-        this.responseQueue = context.acceptorResponseQueue();
+        this.responseQueue = responseQueue;
     }
 
     public void onErrorResponse(long correlationId)
@@ -39,64 +39,133 @@ public final class ConductorProxy
         }
     }
 
-    public void onBoundResponse(
-        long correlationId,
-        long referenceId)
+    public static class FromReader extends ConductorProxy
     {
-        BoundResponse response = new BoundResponse(correlationId, referenceId);
-        if (!responseQueue.offer(response))
+        public FromReader(Context context)
         {
-            throw new IllegalStateException("unable to offer response");
+            super(context.readerResponseQueue());
+        }
+
+        public void onCapturedResponse(long correlationId)
+        {
+            CapturedResponse response = new CapturedResponse(correlationId);
+            if (!responseQueue.offer(response))
+            {
+                throw new IllegalStateException("unable to offer response");
+            }
+        }
+
+        public void onUncapturedResponse(long correlationId)
+        {
+            UncapturedResponse response = new UncapturedResponse(correlationId);
+            if (!responseQueue.offer(response))
+            {
+                throw new IllegalStateException("unable to offer response");
+            }
         }
     }
 
-    public void onUnboundResponse(
-        long correlationId,
-        String source,
-        long sourceRef,
-        String destination,
-        InetSocketAddress localAddress)
+    public static class FromWriter extends ConductorProxy
     {
-        UnboundResponse response = new UnboundResponse(correlationId, source, sourceRef, destination, localAddress);
-        if (!responseQueue.offer(response))
+        public FromWriter(Context context)
         {
-            throw new IllegalStateException("unable to offer response");
+            super(context.writerResponseQueue());
+        }
+
+        public void onRoutedResponse(long correlationId)
+        {
+            RoutedResponse response = new RoutedResponse(correlationId);
+            if (!responseQueue.offer(response))
+            {
+                throw new IllegalStateException("unable to offer response");
+            }
+        }
+
+        public void onUnroutedResponse(long correlationId)
+        {
+            UnroutedResponse response = new UnroutedResponse(correlationId);
+            if (!responseQueue.offer(response))
+            {
+                throw new IllegalStateException("unable to offer response");
+            }
         }
     }
 
-    public void onPreparedResponse(
-        long correlationId,
-        long referenceId)
+    public static class FromAcceptor extends ConductorProxy
     {
-        PreparedResponse response = new PreparedResponse(correlationId, referenceId);
-        if (!responseQueue.offer(response))
+        public FromAcceptor(Context context)
         {
-            throw new IllegalStateException("unable to offer response");
+            super(context.acceptorResponseQueue());
+        }
+
+        public void onBoundResponse(
+            long correlationId,
+            long referenceId)
+        {
+            BoundResponse response = new BoundResponse(correlationId, referenceId);
+            if (!responseQueue.offer(response))
+            {
+                throw new IllegalStateException("unable to offer response");
+            }
+        }
+
+        public void onUnboundResponse(
+            long correlationId,
+            String source,
+            long sourceRef,
+            String destination,
+            InetSocketAddress localAddress)
+        {
+            UnboundResponse response = new UnboundResponse(correlationId, source, sourceRef, destination, localAddress);
+            if (!responseQueue.offer(response))
+            {
+                throw new IllegalStateException("unable to offer response");
+            }
         }
     }
 
-    public void onUnpreparedResponse(
-        long correlationId,
-        String destination,
-        long destinationRef,
-        String source,
-        InetSocketAddress remoteAddress)
+    public static class FromConnector extends ConductorProxy
     {
-        UnpreparedResponse response = new UnpreparedResponse(correlationId, destination, destinationRef, source, remoteAddress);
-        if (!responseQueue.offer(response))
+        public FromConnector(Context context)
         {
-            throw new IllegalStateException("unable to offer response");
+            super(context.acceptorResponseQueue());
         }
-    }
 
-    public void onConnectedResponse(
-        long correlationId,
-        long connectionId)
-    {
-        ConnectedResponse response = new ConnectedResponse(correlationId, connectionId);
-        if (!responseQueue.offer(response))
+        public void onPreparedResponse(
+            long correlationId,
+            long referenceId)
         {
-            throw new IllegalStateException("unable to offer response");
+            PreparedResponse response = new PreparedResponse(correlationId, referenceId);
+            if (!responseQueue.offer(response))
+            {
+                throw new IllegalStateException("unable to offer response");
+            }
+        }
+
+        public void onUnpreparedResponse(
+            long correlationId,
+            String destination,
+            long destinationRef,
+            String source,
+            InetSocketAddress remoteAddress)
+        {
+            UnpreparedResponse response =
+                    new UnpreparedResponse(correlationId, destination, destinationRef, source, remoteAddress);
+            if (!responseQueue.offer(response))
+            {
+                throw new IllegalStateException("unable to offer response");
+            }
+        }
+
+        public void onConnectedResponse(
+            long correlationId,
+            long connectionId)
+        {
+            ConnectedResponse response = new ConnectedResponse(correlationId, connectionId);
+            if (!responseQueue.offer(response))
+            {
+                throw new IllegalStateException("unable to offer response");
+            }
         }
     }
 }

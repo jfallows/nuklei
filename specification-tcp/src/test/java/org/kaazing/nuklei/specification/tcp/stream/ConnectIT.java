@@ -43,15 +43,15 @@ public class ConnectIT
     public final TestRule chain = outerRule(k3po).around(timeout);
 
     @Before
-    public void setupStreamFile() throws Exception
+    public void setupStreamFiles() throws Exception
     {
-        File location = new File("target/nukleus-itests/tcp/destination.connects");
         int streamCapacity = 1024 * 1024;
 
-        File absolute = location.getAbsoluteFile();
-        int sourceLength = streamCapacity + RingBufferDescriptor.TRAILER_LENGTH;
-        int destinationLength = streamCapacity + RingBufferDescriptor.TRAILER_LENGTH;
-        createEmptyFile(absolute, sourceLength + destinationLength);
+        File nukleus = new File("target/nukleus-itests/tcp/streams/handler");
+        createEmptyFile(nukleus.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
+
+        File handler = new File("target/nukleus-itests/handler/streams/tcp");
+        createEmptyFile(handler.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
     }
 
     @Test

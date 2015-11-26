@@ -13,32 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.tcp.internal.writer;
+package org.kaazing.nuklei.tcp.internal.reader;
 
-import java.nio.channels.SocketChannel;
 
-public final class RegisterCommand implements WriterCommand
+public final class RouteCommand implements ReaderCommand
 {
-    private final long streamId;
-    private final String source;
-    private final long sourceRef;
-    private final SocketChannel channel;
+    private final long correlationId;
+    private final String destination;
 
-    public RegisterCommand(
-        long streamId,
-        String source,
-        long sourceRef,
-        SocketChannel channel)
+    public RouteCommand(
+        long correlationId,
+        String destination)
     {
-        this.streamId = streamId;
-        this.source = source;
-        this.sourceRef = sourceRef;
-        this.channel = channel;
+        this.correlationId = correlationId;
+        this.destination = destination;
     }
 
     @Override
-    public void execute(Writer writer)
+    public void execute(Reader reader)
     {
-        writer.doRegister(streamId, source, sourceRef, channel);
+        reader.doRoute(correlationId, destination);
     }
 }

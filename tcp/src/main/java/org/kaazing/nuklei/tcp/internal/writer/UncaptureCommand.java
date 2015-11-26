@@ -15,30 +15,22 @@
  */
 package org.kaazing.nuklei.tcp.internal.writer;
 
-import java.nio.channels.SocketChannel;
-
-public final class RegisterCommand implements WriterCommand
+public final class UncaptureCommand implements WriterCommand
 {
-    private final long streamId;
+    private final long correlationId;
     private final String source;
-    private final long sourceRef;
-    private final SocketChannel channel;
 
-    public RegisterCommand(
-        long streamId,
-        String source,
-        long sourceRef,
-        SocketChannel channel)
+    public UncaptureCommand(
+        long correlationId,
+        String source)
     {
-        this.streamId = streamId;
+        this.correlationId = correlationId;
         this.source = source;
-        this.sourceRef = sourceRef;
-        this.channel = channel;
     }
 
     @Override
     public void execute(Writer writer)
     {
-        writer.doRegister(streamId, source, sourceRef, channel);
+        writer.doUncapture(correlationId, source);
     }
 }

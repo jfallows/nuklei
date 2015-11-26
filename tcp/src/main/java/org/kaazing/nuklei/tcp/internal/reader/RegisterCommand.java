@@ -17,30 +17,28 @@ package org.kaazing.nuklei.tcp.internal.reader;
 
 import java.nio.channels.SocketChannel;
 
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
-
 public final class RegisterCommand implements ReaderCommand
 {
-    private final long bindingRef;
-    private final long connectionId;
+    private final long streamId;
+    private final String handler;
+    private final long handlerRef;
     private final SocketChannel channel;
-    private final RingBuffer inputBuffer;
 
     public RegisterCommand(
-        long bindingRef,
-        long connectionId,
-        SocketChannel channel,
-        RingBuffer inputBuffer)
+        long streamId,
+        String handler,
+        long handlerRef,
+        SocketChannel channel)
     {
-        this.bindingRef = bindingRef;
-        this.connectionId = connectionId;
+        this.streamId = streamId;
+        this.handler = handler;
+        this.handlerRef = handlerRef;
         this.channel = channel;
-        this.inputBuffer = inputBuffer;
     }
 
     @Override
     public void execute(Reader reader)
     {
-        reader.doRegister(bindingRef, connectionId, channel, inputBuffer);
+        reader.doRegister(streamId, handler, handlerRef, channel);
     }
 }

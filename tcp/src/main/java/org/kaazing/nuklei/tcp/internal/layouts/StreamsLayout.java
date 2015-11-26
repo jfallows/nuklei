@@ -30,39 +30,30 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 public final class StreamsLayout extends Layout
 {
-    private final RingBuffer inputBuffer;
-    private final RingBuffer outputBuffer;
+    private final RingBuffer buffer;
 
     private StreamsLayout(
-        RingBuffer inputBuffer,
-        RingBuffer outputBuffer)
+        RingBuffer buffer)
     {
-        this.inputBuffer = inputBuffer;
-        this.outputBuffer = outputBuffer;
+        this.buffer = buffer;
     }
 
-    public RingBuffer inputBuffer()
+    public RingBuffer buffer()
     {
-        return inputBuffer;
-    }
-
-    public RingBuffer outputBuffer()
-    {
-        return outputBuffer;
+        return buffer;
     }
 
     @Override
     public void close()
     {
-        unmap(inputBuffer.buffer().byteBuffer());
-        unmap(outputBuffer.buffer().byteBuffer());
+        unmap(buffer.buffer().byteBuffer());
     }
 
     public static final class Builder extends Layout.Builder<StreamsLayout>
     {
         private int streamsCapacity;
-        private File streamsDirectory;
-        private String streamsFilename;
+        private File streamsFile;
+        private boolean readonly;
 
         public Builder streamsCapacity(int streamsCapacity)
         {
@@ -70,30 +61,32 @@ public final class StreamsLayout extends Layout
             return this;
         }
 
-        public Builder streamsDirectory(File streamsDirectory)
+        public Builder streamsFile(File streamsFile)
         {
-            this.streamsDirectory = streamsDirectory;
+            this.streamsFile = streamsFile;
             return this;
         }
 
-        public Builder streamsFilename(String streamsFilename)
+        public Builder readonly(boolean readonly)
         {
-            this.streamsFilename = streamsFilename;
+            this.readonly = readonly;
             return this;
         }
 
         @Override
         public StreamsLayout build()
         {
-            int ringBufferLength = streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH;
-            File streamsFile = new File(streamsDirectory, streamsFilename);
+            int streamsFileLength = streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH;
 
-            createEmptyFile(streamsFile, ringBufferLength << 1);
-            MappedByteBuffer inputByteBuffer = mapExistingFile(streamsFile, "input", 0, ringBufferLength);
-            MappedByteBuffer outputByteBuffer = mapExistingFile(streamsFile, "output", ringBufferLength, ringBufferLength);
-            AtomicBuffer inputBuffer = new UnsafeBuffer(inputByteBuffer);
-            AtomicBuffer outputBuffer = new UnsafeBuffer(outputByteBuffer);
-            return new StreamsLayout(new ManyToOneRingBuffer(inputBuffer), new ManyToOneRingBuffer(outputBuffer));
+            if (!readonly)
+            {
+                createEmptyFile(streamsFile, streamsFileLength);
+            }
+
+            MappedByteBuffer byteBuffer = mapExistingFile(streamsFile, "streams");
+            AtomicBuffer atomicBuffer= new UnsafeBuffer(byteBuffer);
+
+            return new StreamsLayout(new ManyToOneRingBuffer(atomicBuffer));
         }
     }
 }

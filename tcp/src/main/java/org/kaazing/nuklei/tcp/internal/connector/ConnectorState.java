@@ -17,8 +17,6 @@ package org.kaazing.nuklei.tcp.internal.connector;
 
 import java.net.InetSocketAddress;
 
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
-
 public class ConnectorState
 {
     private final long reference;
@@ -26,25 +24,19 @@ public class ConnectorState
     private final long destinationRef;
     private final String destination;
     private final InetSocketAddress remoteAddress;
-    private final RingBuffer inputBuffer;
-    private final RingBuffer outputBuffer;
 
     public ConnectorState(
         long reference,
         String destination,
         long destinationRef,
         String source,
-        InetSocketAddress remoteAddress,
-        RingBuffer inputBuffer,
-        RingBuffer outputBuffer)
+        InetSocketAddress remoteAddress)
     {
         this.reference = reference;
         this.destination = destination;
         this.destinationRef = destinationRef;
         this.source = source;
         this.remoteAddress = remoteAddress;
-        this.inputBuffer = inputBuffer;
-        this.outputBuffer = outputBuffer;
     }
 
     public long reference()
@@ -70,16 +62,6 @@ public class ConnectorState
     public InetSocketAddress remoteAddress()
     {
         return remoteAddress;
-    }
-
-    public RingBuffer inputBuffer()
-    {
-        return inputBuffer;
-    }
-
-    public RingBuffer outputBuffer()
-    {
-        return outputBuffer;
     }
 
     @Override

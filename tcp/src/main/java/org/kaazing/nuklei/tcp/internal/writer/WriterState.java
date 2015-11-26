@@ -23,29 +23,21 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 public class WriterState
 {
-    private final long bindingRef;
     private final long streamId;
     private final SocketChannel channel;
     private final ByteBuffer writeBuffer;
 
     public WriterState(
-        long bindingRef,
+        RingBuffer streamBuffer,
         long streamId,
-        SocketChannel channel,
-        RingBuffer streamBuffer)
+        SocketChannel channel)
     {
-        this.bindingRef = bindingRef;
         this.streamId = streamId;
         this.channel = channel;
 
         AtomicBuffer atomicBuffer = streamBuffer.buffer();
         byte[] byteArray = atomicBuffer.byteArray();
         this.writeBuffer = (byteArray != null) ? ByteBuffer.wrap(byteArray) : atomicBuffer.byteBuffer().duplicate();
-    }
-
-    public long bindingRef()
-    {
-        return this.bindingRef;
     }
 
     public long streamId()

@@ -22,10 +22,14 @@ public final class Types
 
     public static final int TYPE_ID_ERROR_RESPONSE = 0x40000000;
 
-    public static final int TYPE_ID_ROUTE_COMMAND = 0x00000001;
-    public static final int TYPE_ID_ROUTED_RESPONSE = 0x40000001;
-    public static final int TYPE_ID_UNROUTE_COMMAND = 0x00000002;
-    public static final int TYPE_ID_UNROUTED_RESPONSE = 0x40000002;
+    public static final int TYPE_ID_CAPTURE_COMMAND = 0x00000001;
+    public static final int TYPE_ID_CAPTURED_RESPONSE = 0x40000001;
+    public static final int TYPE_ID_UNCAPTURE_COMMAND = 0x00000002;
+    public static final int TYPE_ID_UNCAPTURED_RESPONSE = 0x40000002;
+    public static final int TYPE_ID_ROUTE_COMMAND = 0x00000003;
+    public static final int TYPE_ID_ROUTED_RESPONSE = 0x40000003;
+    public static final int TYPE_ID_UNROUTE_COMMAND = 0x00000004;
+    public static final int TYPE_ID_UNROUTED_RESPONSE = 0x40000004;
 
     public static final int TYPE_ID_BIND_COMMAND = 0x00000011;
     public static final int TYPE_ID_BOUND_RESPONSE = 0x40000011;

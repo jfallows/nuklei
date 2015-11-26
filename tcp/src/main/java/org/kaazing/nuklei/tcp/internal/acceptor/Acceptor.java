@@ -15,10 +15,8 @@
  */
 package org.kaazing.nuklei.tcp.internal.acceptor;
 
-import static java.lang.String.format;
 import static java.nio.channels.SelectionKey.OP_ACCEPT;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
@@ -29,7 +27,6 @@ import java.util.function.Consumer;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.Context;
 import org.kaazing.nuklei.tcp.internal.conductor.ConductorProxy;
-import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
 import org.kaazing.nuklei.tcp.internal.reader.ReaderProxy;
 import org.kaazing.nuklei.tcp.internal.writer.WriterProxy;
 
@@ -37,30 +34,25 @@ import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.nio.TransportPoller;
 
 public final class Acceptor extends TransportPoller implements Nukleus, Consumer<AcceptorCommand>
 {
-    private final ConductorProxy conductorProxy;
+    private final ConductorProxy.FromAcceptor conductorProxy;
     private final ReaderProxy readerProxy;
     private final WriterProxy writerProxy;
     private final OneToOneConcurrentArrayQueue<AcceptorCommand> commandQueue;
     private final Long2ObjectHashMap<AcceptorState> stateByRef;
     private final AtomicCounter acceptedCount;
-    private final File streamsDirectory;
-    private final int streamsCapacity;
 
     public Acceptor(Context context)
     {
-        this.conductorProxy = new ConductorProxy(context);
+        this.conductorProxy = new ConductorProxy.FromAcceptor(context);
         this.readerProxy = new ReaderProxy(context);
         this.writerProxy = new WriterProxy(context);
         this.commandQueue = context.acceptorCommandQueue();
         this.stateByRef = new Long2ObjectHashMap<>();
         this.acceptedCount = context.counters().acceptedCount();
-        this.streamsDirectory = context.streamsDirectory();
-        this.streamsCapacity = context.streamsCapacity();
     }
 
     @Override
@@ -127,19 +119,7 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
                 serverChannel.bind(localAddress);
                 serverChannel.configureBlocking(false);
 
-                // BIND goes first, so Acceptor owns bidirectional streams mapped file lifecycle
-                // TODO: unmap mapped buffer (also cleanup in Context.close())
-
-                StreamsLayout streamsRO = new StreamsLayout.Builder().streamsDirectory(streamsDirectory)
-                                                                     .streamsFilename(format("%s.accepts", destination))
-                                                                     .streamsCapacity(streamsCapacity)
-                                                                     .build();
-
-                RingBuffer inputBuffer = streamsRO.inputBuffer();
-                RingBuffer outputBuffer = streamsRO.outputBuffer();
-
-                AcceptorState newState = new AcceptorState(reference, source, sourceRef, destination,
-                                                           localAddress, inputBuffer, outputBuffer);
+                AcceptorState newState = new AcceptorState(reference, source, sourceRef, destination, localAddress);
 
                 serverChannel.register(selector, OP_ACCEPT, newState);
                 newState.attach(serverChannel);
@@ -193,12 +173,15 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
         try
         {
             AcceptorState state = (AcceptorState) selectionKey.attachment();
+            String handler = state.destination();
+            long handlerRef = state.reference();
             ServerSocketChannel serverChannel = state.channel();
+
             SocketChannel channel = serverChannel.accept();
             long connectionId = acceptedCount.increment();
 
-            readerProxy.doRegister(connectionId, state.reference(), channel, state.inputBuffer());
-            writerProxy.doRegister(connectionId, state.reference(), channel, state.outputBuffer());
+            readerProxy.doRegister(connectionId, handler, handlerRef, channel);
+            writerProxy.doRegister(connectionId, handler, handlerRef, channel);
         }
         catch (Exception ex)
         {

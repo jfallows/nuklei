@@ -16,7 +16,7 @@
 package org.kaazing.nuklei.tcp.internal.types.control;
 
 import static java.lang.String.format;
-import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_ROUTE_COMMAND;
+import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_CAPTURE_COMMAND;
 
 import java.nio.charset.StandardCharsets;
 
@@ -27,21 +27,21 @@ import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public final class RouteFW extends Flyweight
+public final class CaptureFW extends Flyweight
 {
     private static final int FIELD_OFFSET_CORRELATION_ID = 0;
     private static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
 
-    private static final int FIELD_OFFSET_DESTINATION = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
+    private static final int FIELD_OFFSET_SOURCE = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
 
-    private final StringFW destinationRO = new StringFW();
+    private final StringFW sourceRO = new StringFW();
 
     @Override
-    public RouteFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    public CaptureFW wrap(DirectBuffer buffer, int offset, int actingLimit)
     {
         super.wrap(buffer, offset);
 
-        this.destinationRO.wrap(buffer, offset + FIELD_OFFSET_DESTINATION, actingLimit);
+        this.sourceRO.wrap(buffer, offset + FIELD_OFFSET_SOURCE, actingLimit);
 
         checkLimit(limit(), actingLimit);
 
@@ -51,12 +51,12 @@ public final class RouteFW extends Flyweight
     @Override
     public int limit()
     {
-        return destination().limit();
+        return source().limit();
     }
 
     public int typeId()
     {
-        return TYPE_ID_ROUTE_COMMAND;
+        return TYPE_ID_CAPTURE_COMMAND;
     }
 
     public long correlationId()
@@ -64,24 +64,24 @@ public final class RouteFW extends Flyweight
         return buffer().getLong(offset() + FIELD_OFFSET_CORRELATION_ID);
     }
 
-    public StringFW destination()
+    public StringFW source()
     {
-        return destinationRO;
+        return sourceRO;
     }
 
     @Override
     public String toString()
     {
-        return format("UNROUTE [correlationId=%d, destination=%s]", correlationId(), destination());
+        return format("CAPTURE [correlationId=%d, source=%s]", correlationId(), source());
     }
 
-    public static final class Builder extends Flyweight.Builder<RouteFW>
+    public static final class Builder extends Flyweight.Builder<CaptureFW>
     {
-        private final StringFW.Builder destinationRW = new StringFW.Builder();
+        private final StringFW.Builder sourceRW = new StringFW.Builder();
 
         public Builder()
         {
-            super(new RouteFW());
+            super(new CaptureFW());
         }
 
         @Override
@@ -89,7 +89,7 @@ public final class RouteFW extends Flyweight
         {
             super.wrap(buffer, offset, maxLimit);
 
-            this.destinationRW.wrap(buffer, offset + FIELD_OFFSET_DESTINATION, maxLimit);
+            this.sourceRW.wrap(buffer, offset + FIELD_OFFSET_SOURCE, maxLimit);
 
             return this;
         }
@@ -100,9 +100,9 @@ public final class RouteFW extends Flyweight
             return this;
         }
 
-        public Builder destination(String destination)
+        public Builder source(String source)
         {
-            destinationRW.set(destination, StandardCharsets.UTF_8);
+            sourceRW.set(source, StandardCharsets.UTF_8);
             return this;
         }
     }

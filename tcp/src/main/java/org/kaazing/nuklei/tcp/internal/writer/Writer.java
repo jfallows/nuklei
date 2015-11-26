@@ -15,16 +15,23 @@
  */
 package org.kaazing.nuklei.tcp.internal.writer;
 
-import static org.kaazing.nuklei.tcp.internal.types.stream.Types.*;
+import static org.kaazing.nuklei.tcp.internal.types.stream.Types.TYPE_ID_BEGIN;
+import static org.kaazing.nuklei.tcp.internal.types.stream.Types.TYPE_ID_DATA;
+import static org.kaazing.nuklei.tcp.internal.types.stream.Types.TYPE_ID_END;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.HashMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.Context;
+import org.kaazing.nuklei.tcp.internal.conductor.ConductorProxy;
+import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
 import org.kaazing.nuklei.tcp.internal.types.stream.BeginFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.DataFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.EndFW;
@@ -44,17 +51,25 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
     private final EndFW endRO = new EndFW();
     private final DataFW dataRO = new DataFW();
 
+    private final ConductorProxy.FromReader conductorProxy;
     private final OneToOneConcurrentArrayQueue<WriterCommand> commandQueue;
     private final Long2ObjectHashMap<WriterState> stateByStreamId;
     private final MessageHandler readHandler;
     private RingBuffer[] streamBuffers;
+    private Function<String, File> streamsFile;
+    private int streamsCapacity;
+    private HashMap<String, StreamsLayout> layoutsBySource;
 
     public Writer(Context context)
     {
+        this.conductorProxy = new ConductorProxy.FromReader(context);
         this.commandQueue = context.writerCommandQueue();
         this.stateByStreamId = new Long2ObjectHashMap<>();
         this.streamBuffers = new RingBuffer[0];
         this.readHandler = this::handleRead;
+        this.streamsFile = context.captureStreamsFile();
+        this.streamsCapacity = context.streamsCapacity();
+        this.layoutsBySource = new HashMap<>();
     }
 
     @Override
@@ -94,6 +109,17 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
             }
         });
 
+        layoutsBySource.values().forEach((layout) -> {
+            try
+            {
+                layout.close();
+            }
+            catch (final Exception ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
+        });
+
         super.close();
     }
 
@@ -103,19 +129,78 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         command.execute(this);
     }
 
-    public void doRegister(
-        long bindingRef,
-        long connectionId,
-        SocketChannel channel,
-        RingBuffer streamBuffer)
+    public void doCapture(
+        long correlationId,
+        String source)
     {
-        WriterState state = new WriterState(bindingRef, connectionId, channel, streamBuffer);
+        StreamsLayout layout = layoutsBySource.get(source);
+        if (layout != null)
+        {
+            conductorProxy.onErrorResponse(correlationId);
+        }
+        else
+        {
+            try
+            {
+                StreamsLayout newLayout = new StreamsLayout.Builder().streamsFile(streamsFile.apply(source))
+                                                                     .streamsCapacity(streamsCapacity)
+                                                                     .readonly(false)
+                                                                     .build();
+
+                layoutsBySource.put(source, newLayout);
+
+                streamBuffers = ArrayUtil.add(streamBuffers, newLayout.buffer());
+
+                conductorProxy.onCapturedResponse(correlationId);
+            }
+            catch (Exception ex)
+            {
+                conductorProxy.onErrorResponse(correlationId);
+                LangUtil.rethrowUnchecked(ex);
+            }
+        }
+    }
+
+    public void doUncapture(
+        long correlationId,
+        String source)
+    {
+        StreamsLayout oldLayout = layoutsBySource.remove(source);
+        if (oldLayout == null)
+        {
+            conductorProxy.onErrorResponse(correlationId);
+        }
+        else
+        {
+            try
+            {
+                streamBuffers = ArrayUtil.remove(streamBuffers, oldLayout.buffer());
+                oldLayout.close();
+                conductorProxy.onUncapturedResponse(correlationId);
+            }
+            catch (Exception ex)
+            {
+                conductorProxy.onErrorResponse(correlationId);
+                LangUtil.rethrowUnchecked(ex);
+            }
+        }
+    }
+
+    public void doRegister(
+        long streamId,
+        String source,
+        long sourceRef,
+        SocketChannel channel)
+    {
+        StreamsLayout layout = layoutsBySource.get(source);
+        assert layout != null;
+
+        RingBuffer streamBuffer = layout.buffer();
+
+        WriterState state = new WriterState(streamBuffer, streamId, channel);
 
         // TODO: BiInt2ObjectMap needed or already sufficiently unique?
         stateByStreamId.put(state.streamId(), state);
-
-        // TODO: prevent duplicate adds
-        streamBuffers = ArrayUtil.add(streamBuffers, streamBuffer);
     }
 
     private void handleRead(int msgTypeId, MutableDirectBuffer buffer, int index, int length)

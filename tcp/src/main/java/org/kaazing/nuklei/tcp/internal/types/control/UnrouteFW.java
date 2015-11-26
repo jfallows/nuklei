@@ -32,19 +32,16 @@ public final class UnrouteFW extends Flyweight
     private static final int FIELD_OFFSET_CORRELATION_ID = 0;
     private static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
 
-    private static final int FIELD_OFFSET_ENDPOINT_ROLE = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
-    private static final int FIELD_SIZE_ROLE = BitUtil.SIZE_OF_BYTE;
+    private static final int FIELD_OFFSET_DESTINATION = FIELD_SIZE_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
 
-    private static final int FIELD_OFFSET_ENDPOINT = FIELD_OFFSET_ENDPOINT_ROLE + FIELD_SIZE_ROLE;
-
-    private final StringFW endpointRO = new StringFW();
+    private final StringFW destinationRO = new StringFW();
 
     @Override
     public UnrouteFW wrap(DirectBuffer buffer, int offset, int actingLimit)
     {
         super.wrap(buffer, offset);
 
-        this.endpointRO.wrap(buffer, offset + FIELD_OFFSET_ENDPOINT, actingLimit);
+        this.destinationRO.wrap(buffer, offset + FIELD_OFFSET_DESTINATION, actingLimit);
 
         checkLimit(limit(), actingLimit);
 
@@ -54,7 +51,7 @@ public final class UnrouteFW extends Flyweight
     @Override
     public int limit()
     {
-        return endpoint().limit();
+        return destination().limit();
     }
 
     public int typeId()
@@ -67,25 +64,20 @@ public final class UnrouteFW extends Flyweight
         return buffer().getLong(offset() + FIELD_OFFSET_CORRELATION_ID);
     }
 
-    public int endpointRole()
+    public StringFW destination()
     {
-        return buffer().getByte(offset() + FIELD_OFFSET_ENDPOINT_ROLE);
-    }
-
-    public StringFW endpoint()
-    {
-        return endpointRO;
+        return destinationRO;
     }
 
     @Override
     public String toString()
     {
-        return format("UNROUTE [correlationId=%d, endpointRole=%s, endpoint=%s]", correlationId(), endpointRole(), endpoint());
+        return format("UNROUTE [correlationId=%d, destination=%s]", correlationId(), destination());
     }
 
     public static final class Builder extends Flyweight.Builder<UnrouteFW>
     {
-        private final StringFW.Builder endpointRW = new StringFW.Builder();
+        private final StringFW.Builder destinationRW = new StringFW.Builder();
 
         public Builder()
         {
@@ -97,7 +89,7 @@ public final class UnrouteFW extends Flyweight
         {
             super.wrap(buffer, offset, maxLimit);
 
-            this.endpointRW.wrap(buffer, offset + FIELD_OFFSET_ENDPOINT, maxLimit);
+            this.destinationRW.wrap(buffer, offset + FIELD_OFFSET_DESTINATION, maxLimit);
 
             return this;
         }
@@ -108,15 +100,9 @@ public final class UnrouteFW extends Flyweight
             return this;
         }
 
-        public Builder endpointRole(int endpointRole)
+        public Builder destination(String destination)
         {
-            buffer().putByte(offset() + FIELD_OFFSET_ENDPOINT_ROLE, (byte) endpointRole);
-            return this;
-        }
-
-        public Builder endpoint(String endpoint)
-        {
-            endpointRW.set(endpoint, StandardCharsets.UTF_8);
+            destinationRW.set(destination, StandardCharsets.UTF_8);
             return this;
         }
     }
