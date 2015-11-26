@@ -15,6 +15,8 @@
  */
 package org.kaazing.nuklei.echo.internal.types.control;
 
+import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_UNBIND_COMMAND;
+
 import org.kaazing.nuklei.echo.internal.types.Flyweight;
 
 import uk.co.real_logic.agrona.BitUtil;
@@ -23,8 +25,6 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public final class UnbindFW extends Flyweight
 {
-    public static final int UNBIND_TYPE_ID = 0x00000002;
-
     private static final int FIELD_OFFSET_CORRELATION_ID = 0;
     private static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
 
@@ -42,7 +42,7 @@ public final class UnbindFW extends Flyweight
 
     public int typeId()
     {
-        return UNBIND_TYPE_ID;
+        return TYPE_ID_UNBIND_COMMAND;
     }
 
     public long correlationId()

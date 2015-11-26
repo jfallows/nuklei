@@ -15,6 +15,8 @@
  */
 package org.kaazing.nuklei.echo.internal.types.stream;
 
+import static org.kaazing.nuklei.echo.internal.types.stream.Types.TYPE_ID_DATA;
+
 import org.kaazing.nuklei.echo.internal.types.Flyweight;
 
 import uk.co.real_logic.agrona.BitUtil;
@@ -23,8 +25,6 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public final class DataFW extends Flyweight
 {
-    public static final int DATA_TYPE_ID = 0x00000002;
-
     private static final int FIELD_OFFSET_STREAM_ID = 0;
     private static final int FIELD_SIZE_STREAM_ID = BitUtil.SIZE_OF_LONG;
 
@@ -51,7 +51,7 @@ public final class DataFW extends Flyweight
 
     public int typeId()
     {
-        return DATA_TYPE_ID;
+        return TYPE_ID_DATA;
     }
 
     public long streamId()

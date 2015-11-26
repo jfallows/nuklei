@@ -17,10 +17,10 @@ package org.kaazing.nuklei.bench.jmh.echo;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
-import static org.kaazing.nuklei.echo.internal.types.control.BoundFW.BOUND_TYPE_ID;
-import static org.kaazing.nuklei.echo.internal.types.control.ConnectedFW.CONNECTED_TYPE_ID;
-import static org.kaazing.nuklei.echo.internal.types.control.ErrorFW.ERROR_TYPE_ID;
-import static org.kaazing.nuklei.echo.internal.types.control.PreparedFW.PREPARED_TYPE_ID;
+import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_BOUND_RESPONSE;
+import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_CONNECTED_RESPONSE;
+import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_ERROR_RESPONSE;
+import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_PREPARED_RESPONSE;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -135,7 +135,7 @@ public final class EchoController
             final MessageHandler handler = (msgTypeId, buffer, index, length) -> {
                 switch (msgTypeId)
                 {
-                case BOUND_TYPE_ID:
+                case TYPE_ID_BOUND_RESPONSE:
                     boundRO.wrap(buffer, index, length);
                     if (boundRO.correlationId() == correlationId)
                     {
@@ -143,7 +143,7 @@ public final class EchoController
                         complete.set(true);
                     }
                     break;
-                case PREPARED_TYPE_ID:
+                case TYPE_ID_PREPARED_RESPONSE:
                     preparedRO.wrap(buffer, index, length);
                     if (preparedRO.correlationId() == correlationId)
                     {
@@ -151,7 +151,7 @@ public final class EchoController
                         complete.set(true);
                     }
                     break;
-                case CONNECTED_TYPE_ID:
+                case TYPE_ID_CONNECTED_RESPONSE:
                     connectedRO.wrap(buffer, index, length);
                     if (connectedRO.correlationId() == correlationId)
                     {
@@ -159,7 +159,7 @@ public final class EchoController
                         complete.set(true);
                     }
                     break;
-                case ERROR_TYPE_ID:
+                case TYPE_ID_ERROR_RESPONSE:
                     errorRO.wrap(buffer, index, length);
                     if (errorRO.correlationId() == correlationId)
                     {

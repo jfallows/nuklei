@@ -17,9 +17,9 @@ package org.kaazing.nuklei.echo.internal.reflector;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
-import static org.kaazing.nuklei.echo.internal.types.stream.BeginFW.BEGIN_TYPE_ID;
-import static org.kaazing.nuklei.echo.internal.types.stream.DataFW.DATA_TYPE_ID;
-import static org.kaazing.nuklei.echo.internal.types.stream.EndFW.END_TYPE_ID;
+import static org.kaazing.nuklei.echo.internal.types.stream.Types.TYPE_ID_BEGIN;
+import static org.kaazing.nuklei.echo.internal.types.stream.Types.TYPE_ID_DATA;
+import static org.kaazing.nuklei.echo.internal.types.stream.Types.TYPE_ID_END;
 
 import java.util.function.Consumer;
 
@@ -158,7 +158,7 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
     {
         switch (msgTypeId)
         {
-        case BEGIN_TYPE_ID:
+        case TYPE_ID_BEGIN:
             beginRO.wrap(buffer, index, index + length);
 
             RegistrationState registrationState = stateByReferenceId.get(beginRO.referenceId());
@@ -181,7 +181,7 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
             }
             break;
 
-        case DATA_TYPE_ID:
+        case TYPE_ID_DATA:
             dataRO.wrap(buffer, index, index + length);
 
             StreamState state = stateByStreamId.get(dataRO.streamId());
@@ -198,7 +198,7 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
             }
             break;
 
-        case END_TYPE_ID:
+        case TYPE_ID_END:
             endRO.wrap(buffer, index, index + length);
 
             StreamState oldState = stateByStreamId.remove(endRO.streamId());
@@ -224,7 +224,7 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
     {
         switch (msgTypeId)
         {
-        case BEGIN_TYPE_ID:
+        case TYPE_ID_BEGIN:
             beginRO.wrap(buffer, index, index + length);
 
             StreamState newState = stateByStreamId.get(beginRO.streamId());
@@ -234,7 +234,7 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
             }
             break;
 
-        case DATA_TYPE_ID:
+        case TYPE_ID_DATA:
             dataRO.wrap(buffer, index, index + length);
 
             StreamState state = stateByStreamId.get(dataRO.streamId());
@@ -249,7 +249,7 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
             }
             break;
 
-        case END_TYPE_ID:
+        case TYPE_ID_END:
             endRO.wrap(buffer, index, index + length);
 
             StreamState oldState = stateByStreamId.remove(endRO.streamId());

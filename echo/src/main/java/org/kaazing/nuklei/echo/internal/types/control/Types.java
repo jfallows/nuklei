@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.tcp.internal.types.control;
+package org.kaazing.nuklei.echo.internal.types.control;
 
 public final class Types
 {

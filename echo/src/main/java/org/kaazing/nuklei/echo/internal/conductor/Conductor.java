@@ -15,11 +15,11 @@
  */
 package org.kaazing.nuklei.echo.internal.conductor;
 
-import static org.kaazing.nuklei.echo.internal.types.control.BindFW.BIND_TYPE_ID;
-import static org.kaazing.nuklei.echo.internal.types.control.ConnectFW.CONNECT_TYPE_ID;
-import static org.kaazing.nuklei.echo.internal.types.control.PrepareFW.PREPARE_TYPE_ID;
-import static org.kaazing.nuklei.echo.internal.types.control.UnbindFW.UNBIND_TYPE_ID;
-import static org.kaazing.nuklei.echo.internal.types.control.UnprepareFW.UNPREPARE_TYPE_ID;
+import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_BIND_COMMAND;
+import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_CONNECT_COMMAND;
+import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_PREPARE_COMMAND;
+import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_UNBIND_COMMAND;
+import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_UNPREPARE_COMMAND;
 
 import java.util.function.Consumer;
 
@@ -191,19 +191,19 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
     {
         switch (msgTypeId)
         {
-        case BIND_TYPE_ID:
+        case TYPE_ID_BIND_COMMAND:
             handleBindCommand(buffer, index, length);
             break;
-        case UNBIND_TYPE_ID:
+        case TYPE_ID_UNBIND_COMMAND:
             handleUnbindCommand(buffer, index, length);
             break;
-        case PREPARE_TYPE_ID:
+        case TYPE_ID_PREPARE_COMMAND:
             handlePrepareCommand(buffer, index, length);
             break;
-        case UNPREPARE_TYPE_ID:
+        case TYPE_ID_UNPREPARE_COMMAND:
             handleUnprepareCommand(buffer, index, length);
             break;
-        case CONNECT_TYPE_ID:
+        case TYPE_ID_CONNECT_COMMAND:
             handleConnectCommand(buffer, index, length);
             break;
         default:

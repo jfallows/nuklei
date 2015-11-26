@@ -15,6 +15,8 @@
  */
 package org.kaazing.nuklei.echo.internal.types.control;
 
+import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_UNPREPARED_RESPONSE;
+
 import org.kaazing.nuklei.echo.internal.types.Flyweight;
 
 import uk.co.real_logic.agrona.BitUtil;
@@ -23,8 +25,6 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public final class UnpreparedFW extends Flyweight
 {
-    private static final int UNPREPARED_TYPE_ID = 0x40000004;
-
     private static final int FIELD_OFFSET_CORRELATION_ID = 0;
     private static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
 
@@ -52,7 +52,7 @@ public final class UnpreparedFW extends Flyweight
 
     public int typeId()
     {
-        return UNPREPARED_TYPE_ID;
+        return TYPE_ID_UNPREPARED_RESPONSE;
     }
 
     public long correlationId()
