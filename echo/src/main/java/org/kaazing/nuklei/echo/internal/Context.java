@@ -15,17 +15,17 @@
  */
 package org.kaazing.nuklei.echo.internal;
 
+import static java.lang.String.format;
 import static uk.co.real_logic.agrona.LangUtil.rethrowUnchecked;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Function;
 import java.util.logging.Logger;
 
 import org.kaazing.nuklei.Configuration;
-import org.kaazing.nuklei.echo.internal.acceptor.AcceptorCommand;
 import org.kaazing.nuklei.echo.internal.conductor.ConductorResponse;
-import org.kaazing.nuklei.echo.internal.connector.ConnectorCommand;
 import org.kaazing.nuklei.echo.internal.layouts.ControlLayout;
 import org.kaazing.nuklei.echo.internal.reflector.ReflectorCommand;
 
@@ -43,8 +43,11 @@ public final class Context implements Closeable
     private final ControlLayout.Builder controlRW = new ControlLayout.Builder();
 
     private boolean readonly;
+    private File configDirectory;
     private ControlLayout controlRO;
     private int streamsCapacity;
+    private Function<String, File> captureStreamsFile;
+    private Function<String, File> routeStreamsFile;
     private IdleStrategy idleStrategy;
     private ErrorHandler errorHandler;
     private CountersManager countersManager;
@@ -53,11 +56,8 @@ public final class Context implements Closeable
     private AtomicBuffer fromConductorResponseBuffer;
     private BroadcastTransmitter fromConductorResponses;
 
-    private OneToOneConcurrentArrayQueue<AcceptorCommand> toAcceptorFromConductorCommands;
-    private OneToOneConcurrentArrayQueue<ConductorResponse> fromAcceptorToConductorResponses;
-    private OneToOneConcurrentArrayQueue<ReflectorCommand> fromAcceptorToReflectorCommands;
-    private OneToOneConcurrentArrayQueue<ConnectorCommand> toConnectorFromConductorCommands;
-    private OneToOneConcurrentArrayQueue<ConductorResponse> fromConnectorToConductorResponses;
+    private OneToOneConcurrentArrayQueue<ReflectorCommand> fromConductorToReflectorCommands;
+    private OneToOneConcurrentArrayQueue<ConductorResponse> fromReflectorToConductorResponses;
 
     public Context readonly(
         boolean readonly)
@@ -76,9 +76,32 @@ public final class Context implements Closeable
         return streamsCapacity;
     }
 
-    public File streamsDirectory()
+    public int maxMessageLength()
     {
-        return controlRW.controlFile().getParentFile();
+        // see RingBuffer.maxMessageLength()
+        return streamsCapacity / 8;
+    }
+
+    public Context captureStreamsFile(Function<String, File> captureStreamsFile)
+    {
+        this.captureStreamsFile = captureStreamsFile;
+        return this;
+    }
+
+    public Function<String, File> captureStreamsFile()
+    {
+        return captureStreamsFile;
+    }
+
+    public Context routeStreamsFile(Function<String, File> routeStreamsFile)
+    {
+        this.routeStreamsFile = routeStreamsFile;
+        return this;
+    }
+
+    public Function<String, File> routeStreamsFile()
+    {
+        return routeStreamsFile;
     }
 
     public Context idleStrategy(IdleStrategy idleStrategy)
@@ -148,67 +171,33 @@ public final class Context implements Closeable
         return fromConductorResponses;
     }
 
-    public Logger acceptorLogger()
+    public Logger logger()
     {
-        return Logger.getLogger("nuklei.tcp.acceptor");
-    }
-
-    public void acceptorCommandQueue(
-            OneToOneConcurrentArrayQueue<AcceptorCommand> acceptorCommandQueue)
-    {
-        this.toAcceptorFromConductorCommands = acceptorCommandQueue;
-    }
-
-    public OneToOneConcurrentArrayQueue<AcceptorCommand> acceptorCommandQueue()
-    {
-        return toAcceptorFromConductorCommands;
-    }
-
-    public Context acceptorResponseQueue(
-            OneToOneConcurrentArrayQueue<ConductorResponse> acceptorResponseQueue)
-    {
-        this.fromAcceptorToConductorResponses = acceptorResponseQueue;
-        return this;
-    }
-
-    public OneToOneConcurrentArrayQueue<ConductorResponse> acceptorResponseQueue()
-    {
-        return fromAcceptorToConductorResponses;
-    }
-
-    public void connectorCommandQueue(
-            OneToOneConcurrentArrayQueue<ConnectorCommand> connectorCommandQueue)
-    {
-        this.toConnectorFromConductorCommands = connectorCommandQueue;
-    }
-
-    public OneToOneConcurrentArrayQueue<ConnectorCommand> connectorCommandQueue()
-    {
-        return toConnectorFromConductorCommands;
-    }
-
-    public Context connectorResponseQueue(
-            OneToOneConcurrentArrayQueue<ConductorResponse> connectorResponseQueue)
-    {
-        this.fromConnectorToConductorResponses = connectorResponseQueue;
-        return this;
-    }
-
-    public OneToOneConcurrentArrayQueue<ConductorResponse> connectorResponseQueue()
-    {
-        return fromConnectorToConductorResponses;
+        return Logger.getLogger("nuklei.echo");
     }
 
     public Context reflectorCommandQueue(
             OneToOneConcurrentArrayQueue<ReflectorCommand> reflectorCommandQueue)
     {
-        this.fromAcceptorToReflectorCommands = reflectorCommandQueue;
+        this.fromConductorToReflectorCommands = reflectorCommandQueue;
         return this;
     }
 
     public OneToOneConcurrentArrayQueue<ReflectorCommand> reflectorCommandQueue()
     {
-        return fromAcceptorToReflectorCommands;
+        return fromConductorToReflectorCommands;
+    }
+
+    public Context reflectorResponseQueue(
+            OneToOneConcurrentArrayQueue<ConductorResponse> reflectorResponseQueue)
+    {
+        this.fromReflectorToConductorResponses = reflectorResponseQueue;
+        return this;
+    }
+
+    public OneToOneConcurrentArrayQueue<ConductorResponse> reflectorResponseQueue()
+    {
+        return fromReflectorToConductorResponses;
     }
 
     public Context countersManager(CountersManager countersManager)
@@ -231,6 +220,18 @@ public final class Context implements Closeable
     {
         try
         {
+            this.configDirectory = config.directory();
+
+            this.streamsCapacity = config.streamsCapacity();
+
+            captureStreamsFile((source) -> {
+                return new File(configDirectory, format("echo/streams/%s", source));
+            });
+
+            routeStreamsFile((destination) -> {
+                return new File(configDirectory, format("%s/streams/echo", destination));
+            });
+
             this.controlRO = controlRW.controlFile(new File(config.directory(), "echo/control"))
                                       .commandBufferCapacity(config.commandBufferCapacity())
                                       .responseBufferCapacity(config.responseBufferCapacity())
@@ -238,8 +239,6 @@ public final class Context implements Closeable
                                       .counterValuesBufferCapacity(config.counterValuesBufferLength())
                                       .readonly(readonly())
                                       .build();
-
-            streamsCapacity = config.streamsCapacity();
 
             conductorCommands(
                     new ManyToOneRingBuffer(controlRO.commandBuffer()));
@@ -249,20 +248,11 @@ public final class Context implements Closeable
             conductorResponses(
                     new BroadcastTransmitter(conductorResponseBuffer()));
 
-            acceptorCommandQueue(
-                    new OneToOneConcurrentArrayQueue<AcceptorCommand>(1024));
-
-            acceptorResponseQueue(
-                    new OneToOneConcurrentArrayQueue<ConductorResponse>(1024));
-
-            connectorCommandQueue(
-                    new OneToOneConcurrentArrayQueue<ConnectorCommand>(1024));
-
-            connectorResponseQueue(
-                    new OneToOneConcurrentArrayQueue<ConductorResponse>(1024));
-
             reflectorCommandQueue(
                     new OneToOneConcurrentArrayQueue<ReflectorCommand>(1024));
+
+            reflectorResponseQueue(
+                    new OneToOneConcurrentArrayQueue<ConductorResponse>(1024));
 
             concludeCounters();
         }

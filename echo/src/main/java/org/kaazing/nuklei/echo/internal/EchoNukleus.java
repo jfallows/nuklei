@@ -16,23 +16,17 @@
 package org.kaazing.nuklei.echo.internal;
 
 import org.kaazing.nuklei.Nukleus;
-import org.kaazing.nuklei.echo.internal.acceptor.Acceptor;
 import org.kaazing.nuklei.echo.internal.conductor.Conductor;
-import org.kaazing.nuklei.echo.internal.connector.Connector;
 import org.kaazing.nuklei.echo.internal.reflector.Reflector;
 
 public final class EchoNukleus implements Nukleus
 {
     private final Conductor conductor;
-    private final Acceptor acceptor;
-    private final Connector connector;
     private final Reflector reflector;
 
     public EchoNukleus(Context context)
     {
         this.conductor = new Conductor(context);
-        this.acceptor = new Acceptor(context);
-        this.connector = new Connector(context);
         this.reflector = new Reflector(context);
     }
 
@@ -42,8 +36,6 @@ public final class EchoNukleus implements Nukleus
         int weight = 0;
 
         weight += conductor.process();
-        weight += acceptor.process();
-        weight += connector.process();
         weight += reflector.process();
 
         return weight;
@@ -58,16 +50,6 @@ public final class EchoNukleus implements Nukleus
     public Nukleus conductor()
     {
         return conductor;
-    }
-
-    public Nukleus acceptor()
-    {
-        return acceptor;
-    }
-
-    public Nukleus connector()
-    {
-        return connector;
     }
 
     public Nukleus reflector()

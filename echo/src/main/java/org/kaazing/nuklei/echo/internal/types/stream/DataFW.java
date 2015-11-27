@@ -72,7 +72,7 @@ public final class DataFW extends Flyweight
     @Override
     public String toString()
     {
-        return String.format("[streamId=%d,remaining=%d]", streamId(), remaining());
+        return String.format("[streamId=%d,remaining=%d]", streamId(), length());
     }
 
     public static final class Builder extends Flyweight.Builder<DataFW>

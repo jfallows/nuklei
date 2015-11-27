@@ -15,21 +15,17 @@
  */
 package org.kaazing.nuklei.echo.internal.conductor;
 
-import java.util.logging.Logger;
-
 import org.kaazing.nuklei.echo.internal.Context;
 
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 public final class ConductorProxy
 {
-    private final Logger logger;
     private final OneToOneConcurrentArrayQueue<ConductorResponse> responseQueue;
 
     public ConductorProxy(Context context)
     {
-        this.logger = context.acceptorLogger();
-        this.responseQueue = context.acceptorResponseQueue();
+        this.responseQueue = context.reflectorResponseQueue();
     }
 
     public void onErrorResponse(long correlationId)
@@ -39,8 +35,41 @@ public final class ConductorProxy
         {
             throw new IllegalStateException("unable to offer response");
         }
+    }
+    public void onCapturedResponse(long correlationId)
+    {
+        CapturedResponse response = new CapturedResponse(correlationId);
+        if (!responseQueue.offer(response))
+        {
+            throw new IllegalStateException("unable to offer response");
+        }
+    }
 
-        logger.finest(() -> { return response.toString(); });
+    public void onUncapturedResponse(long correlationId)
+    {
+        UncapturedResponse response = new UncapturedResponse(correlationId);
+        if (!responseQueue.offer(response))
+        {
+            throw new IllegalStateException("unable to offer response");
+        }
+    }
+
+    public void onRoutedResponse(long correlationId)
+    {
+        RoutedResponse response = new RoutedResponse(correlationId);
+        if (!responseQueue.offer(response))
+        {
+            throw new IllegalStateException("unable to offer response");
+        }
+    }
+
+    public void onUnroutedResponse(long correlationId)
+    {
+        UnroutedResponse response = new UnroutedResponse(correlationId);
+        if (!responseQueue.offer(response))
+        {
+            throw new IllegalStateException("unable to offer response");
+        }
     }
 
     public void onBoundResponse(
@@ -52,8 +81,6 @@ public final class ConductorProxy
         {
             throw new IllegalStateException("unable to offer response");
         }
-
-        logger.finest(() -> { return response.toString(); });
     }
 
     public void onUnboundResponse(
@@ -66,8 +93,6 @@ public final class ConductorProxy
         {
             throw new IllegalStateException("unable to offer response");
         }
-
-        logger.finest(() -> { return response.toString(); });
     }
 
     public void onPreparedResponse(
@@ -79,8 +104,6 @@ public final class ConductorProxy
         {
             throw new IllegalStateException("unable to offer response");
         }
-
-        logger.finest(() -> { return response.toString(); });
     }
 
     public void onUnpreparedResponse(
@@ -93,8 +116,6 @@ public final class ConductorProxy
         {
             throw new IllegalStateException("unable to offer response");
         }
-
-        logger.finest(() -> { return response.toString(); });
     }
 
     public void onConnectedResponse(
@@ -106,7 +127,6 @@ public final class ConductorProxy
         {
             throw new IllegalStateException("unable to offer response");
         }
-
-        logger.finest(() -> { return response.toString(); });
     }
+
 }

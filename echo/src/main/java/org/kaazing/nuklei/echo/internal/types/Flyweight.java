@@ -35,7 +35,7 @@ public abstract class Flyweight
 
     public abstract int limit();
 
-    public final int remaining()
+    public final int length()
     {
         return limit() - offset();
     }

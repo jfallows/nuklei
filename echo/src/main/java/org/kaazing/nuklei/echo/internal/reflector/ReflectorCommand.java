@@ -17,5 +17,5 @@ package org.kaazing.nuklei.echo.internal.reflector;
 
 public interface ReflectorCommand
 {
-    void execute(Reflector writer);
+    void execute(Reflector reflector);
 }

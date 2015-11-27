@@ -37,22 +37,28 @@ public final class EchoStreams
     private final DataFW.Builder dataRW = new DataFW.Builder();
     private final EndFW.Builder endRW = new EndFW.Builder();
 
-    private final StreamsLayout streams;
+    private final StreamsLayout captureStreams;
+    private final StreamsLayout routeStreams;
     private final RingBuffer streamsInput;
     private final RingBuffer streamsOutput;
     private final AtomicBuffer atomicBuffer;
 
     EchoStreams(
         Context context,
-        String streamFilename)
+        String source)
     {
-        this.streams = new StreamsLayout.Builder().streamsCapacity(context.streamsCapacity())
-                                                  .streamsDirectory(context.streamsDirectory())
-                                                  .streamsFilename(streamFilename)
-                                                  .readonly(true)
-                                                  .build();
-        this.streamsInput = this.streams.inputBuffer();
-        this.streamsOutput = this.streams.outputBuffer();
+        this.captureStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsCapacity())
+                                                         .streamsFile(context.captureStreamsFile().apply(source))
+                                                         .createFile(false)
+                                                         .build();
+        this.streamsInput = this.captureStreams.buffer();
+
+        this.routeStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsCapacity())
+                                                       .streamsFile(context.routeStreamsFile().apply(source))
+                                                       .createFile(false)
+                                                       .build();
+        this.streamsOutput = this.routeStreams.buffer();
+
         this.atomicBuffer = new UnsafeBuffer(allocateDirect(MAX_SEND_LENGTH).order(nativeOrder()));
     }
 
@@ -65,9 +71,9 @@ public final class EchoStreams
                                  .referenceId(referenceId)
                                  .build();
 
-        if (!streamsInput.write(beginRO.typeId(), beginRO.buffer(), beginRO.offset(), beginRO.remaining()))
+        if (!streamsInput.write(beginRO.typeId(), beginRO.buffer(), beginRO.offset(), beginRO.length()))
         {
-            throw new IllegalStateException("unable to write to streams");
+            throw new IllegalStateException("unable to write to captureStreams");
         }
     }
 
@@ -82,9 +88,9 @@ public final class EchoStreams
                               .payload(buffer, offset, length)
                               .build();
 
-        if (!streamsInput.write(dataRO.typeId(), dataRO.buffer(), dataRO.offset(), dataRO.remaining()))
+        if (!streamsInput.write(dataRO.typeId(), dataRO.buffer(), dataRO.offset(), dataRO.length()))
         {
-            throw new IllegalStateException("unable to write to streams");
+            throw new IllegalStateException("unable to write to captureStreams");
         }
     }
 
@@ -95,9 +101,9 @@ public final class EchoStreams
                            .streamId(streamId)
                            .build();
 
-        if (!streamsInput.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.remaining()))
+        if (!streamsInput.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.length()))
         {
-            throw new IllegalStateException("unable to write to streams");
+            throw new IllegalStateException("unable to write to captureStreams");
         }
     }
 

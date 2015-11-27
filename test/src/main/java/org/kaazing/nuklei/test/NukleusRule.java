@@ -96,18 +96,20 @@ public final class NukleusRule implements TestRule
                             int workCount = nukleus.process();
                             idler.idle(workCount);
                         }
-                        catch (Exception e)
+                        catch (Exception ex)
                         {
                             errorCount.incrementAndGet();
+                            ex.printStackTrace(System.err);
                         }
                     }
                     try
                     {
                         nukleus.close();
                     }
-                    catch (Exception e)
+                    catch (Exception ex)
                     {
                         errorCount.incrementAndGet();
+                        ex.printStackTrace(System.err);
                     }
                 };
                 Thread caller = new Thread(runnable);

@@ -21,57 +21,87 @@ import static org.kaazing.nuklei.echo.internal.types.stream.Types.TYPE_ID_BEGIN;
 import static org.kaazing.nuklei.echo.internal.types.stream.Types.TYPE_ID_DATA;
 import static org.kaazing.nuklei.echo.internal.types.stream.Types.TYPE_ID_END;
 
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.echo.internal.Context;
+import org.kaazing.nuklei.echo.internal.conductor.ConductorProxy;
+import org.kaazing.nuklei.echo.internal.layouts.StreamsLayout;
 import org.kaazing.nuklei.echo.internal.types.stream.BeginFW;
 import org.kaazing.nuklei.echo.internal.types.stream.DataFW;
 import org.kaazing.nuklei.echo.internal.types.stream.EndFW;
 
+import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.collections.ArrayUtil;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
 {
-    private static final int MAX_RECEIVE_LENGTH = 1024; // TODO: Configuration and Context
+    private static final long STREAMS_BOUND_MASK = 0x4000000000000000L;
 
     private final BeginFW.Builder beginRW = new BeginFW.Builder();
+    private final DataFW.Builder dataRW = new DataFW.Builder();
     private final EndFW.Builder endRW = new EndFW.Builder();
 
     private final BeginFW beginRO = new BeginFW();
-    private final EndFW endRO = new EndFW();
     private final DataFW dataRO = new DataFW();
+    private final EndFW endRO = new EndFW();
 
+    private final ConductorProxy conductorProxy;
     private final OneToOneConcurrentArrayQueue<ReflectorCommand> commandQueue;
-    private final Long2ObjectHashMap<RegistrationState> stateByReferenceId;
-    private final Long2ObjectHashMap<StreamState> stateByStreamId;
-    private final AtomicBuffer atomicBuffer;
-    private final MessageHandler readAcceptHandler;
-    private final MessageHandler readConnectHandler;
-    private final AtomicCounter reflectedBytes;
 
-    private RingBuffer[] readAcceptBuffers;
-    private RingBuffer[] readConnectBuffers;
+    private final Long2ObjectHashMap<ConnectorState> connectorStateByRef;
+    private final Long2ObjectHashMap<AcceptorState> acceptorStateByRef;
+    private final Long2ObjectHashMap<ReflectorState> stateByStreamId;
+    private final Long2ObjectHashMap<ConnectingState> connectingStateByStreamId;
+
+    private final Map<String, StreamsLayout> streamsBySource;
+    private final Map<String, StreamsLayout> streamsByDestination;
+    private final Function<String, File> captureStreamsFile;
+    private final Function<String, File> routeStreamsFile;
+    private final int streamsCapacity;
+
+    private final AtomicCounter streamsBound;
+    private final AtomicCounter streamsAccepted;
+    private final AtomicCounter streamsConnected;
+    private final AtomicCounter bytesReflected;
+
+    private final AtomicBuffer atomicBuffer;
+
+    private final Long2ObjectHashMap<AcceptorState> acceptorStateBySourceRef;
+    private RingBuffer[] readBuffers;
 
     public Reflector(Context context)
     {
+        this.conductorProxy = new ConductorProxy(context);
         this.commandQueue = context.reflectorCommandQueue();
-        this.reflectedBytes = context.counters().reflectedBytes();
-        this.stateByReferenceId = new Long2ObjectHashMap<>();
+        this.acceptorStateByRef = new Long2ObjectHashMap<>();
+        this.connectorStateByRef = new Long2ObjectHashMap<>();
         this.stateByStreamId = new Long2ObjectHashMap<>();
-        this.atomicBuffer = new UnsafeBuffer(allocateDirect(MAX_RECEIVE_LENGTH).order(nativeOrder()));
-        this.readAcceptBuffers = new RingBuffer[0];
-        this.readConnectBuffers = new RingBuffer[0];
-        this.readAcceptHandler = this::handleReadAccept;
-        this.readConnectHandler = this::handleReadConnect;
+        this.connectingStateByStreamId = new Long2ObjectHashMap<>();
+        this.streamsBound = context.counters().streamsBound();
+        this.streamsAccepted = context.counters().streamsAccepted();
+        this.streamsConnected = context.counters().streamsConnected();
+        this.bytesReflected = context.counters().bytesReflected();
+        this.atomicBuffer = new UnsafeBuffer(allocateDirect(context.maxMessageLength()).order(nativeOrder()));
+        this.captureStreamsFile = context.captureStreamsFile();
+        this.routeStreamsFile = context.routeStreamsFile();
+        this.streamsCapacity = context.streamsCapacity();
+        this.streamsBySource = new HashMap<>();
+        this.streamsByDestination = new HashMap<>();
+
+        this.readBuffers = new RingBuffer[0];
+        this.acceptorStateBySourceRef = new Long2ObjectHashMap<>();
     }
 
     @Override
@@ -81,14 +111,9 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
 
         weight += commandQueue.drain(this);
 
-        for (int i=0; i < readAcceptBuffers.length; i++)
+        for (int i = readBuffers.length - 1; i >= 0; i--)
         {
-            weight += readAcceptBuffers[i].read(readAcceptHandler);
-        }
-
-        for (int i=0; i < readConnectBuffers.length; i++)
-        {
-            weight += readConnectBuffers[i].read(readConnectHandler);
+            weight += readBuffers[i].read(this::handleRead);
         }
 
         return weight;
@@ -106,165 +131,402 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
         command.execute(this);
     }
 
-    public void doRegister(
-        long referenceId,
-        ReflectorMode mode,
-        RingBuffer readBuffer,
-        RingBuffer writeBuffer)
+    public void doCapture(
+        long correlationId,
+        String source)
     {
-        RegistrationState state = new RegistrationState(referenceId, mode, readBuffer, writeBuffer);
-
-        stateByReferenceId.put(state.referenceId(), state);
-
-        switch (mode)
+        StreamsLayout layout = streamsBySource.get(source);
+        if (layout != null)
         {
-        case ACCEPT:
-            // TODO: prevent duplicate adds
-            readAcceptBuffers = ArrayUtil.add(readAcceptBuffers, readBuffer);
-            break;
+            conductorProxy.onErrorResponse(correlationId);
+        }
+        else
+        {
+            try
+            {
+                StreamsLayout newLayout = new StreamsLayout.Builder().streamsFile(captureStreamsFile.apply(source))
+                                                                     .streamsCapacity(streamsCapacity)
+                                                                     .createFile(true)
+                                                                     .build();
 
-        case CONNECT:
-            // TODO: prevent duplicate adds
-            readConnectBuffers = ArrayUtil.add(readConnectBuffers, readBuffer);
-            break;
+                streamsBySource.put(source, newLayout);
+
+                readBuffers = ArrayUtil.add(readBuffers, newLayout.buffer());
+
+                conductorProxy.onCapturedResponse(correlationId);
+            }
+            catch (Exception ex)
+            {
+                conductorProxy.onErrorResponse(correlationId);
+                LangUtil.rethrowUnchecked(ex);
+            }
+        }
+    }
+
+    public void doUncapture(
+        long correlationId,
+        String source)
+    {
+        StreamsLayout oldLayout = streamsBySource.remove(source);
+        if (oldLayout == null)
+        {
+            conductorProxy.onErrorResponse(correlationId);
+        }
+        else
+        {
+            try
+            {
+                readBuffers = ArrayUtil.remove(readBuffers, oldLayout.buffer());
+
+                oldLayout.close();
+
+                conductorProxy.onUncapturedResponse(correlationId);
+            }
+            catch (Exception ex)
+            {
+                conductorProxy.onErrorResponse(correlationId);
+                LangUtil.rethrowUnchecked(ex);
+            }
+        }
+    }
+
+    public void doRoute(
+        long correlationId,
+        String destination)
+    {
+        StreamsLayout layout = streamsByDestination.get(destination);
+        if (layout != null)
+        {
+            conductorProxy.onErrorResponse(correlationId);
+        }
+        else
+        {
+            try
+            {
+                StreamsLayout newLayout = new StreamsLayout.Builder().streamsFile(routeStreamsFile.apply(destination))
+                                                                     .streamsCapacity(streamsCapacity)
+                                                                     .createFile(false)
+                                                                     .build();
+
+                streamsByDestination.put(destination, newLayout);
+                conductorProxy.onRoutedResponse(correlationId);
+            }
+            catch (Exception ex)
+            {
+                conductorProxy.onErrorResponse(correlationId);
+                LangUtil.rethrowUnchecked(ex);
+            }
+        }
+    }
+
+    public void doUnroute(
+        long correlationId,
+        String destination)
+    {
+        StreamsLayout oldLayout = streamsByDestination.remove(destination);
+        if (oldLayout == null)
+        {
+            conductorProxy.onErrorResponse(correlationId);
+        }
+        else
+        {
+            try
+            {
+                oldLayout.close();
+                conductorProxy.onUnroutedResponse(correlationId);
+            }
+            catch (Exception ex)
+            {
+                conductorProxy.onErrorResponse(correlationId);
+                LangUtil.rethrowUnchecked(ex);
+            }
+        }
+    }
+
+    public void doBind(
+        long correlationId,
+        String source,
+        long sourceRef)
+    {
+        StreamsLayout layout = streamsBySource.get(source);
+
+        if (layout == null)
+        {
+            conductorProxy.onErrorResponse(correlationId);
+        }
+        else
+        {
+            try
+            {
+                final long referenceId = streamsBound.increment() | STREAMS_BOUND_MASK;
+
+                AcceptorState newState = new AcceptorState(referenceId, source, sourceRef);
+
+                acceptorStateByRef.put(newState.reference(), newState);
+
+                // TODO: scope by source
+                acceptorStateBySourceRef.put(newState.sourceRef(), newState);
+
+                conductorProxy.onBoundResponse(correlationId, newState.reference());
+            }
+            catch (Exception e)
+            {
+                conductorProxy.onErrorResponse(correlationId);
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public void doUnbind(
+        long correlationId,
+        long referenceId)
+    {
+        final AcceptorState oldState = acceptorStateByRef.remove(referenceId);
+
+        if (oldState == null)
+        {
+            conductorProxy.onErrorResponse(correlationId);
+        }
+        else
+        {
+            try
+            {
+                String source = oldState.source();
+                long sourceRef = oldState.sourceRef();
+
+                StreamsLayout streams = streamsBySource.get(source);
+
+                if (streams == null)
+                {
+                    conductorProxy.onErrorResponse(correlationId);
+                }
+                else
+                {
+                    // TODO: scope by source
+                    acceptorStateBySourceRef.remove(oldState.sourceRef());
+
+                    conductorProxy.onUnboundResponse(correlationId, source, sourceRef);
+                }
+            }
+            catch (Exception e)
+            {
+                conductorProxy.onErrorResponse(correlationId);
+            }
+        }
+    }
+
+    public void doPrepare(
+        long correlationId,
+        String destination,
+        long destinationRef)
+    {
+        final long referenceId = correlationId;
+
+        StreamsLayout layout = streamsBySource.get(destination);
+
+        if (layout == null)
+        {
+            conductorProxy.onErrorResponse(correlationId);
+        }
+        else
+        {
+            try
+            {
+                ConnectorState newState = new ConnectorState(referenceId, destination, destinationRef);
+
+                connectorStateByRef.put(newState.reference(), newState);
+
+                conductorProxy.onPreparedResponse(correlationId, newState.reference());
+            }
+            catch (Exception ex)
+            {
+                conductorProxy.onErrorResponse(correlationId);
+                LangUtil.rethrowUnchecked(ex);
+            }
+        }
+    }
+
+    public void doUnprepare(
+        long correlationId,
+        long referenceId)
+    {
+        final ConnectorState state = connectorStateByRef.remove(referenceId);
+
+        if (state == null)
+        {
+            conductorProxy.onErrorResponse(correlationId);
+        }
+        else
+        {
+            try
+            {
+                String destination = state.destination();
+                long destinationRef = state.destinationRef();
+
+                conductorProxy.onUnpreparedResponse(correlationId, destination, destinationRef);
+            }
+            catch (Exception ex)
+            {
+                conductorProxy.onErrorResponse(correlationId);
+                LangUtil.rethrowUnchecked(ex);
+            }
         }
     }
 
     public void doConnect(
-        long referenceId,
-        long streamId)
+        long correlationId,
+        long referenceId)
     {
-        RegistrationState registrationState = stateByReferenceId.get(referenceId);
-        if (registrationState == null)
+        final ConnectorState state = connectorStateByRef.get(referenceId);
+
+        if (state == null)
         {
-            throw new IllegalStateException("reference not found: " + referenceId);
+            conductorProxy.onErrorResponse(correlationId);
         }
-
-        StreamState newState = new StreamState(referenceId, streamId, registrationState.writeBuffer());
-        stateByStreamId.put(newState.streamId(), newState);
-
-        BeginFW begin = beginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                               .streamId(newState.streamId())
-                               .referenceId(newState.referenceId())
-                               .build();
-
-        if (!newState.writeBuffer().write(begin.typeId(), begin.buffer(), begin.offset(), begin.remaining()))
+        else
         {
-            throw new IllegalStateException("could not write to ring buffer");
+            try
+            {
+                StreamsLayout layout = streamsByDestination.get(state.destination());
+                if (layout == null)
+                {
+                    conductorProxy.onErrorResponse(correlationId);
+                }
+                else
+                {
+                    final long destinationRef = state.destinationRef();
+                    final RingBuffer writeBuffer = layout.buffer();
+
+                    final long streamId = streamsConnected.increment();
+
+                    // TODO: scope state by uniqueness of streamId
+                    ConnectingState newState = new ConnectingState(streamId, writeBuffer);
+                    connectingStateByStreamId.put(newState.streamId(), newState);
+
+                    BeginFW beginRO = beginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                             .streamId(streamId)
+                                             .referenceId(destinationRef)
+                                             .build();
+
+                    if (!writeBuffer.write(beginRO.typeId(), beginRO.buffer(), beginRO.offset(), beginRO.length()))
+                    {
+                        throw new IllegalStateException("could not write to ring buffer");
+                    }
+
+                    conductorProxy.onConnectedResponse(correlationId, streamId);
+                }
+            }
+            catch (Exception ex)
+            {
+                conductorProxy.onErrorResponse(correlationId);
+                LangUtil.rethrowUnchecked(ex);
+            }
         }
     }
 
-    private void handleReadAccept(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
+    private void handleRead(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
     {
         switch (msgTypeId)
         {
         case TYPE_ID_BEGIN:
             beginRO.wrap(buffer, index, index + length);
 
-            RegistrationState registrationState = stateByReferenceId.get(beginRO.referenceId());
-            if (registrationState == null)
+            final long referenceId = beginRO.referenceId();
+            if ((referenceId & STREAMS_BOUND_MASK) != 0)
             {
-                throw new IllegalStateException("reference not found: " + beginRO.streamId());
+                // accepted stream (TODO: scope by source)
+                AcceptorState acceptorState = acceptorStateBySourceRef.get(referenceId);
+                if (acceptorState == null)
+                {
+                    throw new IllegalStateException("stream not found: " + beginRO.streamId());
+                }
+                else
+                {
+                    StreamsLayout layout = streamsByDestination.get(acceptorState.source());
+                    if (layout == null)
+                    {
+                        throw new IllegalStateException("stream not found: " + beginRO.streamId());
+                    }
+                    else
+                    {
+                        RingBuffer writeBuffer = layout.buffer();
+                        final long newStreamId = streamsAccepted.increment();
+
+                        final ReflectorState newState = new ReflectorState(newStreamId, writeBuffer);
+                        stateByStreamId.put(beginRO.streamId(), newState);
+
+                        BeginFW begin = beginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                               .streamId(newState.streamId())
+                                               .referenceId(beginRO.streamId())
+                                               .build();
+
+                        if (!writeBuffer.write(begin.typeId(), begin.buffer(), begin.offset(), begin.length()))
+                        {
+                            throw new IllegalStateException("could not write to ring buffer");
+                        }
+                    }
+                }
             }
-
-            StreamState newState = new StreamState(beginRO.referenceId(), beginRO.streamId(), registrationState.writeBuffer());
-            stateByStreamId.put(newState.streamId(), newState);
-
-            BeginFW begin = beginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                   .streamId(newState.streamId())
-                                   .referenceId(newState.referenceId())
-                                   .build();
-
-            if (!newState.writeBuffer().write(begin.typeId(), begin.buffer(), begin.offset(), begin.remaining()))
+            else
             {
-                throw new IllegalStateException("could not write to ring buffer");
-            }
-            break;
-
-        case TYPE_ID_DATA:
-            dataRO.wrap(buffer, index, index + length);
-
-            StreamState state = stateByStreamId.get(dataRO.streamId());
-            if (state == null)
-            {
-                throw new IllegalStateException("stream not found: " + dataRO.streamId());
-            }
-
-            reflectedBytes.add(length);
-
-            if (!state.writeBuffer().write(dataRO.typeId(), dataRO.buffer(), dataRO.offset(), dataRO.remaining()))
-            {
-                throw new IllegalStateException("could not write to ring buffer");
-            }
-            break;
-
-        case TYPE_ID_END:
-            endRO.wrap(buffer, index, index + length);
-
-            StreamState oldState = stateByStreamId.remove(endRO.streamId());
-            if (oldState == null)
-            {
-                throw new IllegalStateException("stream not found: " + endRO.streamId());
-            }
-
-            EndFW end = endRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                             .streamId(oldState.streamId())
-                             .build();
-
-            if (!oldState.writeBuffer().write(end.typeId(), end.buffer(), end.offset(), end.remaining()))
-            {
-                throw new IllegalStateException("could not write to ring buffer");
-            }
-            break;
-        }
-    }
-
-
-    private void handleReadConnect(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
-    {
-        switch (msgTypeId)
-        {
-        case TYPE_ID_BEGIN:
-            beginRO.wrap(buffer, index, index + length);
-
-            StreamState newState = stateByStreamId.get(beginRO.streamId());
-            if (newState == null)
-            {
-                throw new IllegalStateException("stream not found: " + beginRO.streamId());
+                // connecting stream (reference is connecting stream id)
+                ConnectingState connectingState = connectingStateByStreamId.remove(referenceId);
+                if (connectingState == null)
+                {
+                    throw new IllegalStateException("stream not found: " + beginRO.streamId());
+                }
+                else
+                {
+                    ReflectorState newState = new ReflectorState(referenceId, connectingState.writeBuffer());
+                    stateByStreamId.put(beginRO.streamId(), newState);
+                }
             }
             break;
 
         case TYPE_ID_DATA:
             dataRO.wrap(buffer, index, index + length);
 
-            StreamState state = stateByStreamId.get(dataRO.streamId());
+            ReflectorState state = stateByStreamId.get(dataRO.streamId());
             if (state == null)
             {
                 throw new IllegalStateException("stream not found: " + dataRO.streamId());
             }
-
-            if (!state.writeBuffer().write(dataRO.typeId(), dataRO.buffer(), dataRO.offset(), dataRO.remaining()))
+            else
             {
-                throw new IllegalStateException("could not write to ring buffer");
+                // reflect data with updated stream id
+                atomicBuffer.putBytes(0, buffer, index, length);
+                DataFW data = dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                    .streamId(state.streamId())
+                                    .payloadLength(dataRO.payloadLength())
+                                    .build();
+
+                bytesReflected.add(data.payloadLength());
+
+                if (!state.writeBuffer().write(data.typeId(), data.buffer(), data.offset(), data.length()))
+                {
+                    throw new IllegalStateException("could not write to ring buffer");
+                }
             }
             break;
 
         case TYPE_ID_END:
             endRO.wrap(buffer, index, index + length);
 
-            StreamState oldState = stateByStreamId.remove(endRO.streamId());
+            ReflectorState oldState = stateByStreamId.remove(endRO.streamId());
             if (oldState == null)
             {
                 throw new IllegalStateException("stream not found: " + endRO.streamId());
             }
-
-            EndFW end = endRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                             .streamId(oldState.streamId())
-                             .build();
-
-            if (!oldState.writeBuffer().write(end.typeId(), end.buffer(), end.offset(), end.remaining()))
+            else
             {
-                throw new IllegalStateException("could not write to ring buffer");
+                EndFW end = endRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                 .streamId(oldState.streamId())
+                                 .build();
+
+                if (!oldState.writeBuffer().write(end.typeId(), end.buffer(), end.offset(), end.length()))
+                {
+                    throw new IllegalStateException("could not write to ring buffer");
+                }
             }
             break;
         }

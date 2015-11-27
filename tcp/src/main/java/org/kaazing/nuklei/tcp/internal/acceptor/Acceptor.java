@@ -102,9 +102,9 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
         String handler,
         InetSocketAddress localAddress)
     {
-        final long reference = correlationId;
+        final long handlerRef = correlationId;
 
-        AcceptorState oldState = stateByRef.get(reference);
+        AcceptorState oldState = stateByRef.get(handlerRef);
         if (oldState != null)
         {
             conductorProxy.onErrorResponse(correlationId);
@@ -117,14 +117,14 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
                 serverChannel.bind(localAddress);
                 serverChannel.configureBlocking(false);
 
-                AcceptorState newState = new AcceptorState(reference, handler, localAddress);
+                AcceptorState newState = new AcceptorState(handler, handlerRef, localAddress);
 
                 serverChannel.register(selector, OP_ACCEPT, newState);
                 newState.attach(serverChannel);
 
-                stateByRef.put(newState.reference(), newState);
+                stateByRef.put(newState.handlerRef(), newState);
 
-                conductorProxy.onBoundResponse(correlationId, newState.reference());
+                conductorProxy.onBoundResponse(correlationId, newState.handlerRef());
             }
             catch (IOException e)
             {
@@ -152,7 +152,7 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
                 serverChannel.close();
                 selector.selectNow();
 
-                String destination = state.destination();
+                String destination = state.handler();
                 InetSocketAddress localAddress = state.localAddress();
 
                 conductorProxy.onUnboundResponse(correlationId, destination, localAddress);
@@ -169,8 +169,8 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
         try
         {
             AcceptorState state = (AcceptorState) selectionKey.attachment();
-            String handler = state.destination();
-            long handlerRef = state.reference();
+            String handler = state.handler();
+            long handlerRef = state.handlerRef();
             ServerSocketChannel serverChannel = state.channel();
 
             SocketChannel channel = serverChannel.accept();

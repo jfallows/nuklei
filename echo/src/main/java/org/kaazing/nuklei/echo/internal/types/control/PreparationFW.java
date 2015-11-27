@@ -55,13 +55,13 @@ public final class PreparationFW extends Flyweight
 
     public long destinationRef()
     {
-        return buffer().getLong(offset() + destination().limit());
+        return buffer().getLong(destination().limit());
     }
 
     @Override
     public String toString()
     {
-        return format("[destinationRO=%s]", destination());
+        return format("[destination=%s, destinationRef=%d]", destination(), destinationRef());
     }
 
     public static final class Builder extends Flyweight.Builder<PreparationFW>
@@ -86,9 +86,9 @@ public final class PreparationFW extends Flyweight
             return this;
         }
 
-        public Builder destinationRef(long sourceRef)
+        public Builder destinationRef(long destinationRef)
         {
-            buffer().putLong(offset() + destination().build().limit(), sourceRef);
+            buffer().putLong(destination().build().limit(), destinationRef);
             return this;
         }
 

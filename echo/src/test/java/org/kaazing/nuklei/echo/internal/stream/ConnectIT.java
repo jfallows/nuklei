@@ -17,7 +17,11 @@ package org.kaazing.nuklei.echo.internal.stream;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
+import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
 
+import java.io.File;
+
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,10 +32,12 @@ import org.kaazing.k3po.junit.annotation.Specification;
 import org.kaazing.k3po.junit.rules.K3poRule;
 import org.kaazing.nuklei.test.NukleusRule;
 
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+
 public class ConnectIT
 {
     private final K3poRule k3po = new K3poRule()
-        .setScriptRoot("org/kaazing");
+        .setScriptRoot("org/kaazing/nuklei/specification/echo");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
@@ -41,13 +47,22 @@ public class ConnectIT
         .setResponseBufferCapacity(1024)
         .setCounterValuesBufferCapacity(1024);
 
+    @Before
+    public void setupStreamFiles() throws Exception
+    {
+        int streamCapacity = 1024 * 1024;
+
+        File destination = new File("target/nukleus-itests/destination/streams/echo");
+        createEmptyFile(destination.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
+    }
+
     @Rule
     public final TestRule chain = outerRule(k3po).around(timeout).around(nukleus);
 
     @Test
     @Specification({
-        "nuklei/specification/echo/control/connect.destination/controller",
-        "nuklei/specification/echo/stream/connects/establish.connection/handler" })
+        "control/connect.destination/controller",
+        "stream/connects/establish.connection/destination" })
     public void shouldEstablishConnection() throws Exception
     {
         k3po.finish();
@@ -55,18 +70,18 @@ public class ConnectIT
 
     @Test
     @Specification({
-        "nuklei/specification/echo/control/connect.destination/controller",
-        "nuklei/specification/echo/stream/connects/echo.handler.data/handler" })
-    public void shouldEchoHandlerData() throws Exception
+        "control/connect.destination/controller",
+        "stream/connects/echo.destination.data/destination" })
+    public void shouldEchoDestinationData() throws Exception
     {
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "nuklei/specification/echo/control/connect.destination/controller",
-        "nuklei/specification/echo/stream/connects/initiate.handler.close/handler" })
-    public void shouldInitiateHandlerClose() throws Exception
+        "control/connect.destination/controller",
+        "stream/connects/initiate.destination.close/destination" })
+    public void shouldInitiateDestinationClose() throws Exception
     {
         k3po.finish();
     }
@@ -74,8 +89,8 @@ public class ConnectIT
     @Ignore("TODO: nukleus CLOSE command")
     @Test
     @Specification({
-        "nuklei/specification/echo/control/connect.destination/controller",
-        "nuklei/specification/echo/stream/connects/initiate.nukleus.close/handler" })
+        "control/connect.destination/controller",
+        "stream/connects/initiate.nukleus.close/destination" })
     public void shouldInitiateNukleusClose() throws Exception
     {
         k3po.finish();

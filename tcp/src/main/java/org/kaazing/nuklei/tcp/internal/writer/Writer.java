@@ -142,7 +142,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
             {
                 StreamsLayout newLayout = new StreamsLayout.Builder().streamsFile(streamsFile.apply(destination))
                                                                      .streamsCapacity(streamsCapacity)
-                                                                     .readonly(true)
+                                                                     .createFile(false)
                                                                      .build();
 
                 layoutsByHandler.put(destination, newLayout);
@@ -180,7 +180,11 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         }
     }
 
-    public void doRegister(long streamId, String handler, long handlerRef, SocketChannel channel)
+    public void doRegister(
+        long streamId,
+        String handler,
+        long handlerRef,
+        SocketChannel channel)
     {
         StreamsLayout layout = layoutsByHandler.get(handler);
 

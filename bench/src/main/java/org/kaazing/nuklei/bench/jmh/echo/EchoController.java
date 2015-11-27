@@ -18,9 +18,11 @@ package org.kaazing.nuklei.bench.jmh.echo;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_BOUND_RESPONSE;
+import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_CAPTURED_RESPONSE;
 import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_CONNECTED_RESPONSE;
 import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_ERROR_RESPONSE;
 import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_PREPARED_RESPONSE;
+import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_ROUTED_RESPONSE;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -28,11 +30,15 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.kaazing.nuklei.echo.internal.Context;
 import org.kaazing.nuklei.echo.internal.types.control.BindFW;
 import org.kaazing.nuklei.echo.internal.types.control.BoundFW;
+import org.kaazing.nuklei.echo.internal.types.control.CaptureFW;
+import org.kaazing.nuklei.echo.internal.types.control.CapturedFW;
 import org.kaazing.nuklei.echo.internal.types.control.ConnectFW;
 import org.kaazing.nuklei.echo.internal.types.control.ConnectedFW;
 import org.kaazing.nuklei.echo.internal.types.control.ErrorFW;
 import org.kaazing.nuklei.echo.internal.types.control.PrepareFW;
 import org.kaazing.nuklei.echo.internal.types.control.PreparedFW;
+import org.kaazing.nuklei.echo.internal.types.control.RouteFW;
+import org.kaazing.nuklei.echo.internal.types.control.RoutedFW;
 
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
@@ -46,10 +52,14 @@ public final class EchoController
 {
     private static final int MAX_SEND_LENGTH = 1024; // TODO: Configuration and Context
 
+    private final CaptureFW.Builder captureRW = new CaptureFW.Builder();
+    private final RouteFW.Builder routeRW = new RouteFW.Builder();
     private final BindFW.Builder bindRW = new BindFW.Builder();
     private final PrepareFW.Builder prepareRW = new PrepareFW.Builder();
     private final ConnectFW.Builder connectRW = new ConnectFW.Builder();
 
+    private final CapturedFW capturedRO = new CapturedFW();
+    private final RoutedFW routedRO = new RoutedFW();
     private final BoundFW boundRO = new BoundFW();
     private final PreparedFW preparedRO = new PreparedFW();
     private final ConnectedFW connectedRO = new ConnectedFW();
@@ -66,6 +76,42 @@ public final class EchoController
         this.atomicBuffer = new UnsafeBuffer(allocateDirect(MAX_SEND_LENGTH).order(nativeOrder()));
     }
 
+    public long capture(
+        String source)
+    {
+        long correlationId = conductorCommands.nextCorrelationId();
+
+        CaptureFW captureRO = captureRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                       .correlationId(correlationId)
+                                       .source(source)
+                                       .build();
+
+        if (!conductorCommands.write(captureRO.typeId(), captureRO.buffer(), captureRO.offset(), captureRO.length()))
+        {
+            throw new IllegalStateException("unable to offer command");
+        }
+
+        return correlationId;
+    }
+
+    public long route(
+            String destination)
+    {
+        long correlationId = conductorCommands.nextCorrelationId();
+
+        RouteFW routeRO = routeRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                 .correlationId(correlationId)
+                                 .destination(destination)
+                                 .build();
+
+        if (!conductorCommands.write(routeRO.typeId(), routeRO.buffer(), routeRO.offset(), routeRO.length()))
+        {
+            throw new IllegalStateException("unable to offer command");
+        }
+
+        return correlationId;
+    }
+
     public long bind(
         String source,
         long sourceRef)
@@ -79,7 +125,7 @@ public final class EchoController
                   .sourceRef(sourceRef);
         BindFW bindRO = bindRW.build();
 
-        if (!conductorCommands.write(bindRO.typeId(), bindRO.buffer(), bindRO.offset(), bindRO.remaining()))
+        if (!conductorCommands.write(bindRO.typeId(), bindRO.buffer(), bindRO.offset(), bindRO.length()))
         {
             throw new IllegalStateException("unable to offer command");
         }
@@ -100,7 +146,7 @@ public final class EchoController
                      .destinationRef(destinationRef);
         PrepareFW prepareRO = prepareRW.build();
 
-        if (!conductorCommands.write(prepareRO.typeId(), prepareRO.buffer(), prepareRO.offset(), prepareRO.remaining()))
+        if (!conductorCommands.write(prepareRO.typeId(), prepareRO.buffer(), prepareRO.offset(), prepareRO.length()))
         {
             throw new IllegalStateException("unable to offer command");
         }
@@ -118,7 +164,7 @@ public final class EchoController
                  .referenceId(referenceId);
         ConnectFW connectRO = connectRW.build();
 
-        if (!conductorCommands.write(connectRO.typeId(), connectRO.buffer(), connectRO.offset(), connectRO.remaining()))
+        if (!conductorCommands.write(connectRO.typeId(), connectRO.buffer(), connectRO.offset(), connectRO.length()))
         {
             throw new IllegalStateException("unable to offer command");
         }
@@ -135,6 +181,22 @@ public final class EchoController
             final MessageHandler handler = (msgTypeId, buffer, index, length) -> {
                 switch (msgTypeId)
                 {
+                case TYPE_ID_CAPTURED_RESPONSE:
+                    capturedRO.wrap(buffer, index, length);
+                    if (capturedRO.correlationId() == correlationId)
+                    {
+                        result.set(0L);
+                        complete.set(true);
+                    }
+                    break;
+                case TYPE_ID_ROUTED_RESPONSE:
+                    routedRO.wrap(buffer, index, length);
+                    if (routedRO.correlationId() == correlationId)
+                    {
+                        result.set(0L);
+                        complete.set(true);
+                    }
+                    break;
                 case TYPE_ID_BOUND_RESPONSE:
                     boundRO.wrap(buffer, index, length);
                     if (boundRO.correlationId() == correlationId)

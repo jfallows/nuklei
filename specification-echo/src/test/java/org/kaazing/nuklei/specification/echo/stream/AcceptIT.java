@@ -42,21 +42,21 @@ public class AcceptIT
     public final TestRule chain = outerRule(k3po).around(timeout);
 
     @Before
-    public void setupStreamFile() throws Exception
+    public void setupStreamFiles() throws Exception
     {
-        File location = new File("target/nukleus-itests/echo/source.accepts");
         int streamCapacity = 1024 * 1024;
 
-        File absolute = location.getAbsoluteFile();
-        int sourceLength = streamCapacity + RingBufferDescriptor.TRAILER_LENGTH;
-        int destinationLength = streamCapacity + RingBufferDescriptor.TRAILER_LENGTH;
-        createEmptyFile(absolute, sourceLength + destinationLength);
+        File source = new File("target/nukleus-itests/echo/streams/source");
+        createEmptyFile(source.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
+
+        File nukleus = new File("target/nukleus-itests/source/streams/echo");
+        createEmptyFile(nukleus.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
     }
 
     @Test
     @Specification({
         "accepts/establish.connection/nukleus",
-        "accepts/establish.connection/handler"
+        "accepts/establish.connection/source"
     })
     public void shouldEstablishConnection() throws Exception
     {
@@ -67,9 +67,9 @@ public class AcceptIT
 
     @Test
     @Specification({
-        "accepts/echo.handler.data/nukleus",
-        "accepts/echo.handler.data/handler" })
-    public void shouldEchoHandlerData() throws Exception
+        "accepts/echo.source.data/nukleus",
+        "accepts/echo.source.data/source" })
+    public void shouldEchoSourceData() throws Exception
     {
         k3po.start();
         k3po.notifyBarrier("BOUND");
@@ -79,7 +79,7 @@ public class AcceptIT
     @Test
     @Specification({
         "accepts/initiate.nukleus.close/nukleus",
-        "accepts/initiate.nukleus.close/handler" })
+        "accepts/initiate.nukleus.close/source" })
     public void shouldInitiateNukleusClose() throws Exception
     {
         k3po.start();
@@ -89,9 +89,9 @@ public class AcceptIT
 
     @Test
     @Specification({
-        "accepts/initiate.handler.close/nukleus",
-        "accepts/initiate.handler.close/handler" })
-    public void shouldInitiateHandlerClose() throws Exception
+        "accepts/initiate.source.close/nukleus",
+        "accepts/initiate.source.close/source" })
+    public void shouldInitiateSourceClose() throws Exception
     {
         k3po.start();
         k3po.notifyBarrier("BOUND");

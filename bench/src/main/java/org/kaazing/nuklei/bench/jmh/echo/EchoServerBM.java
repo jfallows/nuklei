@@ -18,9 +18,12 @@ package org.kaazing.nuklei.bench.jmh.echo;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.STREAMS_CAPACITY_PROPERTY_NAME;
+import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
 
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
+import java.util.Random;
 
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.echo.internal.Context;
@@ -42,6 +45,7 @@ import org.openjdk.jmh.infra.Control;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.Throughput)
@@ -71,18 +75,36 @@ public class EchoServerBM
         this.nukleus = new EchoNukleus(context);
         this.controller = new EchoController(context);
 
-        final long sourceRef = (long) Math.random() * Long.MAX_VALUE;
-        final long bindCorrelationId = controller.bind("source", sourceRef);
+        controller.capture("source");
         while (this.nukleus.process() != 0L)
         {
             // intentional
         }
-        final long bindRef = controller.supplyResponse(bindCorrelationId);
 
-        this.streams = new EchoStreams(context, "source.accepts");
+        int streamCapacity = 1024 * 1024;
+        File source = new File("target/nukleus-benchmarks/source/streams/echo");
+        createEmptyFile(source.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
 
-        long streamId = (long) Math.random() * Long.MAX_VALUE;
-        this.streams.begin(bindRef, streamId);
+        controller.route("source");
+        while (this.nukleus.process() != 0L)
+        {
+            // intentional
+        }
+
+        final Random random = new Random();
+
+        final long sourceRef = (random.nextLong() & 0x3fffffffffffffffL) | 0x4000000000000000L;
+        controller.bind("source", sourceRef);
+        while (this.nukleus.process() != 0L)
+        {
+            // intentional
+        }
+
+        this.streams = new EchoStreams(context, "source");
+
+        this.streamId = random.nextLong() & 0x3fffffffffffffffL;
+
+        this.streams.begin(streamId, sourceRef);
         while (this.nukleus.process() != 0L)
         {
             // intentional

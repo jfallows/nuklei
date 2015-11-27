@@ -82,9 +82,9 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
         String handler,
         InetSocketAddress remoteAddress)
     {
-        final long reference = correlationId;
+        final long handlerRef = correlationId;
 
-        ConnectorState oldState = stateByRef.get(reference);
+        ConnectorState oldState = stateByRef.get(handlerRef);
         if (oldState != null)
         {
             conductorProxy.onErrorResponse(correlationId);
@@ -93,11 +93,11 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
         {
             try
             {
-                final ConnectorState newState = new ConnectorState(reference, handler, remoteAddress);
+                final ConnectorState newState = new ConnectorState(handler, handlerRef, remoteAddress);
 
-                stateByRef.put(newState.reference(), newState);
+                stateByRef.put(newState.handlerRef(), newState);
 
-                conductorProxy.onPreparedResponse(correlationId, newState.reference());
+                conductorProxy.onPreparedResponse(correlationId, newState.handlerRef());
             }
             catch (Exception ex)
             {
@@ -157,7 +157,7 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
                     long connectionId = connectedCount.increment();
 
                     String handler = state.handler();
-                    long handlerRef = state.reference();
+                    long handlerRef = state.handlerRef();
 
                     readerProxy.doRegister(handler, handlerRef, connectionId, channel);
                     writerProxy.doRegister(handler, handlerRef, connectionId, channel);
@@ -188,7 +188,7 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
         try
         {
             String handler = state.handler();
-            long handlerRef = state.reference();
+            long handlerRef = state.handlerRef();
 
             channel.finishConnect();
 

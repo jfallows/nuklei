@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -40,7 +41,6 @@ import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.collections.ArrayUtil;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.nio.TransportPoller;
@@ -54,11 +54,11 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
     private final ConductorProxy.FromReader conductorProxy;
     private final OneToOneConcurrentArrayQueue<ReaderCommand> commandQueue;
     private final Long2ObjectHashMap<ReaderState> stateByStreamId;
-    private final MessageHandler readHandler;
+    private final Function<String, File> streamsFile;
+    private final int streamsCapacity;
+    private final Map<String, StreamsLayout> layoutsByHandler;
+
     private RingBuffer[] streamBuffers;
-    private Function<String, File> streamsFile;
-    private int streamsCapacity;
-    private HashMap<String, StreamsLayout> layoutsByHandler;
 
     public Reader(Context context)
     {
@@ -66,7 +66,6 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
         this.commandQueue = context.readerCommandQueue();
         this.stateByStreamId = new Long2ObjectHashMap<>();
         this.streamBuffers = new RingBuffer[0];
-        this.readHandler = this::handleRead;
         this.streamsFile = context.captureStreamsFile();
         this.streamsCapacity = context.streamsCapacity();
         this.layoutsByHandler = new HashMap<>();
@@ -83,7 +82,7 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
 
         for (int i=0; i < streamBuffers.length; i++)
         {
-            weight += streamBuffers[i].read(readHandler);
+            weight += streamBuffers[i].read(this::handleRead);
         }
 
         return weight;
@@ -144,7 +143,7 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
             {
                 StreamsLayout newLayout = new StreamsLayout.Builder().streamsFile(streamsFile.apply(handler))
                                                                      .streamsCapacity(streamsCapacity)
-                                                                     .readonly(false)
+                                                                     .createFile(true)
                                                                      .build();
 
                 layoutsByHandler.put(handler, newLayout);

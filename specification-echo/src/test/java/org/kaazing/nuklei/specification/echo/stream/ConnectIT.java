@@ -42,21 +42,21 @@ public class ConnectIT
     public final TestRule chain = outerRule(k3po).around(timeout);
 
     @Before
-    public void setupStreamFile() throws Exception
+    public void setupStreamFiles() throws Exception
     {
-        File location = new File("target/nukleus-itests/echo/destination.connects");
         int streamCapacity = 1024 * 1024;
 
-        File absolute = location.getAbsoluteFile();
-        int sourceLength = streamCapacity + RingBufferDescriptor.TRAILER_LENGTH;
-        int destinationLength = streamCapacity + RingBufferDescriptor.TRAILER_LENGTH;
-        createEmptyFile(absolute, sourceLength + destinationLength);
+        File source = new File("target/nukleus-itests/echo/streams/destination");
+        createEmptyFile(source.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
+
+        File nukleus = new File("target/nukleus-itests/destination/streams/echo");
+        createEmptyFile(nukleus.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
     }
 
     @Test
     @Specification({
         "connects/establish.connection/nukleus",
-        "connects/establish.connection/handler"
+        "connects/establish.connection/destination"
     })
     public void shouldEstablishConnection() throws Exception
     {
@@ -67,10 +67,10 @@ public class ConnectIT
 
     @Test
     @Specification({
-        "connects/echo.handler.data/nukleus",
-        "connects/echo.handler.data/handler"
+        "connects/echo.destination.data/nukleus",
+        "connects/echo.destination.data/destination"
     })
-    public void shouldEchoHandlerData() throws Exception
+    public void shouldEchoDestinationData() throws Exception
     {
         k3po.start();
         k3po.notifyBarrier("PREPARED");
@@ -79,9 +79,9 @@ public class ConnectIT
 
     @Test
     @Specification({
-        "connects/initiate.handler.close/nukleus",
-        "connects/initiate.handler.close/handler" })
-    public void shouldInitiateHandlerClose() throws Exception
+        "connects/initiate.destination.close/nukleus",
+        "connects/initiate.destination.close/destination" })
+    public void shouldInitiateDestinationClose() throws Exception
     {
         k3po.start();
         k3po.notifyBarrier("PREPARED");
@@ -91,7 +91,7 @@ public class ConnectIT
     @Test
     @Specification({
         "connects/initiate.nukleus.close/nukleus",
-        "connects/initiate.nukleus.close/handler" })
+        "connects/initiate.nukleus.close/destination" })
     public void shouldInitiateNukleusClose() throws Exception
     {
         k3po.start();

@@ -55,13 +55,13 @@ public final class BindingFW extends Flyweight
 
     public long sourceRef()
     {
-        return buffer().getLong(offset() + source().limit());
+        return buffer().getLong(source().limit());
     }
 
     @Override
     public String toString()
     {
-        return format("[sourceRO=%s]", source());
+        return format("[source=%s, sourceRef=%d]", source(), sourceRef());
     }
 
     public static final class Builder extends Flyweight.Builder<BindingFW>
@@ -88,7 +88,7 @@ public final class BindingFW extends Flyweight
 
         public Builder sourceRef(long sourceRef)
         {
-            buffer().putLong(offset() + source().build().limit(), sourceRef);
+            buffer().putLong(source().build().limit(), sourceRef);
             return this;
         }
 

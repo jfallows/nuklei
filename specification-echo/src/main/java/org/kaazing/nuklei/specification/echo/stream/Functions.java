@@ -25,6 +25,7 @@ import java.util.Random;
 import org.kaazing.k3po.lang.el.Function;
 import org.kaazing.k3po.lang.el.spi.FunctionMapperSpi;
 
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
@@ -33,14 +34,43 @@ public final class Functions
 {
     private static final Random RANDOM = new Random();
 
-    @Function
-    public static byte[] randomBytes(int length)
-    {
-        byte[] bytes = new byte[length];
-        for (int i = 0; i < length; i++)
+    private static final ThreadLocal<MutableDirectBuffer> BUFFER_REF =
+        new ThreadLocal<MutableDirectBuffer>()
         {
-            bytes[i] = (byte) RANDOM.nextInt(0x100);
-        }
+            @Override
+            protected MutableDirectBuffer initialValue()
+            {
+                return new UnsafeBuffer(new byte[0]);
+            }
+        };
+
+    @Function
+    public static byte[] newStreamId()
+    {
+        final MutableDirectBuffer buffer = BUFFER_REF.get();
+
+        byte[] bytes = new byte[8];
+        buffer.wrap(bytes);
+
+        long value = RANDOM.nextLong() & 0x3fffffffffffffffL;
+
+        buffer.putLong(0, value);
+
+        return bytes;
+    }
+
+    @Function
+    public static byte[] newReferenceId()
+    {
+        final MutableDirectBuffer buffer = BUFFER_REF.get();
+
+        byte[] bytes = new byte[8];
+        buffer.wrap(bytes);
+
+        long value = (RANDOM.nextLong() & 0x3fffffffffffffffL) | 0x4000000000000000L;
+
+        buffer.putLong(0, value);
+
         return bytes;
     }
 
@@ -52,45 +82,34 @@ public final class Functions
 
     private abstract static class Layout implements AutoCloseable
     {
-        public abstract AtomicBuffer getInput();
-
-        public abstract AtomicBuffer getOutput();
+        public abstract AtomicBuffer getBuffer();
     }
 
     public static final class EagerLayout extends Layout
     {
-        private final MappedByteBuffer buffer;
-        private final AtomicBuffer input;
-        private final AtomicBuffer output;
+        private final MappedByteBuffer byteBuffer;
+        private final AtomicBuffer atomicBuffer;
 
         public EagerLayout(
-                File location,
-                int streamCapacity)
+            File location,
+            int streamCapacity)
         {
             File absolute = location.getAbsoluteFile();
-            int sourceLength = streamCapacity + RingBufferDescriptor.TRAILER_LENGTH;
-            int destinationLength = streamCapacity + RingBufferDescriptor.TRAILER_LENGTH;
-            this.buffer = mapExistingFile(absolute, location.getAbsolutePath());
-            this.input = new UnsafeBuffer(buffer, 0, sourceLength);
-            this.output = new UnsafeBuffer(buffer, sourceLength, destinationLength);
+            int length = streamCapacity + RingBufferDescriptor.TRAILER_LENGTH;
+            this.byteBuffer = mapExistingFile(absolute, location.getAbsolutePath());
+            this.atomicBuffer = new UnsafeBuffer(byteBuffer, 0, length);
         }
 
         @Override
-        public AtomicBuffer getInput()
+        public AtomicBuffer getBuffer()
         {
-            return input;
-        }
-
-        @Override
-        public AtomicBuffer getOutput()
-        {
-            return output;
+            return atomicBuffer;
         }
 
         @Override
         public void close()
         {
-            unmap(buffer);
+            unmap(byteBuffer);
         }
     }
 
@@ -110,17 +129,10 @@ public final class Functions
         }
 
         @Override
-        public AtomicBuffer getInput()
+        public AtomicBuffer getBuffer()
         {
             ensureInitialized();
-            return delegate.input;
-        }
-
-        @Override
-        public AtomicBuffer getOutput()
-        {
-            ensureInitialized();
-            return delegate.output;
+            return delegate.atomicBuffer;
         }
 
         @Override
@@ -130,6 +142,12 @@ public final class Functions
             {
                 delegate.close();
             }
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("Layout [%s]", location);
         }
 
         void ensureInitialized()

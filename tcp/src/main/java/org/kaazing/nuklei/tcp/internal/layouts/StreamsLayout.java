@@ -53,7 +53,7 @@ public final class StreamsLayout extends Layout
     {
         private int streamsCapacity;
         private File streamsFile;
-        private boolean readonly;
+        private boolean createFile;
 
         public Builder streamsCapacity(int streamsCapacity)
         {
@@ -67,9 +67,9 @@ public final class StreamsLayout extends Layout
             return this;
         }
 
-        public Builder readonly(boolean readonly)
+        public Builder createFile(boolean createFile)
         {
-            this.readonly = readonly;
+            this.createFile = createFile;
             return this;
         }
 
@@ -78,7 +78,7 @@ public final class StreamsLayout extends Layout
         {
             int streamsFileLength = streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH;
 
-            if (!readonly)
+            if (createFile)
             {
                 createEmptyFile(streamsFile, streamsFileLength);
             }

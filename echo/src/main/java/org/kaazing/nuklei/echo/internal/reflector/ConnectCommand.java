@@ -19,26 +19,26 @@ import static java.lang.String.format;
 
 public final class ConnectCommand implements ReflectorCommand
 {
+    private final long correlationId;
     private final long referenceId;
-    private final long streamId;
 
     public ConnectCommand(
-        long referenceId,
-        long streamId)
+        long correlationId,
+        long referenceId)
     {
+        this.correlationId = correlationId;
         this.referenceId = referenceId;
-        this.streamId = streamId;
     }
 
     @Override
     public void execute(Reflector reflector)
     {
-        reflector.doConnect(referenceId, streamId);
+        reflector.doConnect(correlationId, referenceId);
     }
 
     @Override
     public String toString()
     {
-        return format("CONNECT [referenceId=%d, streamId=%d]", referenceId, streamId);
+        return format("CONNECT [correlationId=%d, referenceId=%d]", correlationId, referenceId);
     }
 }

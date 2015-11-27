@@ -20,7 +20,6 @@ import java.util.logging.Logger;
 import org.kaazing.nuklei.echo.internal.Context;
 
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 public final class ReflectorProxy
 {
@@ -29,17 +28,108 @@ public final class ReflectorProxy
 
     public ReflectorProxy(Context context)
     {
-        this.logger = context.acceptorLogger();
+        this.logger = context.logger();
         this.commandQueue = context.reflectorCommandQueue();
     }
 
-    public void doRegister(
-        long referenceId,
-        ReflectorMode mode,
-        RingBuffer inputBuffer,
-        RingBuffer outputBuffer)
+    public void doCapture(
+        long correlationId,
+        String handler)
     {
-        RegisterCommand command = new RegisterCommand(referenceId, mode, inputBuffer, outputBuffer);
+        CaptureCommand command = new CaptureCommand(correlationId, handler);
+        if (!commandQueue.offer(command))
+        {
+            throw new IllegalStateException("unable to offer command");
+        }
+
+        logger.finest(() -> { return command.toString(); });
+    }
+
+    public void doUncapture(
+        long correlationId,
+        String handler)
+    {
+        UncaptureCommand command = new UncaptureCommand(correlationId, handler);
+        if (!commandQueue.offer(command))
+        {
+            throw new IllegalStateException("unable to offer command");
+        }
+
+        logger.finest(() -> { return command.toString(); });
+    }
+
+    public void doRoute(
+        long correlationId,
+        String destination)
+    {
+        RouteCommand command = new RouteCommand(correlationId, destination);
+        if (!commandQueue.offer(command))
+        {
+            throw new IllegalStateException("unable to offer command");
+        }
+
+        logger.finest(() -> { return command.toString(); });
+    }
+
+    public void doUnroute(
+        long correlationId,
+        String destination)
+    {
+        UnrouteCommand command = new UnrouteCommand(correlationId, destination);
+        if (!commandQueue.offer(command))
+        {
+            throw new IllegalStateException("unable to offer command");
+        }
+
+        logger.finest(() -> { return command.toString(); });
+    }
+
+    public void doBind(
+        long correlationId,
+        String source,
+        long sourceRef)
+    {
+        BindCommand command = new BindCommand(correlationId, source, sourceRef);
+        if (!commandQueue.offer(command))
+        {
+            throw new IllegalStateException("unable to offer command");
+        }
+
+        logger.finest(() -> { return command.toString(); });
+    }
+
+    public void doUnbind(
+        long correlationId,
+        long referenceId)
+    {
+        UnbindCommand command = new UnbindCommand(correlationId, referenceId);
+        if (!commandQueue.offer(command))
+        {
+            throw new IllegalStateException("unable to offer command");
+        }
+
+        logger.finest(() -> { return command.toString(); });
+    }
+
+    public void doPrepare(
+        long correlationId,
+        String destination,
+        long destinationRef)
+    {
+        PrepareCommand command = new PrepareCommand(correlationId, destination, destinationRef);
+        if (!commandQueue.offer(command))
+        {
+            throw new IllegalStateException("unable to offer command");
+        }
+
+        logger.finest(() -> { return command.toString(); });
+    }
+
+    public void doUnprepare(
+        long correlationId,
+        long referenceId)
+    {
+        UnprepareCommand command = new UnprepareCommand(correlationId, referenceId);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");
@@ -49,10 +139,10 @@ public final class ReflectorProxy
     }
 
     public void doConnect(
-        long referenceId,
-        long connectionId)
+        long correlationId,
+        long referenceId)
     {
-        ConnectCommand command = new ConnectCommand(referenceId, connectionId);
+        ConnectCommand command = new ConnectCommand(correlationId, referenceId);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");
