@@ -34,7 +34,8 @@ public final class Reaktor implements AutoCloseable
 
     private Reaktor(Configuration config)
     {
-        this.context = new Context().conclude(config);
+        Context context = new Context();
+        this.context = context.conclude(config);
 
         IdleStrategy idleStrategy = context.idleStrategy();
         ErrorHandler errorHandler = context.errorHandler();
@@ -71,7 +72,9 @@ public final class Reaktor implements AutoCloseable
 
     public static Reaktor launch(final Configuration config)
     {
-        return new Reaktor(config).start();
+        Reaktor reaktor = new Reaktor(config);
+        reaktor.start();
+        return reaktor;
     }
 
     public static Reaktor launch()
