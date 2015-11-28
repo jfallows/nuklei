@@ -111,7 +111,8 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
 
         weight += commandQueue.drain(this);
 
-        for (int i = readBuffers.length - 1; i >= 0; i--)
+        int length = readBuffers.length;
+        for (int i = 0; i < length; i++)
         {
             weight += readBuffers[i].read(this::handleRead);
         }

@@ -131,7 +131,7 @@ public class EchoServerBM
     @GroupThreads(1)
     public void nukleus() throws Exception
     {
-        this.nukleus.reflector().process();
+        this.nukleus.process();
     }
 
     @Benchmark
@@ -139,7 +139,7 @@ public class EchoServerBM
     @GroupThreads(1)
     public void handler(Control control) throws Exception
     {
-        while (!control.stopMeasurement)
+        while (control.startMeasurement && !control.stopMeasurement)
         {
             this.streams.data(streamId, sendBuffer, 0, sendBuffer.capacity());
             while (this.streams.read((msgTypeId, buffer, offset, length) -> {}) != 0)
