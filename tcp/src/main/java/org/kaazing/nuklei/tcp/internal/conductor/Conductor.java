@@ -151,7 +151,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
                                  .correlationId(correlationId)
                                  .build();
 
-        conductorResponses.transmit(errorRO.typeId(), errorRO.buffer(), errorRO.offset(), errorRO.remaining());
+        conductorResponses.transmit(errorRO.typeId(), errorRO.buffer(), errorRO.offset(), errorRO.length());
     }
 
     public void onCapturedResponse(long correlationId)
@@ -160,7 +160,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
                                           .correlationId(correlationId)
                                           .build();
 
-        conductorResponses.transmit(capturedRO.typeId(), capturedRO.buffer(), capturedRO.offset(), capturedRO.remaining());
+        conductorResponses.transmit(capturedRO.typeId(), capturedRO.buffer(), capturedRO.offset(), capturedRO.length());
     }
 
     public void onUncapturedResponse(long correlationId)
@@ -170,7 +170,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
                                                 .build();
 
         conductorResponses.transmit(
-                uncapturedRO.typeId(), uncapturedRO.buffer(), uncapturedRO.offset(), uncapturedRO.remaining());
+                uncapturedRO.typeId(), uncapturedRO.buffer(), uncapturedRO.offset(), uncapturedRO.length());
     }
 
     public void onRoutedResponse(long correlationId)
@@ -179,7 +179,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
                                     .correlationId(correlationId)
                                     .build();
 
-        conductorResponses.transmit(routedRO.typeId(), routedRO.buffer(), routedRO.offset(), routedRO.remaining());
+        conductorResponses.transmit(routedRO.typeId(), routedRO.buffer(), routedRO.offset(), routedRO.length());
     }
 
     public void onUnroutedResponse(long correlationId)
@@ -188,7 +188,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
                                           .correlationId(correlationId)
                                           .build();
 
-        conductorResponses.transmit(unroutedRO.typeId(), unroutedRO.buffer(), unroutedRO.offset(), unroutedRO.remaining());
+        conductorResponses.transmit(unroutedRO.typeId(), unroutedRO.buffer(), unroutedRO.offset(), unroutedRO.length());
     }
 
     public void onBoundResponse(
@@ -200,7 +200,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
                                  .referenceId(referenceId)
                                  .build();
 
-        conductorResponses.transmit(boundRO.typeId(), boundRO.buffer(), boundRO.offset(), boundRO.remaining());
+        conductorResponses.transmit(boundRO.typeId(), boundRO.buffer(), boundRO.offset(), boundRO.length());
     }
 
     public void onUnboundResponse(
@@ -216,7 +216,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
                      .port(localAddress.getPort());
         UnboundFW unboundRO = unboundRW.build();
 
-        conductorResponses.transmit(unboundRO.typeId(), unboundRO.buffer(), unboundRO.offset(), unboundRO.remaining());
+        conductorResponses.transmit(unboundRO.typeId(), unboundRO.buffer(), unboundRO.offset(), unboundRO.length());
     }
 
     public void onPreparedResponse(
@@ -228,7 +228,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
                                           .referenceId(referenceId)
                                           .build();
 
-        conductorResponses.transmit(preparedRO.typeId(), preparedRO.buffer(), preparedRO.offset(), preparedRO.remaining());
+        conductorResponses.transmit(preparedRO.typeId(), preparedRO.buffer(), preparedRO.offset(), preparedRO.length());
     }
 
     public void onUnpreparedResponse(
@@ -245,7 +245,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         UnpreparedFW unpreparedRO = unpreparedRW.build();
 
         conductorResponses.transmit(
-            unpreparedRO.typeId(), unpreparedRO.buffer(), unpreparedRO.offset(), unpreparedRO.remaining());
+            unpreparedRO.typeId(), unpreparedRO.buffer(), unpreparedRO.offset(), unpreparedRO.length());
     }
 
     public void onConnectedResponse(
@@ -257,7 +257,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
                                              .connectionId(connectionId)
                                              .build();
 
-        conductorResponses.transmit(connectedRO.typeId(), connectedRO.buffer(), connectedRO.offset(), connectedRO.remaining());
+        conductorResponses.transmit(connectedRO.typeId(), connectedRO.buffer(), connectedRO.offset(), connectedRO.length());
     }
 
     private void handleCommand(int msgTypeId, MutableDirectBuffer buffer, int index, int length)

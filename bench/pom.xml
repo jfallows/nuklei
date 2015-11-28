@@ -30,13 +30,11 @@
             <artifactId>nuklei-api</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!--
         <dependency>
             <groupId>org.kaazing</groupId>
             <artifactId>nuklei-tcp</artifactId>
             <version>${project.version}</version>
         </dependency>
-        -->
         <dependency>
             <groupId>org.kaazing</groupId>
             <artifactId>nuklei-echo</artifactId>
@@ -91,6 +89,7 @@
                         <configuration>
                             <finalName>benchmarks</finalName>
                             <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>org.openjdk.jmh.Main</mainClass>
                                 </transformer>

@@ -28,20 +28,15 @@ public final class StringFW extends Flyweight
     private static final int FIELD_OFFSET_LENGTH = 0;
     private static final int FIELD_SIZE_LENGTH = BitUtil.SIZE_OF_BYTE;
 
-    public int length()
-    {
-        return buffer().getByte(offset() + FIELD_OFFSET_LENGTH) & 0xFF;
-    }
-
     @Override
     public int limit()
     {
-        return offset() + FIELD_SIZE_LENGTH + length();
+        return offset() + FIELD_SIZE_LENGTH + length0();
     }
 
     public String asString()
     {
-        return buffer().getStringWithoutLengthUtf8(offset() + FIELD_SIZE_LENGTH, length());
+        return buffer().getStringWithoutLengthUtf8(offset() + FIELD_SIZE_LENGTH, length0());
     }
 
     @Override
@@ -56,6 +51,11 @@ public final class StringFW extends Flyweight
     public String toString()
     {
         return format("\"%s\"", asString());
+    }
+
+    private int length0()
+    {
+        return buffer().getByte(offset() + FIELD_OFFSET_LENGTH) & 0xFF;
     }
 
     public static final class Builder extends Flyweight.Builder<StringFW>
@@ -74,7 +74,7 @@ public final class StringFW extends Flyweight
 
         public Builder set(StringFW value)
         {
-            buffer().putBytes(offset(), value.buffer(), value.offset(), value.remaining());
+            buffer().putBytes(offset(), value.buffer(), value.offset(), value.length());
             return this;
         }
 

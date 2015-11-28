@@ -13,25 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.echo.internal;
+package org.kaazing.nuklei.tcp.internal;
 
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.NukleusFactorySpi;
 
-public final class EchoNukleusFactorySpi implements NukleusFactorySpi
+public final class TcpControllerFactorySpi implements NukleusFactorySpi
 {
+
     @Override
     public String name()
     {
-        return "echo";
+        return "tcp.controller";
     }
 
     @Override
-    public EchoNukleus create(Configuration config)
+    public TcpController create(Configuration config)
     {
         Context context = new Context();
-        context.conclude(config);
-        return new EchoNukleus(context);
+        context.readonly(true)
+               .conclude(config);
+        return new TcpController(context);
     }
 
 }

@@ -26,8 +26,10 @@ import java.util.Properties;
 import java.util.Random;
 
 import org.kaazing.nuklei.Configuration;
-import org.kaazing.nuklei.echo.internal.Context;
+import org.kaazing.nuklei.NukleusFactory;
+import org.kaazing.nuklei.echo.internal.EchoController;
 import org.kaazing.nuklei.echo.internal.EchoNukleus;
+import org.kaazing.nuklei.echo.internal.EchoStreams;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -58,6 +60,7 @@ public class EchoServerBM
     private EchoNukleus nukleus;
     private EchoController controller;
     private EchoStreams streams;
+
     private MutableDirectBuffer sendBuffer;
     private long streamId;
 
@@ -69,11 +72,10 @@ public class EchoServerBM
         properties.setProperty(STREAMS_CAPACITY_PROPERTY_NAME, Long.toString(1024 * 1024 * 16));
         final Configuration config = new Configuration(properties);
 
-        final Context context = new Context();
-        context.conclude(config);
+        NukleusFactory factory = NukleusFactory.instantiate();
 
-        this.nukleus = new EchoNukleus(context);
-        this.controller = new EchoController(context);
+        this.nukleus = (EchoNukleus) factory.create("echo", config);
+        this.controller = (EchoController) factory.create("echo.controller", config);
 
         controller.capture("source");
         while (this.nukleus.process() != 0L)
@@ -100,7 +102,7 @@ public class EchoServerBM
             // intentional
         }
 
-        this.streams = new EchoStreams(context, "source");
+        this.streams = controller.streams("source");
 
         this.streamId = random.nextLong() & 0x3fffffffffffffffL;
 
@@ -109,7 +111,10 @@ public class EchoServerBM
         {
             // intentional
         }
-        this.streams.drain();
+        while (this.streams.read((msgTypeId, buffer, offset, length) -> {}) != 0)
+        {
+            // intentional
+        }
 
         byte[] byteArray = "Hello, world".getBytes(StandardCharsets.UTF_8);
         this.sendBuffer = new UnsafeBuffer(byteArray);
@@ -137,7 +142,10 @@ public class EchoServerBM
         while (!control.stopMeasurement)
         {
             this.streams.data(streamId, sendBuffer, 0, sendBuffer.capacity());
-            this.streams.drain();
+            while (this.streams.read((msgTypeId, buffer, offset, length) -> {}) != 0)
+            {
+                // intentional
+            }
         }
     }
 }

@@ -200,7 +200,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
                                  .referenceId(handlerRef)
                                  .build();
 
-        writeBuffer.write(beginRO.typeId(), beginRO.buffer(), beginRO.offset(), beginRO.remaining());
+        writeBuffer.write(beginRO.typeId(), beginRO.buffer(), beginRO.offset(), beginRO.length());
 
         try
         {
@@ -214,7 +214,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
                                .streamId(state.streamId())
                                .build();
 
-            if (!writeBuffer.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.remaining()))
+            if (!writeBuffer.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.length()))
             {
                 throw new IllegalStateException("could not write to ring buffer");
             }
@@ -247,7 +247,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
                                    .streamId(state.streamId())
                                    .build();
 
-                if (!writeBuffer.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.remaining()))
+                if (!writeBuffer.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.length()))
                 {
                     throw new IllegalStateException("could not write to ring buffer");
                 }
@@ -258,7 +258,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
             {
                 DataFW dataRO = dataRW.payloadLength(bytesRead).build();
 
-                if (!writeBuffer.write(dataRO.typeId(), dataRO.buffer(), dataRO.offset(), dataRO.remaining()))
+                if (!writeBuffer.write(dataRO.typeId(), dataRO.buffer(), dataRO.offset(), dataRO.length()))
                 {
                     throw new IllegalStateException("could not write to ring buffer");
                 }

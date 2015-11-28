@@ -38,12 +38,15 @@ import uk.co.real_logic.agrona.nio.TransportPoller;
 
 public final class Acceptor extends TransportPoller implements Nukleus, Consumer<AcceptorCommand>
 {
+    private static final long STREAMS_BOUND_MASK = 0x4000000000000000L;
+
     private final ConductorProxy.FromAcceptor conductorProxy;
     private final ReaderProxy readerProxy;
     private final WriterProxy writerProxy;
     private final OneToOneConcurrentArrayQueue<AcceptorCommand> commandQueue;
     private final Long2ObjectHashMap<AcceptorState> stateByRef;
-    private final AtomicCounter acceptedCount;
+    private final AtomicCounter streamsBound;
+    private final AtomicCounter streamsAccepted;
 
     public Acceptor(Context context)
     {
@@ -52,7 +55,8 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
         this.writerProxy = new WriterProxy(context);
         this.commandQueue = context.acceptorCommandQueue();
         this.stateByRef = new Long2ObjectHashMap<>();
-        this.acceptedCount = context.counters().acceptedCount();
+        this.streamsBound = context.counters().streamsBound();
+        this.streamsAccepted = context.counters().streamsAccepted();
     }
 
     @Override
@@ -102,7 +106,7 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
         String handler,
         InetSocketAddress localAddress)
     {
-        final long handlerRef = correlationId;
+        final long handlerRef = streamsBound.increment() | STREAMS_BOUND_MASK;
 
         AcceptorState oldState = stateByRef.get(handlerRef);
         if (oldState != null)
@@ -174,7 +178,7 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
             ServerSocketChannel serverChannel = state.channel();
 
             SocketChannel channel = serverChannel.accept();
-            long connectionId = acceptedCount.increment();
+            long connectionId = streamsAccepted.increment();
 
             readerProxy.doRegister(handler, handlerRef, connectionId, channel);
             writerProxy.doRegister(handler, handlerRef, connectionId, channel);

@@ -45,6 +45,7 @@ public final class Context implements Closeable
 {
     private final ControlLayout.Builder controlRW = new ControlLayout.Builder();
 
+    private boolean readonly;
     private File configDirectory;
     private ControlLayout controlRO;
     private int streamsCapacity;
@@ -65,6 +66,19 @@ public final class Context implements Closeable
     private OneToOneConcurrentArrayQueue<ConductorResponse> fromWriterToConductorResponses;
     private OneToOneConcurrentArrayQueue<ConnectorCommand> toConnectorFromConductorCommands;
     private OneToOneConcurrentArrayQueue<ConductorResponse> fromConnectorToConductorResponses;
+
+    private AtomicBuffer conductorResponseBuffer;
+
+    public Context readonly(boolean readonly)
+    {
+        this.readonly = readonly;
+        return this;
+    }
+
+    public boolean readonly()
+    {
+        return readonly;
+    }
 
     public Context controlFile(File controlFile)
     {
@@ -142,6 +156,16 @@ public final class Context implements Closeable
     public RingBuffer conductorCommands()
     {
         return toConductorCommands;
+    }
+
+    public void conductorResponseBuffer(AtomicBuffer conductorResponseBuffer)
+    {
+        this.conductorResponseBuffer = conductorResponseBuffer;
+    }
+
+    public AtomicBuffer conductorResponseBuffer()
+    {
+        return conductorResponseBuffer;
     }
 
     public Context conductorResponses(BroadcastTransmitter conductorResponses)
@@ -291,13 +315,16 @@ public final class Context implements Closeable
                                       .responseBufferCapacity(config.responseBufferCapacity())
                                       .counterLabelsBufferCapacity(config.counterLabelsBufferLength())
                                       .counterValuesBufferCapacity(config.counterValuesBufferLength())
+                                      .readonly(readonly())
                                       .build();
 
             conductorCommands(
                     new ManyToOneRingBuffer(controlRO.commandBuffer()));
 
+            conductorResponseBuffer(controlRO.responseBuffer());
+
             conductorResponses(
-                    new BroadcastTransmitter(controlRO.responseBuffer()));
+                    new BroadcastTransmitter(conductorResponseBuffer()));
 
             acceptorCommandQueue(
                     new OneToOneConcurrentArrayQueue<AcceptorCommand>(1024));

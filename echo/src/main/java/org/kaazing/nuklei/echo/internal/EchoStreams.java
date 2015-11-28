@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.bench.jmh.echo;
+package org.kaazing.nuklei.echo.internal;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 
-import org.kaazing.nuklei.echo.internal.Context;
 import org.kaazing.nuklei.echo.internal.layouts.StreamsLayout;
 import org.kaazing.nuklei.echo.internal.types.stream.BeginFW;
 import org.kaazing.nuklei.echo.internal.types.stream.DataFW;
@@ -26,6 +25,7 @@ import org.kaazing.nuklei.echo.internal.types.stream.EndFW;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
@@ -107,11 +107,8 @@ public final class EchoStreams
         }
     }
 
-    public void drain()
+    public int read(MessageHandler handler)
     {
-        while (streamsOutput.read((msgTypeId, buffer, offset, length) -> {}) != 0)
-        {
-            // intentional
-        }
+        return streamsOutput.read(handler);
     }
 }

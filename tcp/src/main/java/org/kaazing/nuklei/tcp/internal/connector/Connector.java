@@ -41,7 +41,7 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
     private final WriterProxy writerProxy;
     private final OneToOneConcurrentArrayQueue<ConnectorCommand> commandQueue;
     private final Long2ObjectHashMap<ConnectorState> stateByRef;
-    private final AtomicCounter connectedCount;
+    private final AtomicCounter streamsConnected;
 
     public Connector(Context context)
     {
@@ -50,7 +50,7 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
         this.writerProxy = new WriterProxy(context);
         this.commandQueue = context.connectorCommandQueue();
         this.stateByRef = new Long2ObjectHashMap<>();
-        this.connectedCount = context.counters().connectedCount();
+        this.streamsConnected = context.counters().streamsConnected();
     }
 
     @Override
@@ -154,7 +154,7 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
                 channel.configureBlocking(false);
                 if (channel.connect(remoteAddress))
                 {
-                    long connectionId = connectedCount.increment();
+                    long connectionId = streamsConnected.increment();
 
                     String handler = state.handler();
                     long handlerRef = state.handlerRef();
@@ -192,7 +192,7 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
 
             channel.finishConnect();
 
-            long connectionId = connectedCount.increment();
+            long connectionId = streamsConnected.increment();
 
             readerProxy.doRegister(handler, handlerRef, connectionId, channel);
             writerProxy.doRegister(handler, handlerRef, connectionId, channel);

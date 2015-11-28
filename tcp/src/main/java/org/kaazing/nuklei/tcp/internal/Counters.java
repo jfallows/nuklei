@@ -20,29 +20,37 @@ import uk.co.real_logic.agrona.concurrent.CountersManager;
 
 public final class Counters implements AutoCloseable
 {
-    private final AtomicCounter acceptedCount;
-    private final AtomicCounter connectedCount;
+    private final AtomicCounter streamsBound;
+    private final AtomicCounter streamsAccepted;
+    private final AtomicCounter streamsConnected;
 
     Counters(CountersManager countersManager)
     {
-        acceptedCount = countersManager.newCounter("acceptedCount");
-        connectedCount = countersManager.newCounter("connectedCount");
+        streamsBound = countersManager.newCounter("streamsBound");
+        streamsAccepted = countersManager.newCounter("streamsAccepted");
+        streamsConnected = countersManager.newCounter("streamsConnected");
     }
 
     @Override
     public void close() throws Exception
     {
-        acceptedCount.close();
-        connectedCount.close();
+        streamsBound.close();
+        streamsAccepted.close();
+        streamsConnected.close();
     }
 
-    public AtomicCounter acceptedCount()
+    public AtomicCounter streamsBound()
     {
-        return acceptedCount;
+        return streamsBound;
     }
 
-    public AtomicCounter connectedCount()
+    public AtomicCounter streamsAccepted()
     {
-        return connectedCount;
+        return streamsAccepted;
+    }
+
+    public AtomicCounter streamsConnected()
+    {
+        return streamsConnected;
     }
 }

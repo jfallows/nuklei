@@ -18,20 +18,21 @@ package org.kaazing.nuklei.echo.internal;
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.NukleusFactorySpi;
 
-public final class EchoNukleusFactorySpi implements NukleusFactorySpi
+public final class EchoControllerFactorySpi implements NukleusFactorySpi
 {
     @Override
     public String name()
     {
-        return "echo";
+        return "echo.controller";
     }
 
     @Override
-    public EchoNukleus create(Configuration config)
+    public EchoController create(Configuration config)
     {
         Context context = new Context();
-        context.conclude(config);
-        return new EchoNukleus(context);
+        context.readonly(true)
+               .conclude(config);
+        return new EchoController(context);
     }
 
 }
