@@ -94,6 +94,11 @@ public final class TcpController implements Nukleus
         return "tcp.controller";
     }
 
+    public TcpStreams streams(String handler)
+    {
+        return new TcpStreams(context, handler);
+    }
+
     public CompletableFuture<Void> capture(
         String source)
     {

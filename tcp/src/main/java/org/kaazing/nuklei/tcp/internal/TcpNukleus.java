@@ -22,7 +22,7 @@ import org.kaazing.nuklei.tcp.internal.connector.Connector;
 import org.kaazing.nuklei.tcp.internal.reader.Reader;
 import org.kaazing.nuklei.tcp.internal.writer.Writer;
 
-final class TcpNukleus implements Nukleus
+public final class TcpNukleus implements Nukleus
 {
     private final Context context;
     private final Conductor conductor;
