@@ -15,11 +15,14 @@
  */
 package org.kaazing.nuklei.echo.internal;
 
+import java.util.function.Consumer;
+
+import org.kaazing.nuklei.CompositeNukleus;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.echo.internal.conductor.Conductor;
 import org.kaazing.nuklei.echo.internal.reflector.Reflector;
 
-public final class EchoNukleus implements Nukleus
+public final class EchoNukleus extends CompositeNukleus
 {
     private final Conductor conductor;
     private final Reflector reflector;
@@ -47,13 +50,10 @@ public final class EchoNukleus implements Nukleus
         return "echo";
     }
 
-    public Nukleus conductor()
+    @Override
+    public void forEach(Consumer<? super Nukleus> action)
     {
-        return conductor;
-    }
-
-    public Nukleus reflector()
-    {
-        return reflector;
+        action.accept(conductor);
+        action.accept(reflector);
     }
 }

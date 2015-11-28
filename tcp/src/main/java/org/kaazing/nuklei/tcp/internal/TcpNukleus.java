@@ -15,6 +15,9 @@
  */
 package org.kaazing.nuklei.tcp.internal;
 
+import java.util.function.Consumer;
+
+import org.kaazing.nuklei.CompositeNukleus;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.acceptor.Acceptor;
 import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
@@ -22,7 +25,7 @@ import org.kaazing.nuklei.tcp.internal.connector.Connector;
 import org.kaazing.nuklei.tcp.internal.reader.Reader;
 import org.kaazing.nuklei.tcp.internal.writer.Writer;
 
-public final class TcpNukleus implements Nukleus
+public final class TcpNukleus extends CompositeNukleus
 {
     private final Context context;
     private final Conductor conductor;
@@ -72,28 +75,13 @@ public final class TcpNukleus implements Nukleus
         context.close();
     }
 
-    public Nukleus conductor()
+    @Override
+    public void forEach(Consumer<? super Nukleus> action)
     {
-        return conductor;
-    }
-
-    public Nukleus acceptor()
-    {
-        return acceptor;
-    }
-
-    public Nukleus connector()
-    {
-        return connector;
-    }
-
-    public Nukleus reader()
-    {
-        return reader;
-    }
-
-    public Nukleus writer()
-    {
-        return writer;
+        action.accept(conductor);
+        action.accept(acceptor);
+        action.accept(connector);
+        action.accept(reader);
+        action.accept(writer);
     }
 }
