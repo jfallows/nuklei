@@ -68,10 +68,10 @@ public class ConnectIT
 
     @Test
     @Specification({
-        "connects/server.sent.data/nukleus",
-        "connects/server.sent.data/handler"
+        "connects/nukleus.sent.data/nukleus",
+        "connects/nukleus.sent.data/handler"
     })
-    public void shouldReceiveServerSentData() throws Exception
+    public void shouldReceiveNukleusSentData() throws Exception
     {
         k3po.start();
         k3po.notifyBarrier("PREPARED");
@@ -81,9 +81,9 @@ public class ConnectIT
 
     @Test
     @Specification({
-        "connects/client.sent.data/nukleus",
-        "connects/client.sent.data/handler" })
-    public void shouldReceiveClientSentData() throws Exception
+        "connects/handler.sent.data/nukleus",
+        "connects/handler.sent.data/handler" })
+    public void shouldReceiveHandlerSentData() throws Exception
     {
         k3po.start();
         k3po.notifyBarrier("PREPARED");
@@ -104,9 +104,9 @@ public class ConnectIT
 
     @Test
     @Specification({
-        "connects/server.close/nukleus",
-        "connects/server.close/handler" })
-    public void shouldInitiateServerClose() throws Exception
+        "connects/initiate.nukleus.close/nukleus",
+        "connects/initiate.nukleus.close/handler" })
+    public void shouldInitiateNukleusClose() throws Exception
     {
         k3po.start();
         k3po.notifyBarrier("PREPARED");
@@ -115,9 +115,9 @@ public class ConnectIT
 
     @Test
     @Specification({
-        "connects/client.close/nukleus",
-        "connects/client.close/handler" })
-    public void shouldInitiateClientClose() throws Exception
+        "connects/initiate.handler.close/nukleus",
+        "connects/initiate.handler.close/handler" })
+    public void shouldInitiateHandlerClose() throws Exception
     {
         k3po.start();
         k3po.notifyBarrier("PREPARED");

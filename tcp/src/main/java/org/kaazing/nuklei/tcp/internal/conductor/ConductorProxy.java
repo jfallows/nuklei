@@ -126,7 +126,7 @@ public abstract class ConductorProxy
     {
         public FromConnector(Context context)
         {
-            super(context.acceptorResponseQueue());
+            super(context.connectorResponseQueue());
         }
 
         public void onPreparedResponse(
@@ -146,17 +146,6 @@ public abstract class ConductorProxy
             InetSocketAddress remoteAddress)
         {
             UnpreparedResponse response = new UnpreparedResponse(correlationId, handler, remoteAddress);
-            if (!responseQueue.offer(response))
-            {
-                throw new IllegalStateException("unable to offer response");
-            }
-        }
-
-        public void onConnectedResponse(
-            long correlationId,
-            long connectionId)
-        {
-            ConnectedResponse response = new ConnectedResponse(correlationId, connectionId);
             if (!responseQueue.offer(response))
             {
                 throw new IllegalStateException("unable to offer response");

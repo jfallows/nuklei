@@ -38,8 +38,6 @@ import uk.co.real_logic.agrona.nio.TransportPoller;
 
 public final class Acceptor extends TransportPoller implements Nukleus, Consumer<AcceptorCommand>
 {
-    private static final long STREAMS_BOUND_MASK = 0x4000000000000000L;
-
     private final ConductorProxy.FromAcceptor conductorProxy;
     private final ReaderProxy readerProxy;
     private final WriterProxy writerProxy;
@@ -106,35 +104,28 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
         String handler,
         InetSocketAddress localAddress)
     {
-        final long handlerRef = streamsBound.increment() | STREAMS_BOUND_MASK;
 
-        AcceptorState oldState = stateByRef.get(handlerRef);
-        if (oldState != null)
+        try
+        {
+            final long handlerRef = streamsBound.increment();
+
+            final ServerSocketChannel serverChannel = ServerSocketChannel.open();
+            serverChannel.bind(localAddress);
+            serverChannel.configureBlocking(false);
+
+            AcceptorState newState = new AcceptorState(handler, handlerRef, localAddress);
+
+            serverChannel.register(selector, OP_ACCEPT, newState);
+            newState.attach(serverChannel);
+
+            stateByRef.put(newState.handlerRef(), newState);
+
+            conductorProxy.onBoundResponse(correlationId, newState.handlerRef());
+        }
+        catch (IOException e)
         {
             conductorProxy.onErrorResponse(correlationId);
-        }
-        else
-        {
-            try
-            {
-                final ServerSocketChannel serverChannel = ServerSocketChannel.open();
-                serverChannel.bind(localAddress);
-                serverChannel.configureBlocking(false);
-
-                AcceptorState newState = new AcceptorState(handler, handlerRef, localAddress);
-
-                serverChannel.register(selector, OP_ACCEPT, newState);
-                newState.attach(serverChannel);
-
-                stateByRef.put(newState.handlerRef(), newState);
-
-                conductorProxy.onBoundResponse(correlationId, newState.handlerRef());
-            }
-            catch (IOException e)
-            {
-                conductorProxy.onErrorResponse(correlationId);
-                throw new RuntimeException(e);
-            }
+            throw new RuntimeException(e);
         }
     }
 
@@ -177,11 +168,13 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
             long handlerRef = state.handlerRef();
             ServerSocketChannel serverChannel = state.channel();
 
-            SocketChannel channel = serverChannel.accept();
-            long connectionId = streamsAccepted.increment();
+            // odd, positive, non-zero
+            streamsAccepted.increment();
+            final long newClientStreamId = (streamsAccepted.get() << 1L) | 0x0000000000000001L;
+            final SocketChannel channel = serverChannel.accept();
 
-            readerProxy.doRegister(handler, handlerRef, connectionId, channel);
-            writerProxy.doRegister(handler, handlerRef, connectionId, channel);
+            writerProxy.doRegister(handler, handlerRef, newClientStreamId, 0L, channel);
+            readerProxy.doRegister(handler, handlerRef, newClientStreamId, 0L, channel);
         }
         catch (Exception ex)
         {

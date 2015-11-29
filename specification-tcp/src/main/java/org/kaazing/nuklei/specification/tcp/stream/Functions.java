@@ -25,6 +25,7 @@ import java.util.Random;
 import org.kaazing.k3po.lang.el.Function;
 import org.kaazing.k3po.lang.el.spi.FunctionMapperSpi;
 
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
@@ -33,14 +34,57 @@ public final class Functions
 {
     private static final Random RANDOM = new Random();
 
-    @Function
-    public static byte[] randomBytes(int length)
-    {
-        byte[] bytes = new byte[length];
-        for (int i = 0; i < length; i++)
+    private static final ThreadLocal<MutableDirectBuffer> BUFFER_REF =
+        new ThreadLocal<MutableDirectBuffer>()
         {
-            bytes[i] = (byte) RANDOM.nextInt(0x100);
+            @Override
+            protected MutableDirectBuffer initialValue()
+            {
+                return new UnsafeBuffer(new byte[0]);
+            }
+        };
+
+    @Function
+    public static byte[] newClientStreamId()
+    {
+        // odd, positive, non-zero
+        long value = (RANDOM.nextLong() & 0x3fffffffffffffffL) | 0x0000000000000001L;
+
+        final MutableDirectBuffer buffer = BUFFER_REF.get();
+        byte[] bytes = new byte[8];
+        buffer.wrap(bytes);
+        buffer.putLong(0, value);
+        return bytes;
+    }
+
+    @Function
+    public static byte[] newServerStreamId()
+    {
+        // even, positive, non-zero
+        long value;
+        do
+        {
+            value = (RANDOM.nextLong() & 0x3ffffffffffffffeL);
         }
+        while (value == 0L);
+
+        final MutableDirectBuffer buffer = BUFFER_REF.get();
+        byte[] bytes = new byte[8];
+        buffer.wrap(bytes);
+        buffer.putLong(0, value);
+        return bytes;
+    }
+
+    @Function
+    public static byte[] newReferenceId()
+    {
+        // positive
+        long value = (RANDOM.nextLong() & 0x3fffffffffffffffL);
+
+        final MutableDirectBuffer buffer = BUFFER_REF.get();
+        byte[] bytes = new byte[8];
+        buffer.wrap(bytes);
+        buffer.putLong(0, value);
         return bytes;
     }
 

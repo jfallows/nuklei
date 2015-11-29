@@ -37,9 +37,6 @@ public final class Types
     public static final int TYPE_ID_UNPREPARE_COMMAND = 0x00000014;
     public static final int TYPE_ID_UNPREPARED_RESPONSE = 0x40000014;
 
-    public static final int TYPE_ID_CONNECT_COMMAND = 0x00000021;
-    public static final int TYPE_ID_CONNECTED_RESPONSE = 0x40000021;
-
     private Types()
     {
         // no instances

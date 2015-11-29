@@ -74,16 +74,4 @@ public class ControlIT
     {
         k3po.finish();
     }
-
-    @Test
-    @Specification({
-        "connect.address.and.port/controller",
-        "connect.address.and.port/nukleus"
-    })
-    public void shouldConnectAddressAndPort() throws Exception
-    {
-        k3po.start();
-        k3po.notifyBarrier("BOUND");
-        k3po.finish();
-    }
 }

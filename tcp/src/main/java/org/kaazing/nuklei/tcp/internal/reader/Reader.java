@@ -32,6 +32,7 @@ import java.util.function.Function;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.Context;
 import org.kaazing.nuklei.tcp.internal.conductor.ConductorProxy;
+import org.kaazing.nuklei.tcp.internal.connector.ConnectorProxy;
 import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
 import org.kaazing.nuklei.tcp.internal.types.stream.BeginFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.DataFW;
@@ -52,7 +53,9 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
     private final DataFW dataRO = new DataFW();
 
     private final ConductorProxy.FromReader conductorProxy;
+    private final ConnectorProxy.FromReader connectorProxy;
     private final OneToOneConcurrentArrayQueue<ReaderCommand> commandQueue;
+    private final Long2ObjectHashMap<ConnectingState> connectingStateByStreamId;
     private final Long2ObjectHashMap<ReaderState> stateByStreamId;
     private final Function<String, File> streamsFile;
     private final int streamsCapacity;
@@ -63,7 +66,9 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
     public Reader(Context context)
     {
         this.conductorProxy = new ConductorProxy.FromReader(context);
+        this.connectorProxy = new ConnectorProxy.FromReader(context);
         this.commandQueue = context.readerCommandQueue();
+        this.connectingStateByStreamId = new Long2ObjectHashMap<>();
         this.stateByStreamId = new Long2ObjectHashMap<>();
         this.streamBuffers = new RingBuffer[0];
         this.streamsFile = context.captureStreamsFile();
@@ -188,18 +193,23 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
     public void doRegister(
         String handler,
         long handlerRef,
-        long streamId,
+        long clientStreamId,
+        long serverStreamId,
         SocketChannel channel)
     {
         StreamsLayout layout = layoutsByHandler.get(handler);
         assert layout != null;
 
-        RingBuffer streamBuffer = layout.buffer();
-
-        ReaderState state = new ReaderState(handlerRef, streamId, streamBuffer, channel);
-
-        // TODO: BiInt2ObjectMap needed or already sufficiently unique?
-        stateByStreamId.put(state.streamId(), state);
+        if (serverStreamId == 0L)
+        {
+            ConnectingState connectingState = new ConnectingState(clientStreamId, layout.buffer(), channel);
+            connectingStateByStreamId.put(connectingState.streamId(), connectingState);
+        }
+        else
+        {
+            ReaderState newState = new ReaderState(clientStreamId, layout.buffer(), channel);
+            stateByStreamId.put(newState.streamId(), newState);
+        }
     }
 
     private void handleRead(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
@@ -208,10 +218,30 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
         {
         case TYPE_ID_BEGIN:
             beginRO.wrap(buffer, index, index + length);
-            ReaderState newState = stateByStreamId.get(beginRO.streamId());
-            if (newState == null)
+
+            final long streamId = beginRO.streamId();
+            final long referenceId = beginRO.referenceId();
+
+            if ((streamId & 0x0000000000000001L) != 0L)
             {
-                throw new IllegalStateException("stream not found: " + beginRO.streamId());
+                // TODO: establish "handler" from buffer being read (this workaround creates garbage!)
+                final String handler = layoutsByHandler.keySet().iterator().next();
+                final long handlerRef = referenceId;
+
+                connectorProxy.doConnect(handler, handlerRef, streamId);
+            }
+            else
+            {
+                final long clientStreamId = referenceId;
+
+                ConnectingState connectingState = connectingStateByStreamId.remove(clientStreamId);
+                if (connectingState == null)
+                {
+                    throw new IllegalStateException("stream not found: " + streamId);
+                }
+
+                ReaderState newState = new ReaderState(streamId, connectingState.buffer(), connectingState.channel());
+                stateByStreamId.put(newState.streamId(), newState);
             }
             break;
 

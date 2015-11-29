@@ -66,8 +66,10 @@ public final class Context implements Closeable
     private OneToOneConcurrentArrayQueue<ConductorResponse> fromWriterToConductorResponses;
     private OneToOneConcurrentArrayQueue<ConnectorCommand> toConnectorFromConductorCommands;
     private OneToOneConcurrentArrayQueue<ConductorResponse> fromConnectorToConductorResponses;
+    private OneToOneConcurrentArrayQueue<ConnectorCommand> toConnectorFromReaderCommands;
 
     private AtomicBuffer conductorResponseBuffer;
+
 
     public Context readonly(boolean readonly)
     {
@@ -207,15 +209,26 @@ public final class Context implements Closeable
         return fromAcceptorToConductorResponses;
     }
 
-    public void connectorCommandQueue(
+    public void connectorCommandQueueFromConductor(
             OneToOneConcurrentArrayQueue<ConnectorCommand> connectorCommandQueue)
     {
         this.toConnectorFromConductorCommands = connectorCommandQueue;
     }
 
-    public OneToOneConcurrentArrayQueue<ConnectorCommand> connectorCommandQueue()
+    public OneToOneConcurrentArrayQueue<ConnectorCommand> connectorCommandQueueFromConductor()
     {
         return toConnectorFromConductorCommands;
+    }
+
+    public void connectorCommandQueueFromReader(
+            OneToOneConcurrentArrayQueue<ConnectorCommand> connectorCommandQueue)
+    {
+        this.toConnectorFromReaderCommands = connectorCommandQueue;
+    }
+
+    public OneToOneConcurrentArrayQueue<ConnectorCommand> connectorCommandQueueFromReader()
+    {
+        return toConnectorFromReaderCommands;
     }
 
     public Context connectorResponseQueue(
@@ -332,7 +345,10 @@ public final class Context implements Closeable
             acceptorResponseQueue(
                     new OneToOneConcurrentArrayQueue<ConductorResponse>(1024));
 
-            connectorCommandQueue(
+            connectorCommandQueueFromConductor(
+                    new OneToOneConcurrentArrayQueue<ConnectorCommand>(1024));
+
+            connectorCommandQueueFromReader(
                     new OneToOneConcurrentArrayQueue<ConnectorCommand>(1024));
 
             connectorResponseQueue(

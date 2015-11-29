@@ -20,16 +20,16 @@ import java.nio.channels.SocketChannel;
 public class ConnectRequestState
 {
     private final ConnectorState owner;
-    private final long correlationId;
+    private final long streamId;
     private final SocketChannel channel;
 
     public ConnectRequestState(
         ConnectorState owner,
-        long correlationId,
+        long streamId,
         SocketChannel channel)
     {
         this.owner = owner;
-        this.correlationId = correlationId;
+        this.streamId = streamId;
         this.channel = channel;
     }
 
@@ -38,9 +38,9 @@ public class ConnectRequestState
         return owner;
     }
 
-    public long correlationId()
+    public long streamId()
     {
-        return correlationId;
+        return streamId;
     }
 
     public SocketChannel channel()
@@ -51,6 +51,6 @@ public class ConnectRequestState
     @Override
     public String toString()
     {
-        return String.format("[owner=%s, correlationId=%d, channel=%s]", owner, correlationId, channel);
+        return String.format("[owner=%s, streamId=%d, channel=%s]", owner, streamId, channel);
     }
 }

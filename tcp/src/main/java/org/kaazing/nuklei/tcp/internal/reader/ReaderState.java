@@ -28,7 +28,6 @@ public class ReaderState
     private final ByteBuffer writeBuffer;
 
     public ReaderState(
-        long handlerRef,
         long streamId,
         RingBuffer streamBuffer,
         SocketChannel channel)

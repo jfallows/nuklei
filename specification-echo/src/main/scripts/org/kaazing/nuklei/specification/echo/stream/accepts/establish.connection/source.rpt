@@ -17,7 +17,7 @@
 property source ${streams:map("target/nukleus-itests/source/streams/echo", 1024 * 1024)}
 property nukleus ${streams:map("target/nukleus-itests/echo/streams/source", 1024 * 1024)}
 
-property newStreamId ${streams:newStreamId()}
+property newClientStreamId ${streams:newClientStreamId()}
 property newSourceRef ${streams:newReferenceId()}
 
 connect await BOUND
@@ -27,13 +27,13 @@ connect await BOUND
 connected
 
 write [0x00 0x00 0x00 0x01]
-write ${newStreamId}
+write ${newClientStreamId}
 write ${newSourceRef}
 write flush
 
 read [0x00 0x00 0x00 0x01]
-read ([0..8]:streamId)
-read ${newStreamId}
+read ([0..8]:serverStreamId)
+read ${newClientStreamId}
 
 close
 closed

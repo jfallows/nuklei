@@ -67,10 +67,10 @@ public class AcceptIT
 
     @Test
     @Specification({
-        "accepts/server.sent.data/nukleus",
-        "accepts/server.sent.data/handler"
+        "accepts/handler.sent.data/nukleus",
+        "accepts/handler.sent.data/handler"
     })
-    public void shouldReceiveServerSentData() throws Exception
+    public void shouldReceiveHandlerSentData() throws Exception
     {
         k3po.start();
         k3po.notifyBarrier("BOUND");
@@ -80,9 +80,9 @@ public class AcceptIT
 
     @Test
     @Specification({
-        "accepts/client.sent.data/nukleus",
-        "accepts/client.sent.data/handler" })
-    public void shouldReceiveClientSentData() throws Exception
+        "accepts/nukleus.sent.data/nukleus",
+        "accepts/nukleus.sent.data/handler" })
+    public void shouldReceiveNukleusSentData() throws Exception
     {
         k3po.start();
         k3po.notifyBarrier("BOUND");
@@ -102,9 +102,9 @@ public class AcceptIT
 
     @Test
     @Specification({
-        "accepts/server.close/nukleus",
-        "accepts/server.close/handler" })
-    public void shouldInitiateServerClose() throws Exception
+        "accepts/initiate.handler.close/nukleus",
+        "accepts/initiate.handler.close/handler" })
+    public void shouldInitiateHandlerClose() throws Exception
     {
         k3po.start();
         k3po.notifyBarrier("BOUND");
@@ -113,9 +113,9 @@ public class AcceptIT
 
     @Test
     @Specification({
-        "accepts/client.close/nukleus",
-        "accepts/client.close/handler" })
-    public void shouldInitiateClientClose() throws Exception
+        "accepts/initiate.nukleus.close/nukleus",
+        "accepts/initiate.nukleus.close/handler" })
+    public void shouldInitiateNukleusClose() throws Exception
     {
         k3po.start();
         k3po.notifyBarrier("BOUND");

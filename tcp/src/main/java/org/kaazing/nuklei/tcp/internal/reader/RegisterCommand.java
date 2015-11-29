@@ -19,26 +19,29 @@ import java.nio.channels.SocketChannel;
 
 public final class RegisterCommand implements ReaderCommand
 {
-    private final long streamId;
     private final String handler;
     private final long handlerRef;
+    private final long clientStreamId;
+    private final long serverStreamId;
     private final SocketChannel channel;
 
     public RegisterCommand(
         String handler,
         long handlerRef,
-        long streamId,
+        long clientStreamId,
+        long serverStreamId,
         SocketChannel channel)
     {
-        this.streamId = streamId;
         this.handler = handler;
         this.handlerRef = handlerRef;
+        this.clientStreamId = clientStreamId;
+        this.serverStreamId = serverStreamId;
         this.channel = channel;
     }
 
     @Override
     public void execute(Reader reader)
     {
-        reader.doRegister(handler, handlerRef, streamId, channel);
+        reader.doRegister(handler, handlerRef, clientStreamId, serverStreamId, channel);
     }
 }

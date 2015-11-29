@@ -22,54 +22,70 @@ import org.kaazing.nuklei.tcp.internal.Context;
 
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
-public final class ConnectorProxy
+public abstract class ConnectorProxy
 {
-    private final Logger logger;
-    private final OneToOneConcurrentArrayQueue<ConnectorCommand> commandQueue;
-
-    public ConnectorProxy(Context context)
+    public static class FromConductor extends ConnectorProxy
     {
-        this.logger = context.acceptorLogger();
-        this.commandQueue = context.connectorCommandQueue();
-    }
+        private final Logger logger;
+        private final OneToOneConcurrentArrayQueue<ConnectorCommand> commandQueue;
 
-    public void doPrepare(
-        long correlationId,
-        String handler,
-        InetSocketAddress remoteAddress)
-    {
-        PrepareCommand command = new PrepareCommand(correlationId, handler, remoteAddress);
-        if (!commandQueue.offer(command))
+        public FromConductor(Context context)
         {
-            throw new IllegalStateException("unable to offer command");
+            this.logger = context.acceptorLogger();
+            this.commandQueue = context.connectorCommandQueueFromConductor();
         }
 
-        logger.finest(() -> { return command.toString(); });
-    }
-
-    public void doUnprepare(
-        long correlationId,
-        long referenceId)
-    {
-        UnprepareCommand command = new UnprepareCommand(correlationId, referenceId);
-        if (!commandQueue.offer(command))
+        public void doPrepare(
+            long correlationId,
+            String handler,
+            InetSocketAddress remoteAddress)
         {
-            throw new IllegalStateException("unable to offer command");
+            PrepareCommand command = new PrepareCommand(correlationId, handler, remoteAddress);
+            if (!commandQueue.offer(command))
+            {
+                throw new IllegalStateException("unable to offer command");
+            }
+
+            logger.finest(() -> { return command.toString(); });
         }
 
-        logger.finest(() -> { return command.toString(); });
+        public void doUnprepare(
+            long correlationId,
+            long referenceId)
+        {
+            UnprepareCommand command = new UnprepareCommand(correlationId, referenceId);
+            if (!commandQueue.offer(command))
+            {
+                throw new IllegalStateException("unable to offer command");
+            }
+
+            logger.finest(() -> { return command.toString(); });
+        }
     }
 
-    public void doConnect(
-        long correlationId,
-        long referenceId)
+    public static class FromReader extends ConnectorProxy
     {
-        ConnectCommand command = new ConnectCommand(correlationId, referenceId);
-        if (!commandQueue.offer(command))
+        private final Logger logger;
+        private final OneToOneConcurrentArrayQueue<ConnectorCommand> commandQueue;
+
+        public FromReader(Context context)
         {
-            throw new IllegalStateException("unable to offer command");
+            this.logger = context.acceptorLogger();
+            this.commandQueue = context.connectorCommandQueueFromReader();
         }
 
-        logger.finest(() -> { return command.toString(); });
+        public void doConnect(
+            String handler,
+            long handlerRef,
+            long streamId)
+        {
+            ConnectCommand command = new ConnectCommand(handler, handlerRef, streamId);
+            if (!commandQueue.offer(command))
+            {
+                throw new IllegalStateException("unable to offer command");
+            }
+
+            logger.finest(() -> { return command.toString(); });
+        }
     }
 }

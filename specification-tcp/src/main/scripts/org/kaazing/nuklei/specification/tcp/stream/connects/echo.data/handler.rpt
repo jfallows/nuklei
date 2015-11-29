@@ -17,37 +17,40 @@
 property handler ${streams:map("target/nukleus-itests/handler/streams/tcp", 1024 * 1024)}
 property nukleus ${streams:map("target/nukleus-itests/tcp/streams/handler", 1024 * 1024)}
 
+property newClientStreamId ${streams:newClientStreamId()}
+property newReferenceId ${streams:newReferenceId()}
+
 connect await PREPARED
         agrona://stream/bidirectional
         option reader ${agrona:manyToOneReader(handler.buffer)}
         option writer ${agrona:manyToOneWriter(nukleus.buffer)}
 connected
 
-read [0x00 0x00 0x00 0x01]
-read ([0..8]:streamId)
-read ([0..8]:referenceId)
-
 write [0x00 0x00 0x00 0x01]
-write ${streamId}
-write ${referenceId}
+write ${newClientStreamId}
+write ${newReferenceId}
 write flush
 
+read [0x00 0x00 0x00 0x01]
+read ([0..8]:serverStreamId)
+read ${newClientStreamId}
+
 write [0x00 0x00 0x00 0x02]
-write ${streamId}
+write ${newClientStreamId}
 write "client data 1"
 write flush
 
 read [0x00 0x00 0x00 0x02]
-read ${streamId}
+read ${serverStreamId}
 read "server data 1"
 
 write [0x00 0x00 0x00 0x02]
-write ${streamId}
+write ${newClientStreamId}
 write "client data 2"
 write flush
 
 read [0x00 0x00 0x00 0x02]
-read ${streamId}
+read ${serverStreamId}
 read "server data 2"
 
 close

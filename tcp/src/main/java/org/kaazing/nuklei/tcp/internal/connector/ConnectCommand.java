@@ -19,25 +19,28 @@ import static java.lang.String.format;
 
 public final class ConnectCommand implements ConnectorCommand
 {
-    private final long correlationId;
-    private final long referenceId;
+    private final String handler;
+    private final long handlerRef;
+    private final long streamId;
 
     public ConnectCommand(
-        long correlationId,
-        long referenceId)
+        String handler,
+        long handlerRef,
+        long streamId)
     {
-        this.correlationId = correlationId;
-        this.referenceId = referenceId;
+        this.handler = handler;
+        this.handlerRef = handlerRef;
+        this.streamId = streamId;
     }
 
     public void execute(Connector connector)
     {
-        connector.doConnect(correlationId, referenceId);
+        connector.doConnect(handler, handlerRef, streamId);
     }
 
     @Override
     public String toString()
     {
-        return format("CONNECT [correlationId=%d, referenceId=%d]", correlationId, referenceId);
+        return format("CONNECT [handler=\"%s\", handlerRef=%d, streamId=%d]", handler, handlerRef, streamId);
     }
 }

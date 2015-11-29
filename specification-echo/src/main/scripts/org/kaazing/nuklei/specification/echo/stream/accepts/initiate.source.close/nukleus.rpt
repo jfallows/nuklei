@@ -17,7 +17,7 @@
 property source ${streams:map("target/nukleus-itests/source/streams/echo", 1024 * 1024)}
 property nukleus ${streams:map("target/nukleus-itests/echo/streams/source", 1024 * 1024)}
 
-property newStreamId ${streams:newStreamId()}
+property newServerStreamId ${streams:newServerStreamId()}
 
 connect await BOUND
         agrona://stream/bidirectional
@@ -26,16 +26,16 @@ connect await BOUND
 connected
 
 read [0x00 0x00 0x00 0x01]
-read ([0..8]:streamId)
+read ([0..8]:clientStreamId)
 read ([0..8]:sourceRef)
 
 write [0x00 0x00 0x00 0x01]
-write ${newStreamId}
-write ${streamId}
+write ${newServerStreamId}
+write ${clientStreamId}
 write flush
 
 read [0x00 0x00 0x00 0x03]
-read ${streamId}
+read ${clientStreamId}
 
 close
 closed

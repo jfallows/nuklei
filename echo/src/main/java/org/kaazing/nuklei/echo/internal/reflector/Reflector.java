@@ -47,8 +47,6 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
 {
-    private static final long STREAMS_BOUND_MASK = 0x4000000000000000L;
-
     private final BeginFW.Builder beginRW = new BeginFW.Builder();
     private final DataFW.Builder dataRW = new DataFW.Builder();
     private final EndFW.Builder endRW = new EndFW.Builder();
@@ -72,8 +70,10 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
     private final int streamsCapacity;
 
     private final AtomicCounter streamsBound;
+    private final AtomicCounter streamsPrepared;
     private final AtomicCounter streamsAccepted;
     private final AtomicCounter streamsConnected;
+    private final AtomicCounter messagesReflected;
     private final AtomicCounter bytesReflected;
 
     private final AtomicBuffer atomicBuffer;
@@ -90,8 +90,10 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
         this.stateByStreamId = new Long2ObjectHashMap<>();
         this.connectingStateByStreamId = new Long2ObjectHashMap<>();
         this.streamsBound = context.counters().streamsBound();
+        this.streamsPrepared = context.counters().streamsPrepared();
         this.streamsAccepted = context.counters().streamsAccepted();
         this.streamsConnected = context.counters().streamsConnected();
+        this.messagesReflected = context.counters().messagesReflected();
         this.bytesReflected = context.counters().bytesReflected();
         this.atomicBuffer = new UnsafeBuffer(allocateDirect(context.maxMessageLength()).order(nativeOrder()));
         this.captureStreamsFile = context.captureStreamsFile();
@@ -259,7 +261,7 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
         {
             try
             {
-                final long referenceId = streamsBound.increment() | STREAMS_BOUND_MASK;
+                final long referenceId = streamsBound.increment();
 
                 AcceptorState newState = new AcceptorState(referenceId, source, sourceRef);
 
@@ -321,8 +323,6 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
         String destination,
         long destinationRef)
     {
-        final long referenceId = correlationId;
-
         StreamsLayout layout = streamsBySource.get(destination);
 
         if (layout == null)
@@ -333,6 +333,8 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
         {
             try
             {
+                final long referenceId = streamsPrepared.increment();
+
                 ConnectorState newState = new ConnectorState(referenceId, destination, destinationRef);
 
                 connectorStateByRef.put(newState.reference(), newState);
@@ -395,17 +397,18 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
                 }
                 else
                 {
+                    // positive, odd, non-zero
+                    streamsConnected.increment();
+                    final long newClientStreamId = (streamsConnected.get() << 1L) | 0x0000000000000001L;
                     final long destinationRef = state.destinationRef();
                     final RingBuffer writeBuffer = layout.buffer();
 
-                    final long streamId = streamsConnected.increment();
-
                     // TODO: scope state by uniqueness of streamId
-                    ConnectingState newState = new ConnectingState(streamId, writeBuffer);
+                    ConnectingState newState = new ConnectingState(newClientStreamId, writeBuffer);
                     connectingStateByStreamId.put(newState.streamId(), newState);
 
                     BeginFW beginRO = beginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                             .streamId(streamId)
+                                             .streamId(newClientStreamId)
                                              .referenceId(destinationRef)
                                              .build();
 
@@ -414,7 +417,7 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
                         throw new IllegalStateException("could not write to ring buffer");
                     }
 
-                    conductorProxy.onConnectedResponse(correlationId, streamId);
+                    conductorProxy.onConnectedResponse(correlationId, newClientStreamId);
                 }
             }
             catch (Exception ex)
@@ -432,33 +435,39 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
         case TYPE_ID_BEGIN:
             beginRO.wrap(buffer, index, index + length);
 
+            final long streamId = beginRO.streamId();
             final long referenceId = beginRO.referenceId();
-            if ((referenceId & STREAMS_BOUND_MASK) != 0)
+
+            if ((streamId & 0x0000000000000001L) != 0L)
             {
                 // accepted stream (TODO: scope by source)
                 AcceptorState acceptorState = acceptorStateBySourceRef.get(referenceId);
                 if (acceptorState == null)
                 {
-                    throw new IllegalStateException("stream not found: " + beginRO.streamId());
+                    throw new IllegalStateException("reference not found: " + referenceId);
                 }
                 else
                 {
+                    final long clientStreamId = streamId;
+
                     StreamsLayout layout = streamsByDestination.get(acceptorState.source());
                     if (layout == null)
                     {
-                        throw new IllegalStateException("stream not found: " + beginRO.streamId());
+                        throw new IllegalStateException("stream not found: " + clientStreamId);
                     }
                     else
                     {
-                        RingBuffer writeBuffer = layout.buffer();
-                        final long newStreamId = streamsAccepted.increment();
+                        // positive, even, non-zero
+                        streamsAccepted.increment();
+                        final long newServerStreamId = streamsAccepted.get() << 1L;
+                        final RingBuffer writeBuffer = layout.buffer();
 
-                        final ReflectorState newState = new ReflectorState(newStreamId, writeBuffer);
+                        final ReflectorState newState = new ReflectorState(newServerStreamId, writeBuffer);
                         stateByStreamId.put(beginRO.streamId(), newState);
 
                         BeginFW begin = beginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                                                .streamId(newState.streamId())
-                                               .referenceId(beginRO.streamId())
+                                               .referenceId(clientStreamId)
                                                .build();
 
                         if (!writeBuffer.write(begin.typeId(), begin.buffer(), begin.offset(), begin.length()))
@@ -471,15 +480,17 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
             else
             {
                 // connecting stream (reference is connecting stream id)
-                ConnectingState connectingState = connectingStateByStreamId.remove(referenceId);
+                final long clientStreamId = referenceId;
+                ConnectingState connectingState = connectingStateByStreamId.remove(clientStreamId);
                 if (connectingState == null)
                 {
-                    throw new IllegalStateException("stream not found: " + beginRO.streamId());
+                    throw new IllegalStateException("connecting stream not found: " + clientStreamId);
                 }
                 else
                 {
-                    ReflectorState newState = new ReflectorState(referenceId, connectingState.writeBuffer());
-                    stateByStreamId.put(beginRO.streamId(), newState);
+                    final long serverStreamId = streamId;
+                    ReflectorState newState = new ReflectorState(clientStreamId, connectingState.writeBuffer());
+                    stateByStreamId.put(serverStreamId, newState);
                 }
             }
             break;
@@ -501,6 +512,7 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
                                     .payloadLength(dataRO.payloadLength())
                                     .build();
 
+                messagesReflected.increment();
                 bytesReflected.add(data.payloadLength());
 
                 if (!state.writeBuffer().write(data.typeId(), data.buffer(), data.offset(), data.length()))

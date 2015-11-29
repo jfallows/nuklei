@@ -95,7 +95,7 @@ public class EchoServerBM
 
         final Random random = new Random();
 
-        final long sourceRef = (random.nextLong() & 0x3fffffffffffffffL) | 0x4000000000000000L;
+        final long sourceRef = random.nextLong() & 0x3fffffffffffffffL;
         controller.bind("source", sourceRef);
         while (this.nukleus.process() != 0L)
         {
@@ -104,7 +104,8 @@ public class EchoServerBM
 
         this.streams = controller.streams("source");
 
-        this.streamId = random.nextLong() & 0x3fffffffffffffffL;
+        // odd, positive, non-zero
+        this.streamId = (random.nextLong() & 0x3fffffffffffffffL) | 0x0000000000000001L;
 
         this.streams.begin(streamId, sourceRef);
         while (this.nukleus.process() != 0L)

@@ -17,7 +17,7 @@
 property controlNew ${control:mapNew("target/nukleus-itests/echo/control", 1024, 1024)}
 
 property newReferenceId ${streams:newReferenceId()}
-property newStreamId ${streams:newStreamId()}
+property newClientStreamId ${streams:newClientStreamId()}
 
 accept agrona://stream/bidirectional
        option reader ${agrona:manyToOneReader(controlNew.nukleus)}
@@ -58,7 +58,7 @@ read ${newReferenceId}
 
 write [0x40 0x00 0x00 0x21]
 write ${correlationId}
-write ${newStreamId}
+write ${newClientStreamId}
 write flush
 
 close

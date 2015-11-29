@@ -72,7 +72,7 @@ public class AcceptIT
     @Specification({
         "nuklei/specification/tcp/control/bind.address.and.port/controller",
         "specification/tcp/rfc793/server.sent.data/client",
-        "nuklei/specification/tcp/stream/accepts/server.sent.data/handler" })
+        "nuklei/specification/tcp/stream/accepts/handler.sent.data/handler" })
     public void shouldReceiveServerSentData() throws Exception
     {
         k3po.finish();
@@ -82,7 +82,7 @@ public class AcceptIT
     @Specification({
         "nuklei/specification/tcp/control/bind.address.and.port/controller",
         "specification/tcp/rfc793/client.sent.data/client",
-        "nuklei/specification/tcp/stream/accepts/client.sent.data/handler" })
+        "nuklei/specification/tcp/stream/accepts/nukleus.sent.data/handler" })
     public void shouldReceiveClientSentData() throws Exception
     {
         k3po.finish();
@@ -102,7 +102,7 @@ public class AcceptIT
     @Specification({
         "nuklei/specification/tcp/control/bind.address.and.port/controller",
         "specification/tcp/rfc793/server.close/client",
-        "nuklei/specification/tcp/stream/accepts/server.close/handler" })
+        "nuklei/specification/tcp/stream/accepts/initiate.handler.close/handler" })
     public void shouldInitiateServerClose() throws Exception
     {
         k3po.finish();
@@ -112,7 +112,7 @@ public class AcceptIT
     @Specification({
         "nuklei/specification/tcp/control/bind.address.and.port/controller",
         "specification/tcp/rfc793/client.close/client",
-        "nuklei/specification/tcp/stream/accepts/client.close/handler" })
+        "nuklei/specification/tcp/stream/accepts/initiate.nukleus.close/handler" })
     public void shouldInitiateClientClose() throws Exception
     {
         k3po.finish();

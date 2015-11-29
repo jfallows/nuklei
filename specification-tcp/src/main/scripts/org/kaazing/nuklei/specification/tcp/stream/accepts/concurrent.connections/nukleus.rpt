@@ -17,8 +17,8 @@
 property handler ${streams:map("target/nukleus-itests/handler/streams/tcp", 1024 * 1024)}
 property nukleus ${streams:map("target/nukleus-itests/tcp/streams/handler", 1024 * 1024)}
 
-property newStreamId ${streams:randomBytes(8)}
-property newReferenceId ${streams:randomBytes(8)}
+property newClientStreamId ${streams:newClientStreamId()}
+property newReferenceId ${streams:newReferenceId()}
 
 connect await BOUND
         agrona://stream/bidirectional
@@ -27,38 +27,38 @@ connect await BOUND
 connected
 
 write [0x00 0x00 0x00 0x01]
-write ${newStreamId}
+write ${newClientStreamId}
 write ${newReferenceId}
 write flush
 
 read [0x00 0x00 0x00 0x01]
-read ${newStreamId}
-read [0..8]
+read ([0..8]:serverStreamId)
+read ${newClientStreamId}
 
 write [0x00 0x00 0x00 0x02]
-write ${newStreamId}
+write ${newClientStreamId}
 write "Hello"
 write flush
 
 read [0x00 0x00 0x00 0x02]
-read ${newStreamId}
+read ${serverStreamId}
 read "Hello"
 
 write [0x00 0x00 0x00 0x02]
-write ${newStreamId}
+write ${newClientStreamId}
 write "Goodbye"
 write flush
 
 read [0x00 0x00 0x00 0x02]
-read ${newStreamId}
+read ${serverStreamId}
 read "Goodbye"
 
 write [0x00 0x00 0x00 0x03]
-write ${newStreamId}
+write ${newClientStreamId}
 write flush
 
 read [0x00 0x00 0x00 0x03]
-read ${newStreamId}
+read ${serverStreamId}
 
 close
 closed

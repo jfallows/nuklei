@@ -55,10 +55,11 @@ public final class ReaderProxy
     public void doRegister(
         String handler,
         long handlerRef,
-        long streamId,
+        long clientStreamId,
+        long serverStreamId,
         SocketChannel channel)
     {
-        RegisterCommand command = new RegisterCommand(handler, handlerRef, streamId, channel);
+        RegisterCommand command = new RegisterCommand(handler, handlerRef, clientStreamId, serverStreamId, channel);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");

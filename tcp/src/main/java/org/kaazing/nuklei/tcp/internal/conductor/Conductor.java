@@ -17,7 +17,6 @@ package org.kaazing.nuklei.tcp.internal.conductor;
 
 import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_BIND_COMMAND;
 import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_CAPTURE_COMMAND;
-import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_CONNECT_COMMAND;
 import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_PREPARE_COMMAND;
 import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_ROUTE_COMMAND;
 import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_UNBIND_COMMAND;
@@ -38,8 +37,6 @@ import org.kaazing.nuklei.tcp.internal.types.control.BindingFW;
 import org.kaazing.nuklei.tcp.internal.types.control.BoundFW;
 import org.kaazing.nuklei.tcp.internal.types.control.CaptureFW;
 import org.kaazing.nuklei.tcp.internal.types.control.CapturedFW;
-import org.kaazing.nuklei.tcp.internal.types.control.ConnectFW;
-import org.kaazing.nuklei.tcp.internal.types.control.ConnectedFW;
 import org.kaazing.nuklei.tcp.internal.types.control.ErrorFW;
 import org.kaazing.nuklei.tcp.internal.types.control.PrepareFW;
 import org.kaazing.nuklei.tcp.internal.types.control.PreparedFW;
@@ -75,7 +72,6 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
     private final UnbindFW unbindRO = new UnbindFW();
     private final PrepareFW prepareRO = new PrepareFW();
     private final UnprepareFW unprepareRO = new UnprepareFW();
-    private final ConnectFW connectRO = new ConnectFW();
 
     private final ErrorFW.Builder errorRW = new ErrorFW.Builder();
     private final CapturedFW.Builder capturedRW = new CapturedFW.Builder();
@@ -86,12 +82,11 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
     private final UnboundFW.Builder unboundRW = new UnboundFW.Builder();
     private final PreparedFW.Builder preparedRW = new PreparedFW.Builder();
     private final UnpreparedFW.Builder unpreparedRW = new UnpreparedFW.Builder();
-    private final ConnectedFW.Builder connectedRW = new ConnectedFW.Builder();
 
     private final RingBuffer conductorCommands;
 
     private final AcceptorProxy acceptorProxy;
-    private final ConnectorProxy connectorProxy;
+    private final ConnectorProxy.FromConductor connectorProxy;
     private final ReaderProxy readerProxy;
     private final WriterProxy writerProxy;
     private final OneToOneConcurrentArrayQueue<ConductorResponse> acceptorResponses;
@@ -105,7 +100,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
     public Conductor(Context context)
     {
         this.acceptorProxy = new AcceptorProxy(context);
-        this.connectorProxy = new ConnectorProxy(context);
+        this.connectorProxy = new ConnectorProxy.FromConductor(context);
         this.readerProxy = new ReaderProxy(context);
         this.writerProxy = new WriterProxy(context);
 
@@ -248,18 +243,6 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
             unpreparedRO.typeId(), unpreparedRO.buffer(), unpreparedRO.offset(), unpreparedRO.length());
     }
 
-    public void onConnectedResponse(
-        long correlationId,
-        long connectionId)
-    {
-        ConnectedFW connectedRO = connectedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
-                                             .correlationId(correlationId)
-                                             .connectionId(connectionId)
-                                             .build();
-
-        conductorResponses.transmit(connectedRO.typeId(), connectedRO.buffer(), connectedRO.offset(), connectedRO.length());
-    }
-
     private void handleCommand(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
     {
         switch (msgTypeId)
@@ -287,9 +270,6 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
             break;
         case TYPE_ID_UNPREPARE_COMMAND:
             handleUnprepareCommand(buffer, index, length);
-            break;
-        case TYPE_ID_CONNECT_COMMAND:
-            handleConnectCommand(buffer, index, length);
             break;
         default:
             // ignore unrecognized commands (forwards compatible)
@@ -381,15 +361,5 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long referenceId = unprepareRO.referenceId();
 
         connectorProxy.doUnprepare(correlationId, referenceId);
-    }
-
-    private void handleConnectCommand(DirectBuffer buffer, int index, int length)
-    {
-        connectRO.wrap(buffer, index, index + length);
-
-        long correlationId = connectRO.correlationId();
-        long referenceId = connectRO.referenceId();
-
-        connectorProxy.doConnect(correlationId, referenceId);
     }
 }

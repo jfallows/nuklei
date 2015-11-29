@@ -47,7 +47,7 @@ write flush
 
 read [0x40 0x00 0x00 0x11]
 read ${control.correlationId()}
-read [0..8]
+read ([0..8]:newReferenceId)
 
 read notify BOUND
 

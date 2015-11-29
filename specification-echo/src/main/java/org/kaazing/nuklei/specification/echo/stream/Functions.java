@@ -45,32 +45,46 @@ public final class Functions
         };
 
     @Function
-    public static byte[] newStreamId()
+    public static byte[] newClientStreamId()
     {
-        final MutableDirectBuffer buffer = BUFFER_REF.get();
+        // odd, positive, non-zero
+        long value = (RANDOM.nextLong() & 0x3fffffffffffffffL) | 0x0000000000000001L;
 
+        final MutableDirectBuffer buffer = BUFFER_REF.get();
         byte[] bytes = new byte[8];
         buffer.wrap(bytes);
-
-        long value = RANDOM.nextLong() & 0x3fffffffffffffffL;
-
         buffer.putLong(0, value);
+        return bytes;
+    }
 
+    @Function
+    public static byte[] newServerStreamId()
+    {
+        // even, positive, non-zero
+        long value;
+        do
+        {
+            value = (RANDOM.nextLong() & 0x3ffffffffffffffeL);
+        }
+        while (value == 0L);
+
+        final MutableDirectBuffer buffer = BUFFER_REF.get();
+        byte[] bytes = new byte[8];
+        buffer.wrap(bytes);
+        buffer.putLong(0, value);
         return bytes;
     }
 
     @Function
     public static byte[] newReferenceId()
     {
-        final MutableDirectBuffer buffer = BUFFER_REF.get();
+        // positive
+        long value = (RANDOM.nextLong() & 0x3fffffffffffffffL);
 
+        final MutableDirectBuffer buffer = BUFFER_REF.get();
         byte[] bytes = new byte[8];
         buffer.wrap(bytes);
-
-        long value = (RANDOM.nextLong() & 0x3fffffffffffffffL) | 0x4000000000000000L;
-
         buffer.putLong(0, value);
-
         return bytes;
     }
 

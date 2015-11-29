@@ -36,6 +36,7 @@ import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
 import org.kaazing.nuklei.tcp.internal.types.stream.BeginFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.DataFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.EndFW;
+import org.kaazing.nuklei.tcp.internal.types.stream.ResetFW;
 
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
@@ -48,6 +49,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
 {
     private static final int MAX_RECEIVE_LENGTH = 1024; // TODO: Configuration and Context
 
+    private final ResetFW.Builder resetRW = new ResetFW.Builder();
     private final BeginFW.Builder beginRW = new BeginFW.Builder();
     private final DataFW.Builder dataRW = new DataFW.Builder();
     private final EndFW.Builder endRW = new EndFW.Builder();
@@ -181,9 +183,10 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
     }
 
     public void doRegister(
-        long streamId,
         String handler,
         long handlerRef,
+        long clientStreamId,
+        long serverStreamId,
         SocketChannel channel)
     {
         StreamsLayout layout = layoutsByHandler.get(handler);
@@ -193,14 +196,20 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
 
         RingBuffer writeBuffer = layout.buffer();
 
+        final long streamId = serverStreamId != 0L ? serverStreamId : clientStreamId;
+        final long referenceId = serverStreamId != 0L ? clientStreamId : handlerRef;
+
         WriterState state = new WriterState(writeBuffer, streamId, channel);
 
         BeginFW beginRO = beginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                                  .streamId(state.streamId())
-                                 .referenceId(handlerRef)
+                                 .referenceId(referenceId)
                                  .build();
 
-        writeBuffer.write(beginRO.typeId(), beginRO.buffer(), beginRO.offset(), beginRO.length());
+        if (!writeBuffer.write(beginRO.typeId(), beginRO.buffer(), beginRO.offset(), beginRO.length()))
+        {
+            throw new IllegalStateException("could not write to ring buffer");
+        }
 
         try
         {
@@ -222,6 +231,28 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         catch (IOException ex)
         {
             LangUtil.rethrowUnchecked(ex);
+        }
+    }
+
+    public void doReset(
+        long streamId,
+        String handler,
+        long handlerRef)
+    {
+        StreamsLayout layout = layoutsByHandler.get(handler);
+
+        // TODO
+        assert layout != null;
+
+        RingBuffer writeBuffer = layout.buffer();
+
+        ResetFW resetRO = resetRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                 .streamId(streamId)
+                                 .build();
+
+        if (!writeBuffer.write(resetRO.typeId(), resetRO.buffer(), resetRO.offset(), resetRO.length()))
+        {
+            throw new IllegalStateException("could not write to ring buffer");
         }
     }
 
