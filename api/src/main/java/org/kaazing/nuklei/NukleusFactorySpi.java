@@ -20,6 +20,5 @@ public interface NukleusFactorySpi
 {
     String name();
 
-    // TODO: return Collection<Nukleus>
-    Nukleus create(Configuration options);
+    Nukleus create(Configuration config);
 }
