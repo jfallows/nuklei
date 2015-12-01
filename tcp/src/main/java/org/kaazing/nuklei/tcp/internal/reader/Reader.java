@@ -15,13 +15,7 @@
  */
 package org.kaazing.nuklei.tcp.internal.reader;
 
-import static org.kaazing.nuklei.tcp.internal.types.stream.Types.TYPE_ID_BEGIN;
-import static org.kaazing.nuklei.tcp.internal.types.stream.Types.TYPE_ID_DATA;
-import static org.kaazing.nuklei.tcp.internal.types.stream.Types.TYPE_ID_END;
-
 import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
@@ -33,44 +27,31 @@ import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.Context;
 import org.kaazing.nuklei.tcp.internal.conductor.ConductorProxy;
 import org.kaazing.nuklei.tcp.internal.connector.ConnectorProxy;
+import org.kaazing.nuklei.tcp.internal.connector.ConnectorProxy.FromReader;
 import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
-import org.kaazing.nuklei.tcp.internal.types.stream.BeginFW;
-import org.kaazing.nuklei.tcp.internal.types.stream.DataFW;
-import org.kaazing.nuklei.tcp.internal.types.stream.EndFW;
 
 import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.collections.ArrayUtil;
-import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.nio.TransportPoller;
 
 public final class Reader extends TransportPoller implements Nukleus, Consumer<ReaderCommand>
 {
-    private final BeginFW beginRO = new BeginFW();
-    private final EndFW endRO = new EndFW();
-    private final DataFW dataRO = new DataFW();
-
     private final ConductorProxy.FromReader conductorProxy;
-    private final ConnectorProxy.FromReader connectorProxy;
+    private final FromReader connectorProxy;
     private final OneToOneConcurrentArrayQueue<ReaderCommand> commandQueue;
-    private final Long2ObjectHashMap<ConnectingState> connectingStateByStreamId;
-    private final Long2ObjectHashMap<ReaderState> stateByStreamId;
     private final Function<String, File> streamsFile;
     private final int streamsCapacity;
     private final Map<String, StreamsLayout> layoutsByHandler;
 
-    private RingBuffer[] streamBuffers;
+    private ReaderState[] readerStates;
 
     public Reader(Context context)
     {
         this.conductorProxy = new ConductorProxy.FromReader(context);
         this.connectorProxy = new ConnectorProxy.FromReader(context);
         this.commandQueue = context.readerCommandQueue();
-        this.connectingStateByStreamId = new Long2ObjectHashMap<>();
-        this.stateByStreamId = new Long2ObjectHashMap<>();
-        this.streamBuffers = new RingBuffer[0];
+        this.readerStates = new ReaderState[0];
         this.streamsFile = context.captureStreamsFile();
         this.streamsCapacity = context.streamsCapacity();
         this.layoutsByHandler = new HashMap<>();
@@ -85,9 +66,9 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
         weight += selectedKeySet.forEach(this::processWrite);
         weight += commandQueue.drain(this);
 
-        for (int i=0; i < streamBuffers.length; i++)
+        for (int i=0; i < readerStates.length; i++)
         {
-            weight += streamBuffers[i].read(this::handleRead);
+            weight += readerStates[i].process();
         }
 
         return weight;
@@ -102,16 +83,17 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
     @Override
     public void close()
     {
-        stateByStreamId.values().forEach((state) -> {
+        for (int i=0; i < readerStates.length; i++)
+        {
             try
             {
-                state.channel().shutdownOutput();
+                readerStates[i].close();
             }
             catch (final Exception ex)
             {
                 LangUtil.rethrowUnchecked(ex);
             }
-        });
+        }
 
         layoutsByHandler.values().forEach((layout) -> {
             try
@@ -153,7 +135,9 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
 
                 layoutsByHandler.put(handler, newLayout);
 
-                streamBuffers = ArrayUtil.add(streamBuffers, newLayout.buffer());
+                ReaderState newCaptureState = new ReaderState(connectorProxy, handler, newLayout.buffer());
+
+                readerStates = ArrayUtil.add(readerStates, newCaptureState);
 
                 conductorProxy.onCapturedResponse(correlationId);
             }
@@ -178,7 +162,19 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
         {
             try
             {
-                streamBuffers = ArrayUtil.remove(streamBuffers, oldLayout.buffer());
+                ReaderState[] readerStates = this.readerStates;
+                for (int i=0; i < readerStates.length; i++)
+                {
+                    if (handler.equals(readerStates[i].handler()))
+                    {
+                        ReaderState oldCaptureState = readerStates[i];
+                        oldCaptureState.close();
+
+                        this.readerStates = ArrayUtil.remove(this.readerStates, oldCaptureState);
+                        break;
+                    }
+                }
+
                 oldLayout.close();
                 conductorProxy.onUncapturedResponse(correlationId);
             }
@@ -197,105 +193,15 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
         long serverStreamId,
         SocketChannel channel)
     {
-        StreamsLayout layout = layoutsByHandler.get(handler);
-        assert layout != null;
-
-        if (serverStreamId == 0L)
+        ReaderState[] readerStates = this.readerStates;
+        for (int i=0; i < readerStates.length; i++)
         {
-            ConnectingState connectingState = new ConnectingState(clientStreamId, layout.buffer(), channel);
-            connectingStateByStreamId.put(connectingState.streamId(), connectingState);
-        }
-        else
-        {
-            ReaderState newState = new ReaderState(clientStreamId, layout.buffer(), channel);
-            stateByStreamId.put(newState.streamId(), newState);
-        }
-    }
-
-    private void handleRead(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
-    {
-        switch (msgTypeId)
-        {
-        case TYPE_ID_BEGIN:
-            beginRO.wrap(buffer, index, index + length);
-
-            final long streamId = beginRO.streamId();
-            final long referenceId = beginRO.referenceId();
-
-            if ((streamId & 0x0000000000000001L) != 0L)
+            if (handler.equals(readerStates[i].handler()))
             {
-                // TODO: establish "handler" from buffer being read (this workaround creates garbage!)
-                final String handler = layoutsByHandler.keySet().iterator().next();
-                final long handlerRef = referenceId;
-
-                connectorProxy.doConnect(handler, handlerRef, streamId);
+                ReaderState readerState = readerStates[i];
+                readerState.doRegister(handler, handlerRef, clientStreamId, serverStreamId, channel);
+                break;
             }
-            else
-            {
-                final long clientStreamId = referenceId;
-
-                ConnectingState connectingState = connectingStateByStreamId.remove(clientStreamId);
-                if (connectingState == null)
-                {
-                    throw new IllegalStateException("stream not found: " + streamId);
-                }
-
-                ReaderState newState = new ReaderState(streamId, connectingState.buffer(), connectingState.channel());
-                stateByStreamId.put(newState.streamId(), newState);
-            }
-            break;
-
-        case TYPE_ID_DATA:
-            dataRO.wrap(buffer, index, index + length);
-
-            ReaderState state = stateByStreamId.get(dataRO.streamId());
-            if (state == null)
-            {
-                throw new IllegalStateException("stream not found: " + dataRO.streamId());
-            }
-
-            try
-            {
-                SocketChannel channel = state.channel();
-                ByteBuffer writeBuffer = state.writeBuffer();
-                writeBuffer.limit(dataRO.limit());
-                writeBuffer.position(dataRO.payloadOffset());
-
-                // send buffer underlying buffer for read buffer
-                final int totalBytes = writeBuffer.remaining();
-                final int bytesWritten = channel.write(writeBuffer);
-
-                if (bytesWritten < totalBytes)
-                {
-                    // TODO: support partial writes
-                    throw new IllegalStateException("partial write: " + bytesWritten + "/" + totalBytes);
-                }
-            }
-            catch (IOException ex)
-            {
-                LangUtil.rethrowUnchecked(ex);
-            }
-            break;
-
-        case TYPE_ID_END:
-            endRO.wrap(buffer, index, index + length);
-
-            ReaderState oldState = stateByStreamId.remove(endRO.streamId());
-            if (oldState == null)
-            {
-                throw new IllegalStateException("stream not found: " + endRO.streamId());
-            }
-
-            try
-            {
-                SocketChannel channel = oldState.channel();
-                channel.close();
-            }
-            catch (IOException ex)
-            {
-                LangUtil.rethrowUnchecked(ex);
-            }
-            break;
         }
     }
 
