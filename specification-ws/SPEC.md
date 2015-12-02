@@ -1,11 +1,11 @@
-# TCP Nukleus
+# WebSocket Nukleus
 
-The TCP Nukleus is responsible for managing TCP inbound and outbound streams for TCP connections.
+The WebSocket Nukleus is responsible for managing WebSocket inbound and outbound streams.
 
 ## Control Commands
-The TCP Nukleus is controlled by sending control commands to a memory-mapped file at `[config-dir]/tcp/control`.
+The WebSocket Nukleus is controlled by sending control commands to a memory-mapped file at `[config-dir]/ws/control`.
 
-The following control commands and responses are supported by the TCP Nukleus.
+The following control commands and responses are supported by the WebSocket Nukleus.
 
 ### ERROR response (0x40000000)
 Indicates that an error has occurred when attempting to process a command. 
@@ -16,12 +16,12 @@ ERROR
 ```
 
 ### CAPTURE command (0x00000001)
-Creates, maps and reads streams from a memory-mapped file at `[config-dir]/tcp/streams/[handler]`.
+Creates, maps and reads streams from a memory-mapped file at `[config-dir]/ws/streams/[source]`.
 
 ```
 CAPTURE
 [long] correlation id
-[string] handler nukleus name
+[string] source nukleus name
 ```
 
 ### CAPTURED response (0x40000001)
@@ -33,12 +33,12 @@ CAPTURED
 ```
 
 ### UNCAPTURE command (0x00000002)
-No longer reads streams from the memory-mapped file at `[config-dir]/tcp/streams/[handler]`.
+No longer reads streams from the memory-mapped file at `[config-dir]/ws/streams/[source]`.
 
 ```
 UNCAPTURE
 [long] correlation id
-[string] handler nukleus name
+[string] source nukleus name
 ```
 
 ### UNCAPTURED response (0x40000002)
@@ -50,12 +50,12 @@ UNCAPTURED
 ```
 
 ### ROUTE command (0x00000003)
-Maps existing file and writes streams to a memory-mapped file at `[config-dir]/[handler]/streams/tcp`.
+Maps existing file and writes streams to a memory-mapped file at `[config-dir]/[destination]/streams/ws`.
 
 ```
 ROUTE
 [long] correlation id
-[string] handler nukleus name
+[string] destination nukleus name
 ```
 
 ### ROUTED response (0x40000003)
@@ -67,7 +67,7 @@ ROUTED
 ```
 
 ### UNROUTE command (0x00000004)
-Unmaps and no longer writes streams to the memory-mapped file at `[config-dir]/[handler]/streams/tcp`.
+Unmaps and no longer writes streams to the memory-mapped file at `[config-dir]/[destination]/streams/ws`.
 
 ```
 UNROUTE
@@ -84,18 +84,15 @@ UNROUTED
 ```
 
 ### BIND command (0x00000011)
-Binds the specified device or IP address and port to initiate streams to the handler for inbound TCP connections.
+Binds incoming WebSocket protocol streams with matching WebSocket sub-protocol to the handler. 
 
 ```
 BIND
 [long] correlation id
+[string] source nukleus name
+[long] source nukleus reference
 [string] handler nukleus name
-[union]
-  [uint8] kind - device (0x00), IPv4 (0x01), IPv6 (0x02)
-  [string] device name
-  [bytes[4]] IPv4 address
-  [bytes[16]] IPv6 address
-[uint16] port
+[string] sub-protocol
 ```
 
 ### BOUND response (0x40000011)
@@ -108,7 +105,7 @@ BOUND
 ```
 
 ### UNBIND command (0x00000012)
-No longer binds incoming streams to be echoed for the previously bound device or IP address and port.
+No longer binds incoming WebSocket protocol streams to the previously bound handler.
 
 ```
 UNBIND
@@ -125,13 +122,15 @@ UNBOUND
 ```
 
 ### PREPARE command (0x00000013)
-Prepares to initiate streams to the specified destination and destination reference.
+Prepares incoming streams from the handler to initiate WebSocket protocol streams with specified WebSocket sub-protocol.
 
 ```
 PREPARE
 [long] correlation id
 [string] destination nukleus name
 [long] destination nukleus reference
+[string] handler nukleus name
+[string] sub-protocol
 ```
 
 ### PREPARED response (0x40000013)
@@ -161,7 +160,7 @@ UNPREPARED
 ```
 
 ## Stream Events
-The TCP Nukleus describes unidirectional streams of data with the following events.
+The WebSocket Nukleus describes unidirectional streams of data with the following events.
 
 ### RESET event (0x00000000)
 Resets the stream as an error condition has occurred.
@@ -174,21 +173,14 @@ RESET
 ### BEGIN event (0x00000001)
 Indicates the beginning of a new stream.
 
-If the stream identifier is odd, then the handler reference is required as it is initiating a bidirectional connection.
-If the stream identifier is even and non-zero, then the correlating stream identifier of the initiating stream is required instead as this stream represents the opposite direction of an already initiated bidirectional connection.
+If the stream identifier is odd, then the handler reference is required and it represents an WebSocket handshake request.
+If the stream identifier is even and non-zero, then it represents an WebSocket handshake response, and the correlating WebSocket handshake request stream identifier is required instead.
 
 ```
 BEGIN
 [long] stream id
 [long] handler reference | correlating stream id
-[union] local address
-  [uint8] kind - IPv4 (0x01), IPv6 (0x02)
-  [bytes[4]] IPv4 address
-  [bytes[16]] IPv6 address
-[union] remote address
-  [uint8] kind - IPv4 (0x01), IPv6 (0x02)
-  [bytes[4]] IPv4 address
-  [bytes[16]] IPv6 address
+[string] sub-protocol
 ```
 
 ### DATA event (0x00000002)
@@ -198,10 +190,11 @@ Indicates data for an existing stream.
 DATA
 [long] stream id
 [bytes] payload
+[uint8] flags (text, binary, fin)
 ```
 
 ### END event (0x00000003)
-Indicates the end of an existing stream
+Indicates the end of an existing stream.
 
 ```
 END

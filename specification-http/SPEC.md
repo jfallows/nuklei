@@ -16,7 +16,7 @@ ERROR
 ```
 
 ### CAPTURE command (0x00000001)
-Creates, maps and reads streams from a memory-mapped file at `[config-dir]/http/[source]/streams`.
+Creates, maps and reads streams from a memory-mapped file at `[config-dir]/http/streams/[source]`.
 
 ```
 CAPTURE
