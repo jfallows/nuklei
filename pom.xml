@@ -26,7 +26,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <require.java.version>1.8+</require.java.version>
         <require.maven.version>3.0.4+</require.maven.version>
-        <checkstyle.config.location>../.config/checkstyle/checkstyle.xml</checkstyle.config.location>
+        <checkstyle.config.location>org/kaazing/nuklei/code/quality/checkstyle/checkstyle.xml</checkstyle.config.location>
 
         <doctitle><![CDATA[<h1>Nuklei</h1>]]></doctitle>
         <bottom><![CDATA[<i>Copyright &#169; 2015 Kaazing Corporation. All Rights Reserved.</i>]]></bottom>
@@ -37,10 +37,11 @@
     </properties>
 
     <modules>
-        <module>specification-tcp</module>
-        <module>specification-echo</module>
-        <module>specification-http</module>
-        <module>specification-ws</module>
+        <module>code.quality</module>
+        <module>specification/tcp</module>
+        <module>specification/echo</module>
+        <module>specification/http</module>
+        <module>specification/ws</module>
         <module>api</module>
         <module>test</module>
         <module>tcp</module>
@@ -98,9 +99,15 @@
                             <artifactId>checkstyle</artifactId>
                             <version>5.9</version>
                         </dependency>
+                        <dependency>
+                            <groupId>org.kaazing</groupId>
+                            <artifactId>nuklei-code-quality</artifactId>
+                            <version>${project.version}</version>
+                        </dependency>
                     </dependencies>
                 </plugin>
-                <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+                <!--This plugin's configuration is used to store Eclipse m2e settings only.
+                    It has no influence on the Maven build itself.-->
                 <plugin>
                     <groupId>org.eclipse.m2e</groupId>
                     <artifactId>lifecycle-mapping</artifactId>
