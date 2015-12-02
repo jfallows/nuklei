@@ -16,3 +16,5 @@ out
 build-local.properties
 .gradle
 build
+hs_err_pid*.log
+

@@ -8,12 +8,12 @@
         <version>2.17</version>
     </parent>
 
-    <artifactId>nuklei-parent</artifactId>
+    <artifactId>nuklei</artifactId>
     <packaging>pom</packaging>
     <version>develop-SNAPSHOT</version>
 
-    <name>Nuklei Parent</name>
-    <description>Micro-services toolkit</description>
+    <name>Nuklei</name>
+    <description>Reactive services toolkit</description>
     <url>https://github.com/kaazing/nuklei.git</url>
 
     <scm>
@@ -26,28 +26,61 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <require.java.version>1.8+</require.java.version>
         <require.maven.version>3.0.4+</require.maven.version>
-        <checkstyle.config.location>../config/checkstyle/checkstyle.xml</checkstyle.config.location>
+        <checkstyle.config.location>../.config/checkstyle/checkstyle.xml</checkstyle.config.location>
 
         <doctitle><![CDATA[<h1>Nuklei</h1>]]></doctitle>
-        <bottom><![CDATA[<i>Copyright &#169; 2014 Kaazing Corporation. All Rights Reserved.</i>]]></bottom>
+        <bottom><![CDATA[<i>Copyright &#169; 2015 Kaazing Corporation. All Rights Reserved.</i>]]></bottom>
 
         <!-- animal sniffer does not yet support Java8, see MANIMALSNIFFER-45 -->
         <animal.sniffer.skip>true</animal.sniffer.skip>
+        <k3po.version>3.0.0-alpha-5</k3po.version>
     </properties>
 
     <modules>
-        <module>core</module>
-        <module>benchmarks</module>
-        <module>protocol/tcp</module>
-        <module>protocol/http</module>
-        <module>protocol/ws</module>
-        <module>protocol/amqp-1.0</module>
-        <module>kompound</module>
+        <module>specification-tcp</module>
+        <module>specification-echo</module>
+        <module>specification-http</module>
+        <module>specification-ws</module>
+        <module>api</module>
+        <module>test</module>
+        <module>tcp</module>
+        <module>http</module>
+        <module>ws</module>
+        <module>echo</module>
+        <module>shell</module>
+        <module>reaktor</module>
+        <module>bench</module>
     </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.12</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>org.kaazing</groupId>
+                    <artifactId>k3po-maven-plugin</artifactId>
+                    <version>${k3po.version}</version>
+                    <configuration>
+                        <skipTests>${skipITs}</skipTests>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>start</goal>
+                                <goal>stop</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
@@ -67,7 +100,58 @@
                         </dependency>
                     </dependencies>
                 </plugin>
+                <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+                <plugin>
+                    <groupId>org.eclipse.m2e</groupId>
+                    <artifactId>lifecycle-mapping</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <lifecycleMappingMetadata>
+                            <pluginExecutions>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>
+                                            org.codehaus.mojo
+                                        </groupId>
+                                        <artifactId>
+                                            build-helper-maven-plugin
+                                        </artifactId>
+                                        <versionRange>
+                                            [1.1,)
+                                        </versionRange>
+                                        <goals>
+                                            <goal>add-source</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore></ignore>
+                                    </action>
+                                </pluginExecution>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>
+                                            org.codehaus.mojo
+                                        </groupId>
+                                        <artifactId>
+                                            exec-maven-plugin
+                                        </artifactId>
+                                        <versionRange>
+                                            [1.4.0,)
+                                        </versionRange>
+                                        <goals>
+                                            <goal>java</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore></ignore>
+                                    </action>
+                                </pluginExecution>
+                            </pluginExecutions>
+                        </lifecycleMappingMetadata>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
 </project>
+

@@ -1,0 +1,65 @@
+#
+# Copyright 2007-2015, Kaazing Corporation. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+property controlNew ${control:mapNew("target/nukleus-itests/echo/control", 1024, 1024)}
+
+property newReferenceId ${streams:newReferenceId()}
+
+accept agrona://stream/bidirectional
+       option reader ${agrona:manyToOneReader(controlNew.nukleus)}
+       option writer ${agrona:broadcastTransmitter(controlNew.controller)}
+
+accepted
+connected
+
+read [0x00 0x00 0x00 0x01]
+read ([0..8]:correlationId)
+read [0x0b] "destination"
+
+write [0x40 0x00 0x00 0x01]
+write ${correlationId}
+write flush
+
+read [0x00 0x00 0x00 0x03]
+read ([0..8]:correlationId)
+read [0x0b] "destination"
+
+write [0x40 0x00 0x00 0x03]
+write ${correlationId}
+write flush
+
+read [0x00 0x00 0x00 0x13]
+read ([0..8]:correlationId)
+read [0x0b] "destination"
+read ([0..8]:destinationRef)
+
+write [0x40 0x00 0x00 0x13]
+write ${correlationId}
+write ${newReferenceId}
+write flush
+
+read [0x00 0x00 0x00 0x14]
+read ([0..8]:correlationId)
+read ${newReferenceId}
+
+write [0x40 0x00 0x00 0x14]
+write ${correlationId}
+write [0x0b] "destination"
+write ${destinationRef}
+write flush
+
+close
+closed

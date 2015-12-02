@@ -1,0 +1,50 @@
+<?xml version="1.0" ?>
+<!--
+
+    Copyright 2007-2015, Kaazing Corporation. All rights reserved.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<messageSchema xmlns="http://www.fixprotocol.org/ns/simple/1.0"
+               package="org.kaazing.nuklei.reaktor.control"
+               id="1" >
+
+    <types>
+        <composite name="messageHeader" description="Message identifiers and length of message root">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="templateId" primitiveType="uint16"/>
+            <type name="schemaId" primitiveType="uint16"/>
+            <type name="version" primitiveType="uint16"/>
+        </composite>
+
+        <composite name="groupSize" description="Repeating group dimensions">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="numInGroup" primitiveType="uint8"/>
+        </composite>
+
+        <composite name="string" >
+            <type name="length" primitiveType="uint8" />
+            <type name="characters" primitiveType="char" length="0" characterEncoding="UTF-8" />
+        </composite>
+    </types>
+
+    <message name="DiscoverCommand" id="1" />
+
+    <message name="DiscoverResponse" id="2" >
+        <group name="names" id="1" dimensionType="groupSize" >
+            <field name="name" id="2" type="string" />
+        </group>
+    </message>
+
+</messageSchema>
