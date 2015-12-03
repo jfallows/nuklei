@@ -25,6 +25,7 @@ import java.util.function.Function;
 import java.util.logging.Logger;
 
 import org.kaazing.nuklei.Configuration;
+import org.kaazing.nuklei.http.internal.conductor.ConductorResponse;
 import org.kaazing.nuklei.http.internal.layouts.ControlLayout;
 import org.kaazing.nuklei.http.internal.translator.TranslatorCommand;
 
@@ -56,7 +57,7 @@ public final class Context implements Closeable
     private BroadcastTransmitter fromConductorResponses;
 
     private OneToOneConcurrentArrayQueue<TranslatorCommand> fromConductorToTranslatorCommands;
-    private OneToOneConcurrentArrayQueue<TranslatorCommand> fromTranslatorToConductorResponses;
+    private OneToOneConcurrentArrayQueue<ConductorResponse> fromTranslatorToConductorResponses;
 
     public Context readonly(
         boolean readonly)
@@ -188,13 +189,13 @@ public final class Context implements Closeable
     }
 
     public Context translatorResponseQueue(
-            OneToOneConcurrentArrayQueue<TranslatorCommand> translatorResponseQueue)
+            OneToOneConcurrentArrayQueue<ConductorResponse> translatorResponseQueue)
     {
         this.fromTranslatorToConductorResponses = translatorResponseQueue;
         return this;
     }
 
-    public OneToOneConcurrentArrayQueue<TranslatorCommand> translatorResponseQueue()
+    public OneToOneConcurrentArrayQueue<ConductorResponse> translatorResponseQueue()
     {
         return fromTranslatorToConductorResponses;
     }
@@ -251,7 +252,7 @@ public final class Context implements Closeable
                     new OneToOneConcurrentArrayQueue<TranslatorCommand>(1024));
 
             translatorResponseQueue(
-                    new OneToOneConcurrentArrayQueue<TranslatorCommand>(1024));
+                    new OneToOneConcurrentArrayQueue<ConductorResponse>(1024));
 
             concludeCounters();
         }

@@ -19,11 +19,19 @@ import java.util.function.Consumer;
 
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.http.internal.Context;
+import org.kaazing.nuklei.http.internal.conductor.ConductorProxy;
+
+import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 public final class Translator implements Nukleus, Consumer<TranslatorCommand>
 {
+    private final ConductorProxy conductorProxy;
+    private final OneToOneConcurrentArrayQueue<TranslatorCommand> commandQueue;
+
     public Translator(Context context)
     {
+        this.conductorProxy = new ConductorProxy(context);
+        this.commandQueue = context.translatorCommandQueue();
     }
 
     @Override
@@ -31,7 +39,9 @@ public final class Translator implements Nukleus, Consumer<TranslatorCommand>
     {
         int weight = 0;
 
-        // TODO
+        weight += commandQueue.drain(this);
+
+        // TODO: read streams
 
         return weight;
     }
@@ -43,8 +53,66 @@ public final class Translator implements Nukleus, Consumer<TranslatorCommand>
     }
 
     @Override
-    public void accept(TranslatorCommand response)
+    public void accept(TranslatorCommand command)
     {
-        response.execute(this);
+        command.execute(this);
+    }
+
+    public void doCapture(
+        long correlationId,
+        String handler)
+    {
+        // TODO
+    }
+
+    public void doUncapture(
+        long correlationId,
+        String handler)
+    {
+        // TODO
+    }
+
+    public void doRoute(
+        long correlationId,
+        String destination)
+    {
+        // TODO
+    }
+
+    public void doUnroute(
+        long correlationId,
+        String destination)
+    {
+        // TODO
+    }
+
+    public void doBind(
+        long correlationId,
+        String source,
+        long sourceRef)
+    {
+        // TODO
+    }
+
+    public void doUnbind(
+        long correlationId,
+        long referenceId)
+    {
+        // TODO
+    }
+
+    public void doPrepare(
+        long correlationId,
+        String destination,
+        long destinationRef)
+    {
+        // TODO
+    }
+
+    public void doUnprepare(
+        long correlationId,
+        long referenceId)
+    {
+        // TODO
     }
 }
