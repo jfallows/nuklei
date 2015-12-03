@@ -13,24 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.http.internal;
+package org.kaazing.nuklei.http.internal.conductor;
 
-import org.kaazing.nuklei.Configuration;
-import org.kaazing.nuklei.NukleusFactorySpi;
-
-public final class HttpNukleusFactorySpi implements NukleusFactorySpi
+public interface ConductorResponse
 {
-    @Override
-    public String name()
-    {
-        return "http";
-    }
-
-    @Override
-    public HttpNukleus create(Configuration config)
-    {
-        Context context = new Context();
-        context.conclude(config);
-        return new HttpNukleus(context);
-    }
+    void execute(Conductor responder);
 }

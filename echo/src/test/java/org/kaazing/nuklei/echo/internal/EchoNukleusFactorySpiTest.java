@@ -18,6 +18,8 @@ package org.kaazing.nuklei.echo.internal;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 
+import java.util.Properties;
+
 import org.junit.Test;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.NukleusFactory;
@@ -29,7 +31,10 @@ public class EchoNukleusFactorySpiTest
     public void shouldCreateEchoNukleus()
     {
         NukleusFactory factory = NukleusFactory.instantiate();
-        Nukleus nukleus = factory.create("echo", new Configuration());
+        Properties properties = new Properties();
+        properties.setProperty(Configuration.DIRECTORY_PROPERTY_NAME, "target/nuklei-tests");
+        Configuration config = new Configuration(properties);
+        Nukleus nukleus = factory.create("echo", config);
         assertThat(nukleus, instanceOf(EchoNukleus.class));
     }
 
