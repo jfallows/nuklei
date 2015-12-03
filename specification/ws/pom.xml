@@ -6,6 +6,7 @@
         <groupId>org.kaazing</groupId>
         <artifactId>nuklei</artifactId>
         <version>develop-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <artifactId>nuklei-specification-ws</artifactId>
