@@ -38,6 +38,7 @@
 
     <modules>
         <module>code.quality</module>
+        <module>specification/common</module>
         <module>specification/tcp</module>
         <module>specification/echo</module>
         <module>specification/http</module>

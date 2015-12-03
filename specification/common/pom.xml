@@ -8,11 +8,11 @@
         <version>develop-SNAPSHOT</version>
     </parent>
 
-    <artifactId>nuklei-specification-tcp</artifactId>
+    <artifactId>nuklei-specification-common</artifactId>
     <packaging>jar</packaging>
 
-    <name>Nuklei TCP Specification</name>
-    <description>Nuklei TCP Specification</description>
+    <name>Nuklei Common Specification</name>
+    <description>Nuklei Common Specification</description>
     <url>https://github.com/kaazing/nuklei.git</url>
 
     <scm>
@@ -24,11 +24,6 @@
         <dependency>
             <groupId>org.kaazing</groupId>
             <artifactId>nuklei-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.kaazing</groupId>
-            <artifactId>nuklei-specification-common</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -91,3 +86,4 @@
     </build>
 
 </project>
+
