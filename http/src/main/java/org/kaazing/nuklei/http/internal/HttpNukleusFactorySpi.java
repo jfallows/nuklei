@@ -15,8 +15,6 @@
  */
 package org.kaazing.nuklei.http.internal;
 
-import java.io.File;
-
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.NukleusFactorySpi;
 
@@ -32,8 +30,7 @@ public final class HttpNukleusFactorySpi implements NukleusFactorySpi
     public HttpNukleus create(Configuration config)
     {
         Context context = new Context();
-        context.controlFile(new File(config.directory(), "http/control"))
-               .conclude(config);
+        context.conclude(config);
         return new HttpNukleus(context);
     }
 }

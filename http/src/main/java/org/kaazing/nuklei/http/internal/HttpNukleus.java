@@ -19,13 +19,19 @@ import java.util.function.Consumer;
 
 import org.kaazing.nuklei.CompositeNukleus;
 import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.http.internal.conductor.Conductor;
+import org.kaazing.nuklei.http.internal.translator.Translator;
 
 public final class HttpNukleus extends CompositeNukleus
 {
     private final Context context;
+    private final Conductor conductor;
+    private final Translator translator;
 
     HttpNukleus(Context context)
     {
+        this.conductor = new Conductor(context);
+        this.translator = new Translator(context);
         this.context = context;
     }
 
@@ -33,6 +39,9 @@ public final class HttpNukleus extends CompositeNukleus
     public int process() throws Exception
     {
         int weight = 0;
+
+        weight += conductor.process();
+        weight += translator.process();
 
         return weight;
     }
@@ -46,11 +55,15 @@ public final class HttpNukleus extends CompositeNukleus
     @Override
     public void close() throws Exception
     {
+        conductor.close();
+        translator.close();
         context.close();
     }
 
     @Override
     public void forEach(Consumer<? super Nukleus> action)
     {
+        action.accept(conductor);
+        action.accept(translator);
     }
 }
