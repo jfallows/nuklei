@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.echo.internal.stream;
+package org.kaazing.nuklei.echo.internal.streams;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
@@ -62,7 +62,7 @@ public class AcceptIT
     @Test
     @Specification({
         "control/bind.source/controller",
-        "stream/accepts/establish.connection/source"
+        "streams/accept/establish.connection/source"
     })
     public void shouldEstablishConnection() throws Exception
     {
@@ -72,7 +72,7 @@ public class AcceptIT
     @Test
     @Specification({
         "control/bind.source/controller",
-        "stream/accepts/echo.source.data/source" })
+        "streams/accept/echo.source.data/source" })
     public void shouldEchoSourceData() throws Exception
     {
         k3po.finish();
@@ -82,7 +82,7 @@ public class AcceptIT
     @Test
     @Specification({
         "control/bind.source/controller",
-        "stream/accepts/initiate.nukleus.close/source" })
+        "streams/accept/initiate.nukleus.close/source" })
     public void shouldInitiateNukleusClose() throws Exception
     {
         k3po.finish();
@@ -91,7 +91,7 @@ public class AcceptIT
     @Test
     @Specification({
         "control/bind.source/controller",
-        "stream/accepts/initiate.source.close/source" })
+        "streams/accept/initiate.source.close/source" })
     public void shouldInitiateSourceClose() throws Exception
     {
         k3po.finish();

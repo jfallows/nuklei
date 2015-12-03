@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.specification.tcp.stream;
+package org.kaazing.nuklei.specification.http.streams;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
@@ -46,17 +46,17 @@ public class AcceptIT
     {
         int streamCapacity = 1024 * 1024;
 
-        File nukleus = new File("target/nukleus-itests/tcp/streams/handler");
+        File nukleus = new File("target/nukleus-itests/http/streams/source");
         createEmptyFile(nukleus.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
 
-        File handler = new File("target/nukleus-itests/handler/streams/tcp");
+        File handler = new File("target/nukleus-itests/source/streams/http");
         createEmptyFile(handler.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
     }
 
     @Test
     @Specification({
-        "accepts/establish.connection/nukleus",
-        "accepts/establish.connection/handler"
+        "accept/establish.connection/nukleus",
+        "accept/establish.connection/source"
     })
     public void shouldEstablishConnection() throws Exception
     {
@@ -64,11 +64,11 @@ public class AcceptIT
         k3po.notifyBarrier("BOUND");
         k3po.finish();
     }
-
+/*
     @Test
     @Specification({
-        "accepts/handler.sent.data/nukleus",
-        "accepts/handler.sent.data/handler"
+        "accept/handler.sent.data/nukleus",
+        "accept/handler.sent.data/handler"
     })
     public void shouldReceiveHandlerSentData() throws Exception
     {
@@ -80,8 +80,8 @@ public class AcceptIT
 
     @Test
     @Specification({
-        "accepts/nukleus.sent.data/nukleus",
-        "accepts/nukleus.sent.data/handler" })
+        "accept/nukleus.sent.data/nukleus",
+        "accept/nukleus.sent.data/handler" })
     public void shouldReceiveNukleusSentData() throws Exception
     {
         k3po.start();
@@ -91,8 +91,8 @@ public class AcceptIT
 
     @Test
     @Specification({
-        "accepts/echo.data/nukleus",
-        "accepts/echo.data/handler" })
+        "accept/echo.data/nukleus",
+        "accept/echo.data/handler" })
     public void shouldEchoData() throws Exception
     {
         k3po.start();
@@ -102,8 +102,8 @@ public class AcceptIT
 
     @Test
     @Specification({
-        "accepts/initiate.handler.close/nukleus",
-        "accepts/initiate.handler.close/handler" })
+        "accept/initiate.handler.close/nukleus",
+        "accept/initiate.handler.close/handler" })
     public void shouldInitiateHandlerClose() throws Exception
     {
         k3po.start();
@@ -113,8 +113,8 @@ public class AcceptIT
 
     @Test
     @Specification({
-        "accepts/initiate.nukleus.close/nukleus",
-        "accepts/initiate.nukleus.close/handler" })
+        "accept/initiate.nukleus.close/nukleus",
+        "accept/initiate.nukleus.close/handler" })
     public void shouldInitiateNukleusClose() throws Exception
     {
         k3po.start();
@@ -124,12 +124,13 @@ public class AcceptIT
 
     @Test
     @Specification({
-        "accepts/concurrent.connections/nukleus",
-        "accepts/concurrent.connections/handler" })
+        "accept/concurrent.connections/nukleus",
+        "accept/concurrent.connections/handler" })
     public void shouldEstablishConcurrentConnections() throws Exception
     {
         k3po.start();
         k3po.notifyBarrier("BOUND");
         k3po.finish();
     }
+*/
 }
