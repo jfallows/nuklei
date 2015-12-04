@@ -17,5 +17,5 @@ package org.kaazing.nuklei.http.internal.translator;
 
 public interface TranslatorCommand
 {
-    void execute(Translator responder);
+    void execute(Translator translator);
 }

@@ -22,27 +22,33 @@ public final class PrepareCommand implements TranslatorCommand
     private final long correlationId;
     private final String destination;
     private final long destinationRef;
+    private final String handler;
+    private final Object headers;
 
     public PrepareCommand(
         long correlationId,
         String destination,
-        long destinationRef)
+        long destinationRef,
+        String handler,
+        Object headers)
     {
         this.correlationId = correlationId;
         this.destination = destination;
         this.destinationRef = destinationRef;
+        this.handler = handler;
+        this.headers = headers;
     }
 
     @Override
-    public void execute(Translator reflector)
+    public void execute(Translator translator)
     {
-        reflector.doPrepare(correlationId, destination, destinationRef);
+        translator.doPrepare(correlationId, destination, destinationRef, handler, headers);
     }
 
     @Override
     public String toString()
     {
-        return format("PREPARE [correlationId=%d, destination=\"%s\", destinationRef=%d]",
-                correlationId, destination, destinationRef);
+        return format("PREPARE [correlationId=%d, destination=\"%s\", destinationRef=%d, handler=\"%s\", headers=%s]",
+                correlationId, destination, destinationRef, handler, headers);
     }
 }

@@ -19,29 +19,36 @@ import static java.lang.String.format;
 
 public final class BindCommand implements TranslatorCommand
 {
-    private final long correlationId;
     private final String source;
     private final long sourceRef;
+    private final String handler;
+    private final long correlationId;
+    private final Object headers;
 
     public BindCommand(
         long correlationId,
         String source,
-        long sourceRef)
+        long sourceRef,
+        String handler,
+        Object headers)
     {
         this.correlationId = correlationId;
         this.source = source;
         this.sourceRef = sourceRef;
+        this.handler = handler;
+        this.headers = headers;
     }
 
     @Override
-    public void execute(Translator reflector)
+    public void execute(Translator translator)
     {
-        reflector.doBind(correlationId, source, sourceRef);
+        translator.doBind(correlationId, source, sourceRef, handler, headers);
     }
 
     @Override
     public String toString()
     {
-        return format("BIND [correlationId=%d, source=\"%s\", sourceRef=%d]", correlationId, source, sourceRef);
+        return format("BIND [correlationId=%d, source=\"%s\", sourceRef=%d, handler=\"%s\", headers=%s]",
+                correlationId, source, sourceRef, handler, headers);
     }
 }

@@ -17,7 +17,10 @@ package org.kaazing.nuklei.http.internal.types.control;
 
 import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_UNPREPARED_RESPONSE;
 
+import java.nio.charset.StandardCharsets;
+
 import org.kaazing.nuklei.http.internal.types.Flyweight;
+import org.kaazing.nuklei.http.internal.types.StringFW;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
@@ -28,16 +31,19 @@ public final class UnpreparedFW extends Flyweight
     private static final int FIELD_OFFSET_CORRELATION_ID = 0;
     private static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
 
-    private static final int FIELD_OFFSET_PREPARATION = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
+    private static final int FIELD_OFFSET_DESTINATION = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
+    private static final int FIELD_SIZE_DESTINATION_REF = BitUtil.SIZE_OF_LONG;
 
-    private final PreparationFW preparationRO = new PreparationFW();
+    private final StringFW destinationRO = new StringFW();
+    private final StringFW handlerRO = new StringFW();
 
     @Override
     public UnpreparedFW wrap(DirectBuffer buffer, int offset, int actingLimit)
     {
         super.wrap(buffer, offset);
 
-        this.preparationRO.wrap(buffer, offset + FIELD_OFFSET_PREPARATION, actingLimit);
+        this.destinationRO.wrap(buffer, offset + FIELD_OFFSET_DESTINATION, actingLimit);
+        this.handlerRO.wrap(buffer, destinationRO.limit() + FIELD_SIZE_DESTINATION_REF, actingLimit);
 
         checkLimit(limit(), actingLimit);
 
@@ -47,33 +53,49 @@ public final class UnpreparedFW extends Flyweight
     @Override
     public int limit()
     {
-        return preparation().limit();
+        return handler().limit();
     }
 
     public int typeId()
     {
         return TYPE_ID_UNPREPARED_RESPONSE;
     }
-
     public long correlationId()
     {
         return buffer().getLong(offset() + FIELD_OFFSET_CORRELATION_ID);
     }
 
-    public PreparationFW preparation()
+    public StringFW destination()
     {
-        return preparationRO;
+        return destinationRO;
+    }
+
+    public long destinationRef()
+    {
+        return buffer().getLong(destination().limit());
+    }
+
+    public StringFW handler()
+    {
+        return handlerRO;
+    }
+
+    public long headersOffset()
+    {
+        return handlerRO.limit();
     }
 
     @Override
     public String toString()
     {
-        return String.format("[correlationId=%d, preparationRO=%s]", correlationId(), preparation());
+        return String.format("[correlationId=%d, destination=\"%s\", destinationRef=%d, handler=\"%s\"]",
+                correlationId(), destination(), destinationRef(), handler());
     }
 
     public static final class Builder extends Flyweight.Builder<UnpreparedFW>
     {
-        private final PreparationFW.Builder preparationRW = new PreparationFW.Builder();
+        private final StringFW.Builder destinationRW = new StringFW.Builder();
+        private final StringFW.Builder handlerRW = new StringFW.Builder();
 
         public Builder()
         {
@@ -85,7 +107,7 @@ public final class UnpreparedFW extends Flyweight
         {
             super.wrap(buffer, offset, maxLimit);
 
-            this.preparationRW.wrap(buffer, offset + FIELD_OFFSET_PREPARATION, maxLimit);
+            this.destinationRW.wrap(buffer, offset + FIELD_OFFSET_DESTINATION, maxLimit);
 
             return this;
         }
@@ -96,9 +118,32 @@ public final class UnpreparedFW extends Flyweight
             return this;
         }
 
-        public PreparationFW.Builder preparation()
+        public Builder destination(String destination)
         {
-            return preparationRW;
+            destination().set(destination, StandardCharsets.UTF_8);
+            return this;
+        }
+
+        public Builder destinationRef(long destinationRef)
+        {
+            buffer().putLong(destination().build().limit(), destinationRef);
+            return this;
+        }
+
+        public Builder handler(String handler)
+        {
+            handler().set(handler, StandardCharsets.UTF_8);
+            return this;
+        }
+
+        protected StringFW.Builder destination()
+        {
+            return this.destinationRW.wrap(buffer(), offset() + FIELD_OFFSET_DESTINATION, maxLimit());
+        }
+
+        protected StringFW.Builder handler()
+        {
+            return this.handlerRW.wrap(buffer(), destination().build().limit() + FIELD_SIZE_DESTINATION_REF, maxLimit());
         }
     }
 }

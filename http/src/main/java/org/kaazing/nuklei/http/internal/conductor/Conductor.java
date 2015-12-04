@@ -28,6 +28,24 @@ import java.util.function.Consumer;
 
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.http.internal.Context;
+import org.kaazing.nuklei.http.internal.translator.TranslatorProxy;
+import org.kaazing.nuklei.http.internal.types.control.BindFW;
+import org.kaazing.nuklei.http.internal.types.control.BoundFW;
+import org.kaazing.nuklei.http.internal.types.control.CaptureFW;
+import org.kaazing.nuklei.http.internal.types.control.CapturedFW;
+import org.kaazing.nuklei.http.internal.types.control.ErrorFW;
+import org.kaazing.nuklei.http.internal.types.control.PrepareFW;
+import org.kaazing.nuklei.http.internal.types.control.PreparedFW;
+import org.kaazing.nuklei.http.internal.types.control.RouteFW;
+import org.kaazing.nuklei.http.internal.types.control.RoutedFW;
+import org.kaazing.nuklei.http.internal.types.control.UnbindFW;
+import org.kaazing.nuklei.http.internal.types.control.UnboundFW;
+import org.kaazing.nuklei.http.internal.types.control.UncaptureFW;
+import org.kaazing.nuklei.http.internal.types.control.UncapturedFW;
+import org.kaazing.nuklei.http.internal.types.control.UnprepareFW;
+import org.kaazing.nuklei.http.internal.types.control.UnpreparedFW;
+import org.kaazing.nuklei.http.internal.types.control.UnrouteFW;
+import org.kaazing.nuklei.http.internal.types.control.UnroutedFW;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
@@ -40,6 +58,26 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
 {
     private static final int SEND_BUFFER_CAPACITY = 1024; // TODO: Configuration and Context
 
+    private final CaptureFW captureRO = new CaptureFW();
+    private final UncaptureFW uncaptureRO = new UncaptureFW();
+    private final RouteFW routeRO = new RouteFW();
+    private final UnrouteFW unrouteRO = new UnrouteFW();
+    private final BindFW bindRO = new BindFW();
+    private final UnbindFW unbindRO = new UnbindFW();
+    private final PrepareFW prepareRO = new PrepareFW();
+    private final UnprepareFW unprepareRO = new UnprepareFW();
+
+    private final ErrorFW.Builder errorRW = new ErrorFW.Builder();
+    private final CapturedFW.Builder capturedRW = new CapturedFW.Builder();
+    private final UncapturedFW.Builder uncapturedRW = new UncapturedFW.Builder();
+    private final RoutedFW.Builder routedRW = new RoutedFW.Builder();
+    private final UnroutedFW.Builder unroutedRW = new UnroutedFW.Builder();
+    private final BoundFW.Builder boundRW = new BoundFW.Builder();
+    private final UnboundFW.Builder unboundRW = new UnboundFW.Builder();
+    private final PreparedFW.Builder preparedRW = new PreparedFW.Builder();
+    private final UnpreparedFW.Builder unpreparedRW = new UnpreparedFW.Builder();
+
+    private final TranslatorProxy translatorProxy;
     private final OneToOneConcurrentArrayQueue<ConductorResponse> translatorResponses;
 
     private final RingBuffer conductorCommands;
@@ -48,6 +86,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
 
     public Conductor(Context context)
     {
+        this.translatorProxy = new TranslatorProxy(context);
         this.translatorResponses = context.translatorResponseQueue();
         this.conductorCommands = context.conductorCommands();
         this.conductorResponses = context.conductorResponses();
@@ -79,57 +118,113 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
 
     public void onErrorResponse(long correlationId)
     {
-        // TODO
+        ErrorFW errorRO = errorRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                                 .correlationId(correlationId)
+                                 .build();
+
+        conductorResponses.transmit(errorRO.typeId(), errorRO.buffer(), errorRO.offset(), errorRO.length());
     }
 
     public void onCapturedResponse(long correlationId)
     {
-        // TODO
+        CapturedFW capturedRO = capturedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                                          .correlationId(correlationId)
+                                          .build();
+
+        conductorResponses.transmit(capturedRO.typeId(), capturedRO.buffer(), capturedRO.offset(), capturedRO.length());
     }
 
     public void onUncapturedResponse(long correlationId)
     {
-        // TODO
+        UncapturedFW uncapturedRO = uncapturedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                                                .correlationId(correlationId)
+                                                .build();
+
+        conductorResponses.transmit(
+                uncapturedRO.typeId(), uncapturedRO.buffer(), uncapturedRO.offset(), uncapturedRO.length());
     }
 
     public void onRoutedResponse(long correlationId)
     {
-        // TODO
+        RoutedFW routedRO = routedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                                    .correlationId(correlationId)
+                                    .build();
+
+        conductorResponses.transmit(routedRO.typeId(), routedRO.buffer(), routedRO.offset(), routedRO.length());
     }
 
     public void onUnroutedResponse(long correlationId)
     {
-        // TODO
+        UnroutedFW unroutedRO = unroutedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                                          .correlationId(correlationId)
+                                          .build();
+
+        conductorResponses.transmit(unroutedRO.typeId(), unroutedRO.buffer(), unroutedRO.offset(), unroutedRO.length());
     }
 
     public void onBoundResponse(
         long correlationId,
         long referenceId)
     {
-        // TODO
+        BoundFW boundRO = boundRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                                 .correlationId(correlationId)
+                                 .referenceId(referenceId)
+                                 .build();
+
+        conductorResponses.transmit(boundRO.typeId(), boundRO.buffer(), boundRO.offset(), boundRO.length());
     }
 
     public void onUnboundResponse(
         long correlationId,
         String source,
-        long sourceRef)
+        long sourceRef,
+        String handler,
+        Object headers)
     {
-        // TODO
+        unboundRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                 .correlationId(correlationId)
+                 .source(source)
+                 .sourceRef(sourceRef)
+                 .handler(handler);
+
+        // TODO: headers
+
+        UnboundFW unboundRO = unboundRW.build();
+
+        conductorResponses.transmit(unboundRO.typeId(), unboundRO.buffer(), unboundRO.offset(), unboundRO.length());
     }
 
     public void onPreparedResponse(
         long correlationId,
         long referenceId)
     {
-        // TODO
+        PreparedFW preparedRO = preparedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                                          .correlationId(correlationId)
+                                          .referenceId(referenceId)
+                                          .build();
+
+        conductorResponses.transmit(preparedRO.typeId(), preparedRO.buffer(), preparedRO.offset(), preparedRO.length());
     }
 
     public void onUnpreparedResponse(
         long correlationId,
         String destination,
-        long destinationRef)
+        long destinationRef,
+        String handler,
+        Object headers)
     {
-        // TODO
+        unpreparedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                    .correlationId(correlationId)
+                    .destination(destination)
+                    .destinationRef(destinationRef)
+                    .handler(handler);
+
+        // TODO: headers
+
+        UnpreparedFW unpreparedRO = unpreparedRW.build();
+
+        conductorResponses.transmit(
+            unpreparedRO.typeId(), unpreparedRO.buffer(), unpreparedRO.offset(), unpreparedRO.length());
     }
 
     private void handleCommand(int msgTypeId, DirectBuffer buffer, int index, int length)
@@ -168,41 +263,87 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
 
     private void handleCaptureCommand(DirectBuffer buffer, int index, int length)
     {
-        // TODO
+        captureRO.wrap(buffer, index, index + length);
+
+        long correlationId = captureRO.correlationId();
+        String source = captureRO.source().asString();
+
+        translatorProxy.doCapture(correlationId, source);
     }
 
     private void handleUncaptureCommand(DirectBuffer buffer, int index, int length)
     {
-        // TODO
+        uncaptureRO.wrap(buffer, index, index + length);
+
+        long correlationId = uncaptureRO.correlationId();
+        String source = uncaptureRO.source().asString();
+
+        translatorProxy.doUncapture(correlationId, source);
     }
 
     private void handleRouteCommand(DirectBuffer buffer, int index, int length)
     {
-        // TODO
+        routeRO.wrap(buffer, index, index + length);
+
+        long correlationId = routeRO.correlationId();
+        String destination = routeRO.destination().asString();
+
+        translatorProxy.doRoute(correlationId, destination);
     }
 
     private void handleUnrouteCommand(DirectBuffer buffer, int index, int length)
     {
-        // TODO
+        unrouteRO.wrap(buffer, index, index + length);
+
+        long correlationId = unrouteRO.correlationId();
+        String destination = unrouteRO.destination().asString();
+
+        translatorProxy.doUnroute(correlationId, destination);
     }
 
     private void handleBindCommand(DirectBuffer buffer, int index, int length)
     {
-        // TODO
+        bindRO.wrap(buffer, index, index + length);
+
+        long correlationId = bindRO.correlationId();
+        String source = bindRO.source().asString();
+        long sourceRef = bindRO.sourceRef();
+        String handler = bindRO.handler().asString();
+        Object headers = new Object(); // TODO
+
+        translatorProxy.doBind(correlationId, source, sourceRef, handler, headers);
     }
 
     private void handleUnbindCommand(DirectBuffer buffer, int index, int length)
     {
-        // TODO
+        unbindRO.wrap(buffer, index, index + length);
+
+        long correlationId = unbindRO.correlationId();
+        long referenceId = unbindRO.referenceId();
+
+        translatorProxy.doUnbind(correlationId, referenceId);
     }
 
     private void handlePrepareCommand(DirectBuffer buffer, int index, int length)
     {
-        // TODO
+        prepareRO.wrap(buffer, index, index + length);
+
+        long correlationId = prepareRO.correlationId();
+        String destination = prepareRO.destination().asString();
+        long destinationRef = prepareRO.destinationRef();
+        String handler = prepareRO.handler().asString();
+        Object headers = new Object(); // TODO
+
+        translatorProxy.doPrepare(correlationId, destination, destinationRef, handler, headers);
     }
 
     private void handleUnprepareCommand(DirectBuffer buffer, int index, int length)
     {
-        // TODO
+        unprepareRO.wrap(buffer, index, index + length);
+
+        long correlationId = unprepareRO.correlationId();
+        long referenceId = unprepareRO.referenceId();
+
+        translatorProxy.doUnprepare(correlationId, referenceId);
     }
 }

@@ -18,19 +18,19 @@ package org.kaazing.nuklei.http.internal.translator;
 public final class UncaptureCommand implements TranslatorCommand
 {
     private final long correlationId;
-    private final String handler;
+    private final String source;
 
     public UncaptureCommand(
         long correlationId,
-        String handler)
+        String source)
     {
         this.correlationId = correlationId;
-        this.handler = handler;
+        this.source = source;
     }
 
     @Override
     public void execute(Translator reflector)
     {
-        reflector.doUncapture(correlationId, handler);
+        reflector.doUncapture(correlationId, source);
     }
 }

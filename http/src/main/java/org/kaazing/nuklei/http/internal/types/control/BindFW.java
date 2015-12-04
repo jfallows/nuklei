@@ -17,7 +17,10 @@ package org.kaazing.nuklei.http.internal.types.control;
 
 import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_BIND_COMMAND;
 
+import java.nio.charset.StandardCharsets;
+
 import org.kaazing.nuklei.http.internal.types.Flyweight;
+import org.kaazing.nuklei.http.internal.types.StringFW;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
@@ -28,16 +31,19 @@ public final class BindFW extends Flyweight
     private static final int FIELD_OFFSET_CORRELATION_ID = 0;
     private static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
 
-    private static final int FIELD_OFFSET_BINDING = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
+    private static final int FIELD_OFFSET_SOURCE = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
+    private static final int FIELD_SIZE_SOURCE_REF = BitUtil.SIZE_OF_LONG;
 
-    private final BindingFW bindingRO = new BindingFW();
+    private final StringFW sourceRO = new StringFW();
+    private final StringFW handlerRO = new StringFW();
 
     @Override
     public BindFW wrap(DirectBuffer buffer, int offset, int actingLimit)
     {
         super.wrap(buffer, offset);
 
-        this.bindingRO.wrap(buffer, offset + FIELD_OFFSET_BINDING, actingLimit);
+        this.sourceRO.wrap(buffer, offset + FIELD_OFFSET_SOURCE, actingLimit);
+        this.handlerRO.wrap(buffer, sourceRO.limit() + FIELD_SIZE_SOURCE_REF, actingLimit);
 
         checkLimit(limit(), actingLimit);
 
@@ -47,7 +53,7 @@ public final class BindFW extends Flyweight
     @Override
     public int limit()
     {
-        return binding().limit();
+        return handler().limit();
     }
 
     public int typeId()
@@ -60,20 +66,37 @@ public final class BindFW extends Flyweight
         return buffer().getLong(offset() + FIELD_OFFSET_CORRELATION_ID);
     }
 
-    public BindingFW binding()
+    public StringFW source()
     {
-        return bindingRO;
+        return sourceRO;
+    }
+
+    public long sourceRef()
+    {
+        return buffer().getLong(source().limit());
+    }
+
+    public StringFW handler()
+    {
+        return handlerRO;
+    }
+
+    public long headersOffset()
+    {
+        return handlerRO.limit();
     }
 
     @Override
     public String toString()
     {
-        return String.format("[correlationId=%d, bindingRO=%s]", correlationId(), binding());
+        return String.format("[correlationId=%d, source=\"%s\", sourceRef=%d, handler=\"%s\"]",
+                correlationId(), source(), sourceRef(), handler());
     }
 
     public static final class Builder extends Flyweight.Builder<BindFW>
     {
-        private final BindingFW.Builder bindingRW = new BindingFW.Builder();
+        private final StringFW.Builder sourceRW = new StringFW.Builder();
+        private final StringFW.Builder handlerRW = new StringFW.Builder();
 
         public Builder()
         {
@@ -85,8 +108,6 @@ public final class BindFW extends Flyweight
         {
             super.wrap(buffer, offset, maxLimit);
 
-            this.bindingRW.wrap(buffer, offset + FIELD_OFFSET_BINDING, maxLimit);
-
             return this;
         }
 
@@ -96,9 +117,32 @@ public final class BindFW extends Flyweight
             return this;
         }
 
-        public BindingFW.Builder binding()
+        public Builder source(String source)
         {
-            return bindingRW;
+            source().set(source, StandardCharsets.UTF_8);
+            return this;
+        }
+
+        public Builder sourceRef(long sourceRef)
+        {
+            buffer().putLong(source().build().limit(), sourceRef);
+            return this;
+        }
+
+        public Builder handler(String handler)
+        {
+            handler().set(handler, StandardCharsets.UTF_8);
+            return this;
+        }
+
+        protected StringFW.Builder source()
+        {
+            return this.sourceRW.wrap(buffer(), offset() + FIELD_OFFSET_SOURCE, maxLimit());
+        }
+
+        protected StringFW.Builder handler()
+        {
+            return this.handlerRW.wrap(buffer(), source().build().limit() + FIELD_SIZE_SOURCE_REF, maxLimit());
         }
     }
 }

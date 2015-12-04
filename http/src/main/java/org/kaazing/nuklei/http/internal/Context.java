@@ -173,7 +173,7 @@ public final class Context implements Closeable
 
     public Logger logger()
     {
-        return Logger.getLogger("nuklei.echo");
+        return Logger.getLogger("nuklei.http");
     }
 
     public Context translatorCommandQueue(

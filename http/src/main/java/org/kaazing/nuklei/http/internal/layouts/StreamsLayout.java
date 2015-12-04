@@ -32,6 +32,8 @@ public final class StreamsLayout extends Layout
 {
     private final RingBuffer buffer;
 
+    private Object attachment;
+
     private StreamsLayout(
         RingBuffer buffer)
     {
@@ -41,6 +43,16 @@ public final class StreamsLayout extends Layout
     public RingBuffer buffer()
     {
         return buffer;
+    }
+
+    public void attach(Object attachment)
+    {
+        this.attachment = attachment;
+    }
+
+    public Object attachment()
+    {
+        return attachment;
     }
 
     @Override

@@ -87,9 +87,11 @@ public final class ConductorProxy
     public void onUnboundResponse(
         long correlationId,
         String source,
-        long sourceRef)
+        long sourceRef,
+        String handler,
+        Object headers)
     {
-        UnboundResponse response = new UnboundResponse(correlationId, source, sourceRef);
+        UnboundResponse response = new UnboundResponse(correlationId, source, sourceRef, handler, headers);
         if (!responseQueue.offer(response))
         {
             throw new IllegalStateException("unable to offer response");
@@ -110,9 +112,11 @@ public final class ConductorProxy
     public void onUnpreparedResponse(
         long correlationId,
         String destination,
-        long destinationRef)
+        long destinationRef,
+        String handler,
+        Object headers)
     {
-        UnpreparedResponse response = new UnpreparedResponse(correlationId, destination, destinationRef);
+        UnpreparedResponse response = new UnpreparedResponse(correlationId, destination, destinationRef, handler, headers);
         if (!responseQueue.offer(response))
         {
             throw new IllegalStateException("unable to offer response");

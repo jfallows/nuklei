@@ -13,32 +13,59 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.http.internal.conductor;
+package org.kaazing.nuklei.http.internal.translator;
 
-public final class UnpreparedResponse implements ConductorResponse
+public class PrepareState
 {
-    private final long correlationId;
+    private final long handlerRef;
     private final String destination;
     private final long destinationRef;
-    private final String handler;
     private final Object headers;
+    private final String handler;
 
-    public UnpreparedResponse(
-        long correlationId,
+    public PrepareState(
         String destination,
         long destinationRef,
+        Object headers,
         String handler,
-        Object headers)
+        long handlerRef)
     {
-        this.correlationId = correlationId;
         this.destination = destination;
         this.destinationRef = destinationRef;
-        this.handler = handler;
         this.headers = headers;
+        this.handler = handler;
+        this.handlerRef = handlerRef;
     }
 
-    public void execute(Conductor conductor)
+    public String destination()
     {
-        conductor.onUnpreparedResponse(correlationId, destination, destinationRef, handler, headers);
+        return destination;
+    }
+
+    public long destinationRef()
+    {
+        return this.destinationRef;
+    }
+
+    public Object headers()
+    {
+        return headers;
+    }
+
+    public String handler()
+    {
+        return handler;
+    }
+
+    public long handlerRef()
+    {
+        return this.handlerRef;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("[destination=\"%s\", destinationRef=%d, headers=%s, handlerRef=%d]",
+                destination, destinationRef, headers, handlerRef);
     }
 }

@@ -13,33 +13,59 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.http.internal.conductor;
+package org.kaazing.nuklei.http.internal.translator;
 
-
-public final class UnboundResponse implements ConductorResponse
+public class BindState
 {
-    private final long correlationId;
+    private final long handlerRef;
     private final String source;
     private final long sourceRef;
-    private final String handler;
     private final Object headers;
+    private final String handler;
 
-    public UnboundResponse(
-        long correlationId,
+    public BindState(
         String source,
         long sourceRef,
+        Object headers,
         String handler,
-        Object headers)
+        long handlerRef)
     {
-        this.correlationId = correlationId;
         this.source = source;
         this.sourceRef = sourceRef;
-        this.handler = handler;
         this.headers = headers;
+        this.handler = handler;
+        this.handlerRef = handlerRef;
     }
 
-    public void execute(Conductor conductor)
+    public String source()
     {
-        conductor.onUnboundResponse(correlationId, source, sourceRef, handler, headers);
+        return source;
+    }
+
+    public long sourceRef()
+    {
+        return this.sourceRef;
+    }
+
+    public Object headers()
+    {
+        return headers;
+    }
+
+    public String handler()
+    {
+        return handler;
+    }
+
+    public long handlerRef()
+    {
+        return this.handlerRef;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("[source=\"%s\", sourceRef=%d, headers=%s, handlerRef=%d]",
+                source, sourceRef, headers, handlerRef);
     }
 }

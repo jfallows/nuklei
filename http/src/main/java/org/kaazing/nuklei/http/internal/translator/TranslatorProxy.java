@@ -34,9 +34,9 @@ public final class TranslatorProxy
 
     public void doCapture(
         long correlationId,
-        String handler)
+        String source)
     {
-        CaptureCommand command = new CaptureCommand(correlationId, handler);
+        CaptureCommand command = new CaptureCommand(correlationId, source);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");
@@ -47,9 +47,9 @@ public final class TranslatorProxy
 
     public void doUncapture(
         long correlationId,
-        String handler)
+        String source)
     {
-        UncaptureCommand command = new UncaptureCommand(correlationId, handler);
+        UncaptureCommand command = new UncaptureCommand(correlationId, source);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");
@@ -87,9 +87,11 @@ public final class TranslatorProxy
     public void doBind(
         long correlationId,
         String source,
-        long sourceRef)
+        long sourceRef,
+        String handler,
+        Object headers)
     {
-        BindCommand command = new BindCommand(correlationId, source, sourceRef);
+        BindCommand command = new BindCommand(correlationId, source, sourceRef, handler, headers);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");
@@ -114,9 +116,11 @@ public final class TranslatorProxy
     public void doPrepare(
         long correlationId,
         String destination,
-        long destinationRef)
+        long destinationRef,
+        String handler,
+        Object headers)
     {
-        PrepareCommand command = new PrepareCommand(correlationId, destination, destinationRef);
+        PrepareCommand command = new PrepareCommand(correlationId, destination, destinationRef, handler, headers);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");
