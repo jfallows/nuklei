@@ -72,7 +72,7 @@ public final class EchoController implements Nukleus
     }
 
     @Override
-    public int process() throws Exception
+    public int process()
     {
         int weight = 0;
 

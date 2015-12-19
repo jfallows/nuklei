@@ -13,9 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.http.internal.translator;
+package org.kaazing.nuklei.http.internal.reader;
 
-public interface TranslatorCommand
+
+public final class PreparedResponse implements ReaderCommand
 {
-    void execute(Translator translator);
+    private final long correlationId;
+    private final String sourceName;
+    private final long referenceId;
+
+    public PreparedResponse(
+        String sourceName,
+        long correlationId,
+        long referenceId)
+    {
+        this.correlationId = correlationId;
+        this.sourceName = sourceName;
+        this.referenceId = referenceId;
+    }
+
+    public void execute(Reader reader)
+    {
+        reader.onPreparedResponse(sourceName, correlationId, referenceId);
+    }
 }

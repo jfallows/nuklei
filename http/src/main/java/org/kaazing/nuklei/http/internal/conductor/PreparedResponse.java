@@ -38,6 +38,6 @@ public final class PreparedResponse implements ConductorResponse
     @Override
     public String toString()
     {
-        return format("PREPARED [correlationId=%d,referenceId=%d]", correlationId, referenceId);
+        return format("ENCODE [correlationId=%d,referenceId=%d]", correlationId, referenceId);
     }
 }

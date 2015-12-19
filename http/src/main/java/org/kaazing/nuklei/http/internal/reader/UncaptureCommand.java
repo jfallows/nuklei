@@ -13,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.http.internal.translator;
+package org.kaazing.nuklei.http.internal.reader;
 
-
-public final class CaptureCommand implements TranslatorCommand
+public final class UncaptureCommand implements ReaderCommand
 {
     private final long correlationId;
     private final String source;
 
-    public CaptureCommand(
+    public UncaptureCommand(
         long correlationId,
         String source)
     {
@@ -30,8 +29,8 @@ public final class CaptureCommand implements TranslatorCommand
     }
 
     @Override
-    public void execute(Translator reflector)
+    public void execute(Reader reflector)
     {
-        reflector.doCapture(correlationId, source);
+        reflector.doUncapture(correlationId, source);
     }
 }

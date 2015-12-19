@@ -13,32 +13,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.http.internal.translator;
+package org.kaazing.nuklei.http.internal.reader;
 
 import static java.lang.String.format;
 
-public final class UnbindCommand implements TranslatorCommand
+public final class BindCommand implements ReaderCommand
 {
+    private final String source;
+    private final long sourceRef;
+    private final String handler;
     private final long correlationId;
-    private final long referenceId;
+    private final Object headers;
 
-    public UnbindCommand(
+    public BindCommand(
         long correlationId,
-        long referenceId)
+        String source,
+        long sourceRef,
+        String handler,
+        Object headers)
     {
         this.correlationId = correlationId;
-        this.referenceId = referenceId;
+        this.source = source;
+        this.sourceRef = sourceRef;
+        this.handler = handler;
+        this.headers = headers;
     }
 
     @Override
-    public void execute(Translator reflector)
+    public void execute(Reader reader)
     {
-        reflector.doUnbind(correlationId, referenceId);
+        reader.doBind(correlationId, source, sourceRef, handler, headers);
     }
 
     @Override
     public String toString()
     {
-        return format("UNBIND [correlationId=%d, referenceId=%d]", correlationId, referenceId);
+        return format("BIND [correlationId=%d, source=\"%s\", sourceRef=%d, handler=\"%s\", headers=%s]",
+                correlationId, source, sourceRef, handler, headers);
     }
 }

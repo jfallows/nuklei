@@ -13,41 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.http.internal.translator;
+package org.kaazing.nuklei.http.internal.types.stream;
 
-import java.nio.channels.SocketChannel;
+import org.kaazing.nuklei.http.internal.types.Flyweight;
 
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.DirectBuffer;
 
-public class ConnectingState
+public final class HeaderFW extends Flyweight
 {
-    private final long streamId;
-    private final RingBuffer buffer;
-    private final SocketChannel channel;
-
-    public ConnectingState(
-        long streamId,
-        RingBuffer buffer,
-        SocketChannel channel)
-    {
-        this.streamId = streamId;
-        this.buffer = buffer;
-        this.channel = channel;
-    }
+    private static final int FIELD_OFFSET_STREAM_ID = 0;
+    private static final int FIELD_SIZE_STREAM_ID = BitUtil.SIZE_OF_LONG;
 
     public long streamId()
     {
-        return this.streamId;
+        return buffer().getLong(offset() + FIELD_OFFSET_STREAM_ID);
     }
 
-    public RingBuffer buffer()
+    @Override
+    public int limit()
     {
-        return buffer;
+        return offset() + FIELD_OFFSET_STREAM_ID + FIELD_SIZE_STREAM_ID;
     }
 
-    public SocketChannel channel()
+    public HeaderFW wrap(DirectBuffer buffer, int offset, int actingLimit)
     {
-        return channel;
+        super.wrap(buffer, offset);
+
+        checkLimit(limit(), actingLimit);
+
+        return this;
     }
 
     @Override
@@ -55,5 +50,4 @@ public class ConnectingState
     {
         return String.format("[streamId=%d]", streamId());
     }
-
 }

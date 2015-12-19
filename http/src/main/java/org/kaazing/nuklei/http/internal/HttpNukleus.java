@@ -15,35 +15,24 @@
  */
 package org.kaazing.nuklei.http.internal;
 
-import java.util.function.Consumer;
+import java.util.function.ToIntFunction;
 
 import org.kaazing.nuklei.CompositeNukleus;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.http.internal.conductor.Conductor;
-import org.kaazing.nuklei.http.internal.translator.Translator;
+import org.kaazing.nuklei.http.internal.reader.Reader;
 
 public final class HttpNukleus extends CompositeNukleus
 {
     private final Context context;
     private final Conductor conductor;
-    private final Translator translator;
+    private final Reader reader;
 
     HttpNukleus(Context context)
     {
         this.conductor = new Conductor(context);
-        this.translator = new Translator(context);
+        this.reader = new Reader(context);
         this.context = context;
-    }
-
-    @Override
-    public int process() throws Exception
-    {
-        int weight = 0;
-
-        weight += conductor.process();
-        weight += translator.process();
-
-        return weight;
     }
 
     @Override
@@ -56,14 +45,18 @@ public final class HttpNukleus extends CompositeNukleus
     public void close() throws Exception
     {
         conductor.close();
-        translator.close();
+        reader.close();
         context.close();
     }
 
     @Override
-    public void forEach(Consumer<? super Nukleus> action)
+    public int process(ToIntFunction<? super Nukleus> function)
     {
-        action.accept(conductor);
-        action.accept(translator);
+        int weight = 0;
+
+        weight += function.applyAsInt(conductor);
+        weight += reader.process(function);
+
+        return weight;
     }
 }

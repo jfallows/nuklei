@@ -13,65 +13,75 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.http.internal.translator;
+package org.kaazing.nuklei.http.internal.reader;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
+import org.kaazing.nuklei.CompositeNukleus;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.http.internal.Context;
 import org.kaazing.nuklei.http.internal.conductor.ConductorProxy;
 import org.kaazing.nuklei.http.internal.layouts.StreamsLayout;
+import org.kaazing.nuklei.http.internal.readable.Readable;
+import org.kaazing.nuklei.http.internal.readable.ReadableProxy;
 
 import uk.co.real_logic.agrona.LangUtil;
+import uk.co.real_logic.agrona.collections.ArrayUtil;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-public final class Translator implements Nukleus, Consumer<TranslatorCommand>
+public final class Reader extends CompositeNukleus implements Consumer<ReaderCommand>
 {
     private final ConductorProxy conductorProxy;
-    private final OneToOneConcurrentArrayQueue<TranslatorCommand> commandQueue;
+    private final ManyToOneConcurrentArrayQueue<ReaderCommand> commandQueue;
 
-    private final AtomicCounter streamsBound;
-    private final AtomicCounter streamsPrepared;
+    private final Context context;
 
     private final Map<String, StreamsLayout> capturedStreams;
     private final Map<String, StreamsLayout> routedStreams;
 
-    private final Long2ObjectHashMap<BindState> bindStateByRef;
-    private final Long2ObjectHashMap<PrepareState> prepareStateByRef;
+    private final Long2ObjectHashMap<String> boundSources;
+    private final Long2ObjectHashMap<String> preparedSources;
 
     private final Function<String, File> captureStreamsFile;
     private final Function<String, File> routeStreamsFile;
     private final int streamsCapacity;
 
-    public Translator(Context context)
+    private Readable[] readables;
+
+    public Reader(Context context)
     {
+        this.context = context;
         this.conductorProxy = new ConductorProxy(context);
-        this.streamsBound = context.counters().streamsBound();
-        this.streamsPrepared = context.counters().streamsPrepared();
-        this.commandQueue = context.translatorCommandQueue();
+        this.commandQueue = context.readerCommandQueue();
         this.captureStreamsFile = context.captureStreamsFile();
         this.routeStreamsFile = context.routeStreamsFile();
-        this.streamsCapacity = context.streamsCapacity();
+        this.streamsCapacity = context.streamsBufferCapacity();
         this.capturedStreams = new HashMap<>();
         this.routedStreams = new HashMap<>();
-        this.bindStateByRef = new Long2ObjectHashMap<>();
-        this.prepareStateByRef = new Long2ObjectHashMap<>();
+        this.boundSources = new Long2ObjectHashMap<>();
+        this.preparedSources = new Long2ObjectHashMap<>();
+        this.readables = new Readable[0];
     }
 
     @Override
-    public int process() throws Exception
+    public int process(ToIntFunction<? super Nukleus> function)
     {
         int weight = 0;
 
         weight += commandQueue.drain(this);
 
-        // TODO: read streams
+        int length = readables.length;
+        for (int i = 0; i < length; i++)
+        {
+            weight += function.applyAsInt(readables[i]);
+        }
 
         return weight;
     }
@@ -79,15 +89,14 @@ public final class Translator implements Nukleus, Consumer<TranslatorCommand>
     @Override
     public String name()
     {
-        return "translator";
+        return "reader";
     }
 
     @Override
-    public void accept(TranslatorCommand command)
+    public void accept(ReaderCommand command)
     {
         command.execute(this);
     }
-
 
     public void doCapture(
         long correlationId,
@@ -107,8 +116,11 @@ public final class Translator implements Nukleus, Consumer<TranslatorCommand>
                                                                       .createFile(true)
                                                                       .build();
 
-                TranslatorState newState = new TranslatorState(source, newCapture.buffer());
-                newCapture.attach(newState);
+                Readable newReadable = new Readable(context, source, newCapture.buffer());
+
+                readables = ArrayUtil.add(readables, newReadable);
+
+                newCapture.attach(newReadable);
 
                 capturedStreams.put(source, newCapture);
 
@@ -135,6 +147,10 @@ public final class Translator implements Nukleus, Consumer<TranslatorCommand>
         {
             try
             {
+                Readable oldReadable = (Readable) oldCapture.attachment();
+
+                readables = ArrayUtil.remove(readables, oldReadable);
+
                 oldCapture.close();
 
                 conductorProxy.onUncapturedResponse(correlationId);
@@ -203,36 +219,30 @@ public final class Translator implements Nukleus, Consumer<TranslatorCommand>
 
     public void doBind(
         long correlationId,
-        String source,
+        String sourceName,
         long sourceRef,
-        String handler,
+        String destinationName,
         Object headers)
     {
-        StreamsLayout capture = capturedStreams.get(source);
-        StreamsLayout route = routedStreams.get(handler);
+        StreamsLayout sourceCapture = capturedStreams.get(sourceName);
+        StreamsLayout sourceRoute = routedStreams.get(sourceName);
+        StreamsLayout destinationCapture = capturedStreams.get(destinationName);
+        StreamsLayout destinationRoute = routedStreams.get(destinationName);
 
-        if (capture == null || route == null)
+        if (sourceCapture == null || sourceRoute == null || destinationCapture == null || destinationRoute == null)
         {
             conductorProxy.onErrorResponse(correlationId);
         }
         else
         {
-            try
-            {
-                final long handlerRef = streamsBound.increment();
+            Readable source = (Readable) sourceCapture.attachment();
+            ReadableProxy sourceProxy = source.proxy();
+            RingBuffer sourceBuffer = sourceRoute.buffer();
+            Readable destination = (Readable) destinationCapture.attachment();
+            ReadableProxy destinationProxy = destination.proxy();
+            RingBuffer destinationBuffer = destinationRoute.buffer();
 
-                TranslatorState state = (TranslatorState) capture.attachment();
-
-                BindState newBindState = state.doBind(sourceRef, headers, handler, handlerRef, route.buffer());
-                bindStateByRef.put(handlerRef, newBindState);
-
-                conductorProxy.onBoundResponse(correlationId, handlerRef);
-            }
-            catch (Exception e)
-            {
-                conductorProxy.onErrorResponse(correlationId);
-                throw new RuntimeException(e);
-            }
+            sourceProxy.doBind(correlationId, sourceRef, headers, destinationProxy, sourceBuffer, destinationBuffer);
         }
     }
 
@@ -240,65 +250,49 @@ public final class Translator implements Nukleus, Consumer<TranslatorCommand>
         long correlationId,
         long referenceId)
     {
-        BindState oldBindState = bindStateByRef.remove(referenceId);
+        String source = boundSources.remove(referenceId);
 
-        if (oldBindState == null)
+        if (source == null)
         {
             conductorProxy.onErrorResponse(correlationId);
         }
         else
         {
-            try
-            {
-                String source = oldBindState.source();
-                long sourceRef = oldBindState.sourceRef();
-                String handler = oldBindState.handler();
-                Object headers = oldBindState.headers();
+            StreamsLayout capture = capturedStreams.get(source);
+            Readable sourceReadable = (Readable) capture.attachment();
 
-                // TODO: translatorState doUnbind
-
-                conductorProxy.onUnboundResponse(correlationId, source, sourceRef, handler, headers);
-            }
-            catch (Exception e)
-            {
-                conductorProxy.onErrorResponse(correlationId);
-                throw new RuntimeException(e);
-            }
+            ReadableProxy sourceProxy = sourceReadable.proxy();
+            sourceProxy.doUnbind(correlationId, referenceId);
         }
     }
 
     public void doPrepare(
         long correlationId,
-        String destination,
-        long destinationRef,
-        String handler,
+        String sourceName,
+        long sourceRef,
+        String destinationName,
         Object headers)
     {
-        StreamsLayout capture = capturedStreams.get(destination);
-        StreamsLayout route = routedStreams.get(handler);
+        StreamsLayout sourceCapture = capturedStreams.get(sourceName);
+        StreamsLayout sourceRoute = routedStreams.get(sourceName);
+        StreamsLayout destinationCapture = capturedStreams.get(destinationName);
+        StreamsLayout destinationRoute = routedStreams.get(destinationName);
 
-        if (capture == null || route == null)
+        if (sourceCapture == null || sourceRoute == null || destinationCapture == null || destinationRoute == null)
         {
             conductorProxy.onErrorResponse(correlationId);
         }
         else
         {
-            try
-            {
-                final long handlerRef = streamsPrepared.increment();
+            Readable source = (Readable) sourceCapture.attachment();
+            ReadableProxy sourceProxy = source.proxy();
+            RingBuffer sourceBuffer = sourceRoute.buffer();
 
-                TranslatorState state = (TranslatorState) capture.attachment();
+            Readable destination = (Readable) destinationCapture.attachment();
+            ReadableProxy destinationProxy = destination.proxy();
+            RingBuffer destinationBuffer = destinationRoute.buffer();
 
-                PrepareState newPrepareState = state.doPrepare(destinationRef, headers, handler, handlerRef, route.buffer());
-                prepareStateByRef.put(handlerRef, newPrepareState);
-
-                conductorProxy.onPreparedResponse(correlationId, handlerRef);
-            }
-            catch (Exception e)
-            {
-                conductorProxy.onErrorResponse(correlationId);
-                throw new RuntimeException(e);
-            }
+            sourceProxy.doPrepare(correlationId, sourceRef, headers, destinationProxy, sourceBuffer, destinationBuffer);
         }
     }
 
@@ -306,30 +300,39 @@ public final class Translator implements Nukleus, Consumer<TranslatorCommand>
         long correlationId,
         long referenceId)
     {
-        PrepareState oldPrepareState = prepareStateByRef.remove(referenceId);
+        String source = preparedSources.remove(referenceId);
 
-        if (oldPrepareState == null)
+        if (source == null)
         {
             conductorProxy.onErrorResponse(correlationId);
         }
         else
         {
-            try
-            {
-                String destination = oldPrepareState.destination();
-                long destinationRef = oldPrepareState.destinationRef();
-                String handler = oldPrepareState.handler();
-                Object headers = oldPrepareState.headers();
+            StreamsLayout capture = capturedStreams.get(source);
+            Readable sourceReadable = (Readable) capture.attachment();
 
-                // TODO: translatorState doUnprepare
-
-                conductorProxy.onUnpreparedResponse(correlationId, destination, destinationRef, handler, headers);
-            }
-            catch (Exception e)
-            {
-                conductorProxy.onErrorResponse(correlationId);
-                throw new RuntimeException(e);
-            }
+            ReadableProxy sourceProxy = sourceReadable.proxy();
+            sourceProxy.doUnprepare(correlationId, referenceId);
         }
+    }
+
+    public void onBoundResponse(
+        String source,
+        long correlationId,
+        long referenceId)
+    {
+        boundSources.put(referenceId, source);
+
+        conductorProxy.onBoundResponse(correlationId, referenceId);
+    }
+
+    public void onPreparedResponse(
+        String source,
+        long correlationId,
+        long referenceId)
+    {
+        preparedSources.put(referenceId, source);
+
+        conductorProxy.onPreparedResponse(correlationId, referenceId);
     }
 }

@@ -13,31 +13,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.http.internal.translator;
+package org.kaazing.nuklei.http.internal.readable;
 
-public class PrepareState
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+
+public class ReadableState
 {
-    private final long handlerRef;
-    private final String destination;
+    private final long sourceRef;
+    private final ReadableProxy destination;
     private final long destinationRef;
     private final Object headers;
-    private final String handler;
+    private final RingBuffer destinationRoute;
+    private RingBuffer sourceRoute;
 
-    public PrepareState(
-        String destination,
+    public ReadableState(
+        long sourceRef,
+        ReadableProxy destination,
         long destinationRef,
         Object headers,
-        String handler,
-        long handlerRef)
+        RingBuffer sourceRoute,
+        RingBuffer destinationRoute)
     {
+        this.sourceRef = sourceRef;
         this.destination = destination;
         this.destinationRef = destinationRef;
         this.headers = headers;
-        this.handler = handler;
-        this.handlerRef = handlerRef;
+        this.destinationRoute = destinationRoute;
+        this.sourceRoute = sourceRoute;
     }
 
-    public String destination()
+    public long sourceRef()
+    {
+        return this.sourceRef;
+    }
+
+    public ReadableProxy destination()
     {
         return destination;
     }
@@ -52,20 +62,20 @@ public class PrepareState
         return headers;
     }
 
-    public String handler()
+    public RingBuffer sourceRoute()
     {
-        return handler;
+        return sourceRoute;
     }
 
-    public long handlerRef()
+    public RingBuffer destinationRoute()
     {
-        return this.handlerRef;
+        return destinationRoute;
     }
 
     @Override
     public String toString()
     {
-        return String.format("[destination=\"%s\", destinationRef=%d, headers=%s, handlerRef=%d]",
-                destination, destinationRef, headers, handlerRef);
+        return String.format("[sourceRef=%d, destination=\"%s\", destinationRef=%d, headers=%s]",
+                sourceRef, destination, destinationRef, headers);
     }
 }

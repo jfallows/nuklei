@@ -24,21 +24,25 @@ public class Configuration
 {
     public static final String DIRECTORY_PROPERTY_NAME = "nuklei.directory";
 
-    public static final String STREAMS_CAPACITY_PROPERTY_NAME = "nuklei.streams.capacity";
+    public static final String MAXIMUM_STREAMS_COUNT_PROPERTY_NAME = "nuklei.maximum.streams.count";
+
+    public static final String STREAMS_BUFFER_CAPACITY_PROPERTY_NAME = "nuklei.streams.buffer.capacity";
 
     public static final String COMMAND_BUFFER_CAPACITY_PROPERTY_NAME = "nuklei.command.buffer.capacity";
 
     public static final String RESPONSE_BUFFER_CAPACITY_PROPERTY_NAME = "nuklei.response.buffer.capacity";
 
-    public static final String COUNTER_VALUES_BUFFER_CAPACITY_PROPERTY_NAME = "nuklei.counters.buffer.capacity";
+    public static final String COUNTERS_BUFFER_CAPACITY_PROPERTY_NAME = "nuklei.counters.buffer.capacity";
 
-    public static final int STREAMS_CAPACITY_DEFAULT = 1024 * 1024;
+    public static final int MAXIMUM_STREAMS_COUNT_DEFAULT = 64;
+
+    public static final int STREAMS_BUFFER_CAPACITY_DEFAULT = 1024 * 1024;
 
     public static final int COMMAND_BUFFER_CAPACITY_DEFAULT = 1024 * 1024;
 
     public static final int RESPONSE_BUFFER_CAPACITY_DEFAULT = 1024 * 1024;
 
-    public static final int COUNTER_VALUES_BUFFER_CAPACITY_DEFAULT = 1024 * 1024;
+    public static final int COUNTERS_BUFFER_CAPACITY_DEFAULT = 1024 * 1024;
 
     private final Properties properties;
 
@@ -59,9 +63,14 @@ public class Configuration
         return new File(getProperty(DIRECTORY_PROPERTY_NAME, "./"));
     }
 
-    public int streamsCapacity()
+    public int maximumStreamsCount()
     {
-        return getInteger(STREAMS_CAPACITY_PROPERTY_NAME, STREAMS_CAPACITY_DEFAULT);
+        return getInteger(MAXIMUM_STREAMS_COUNT_PROPERTY_NAME, MAXIMUM_STREAMS_COUNT_DEFAULT);
+    }
+
+    public int streamsBufferCapacity()
+    {
+        return getInteger(STREAMS_BUFFER_CAPACITY_PROPERTY_NAME, STREAMS_BUFFER_CAPACITY_DEFAULT);
     }
 
     public int commandBufferCapacity()
@@ -74,14 +83,14 @@ public class Configuration
         return getInteger(RESPONSE_BUFFER_CAPACITY_PROPERTY_NAME, RESPONSE_BUFFER_CAPACITY_DEFAULT);
     }
 
-    public int counterValuesBufferLength()
+    public int counterValuesBufferCapacity()
     {
-        return getInteger(COUNTER_VALUES_BUFFER_CAPACITY_PROPERTY_NAME, COUNTER_VALUES_BUFFER_CAPACITY_DEFAULT);
+        return getInteger(COUNTERS_BUFFER_CAPACITY_PROPERTY_NAME, COUNTERS_BUFFER_CAPACITY_DEFAULT);
     }
 
-    public int counterLabelsBufferLength()
+    public int counterLabelsBufferCapacity()
     {
-        return counterValuesBufferLength();
+        return getInteger(COUNTERS_BUFFER_CAPACITY_PROPERTY_NAME, COUNTERS_BUFFER_CAPACITY_DEFAULT);
     }
 
     private String getProperty(String key, String defaultValue)

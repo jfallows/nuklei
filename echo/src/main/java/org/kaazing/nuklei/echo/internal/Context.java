@@ -45,7 +45,7 @@ public final class Context implements Closeable
     private boolean readonly;
     private File configDirectory;
     private ControlLayout controlRO;
-    private int streamsCapacity;
+    private int streamsBufferCapacity;
     private Function<String, File> captureStreamsFile;
     private Function<String, File> routeStreamsFile;
     private IdleStrategy idleStrategy;
@@ -71,15 +71,15 @@ public final class Context implements Closeable
         return readonly;
     }
 
-    public int streamsCapacity()
+    public int streamsBufferCapacity()
     {
-        return streamsCapacity;
+        return streamsBufferCapacity;
     }
 
     public int maxMessageLength()
     {
         // see RingBuffer.maxMessageLength()
-        return streamsCapacity / 8;
+        return streamsBufferCapacity / 8;
     }
 
     public Context captureStreamsFile(Function<String, File> captureStreamsFile)
@@ -222,7 +222,7 @@ public final class Context implements Closeable
         {
             this.configDirectory = config.directory();
 
-            this.streamsCapacity = config.streamsCapacity();
+            this.streamsBufferCapacity = config.streamsBufferCapacity();
 
             captureStreamsFile((source) -> {
                 return new File(configDirectory, format("echo/streams/%s", source));
@@ -235,8 +235,8 @@ public final class Context implements Closeable
             this.controlRO = controlRW.controlFile(new File(config.directory(), "echo/control"))
                                       .commandBufferCapacity(config.commandBufferCapacity())
                                       .responseBufferCapacity(config.responseBufferCapacity())
-                                      .counterLabelsBufferCapacity(config.counterLabelsBufferLength())
-                                      .counterValuesBufferCapacity(config.counterValuesBufferLength())
+                                      .counterLabelsBufferCapacity(config.counterLabelsBufferCapacity())
+                                      .counterValuesBufferCapacity(config.counterValuesBufferCapacity())
                                       .readonly(readonly())
                                       .build();
 

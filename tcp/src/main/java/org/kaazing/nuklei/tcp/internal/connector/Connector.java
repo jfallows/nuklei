@@ -17,6 +17,7 @@ package org.kaazing.nuklei.tcp.internal.connector;
 
 import static java.nio.channels.SelectionKey.OP_CONNECT;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -59,11 +60,11 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
     }
 
     @Override
-    public int process() throws Exception
+    public int process()
     {
         int weight = 0;
 
-        selector.selectNow();
+        selectNow();
         weight += selectedKeySet.forEach(this::processConnect);
         weight += commandQueueFromConductor.drain(this);
         weight += commandQueueFromReader.drain(this);
@@ -171,6 +172,18 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
                 writerProxy.doReset(handler, handlerRef, streamId);
                 LangUtil.rethrowUnchecked(ex);
             }
+        }
+    }
+
+    private void selectNow()
+    {
+        try
+        {
+            selector.selectNow();
+        }
+        catch (IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 

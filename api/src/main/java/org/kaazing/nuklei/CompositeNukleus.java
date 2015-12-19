@@ -15,9 +15,14 @@
  */
 package org.kaazing.nuklei;
 
-import java.util.function.Consumer;
+import java.util.function.ToIntFunction;
 
 public abstract class CompositeNukleus implements Nukleus
 {
-    public abstract void forEach(Consumer<? super Nukleus> action);
+    public final int process()
+    {
+        return process(nukleus -> { return nukleus.process(); });
+    }
+
+    public abstract int process(ToIntFunction<? super Nukleus> function);
 }

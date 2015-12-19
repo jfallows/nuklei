@@ -58,11 +58,11 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
     }
 
     @Override
-    public int process() throws Exception
+    public int process()
     {
         int weight = 0;
 
-        selector.selectNow();
+        selectNow();
         weight += selectedKeySet.forEach(this::processAccept);
         weight += commandQueue.drain(this);
 
@@ -156,6 +156,18 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
             {
                 conductorProxy.onErrorResponse(correlationId);
             }
+        }
+    }
+
+    private void selectNow()
+    {
+        try
+        {
+            selector.selectNow();
+        }
+        catch (IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 

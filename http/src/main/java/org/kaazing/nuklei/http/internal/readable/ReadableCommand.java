@@ -13,28 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.reaktor.internal;
+package org.kaazing.nuklei.http.internal.readable;
 
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.CountersManager;
-
-public final class Counters implements AutoCloseable
+public interface ReadableCommand
 {
-    private final AtomicCounter example;
-
-    Counters(CountersManager countersManager)
-    {
-        example = countersManager.newCounter("example");
-    }
-
-    @Override
-    public void close() throws Exception
-    {
-        example.close();
-    }
-
-    public AtomicCounter example()
-    {
-        return example;
-    }
+    void execute(Readable readable);
 }

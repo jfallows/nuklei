@@ -42,6 +42,11 @@ public final class NukleusFactory
         return instantiate(load(NukleusFactorySpi.class, classLoader));
     }
 
+    public Iterable<String> names()
+    {
+        return factorySpisByName.keySet();
+    }
+
     public Nukleus create(String name, Configuration config)
     {
         requireNonNull(name);

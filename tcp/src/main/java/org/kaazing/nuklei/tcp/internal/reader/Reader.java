@@ -53,22 +53,29 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
         this.commandQueue = context.readerCommandQueue();
         this.readerStates = new ReaderState[0];
         this.streamsFile = context.captureStreamsFile();
-        this.streamsCapacity = context.streamsCapacity();
+        this.streamsCapacity = context.streamsBufferCapacity();
         this.layoutsByHandler = new HashMap<>();
     }
 
     @Override
-    public int process() throws Exception
+    public int process()
     {
         int weight = 0;
 
-        selector.selectNow();
-        weight += selectedKeySet.forEach(this::processWrite);
-        weight += commandQueue.drain(this);
-
-        for (int i=0; i < readerStates.length; i++)
+        try
         {
-            weight += readerStates[i].process();
+            selector.selectNow();
+            weight += selectedKeySet.forEach(this::processWrite);
+            weight += commandQueue.drain(this);
+
+            for (int i=0; i < readerStates.length; i++)
+            {
+                weight += readerStates[i].process();
+            }
+        }
+        catch (Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
         }
 
         return weight;

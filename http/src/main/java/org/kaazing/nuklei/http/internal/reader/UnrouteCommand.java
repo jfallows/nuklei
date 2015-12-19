@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.http.internal.translator;
+package org.kaazing.nuklei.http.internal.reader;
 
 
-public final class UnrouteCommand implements TranslatorCommand
+public final class UnrouteCommand implements ReaderCommand
 {
     private final long correlationId;
     private final String destination;
@@ -30,7 +30,7 @@ public final class UnrouteCommand implements TranslatorCommand
     }
 
     @Override
-    public void execute(Translator reflector)
+    public void execute(Reader reflector)
     {
         reflector.doUnroute(correlationId, destination);
     }

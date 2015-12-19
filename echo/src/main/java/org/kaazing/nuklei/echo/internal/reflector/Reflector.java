@@ -98,7 +98,7 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
         this.atomicBuffer = new UnsafeBuffer(allocateDirect(context.maxMessageLength()).order(nativeOrder()));
         this.captureStreamsFile = context.captureStreamsFile();
         this.routeStreamsFile = context.routeStreamsFile();
-        this.streamsCapacity = context.streamsCapacity();
+        this.streamsCapacity = context.streamsBufferCapacity();
         this.streamsBySource = new HashMap<>();
         this.streamsByDestination = new HashMap<>();
 
@@ -107,7 +107,7 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
     }
 
     @Override
-    public int process() throws Exception
+    public int process()
     {
         int weight = 0;
 

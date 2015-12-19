@@ -18,7 +18,7 @@ package org.kaazing.nuklei;
 @FunctionalInterface
 public interface Nukleus extends AutoCloseable
 {
-    int process() throws Exception;
+    int process();
 
     default void close() throws Exception
     {

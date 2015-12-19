@@ -102,7 +102,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
     }
 
     @Override
-    public int process() throws Exception
+    public int process()
     {
         int weight = 0;
 

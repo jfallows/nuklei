@@ -13,39 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.ws.internal;
+package org.kaazing.nuklei.http.internal.reader;
 
-import java.util.function.ToIntFunction;
 
-import org.kaazing.nuklei.CompositeNukleus;
-import org.kaazing.nuklei.Nukleus;
-
-public final class WsNukleus extends CompositeNukleus
+public final class BoundResponse implements ReaderCommand
 {
-    private final Context context;
+    private final long correlationId;
+    private final String sourceName;
+    private final long referenceId;
 
-    WsNukleus(Context context)
+    public BoundResponse(
+        String sourceName,
+        long correlationId,
+        long referenceId)
     {
-        this.context = context;
+        this.correlationId = correlationId;
+        this.sourceName = sourceName;
+        this.referenceId = referenceId;
     }
 
-    @Override
-    public String name()
+    public void execute(Reader reader)
     {
-        return "ws";
-    }
-
-    @Override
-    public void close() throws Exception
-    {
-        context.close();
-    }
-
-    @Override
-    public int process(ToIntFunction<? super Nukleus> function)
-    {
-        int weight = 0;
-
-        return weight;
+        reader.onBoundResponse(sourceName, correlationId, referenceId);
     }
 }

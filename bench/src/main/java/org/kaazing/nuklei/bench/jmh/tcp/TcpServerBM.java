@@ -17,7 +17,7 @@ package org.kaazing.nuklei.bench.jmh.tcp;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
-import static org.kaazing.nuklei.Configuration.STREAMS_CAPACITY_PROPERTY_NAME;
+import static org.kaazing.nuklei.Configuration.STREAMS_BUFFER_CAPACITY_PROPERTY_NAME;
 import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
 
 import java.io.File;
@@ -68,7 +68,7 @@ public class TcpServerBM
     {
         final Properties properties = new Properties();
         properties.setProperty(DIRECTORY_PROPERTY_NAME, "target/nukleus-benchmarks");
-        properties.setProperty(STREAMS_CAPACITY_PROPERTY_NAME, Long.toString(1024 * 1024 * 16));
+        properties.setProperty(STREAMS_BUFFER_CAPACITY_PROPERTY_NAME, Long.toString(1024 * 1024 * 16));
         final Configuration config = new Configuration(properties);
 
         NukleusFactory factory = NukleusFactory.instantiate();

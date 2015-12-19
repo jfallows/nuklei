@@ -13,24 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.http.internal.translator;
+package org.kaazing.nuklei.http.internal.readable;
 
-public final class UncaptureCommand implements TranslatorCommand
+import static java.lang.String.format;
+
+public final class UnprepareCommand implements ReadableCommand
 {
     private final long correlationId;
-    private final String source;
+    private final long referenceId;
 
-    public UncaptureCommand(
+    public UnprepareCommand(
         long correlationId,
-        String source)
+        long referenceId)
     {
         this.correlationId = correlationId;
-        this.source = source;
+        this.referenceId = referenceId;
     }
 
     @Override
-    public void execute(Translator reflector)
+    public void execute(Readable source)
     {
-        reflector.doUncapture(correlationId, source);
+        source.doUnprepare(correlationId, referenceId);
+    }
+
+    @Override
+    public String toString()
+    {
+        return format("UNPREPARE [correlationId=%d, referenceId=%d]", correlationId, referenceId);
     }
 }

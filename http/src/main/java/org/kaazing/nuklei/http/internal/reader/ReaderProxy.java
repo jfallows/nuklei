@@ -13,23 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.http.internal.translator;
+package org.kaazing.nuklei.http.internal.reader;
 
 import java.util.logging.Logger;
 
 import org.kaazing.nuklei.http.internal.Context;
 
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
-public final class TranslatorProxy
+public final class ReaderProxy
 {
     private final Logger logger;
-    private final OneToOneConcurrentArrayQueue<TranslatorCommand> commandQueue;
+    private final ManyToOneConcurrentArrayQueue<ReaderCommand> commandQueue;
 
-    public TranslatorProxy(Context context)
+    public ReaderProxy(Context context)
     {
         this.logger = context.logger();
-        this.commandQueue = context.translatorCommandQueue();
+        this.commandQueue = context.readerCommandQueue();
     }
 
     public void doCapture(
@@ -134,6 +134,34 @@ public final class TranslatorProxy
         long referenceId)
     {
         UnprepareCommand command = new UnprepareCommand(correlationId, referenceId);
+        if (!commandQueue.offer(command))
+        {
+            throw new IllegalStateException("unable to offer command");
+        }
+
+        logger.finest(() -> { return command.toString(); });
+    }
+
+    public void onBoundResponse(
+        String source,
+        long correlationId,
+        long referenceId)
+    {
+        BoundResponse command = new BoundResponse(source, correlationId, referenceId);
+        if (!commandQueue.offer(command))
+        {
+            throw new IllegalStateException("unable to offer command");
+        }
+
+        logger.finest(() -> { return command.toString(); });
+    }
+
+    public void onPreparedResponse(
+        String source,
+        long correlationId,
+        long referenceId)
+    {
+        PreparedResponse command = new PreparedResponse(source, correlationId, referenceId);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");

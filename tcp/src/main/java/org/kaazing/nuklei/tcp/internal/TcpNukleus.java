@@ -15,7 +15,7 @@
  */
 package org.kaazing.nuklei.tcp.internal;
 
-import java.util.function.Consumer;
+import java.util.function.ToIntFunction;
 
 import org.kaazing.nuklei.CompositeNukleus;
 import org.kaazing.nuklei.Nukleus;
@@ -45,20 +45,6 @@ public final class TcpNukleus extends CompositeNukleus
     }
 
     @Override
-    public int process() throws Exception
-    {
-        int weight = 0;
-
-        weight += conductor.process();
-        weight += acceptor.process();
-        weight += connector.process();
-        weight += reader.process();
-        weight += writer.process();
-
-        return weight;
-    }
-
-    @Override
     public String name()
     {
         return "tcp";
@@ -76,12 +62,16 @@ public final class TcpNukleus extends CompositeNukleus
     }
 
     @Override
-    public void forEach(Consumer<? super Nukleus> action)
+    public int process(ToIntFunction<? super Nukleus> function)
     {
-        action.accept(conductor);
-        action.accept(acceptor);
-        action.accept(connector);
-        action.accept(reader);
-        action.accept(writer);
+        int weight = 0;
+
+        weight += function.applyAsInt(conductor);
+        weight += function.applyAsInt(acceptor);
+        weight += function.applyAsInt(connector);
+        weight += function.applyAsInt(reader);
+        weight += function.applyAsInt(writer);
+
+        return weight;
     }
 }

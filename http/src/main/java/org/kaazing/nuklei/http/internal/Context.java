@@ -27,13 +27,13 @@ import java.util.logging.Logger;
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.http.internal.conductor.ConductorResponse;
 import org.kaazing.nuklei.http.internal.layouts.ControlLayout;
-import org.kaazing.nuklei.http.internal.translator.TranslatorCommand;
+import org.kaazing.nuklei.http.internal.reader.ReaderCommand;
 
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.CountersManager;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
@@ -45,7 +45,8 @@ public final class Context implements Closeable
     private boolean readonly;
     private File configDirectory;
     private ControlLayout controlRO;
-    private int streamsCapacity;
+    private int maximumStreamsCount;
+    private int streamsBufferCapacity;
     private Function<String, File> captureStreamsFile;
     private Function<String, File> routeStreamsFile;
     private IdleStrategy idleStrategy;
@@ -56,8 +57,8 @@ public final class Context implements Closeable
     private AtomicBuffer fromConductorResponseBuffer;
     private BroadcastTransmitter fromConductorResponses;
 
-    private OneToOneConcurrentArrayQueue<TranslatorCommand> fromConductorToTranslatorCommands;
-    private OneToOneConcurrentArrayQueue<ConductorResponse> fromTranslatorToConductorResponses;
+    private ManyToOneConcurrentArrayQueue<ReaderCommand> readerCommandQueue;
+    private ManyToOneConcurrentArrayQueue<ConductorResponse> conductorResponseQueue;
 
     public Context readonly(
         boolean readonly)
@@ -71,18 +72,24 @@ public final class Context implements Closeable
         return readonly;
     }
 
-    public int streamsCapacity()
+    public int maximumStreamsCount()
     {
-        return streamsCapacity;
+        return maximumStreamsCount;
+    }
+
+    public int streamsBufferCapacity()
+    {
+        return streamsBufferCapacity;
     }
 
     public int maxMessageLength()
     {
         // see RingBuffer.maxMessageLength()
-        return streamsCapacity / 8;
+        return streamsBufferCapacity / 8;
     }
 
-    public Context captureStreamsFile(Function<String, File> captureStreamsFile)
+    public Context captureStreamsFile(
+        Function<String, File> captureStreamsFile)
     {
         this.captureStreamsFile = captureStreamsFile;
         return this;
@@ -93,7 +100,8 @@ public final class Context implements Closeable
         return captureStreamsFile;
     }
 
-    public Context routeStreamsFile(Function<String, File> routeStreamsFile)
+    public Context routeStreamsFile(
+        Function<String, File> routeStreamsFile)
     {
         this.routeStreamsFile = routeStreamsFile;
         return this;
@@ -104,7 +112,8 @@ public final class Context implements Closeable
         return routeStreamsFile;
     }
 
-    public Context idleStrategy(IdleStrategy idleStrategy)
+    public Context idleStrategy(
+        IdleStrategy idleStrategy)
     {
         this.idleStrategy = idleStrategy;
         return this;
@@ -115,7 +124,8 @@ public final class Context implements Closeable
         return idleStrategy;
     }
 
-    public Context errorHandler(ErrorHandler errorHandler)
+    public Context errorHandler(
+        ErrorHandler errorHandler)
     {
         this.errorHandler = errorHandler;
         return this;
@@ -126,19 +136,22 @@ public final class Context implements Closeable
         return errorHandler;
     }
 
-    public Context counterLabelsBuffer(AtomicBuffer counterLabelsBuffer)
+    public Context counterLabelsBuffer(
+        AtomicBuffer counterLabelsBuffer)
     {
         controlRW.counterLabelsBuffer(counterLabelsBuffer);
         return this;
     }
 
-    public Context counterValuesBuffer(AtomicBuffer counterValuesBuffer)
+    public Context counterValuesBuffer(
+        AtomicBuffer counterValuesBuffer)
     {
         controlRW.counterValuesBuffer(counterValuesBuffer);
         return this;
     }
 
-    public Context conductorCommands(RingBuffer conductorCommands)
+    public Context conductorCommands(
+        RingBuffer conductorCommands)
     {
         this.toConductorCommands = conductorCommands;
         return this;
@@ -149,7 +162,8 @@ public final class Context implements Closeable
         return toConductorCommands;
     }
 
-    public Context conductorResponseBuffer(AtomicBuffer conductorResponseBuffer)
+    public Context conductorResponseBuffer(
+        AtomicBuffer conductorResponseBuffer)
     {
         this.fromConductorResponseBuffer = conductorResponseBuffer;
         return this;
@@ -160,7 +174,8 @@ public final class Context implements Closeable
         return fromConductorResponseBuffer;
     }
 
-    public Context conductorResponses(BroadcastTransmitter conductorResponses)
+    public Context conductorResponses(
+        BroadcastTransmitter conductorResponses)
     {
         this.fromConductorResponses = conductorResponses;
         return this;
@@ -176,31 +191,32 @@ public final class Context implements Closeable
         return Logger.getLogger("nuklei.http");
     }
 
-    public Context translatorCommandQueue(
-            OneToOneConcurrentArrayQueue<TranslatorCommand> translatorCommandQueue)
+    public Context readerCommandQueue(
+        ManyToOneConcurrentArrayQueue<ReaderCommand> readerCommandQueue)
     {
-        this.fromConductorToTranslatorCommands = translatorCommandQueue;
+        this.readerCommandQueue = readerCommandQueue;
         return this;
     }
 
-    public OneToOneConcurrentArrayQueue<TranslatorCommand> translatorCommandQueue()
+    public ManyToOneConcurrentArrayQueue<ReaderCommand> readerCommandQueue()
     {
-        return fromConductorToTranslatorCommands;
+        return readerCommandQueue;
     }
 
-    public Context translatorResponseQueue(
-            OneToOneConcurrentArrayQueue<ConductorResponse> translatorResponseQueue)
+    public Context conductorResponseQueue(
+        ManyToOneConcurrentArrayQueue<ConductorResponse> conductorResponseQueue)
     {
-        this.fromTranslatorToConductorResponses = translatorResponseQueue;
+        this.conductorResponseQueue = conductorResponseQueue;
         return this;
     }
 
-    public OneToOneConcurrentArrayQueue<ConductorResponse> translatorResponseQueue()
+    public ManyToOneConcurrentArrayQueue<ConductorResponse> conductorResponseQueue()
     {
-        return fromTranslatorToConductorResponses;
+        return conductorResponseQueue;
     }
 
-    public Context countersManager(CountersManager countersManager)
+    public Context countersManager(
+        CountersManager countersManager)
     {
         this.countersManager = countersManager;
         return this;
@@ -216,43 +232,48 @@ public final class Context implements Closeable
         return counters;
     }
 
-    public Context conclude(Configuration config)
+    public Context conclude(
+        Configuration config)
     {
         try
         {
             this.configDirectory = config.directory();
 
-            this.streamsCapacity = config.streamsCapacity();
+            this.maximumStreamsCount = config.maximumStreamsCount();
 
-            captureStreamsFile((source) -> {
-                return new File(configDirectory, format("http/streams/%s", source));
+            this.streamsBufferCapacity = config.streamsBufferCapacity();
+
+            captureStreamsFile((
+                source) -> {
+                return new File(configDirectory, format("http/streams/%s",
+                        source));
             });
 
-            routeStreamsFile((destination) -> {
-                return new File(configDirectory, format("%s/streams/http", destination));
+            routeStreamsFile((
+                destination) -> {
+                return new File(configDirectory, format("%s/streams/http",
+                        destination));
             });
 
-            this.controlRO = controlRW.controlFile(new File(config.directory(), "http/control"))
-                                      .commandBufferCapacity(config.commandBufferCapacity())
-                                      .responseBufferCapacity(config.responseBufferCapacity())
-                                      .counterLabelsBufferCapacity(config.counterLabelsBufferLength())
-                                      .counterValuesBufferCapacity(config.counterValuesBufferLength())
-                                      .readonly(readonly())
-                                      .build();
+            this.controlRO = controlRW
+                    .controlFile(new File(config.directory(), "http/control"))
+                    .commandBufferCapacity(config.commandBufferCapacity())
+                    .responseBufferCapacity(config.responseBufferCapacity())
+                    .counterLabelsBufferCapacity(
+                            config.counterLabelsBufferCapacity())
+                    .counterValuesBufferCapacity(
+                            config.counterValuesBufferCapacity())
+                    .readonly(readonly()).build();
 
-            conductorCommands(
-                    new ManyToOneRingBuffer(controlRO.commandBuffer()));
+            conductorCommands(new ManyToOneRingBuffer(controlRO.commandBuffer()));
 
             conductorResponseBuffer(controlRO.responseBuffer());
 
-            conductorResponses(
-                    new BroadcastTransmitter(conductorResponseBuffer()));
+            conductorResponses(new BroadcastTransmitter(conductorResponseBuffer()));
 
-            translatorCommandQueue(
-                    new OneToOneConcurrentArrayQueue<TranslatorCommand>(1024));
+            readerCommandQueue(new ManyToOneConcurrentArrayQueue<ReaderCommand>(1024));
 
-            translatorResponseQueue(
-                    new OneToOneConcurrentArrayQueue<ConductorResponse>(1024));
+            conductorResponseQueue(new ManyToOneConcurrentArrayQueue<ConductorResponse>(1024));
 
             concludeCounters();
         }
@@ -277,7 +298,9 @@ public final class Context implements Closeable
     {
         if (countersManager == null)
         {
-            countersManager(new CountersManager(controlRO.counterLabelsBuffer(), controlRO.counterValuesBuffer()));
+            countersManager(new CountersManager(
+                    controlRO.counterLabelsBuffer(),
+                    controlRO.counterValuesBuffer()));
         }
 
         if (counters == null)
