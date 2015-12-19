@@ -15,11 +15,10 @@
  */
 package org.kaazing.nuklei;
 
-import static org.junit.Assert.assertSame;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
-
-import javax.annotation.Resource;
 
 import org.junit.Test;
 
@@ -27,23 +26,15 @@ public final class NukleusFactoryTest
 {
 
     @Test
-    public void shouldLoadAndInject() throws IOException
+    public void shouldLoadAndCreate() throws IOException
     {
         NukleusFactory factory = NukleusFactory.instantiate();
-        TestNukleus nukleus = (TestNukleus) factory.create("test", new Configuration());
-        assertSame(factory, nukleus.factory());
+        Nukleus nukleus = factory.create("test", new Configuration());
+        assertThat(nukleus, instanceOf(TestNukleus.class));
     }
 
     public static final class TestNukleusFactory implements NukleusFactorySpi
     {
-        private NukleusFactory factory;
-
-        @Resource
-        public void setFacktory(NukleusFactory factory)
-        {
-            this.factory = factory;
-        }
-
         @Override
         public String name()
         {
@@ -53,25 +44,12 @@ public final class NukleusFactoryTest
         @Override
         public Nukleus create(Configuration options)
         {
-            return new TestNukleus(factory);
+            return new TestNukleus();
         }
-
     }
 
     static final class TestNukleus implements Nukleus
     {
-        private final NukleusFactory factory;
-
-        TestNukleus(NukleusFactory factory)
-        {
-            this.factory = factory;
-        }
-
-        NukleusFactory factory()
-        {
-            return factory;
-        }
-
         @Override
         public int process()
         {
@@ -84,6 +62,5 @@ public final class NukleusFactoryTest
         {
             // no-op
         }
-
     }
 }
