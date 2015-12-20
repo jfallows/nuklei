@@ -24,6 +24,8 @@ import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_UNCAP
 import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_UNPREPARE_COMMAND;
 import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_UNROUTE_COMMAND;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import org.kaazing.nuklei.Nukleus;
@@ -179,7 +181,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         String destination,
         long destinationRef,
         String source,
-        Object headers)
+        Map<String, String> headers)
     {
         unboundRW.wrap(sendBuffer, 0, sendBuffer.capacity())
                  .correlationId(correlationId)
@@ -187,7 +189,10 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
                  .destinationRef(destinationRef)
                  .source(source);
 
-        // TODO: headers
+        headers.forEach((name, value) ->
+        {
+            unboundRW.header(name, value);
+        });
 
         UnboundFW unboundRO = unboundRW.build();
 
@@ -211,7 +216,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         String destination,
         long destinationRef,
         String source,
-        Object headers)
+        Map<String, String> headers)
     {
         unpreparedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
                     .correlationId(correlationId)
@@ -219,7 +224,11 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
                     .destinationRef(destinationRef)
                     .source(source);
 
-        // TODO: headers
+        headers.forEach((name, value) ->
+        {
+            unpreparedRW.header(name, value);
+        });
+
 
         UnpreparedFW unpreparedRO = unpreparedRW.build();
 
@@ -309,7 +318,12 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         String destination = bindRO.destination().asString();
         long destinationRef = bindRO.destinationRef();
         String source = bindRO.source().asString();
-        Object headers = new Object(); // TODO
+
+        Map<String, String> headers = new LinkedHashMap<>();
+        bindRO.headers().forEach(index + length, (header) ->
+        {
+            headers.put(header.name().asString(), header.value().asString());
+        });
 
         readerProxy.doBind(correlationId, destination, destinationRef, source, headers);
     }
@@ -332,7 +346,12 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         String destination = prepareRO.destination().asString();
         long destinationRef = prepareRO.destinationRef();
         String source = prepareRO.source().asString();
-        Object headers = new Object(); // TODO
+
+        Map<String, String> headers = new LinkedHashMap<>();
+        prepareRO.headers().forEach(index + length, (header) ->
+        {
+            headers.put(header.name().asString(), header.value().asString());
+        });
 
         readerProxy.doPrepare(correlationId, destination, destinationRef, source, headers);
     }

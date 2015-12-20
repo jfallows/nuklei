@@ -15,6 +15,8 @@
  */
 package org.kaazing.nuklei.http.internal.readable;
 
+import java.util.Map;
+
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 public class ReadableState
@@ -22,7 +24,7 @@ public class ReadableState
     private final long sourceRef;
     private final ReadableProxy destination;
     private final long destinationRef;
-    private final Object headers;
+    private final Map<String, String> headers;
     private final RingBuffer destinationRoute;
     private RingBuffer sourceRoute;
 
@@ -30,7 +32,7 @@ public class ReadableState
         long sourceRef,
         ReadableProxy destination,
         long destinationRef,
-        Object headers,
+        Map<String, String> headers,
         RingBuffer sourceRoute,
         RingBuffer destinationRoute)
     {
@@ -57,7 +59,7 @@ public class ReadableState
         return this.destinationRef;
     }
 
-    public Object headers()
+    public Map<String, String> headers()
     {
         return headers;
     }

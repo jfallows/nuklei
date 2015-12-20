@@ -15,6 +15,8 @@
  */
 package org.kaazing.nuklei.http.internal.conductor;
 
+import java.util.Map;
+
 
 public final class UnboundResponse implements ConductorResponse
 {
@@ -22,14 +24,14 @@ public final class UnboundResponse implements ConductorResponse
     private final String destination;
     private final long destinationRef;
     private final String source;
-    private final Object headers;
+    private final Map<String, String> headers;
 
     public UnboundResponse(
         long correlationId,
         String destination,
         long destinationRef,
         String source,
-        Object headers)
+        Map<String, String> headers)
     {
         this.correlationId = correlationId;
         this.destination = destination;

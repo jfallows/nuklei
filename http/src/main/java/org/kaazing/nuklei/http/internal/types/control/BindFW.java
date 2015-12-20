@@ -20,6 +20,7 @@ import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_BIND_
 import java.nio.charset.StandardCharsets;
 
 import org.kaazing.nuklei.http.internal.types.Flyweight;
+import org.kaazing.nuklei.http.internal.types.HeadersFW;
 import org.kaazing.nuklei.http.internal.types.StringFW;
 
 import uk.co.real_logic.agrona.BitUtil;
@@ -36,6 +37,7 @@ public final class BindFW extends Flyweight
 
     private final StringFW destinationRO = new StringFW();
     private final StringFW sourceRO = new StringFW();
+    private final HeadersFW headersRO = new HeadersFW();
 
     @Override
     public BindFW wrap(DirectBuffer buffer, int offset, int actingLimit)
@@ -44,6 +46,7 @@ public final class BindFW extends Flyweight
 
         this.destinationRO.wrap(buffer, offset + FIELD_OFFSET_DESTINATION, actingLimit);
         this.sourceRO.wrap(buffer, destinationRO.limit() + FIELD_SIZE_DESTINATION_REF, actingLimit);
+        this.headersRO.wrap(buffer, sourceRO.limit(), actingLimit);
 
         checkLimit(limit(), actingLimit);
 
@@ -53,7 +56,7 @@ public final class BindFW extends Flyweight
     @Override
     public int limit()
     {
-        return source().limit();
+        return headersRO.limit();
     }
 
     public int typeId()
@@ -81,15 +84,15 @@ public final class BindFW extends Flyweight
         return sourceRO;
     }
 
-    public long headersOffset()
+    public HeadersFW headers()
     {
-        return sourceRO.limit();
+        return headersRO;
     }
 
     @Override
     public String toString()
     {
-        return String.format("[correlationId=%d, destination=\"%s\", destinationRef=%d, source=\"%s\"]",
+        return String.format("[correlationId=%d, destination=%s, destinationRef=%d, source=%s]",
                 correlationId(), destination(), destinationRef(), source());
     }
 

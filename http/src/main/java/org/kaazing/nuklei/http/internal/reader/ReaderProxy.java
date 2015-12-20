@@ -15,6 +15,7 @@
  */
 package org.kaazing.nuklei.http.internal.reader;
 
+import java.util.Map;
 import java.util.logging.Logger;
 
 import org.kaazing.nuklei.http.internal.Context;
@@ -89,7 +90,7 @@ public final class ReaderProxy
         String destination,
         long destinationRef,
         String source,
-        Object headers)
+        Map<String, String> headers)
     {
         BindCommand command = new BindCommand(correlationId, destination, destinationRef, source, headers);
         if (!commandQueue.offer(command))
@@ -118,7 +119,7 @@ public final class ReaderProxy
         String destination,
         long destinationRef,
         String source,
-        Object headers)
+        Map<String, String> headers)
     {
         PrepareCommand command = new PrepareCommand(correlationId, destination, destinationRef, source, headers);
         if (!commandQueue.offer(command))

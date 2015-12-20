@@ -19,6 +19,7 @@ import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_BEGIN;
 
+import java.util.Map;
 import java.util.function.Consumer;
 
 import org.kaazing.nuklei.Nukleus;
@@ -30,7 +31,7 @@ import org.kaazing.nuklei.http.internal.readable.stream.ConnectDecoderStreamPool
 import org.kaazing.nuklei.http.internal.readable.stream.ConnectEncoderStreamPool;
 import org.kaazing.nuklei.http.internal.reader.ReaderProxy;
 import org.kaazing.nuklei.http.internal.types.stream.BeginFW;
-import org.kaazing.nuklei.http.internal.types.stream.HeaderFW;
+import org.kaazing.nuklei.http.internal.types.stream.FrameFW;
 
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
@@ -44,7 +45,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseable
 {
-    private final HeaderFW headerRO = new HeaderFW();
+    private final FrameFW frameRO = new FrameFW();
     private final BeginFW beginRO = new BeginFW();
 
     private final ConductorProxy conductorProxy;
@@ -135,7 +136,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
     public void doBind(
         long correlationId,
         long destinationRef,
-        Object headers,
+        Map<String, String> headers,
         ReadableProxy destination,
         RingBuffer sourceRoute,
         RingBuffer destinationRoute)
@@ -174,7 +175,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
             }
             else
             {
-                Object headers = oldState.headers();
+                Map<String, String> headers = oldState.headers();
                 ReadableProxy destination = oldState.destination();
                 long destinationRef = oldState.destinationRef();
                 String destinationName = destination.name();
@@ -192,7 +193,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
     public void doPrepare(
         long correlationId,
         long destinationRef,
-        Object headers,
+        Map<String, String> headers,
         ReadableProxy destination,
         RingBuffer sourceRoute,
         RingBuffer destinationRoute)
@@ -230,7 +231,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
             }
             else
             {
-                Object headers = oldState.headers();
+                Map<String, String> headers = oldState.headers();
                 ReadableProxy destination = oldState.destination();
                 long destinationRef = oldState.destinationRef();
                 String destinationName = destination.name();
@@ -273,9 +274,9 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         int index,
         int length)
     {
-        headerRO.wrap(buffer, index, index + length);
+        frameRO.wrap(buffer, index, index + length);
 
-        final long streamId = headerRO.streamId();
+        final long streamId = frameRO.streamId();
 
         final MessageHandler streamHandler = handlersByStreamId.get(streamId);
 

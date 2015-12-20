@@ -20,6 +20,7 @@ import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_UNPRE
 import java.nio.charset.StandardCharsets;
 
 import org.kaazing.nuklei.http.internal.types.Flyweight;
+import org.kaazing.nuklei.http.internal.types.HeadersFW;
 import org.kaazing.nuklei.http.internal.types.StringFW;
 
 import uk.co.real_logic.agrona.BitUtil;
@@ -36,6 +37,7 @@ public final class UnpreparedFW extends Flyweight
 
     private final StringFW destinationRO = new StringFW();
     private final StringFW sourceRO = new StringFW();
+    private final HeadersFW headersRO = new HeadersFW();
 
     @Override
     public UnpreparedFW wrap(DirectBuffer buffer, int offset, int actingLimit)
@@ -44,6 +46,7 @@ public final class UnpreparedFW extends Flyweight
 
         this.destinationRO.wrap(buffer, offset + FIELD_OFFSET_DESTINATION, actingLimit);
         this.sourceRO.wrap(buffer, destinationRO.limit() + FIELD_SIZE_DESTINATION_REF, actingLimit);
+        this.headersRO.wrap(buffer, sourceRO.limit(), actingLimit);
 
         checkLimit(limit(), actingLimit);
 
@@ -53,13 +56,14 @@ public final class UnpreparedFW extends Flyweight
     @Override
     public int limit()
     {
-        return source().limit();
+        return headers().limit();
     }
 
     public int typeId()
     {
         return TYPE_ID_UNPREPARED_RESPONSE;
     }
+
     public long correlationId()
     {
         return buffer().getLong(offset() + FIELD_OFFSET_CORRELATION_ID);
@@ -80,9 +84,9 @@ public final class UnpreparedFW extends Flyweight
         return sourceRO;
     }
 
-    public long headersOffset()
+    public HeadersFW headers()
     {
-        return sourceRO.limit();
+        return headersRO;
     }
 
     @Override
@@ -96,6 +100,7 @@ public final class UnpreparedFW extends Flyweight
     {
         private final StringFW.Builder destinationRW = new StringFW.Builder();
         private final StringFW.Builder sourceRW = new StringFW.Builder();
+        private final HeadersFW.Builder headersRW = new HeadersFW.Builder();
 
         public Builder()
         {
@@ -133,6 +138,14 @@ public final class UnpreparedFW extends Flyweight
         public Builder source(String source)
         {
             source().set(source, StandardCharsets.UTF_8);
+            headers();
+            return this;
+        }
+
+        public Builder header(String name, String value)
+        {
+            headersRW.header(name, value);
+            limit(headersRW.limit());
             return this;
         }
 
@@ -144,6 +157,11 @@ public final class UnpreparedFW extends Flyweight
         protected StringFW.Builder source()
         {
             return this.sourceRW.wrap(buffer(), destination().build().limit() + FIELD_SIZE_DESTINATION_REF, maxLimit());
+        }
+
+        protected HeadersFW.Builder headers()
+        {
+            return this.headersRW.wrap(buffer(), source().build().limit(), maxLimit());
         }
     }
 }

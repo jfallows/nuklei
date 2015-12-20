@@ -111,7 +111,7 @@ public final class DataFW extends Flyweight
         {
             assert (payloadLength >= 0);
 
-            maxLimit(offset() + FIELD_OFFSET_PAYLOAD + payloadLength);
+            limit(offset() + FIELD_OFFSET_PAYLOAD + payloadLength);
             return this;
         }
     }

@@ -64,7 +64,13 @@ public abstract class Flyweight
 
         private MutableDirectBuffer buffer;
         private int offset;
+        private int limit;
         private int maxLimit;
+
+        public final int limit()
+        {
+            return limit;
+        }
 
         public final int maxLimit()
         {
@@ -73,7 +79,7 @@ public abstract class Flyweight
 
         public final T build()
         {
-            flyweight.wrap(buffer, offset, maxLimit);
+            flyweight.wrap(buffer, offset, limit);
             return flyweight;
         }
 
@@ -97,15 +103,16 @@ public abstract class Flyweight
             return offset;
         }
 
-        protected final void maxLimit(int limit)
+        protected final void limit(int limit)
         {
-            this.maxLimit = limit;
+            this.limit = limit;
         }
 
         protected Builder<T> wrap(MutableDirectBuffer buffer, int offset, int maxLimit)
         {
             this.buffer = buffer;
             this.offset = offset;
+            this.limit = maxLimit;
             this.maxLimit = maxLimit;
             return this;
         }

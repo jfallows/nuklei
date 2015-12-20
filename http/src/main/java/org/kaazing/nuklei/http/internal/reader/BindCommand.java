@@ -17,20 +17,22 @@ package org.kaazing.nuklei.http.internal.reader;
 
 import static java.lang.String.format;
 
+import java.util.Map;
+
 public final class BindCommand implements ReaderCommand
 {
     private final String destination;
     private final long destinationRef;
     private final String source;
     private final long correlationId;
-    private final Object headers;
+    private final Map<String, String> headers;
 
     public BindCommand(
         long correlationId,
         String destination,
         long destinationRef,
         String source,
-        Object headers)
+        Map<String, String> headers)
     {
         this.correlationId = correlationId;
         this.destination = destination;

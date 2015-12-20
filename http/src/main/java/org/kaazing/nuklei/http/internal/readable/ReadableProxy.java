@@ -15,6 +15,8 @@
  */
 package org.kaazing.nuklei.http.internal.readable;
 
+import java.util.Map;
+
 import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
@@ -39,7 +41,7 @@ public final class ReadableProxy
     public void doBind(
         long correlationId,
         long destinationRef,
-        Object headers,
+        Map<String, String> headers,
         ReadableProxy destination,
         RingBuffer sourceRoute,
         RingBuffer destinationRoute)
@@ -65,7 +67,7 @@ public final class ReadableProxy
     public void doPrepare(
         long correlationId,
         long destinationRef,
-        Object headers,
+        Map<String, String> headers,
         ReadableProxy destination,
         RingBuffer sourceRoute, RingBuffer destinationRoute)
     {

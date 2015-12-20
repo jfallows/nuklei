@@ -15,6 +15,8 @@
  */
 package org.kaazing.nuklei.http.internal.conductor;
 
+import java.util.Map;
+
 import org.kaazing.nuklei.http.internal.Context;
 
 import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
@@ -89,7 +91,7 @@ public final class ConductorProxy
         String destination,
         long destinationRef,
         String source,
-        Object headers)
+        Map<String, String> headers)
     {
         UnboundResponse response = new UnboundResponse(correlationId, destination, destinationRef, source, headers);
         if (!responseQueue.offer(response))
@@ -114,7 +116,7 @@ public final class ConductorProxy
         String destination,
         long destinationRef,
         String source,
-        Object headers)
+        Map<String, String> headers)
     {
         UnpreparedResponse response = new UnpreparedResponse(correlationId, destination, destinationRef, source, headers);
         if (!responseQueue.offer(response))

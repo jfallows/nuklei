@@ -222,7 +222,7 @@ public final class Reader extends CompositeNukleus implements Consumer<ReaderCom
         String destinationName,
         long destinationRef,
         String sourceName,
-        Object headers)
+        Map<String, String> headers)
     {
         StreamsLayout sourceCapture = capturedStreams.get(sourceName);
         StreamsLayout sourceRoute = routedStreams.get(sourceName);
@@ -271,7 +271,7 @@ public final class Reader extends CompositeNukleus implements Consumer<ReaderCom
         String destinationName,
         long destinationRef,
         String sourceName,
-        Object headers)
+        Map<String, String> headers)
     {
         StreamsLayout sourceCapture = capturedStreams.get(sourceName);
         StreamsLayout sourceRoute = routedStreams.get(sourceName);

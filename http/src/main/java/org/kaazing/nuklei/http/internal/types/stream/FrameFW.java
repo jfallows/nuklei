@@ -20,7 +20,7 @@ import org.kaazing.nuklei.http.internal.types.Flyweight;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 
-public final class HeaderFW extends Flyweight
+public final class FrameFW extends Flyweight
 {
     private static final int FIELD_OFFSET_STREAM_ID = 0;
     private static final int FIELD_SIZE_STREAM_ID = BitUtil.SIZE_OF_LONG;
@@ -36,7 +36,7 @@ public final class HeaderFW extends Flyweight
         return offset() + FIELD_OFFSET_STREAM_ID + FIELD_SIZE_STREAM_ID;
     }
 
-    public HeaderFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    public FrameFW wrap(DirectBuffer buffer, int offset, int actingLimit)
     {
         super.wrap(buffer, offset);
 

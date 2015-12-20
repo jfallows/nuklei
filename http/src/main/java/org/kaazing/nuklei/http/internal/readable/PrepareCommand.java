@@ -16,6 +16,9 @@
 package org.kaazing.nuklei.http.internal.readable;
 
 import static java.lang.String.format;
+
+import java.util.Map;
+
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 public final class PrepareCommand implements ReadableCommand
@@ -23,14 +26,14 @@ public final class PrepareCommand implements ReadableCommand
     private final long correlationId;
     private final long destinationRef;
     private final ReadableProxy destinationProxy;
-    private final Object headers;
+    private final Map<String, String> headers;
     private final RingBuffer sourceRoute;
     private final RingBuffer destinationRoute;
 
     public PrepareCommand(
         long correlationId,
         long destinationRef,
-        Object headers,
+        Map<String, String> headers,
         ReadableProxy destinationProxy,
         RingBuffer sourceRoute,
         RingBuffer destinationRoute)
