@@ -33,7 +33,7 @@
 
         <!-- animal sniffer does not yet support Java8, see MANIMALSNIFFER-45 -->
         <animal.sniffer.skip>true</animal.sniffer.skip>
-        <k3po.version>3.0.0-alpha-5</k3po.version>
+        <k3po.version>develop-SNAPSHOT<!-- 3.0.0-alpha-5 --></k3po.version>
     </properties>
 
     <modules>

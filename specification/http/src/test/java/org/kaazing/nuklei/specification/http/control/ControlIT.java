@@ -37,11 +37,35 @@ public class ControlIT
 
     @Test
     @Specification({
-        "bind.source/nukleus",
-        "bind.source/controller"
+        "capture.source.destination/nukleus",
+        "capture.source.destination/controller"
     })
-    public void shouldBindSource() throws Exception
+    public void shouldCaptureSourceAndDestination() throws Exception
     {
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "route.source.destination/nukleus",
+        "route.source.destination/controller"
+    })
+    public void shouldRouteSourceAndDestination() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("CAPTURED");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "bind.source.destination/nukleus",
+        "bind.source.destination/controller"
+    })
+    public void shouldBindSourceToDestination() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("ROUTED");
         k3po.finish();
     }
 /*

@@ -14,11 +14,10 @@
 # limitations under the License.
 #
 
-property control ${control:map("target/nukleus-itests/echo/control", 1024, 1024)}
+property control ${control:map("target/nukleus-itests/http/control", 1024, 1024)}
 
-property newSourceRef ${streams:newReferenceId()}
-
-connect agrona://stream/bidirectional
+connect await CAPTURABLE
+        agrona://stream/bidirectional
         option reader ${agrona:broadcastReceiver(control.controller)}
         option writer ${agrona:manyToOneWriter(control.nukleus)}
 
@@ -32,26 +31,15 @@ write flush
 read [0x40 0x00 0x00 0x01]
 read ${control.correlationId()}
 
-write [0x00 0x00 0x00 0x03]
+write [0x00 0x00 0x00 0x01]
 write ${control.nextCorrelationId()}
-write [0x06] "source"
+write [0x0b] "destination"
 write flush
 
-read [0x40 0x00 0x00 0x03]
+read [0x40 0x00 0x00 0x01]
 read ${control.correlationId()}
-
-write [0x00 0x00 0x00 0x11]
-write ${control.nextCorrelationId()}
-write [0x06] "source"
-write ${newSourceRef}
-write [0x00] [0x04] "host" [0x0e] "localhost:8080"
-write flush
-
-read [0x40 0x00 0x00 0x11]
-read ${control.correlationId()}
-read ([0..8]:referenceId)
-
-read notify BOUND
 
 close
 closed
+
+read notify CAPTURED

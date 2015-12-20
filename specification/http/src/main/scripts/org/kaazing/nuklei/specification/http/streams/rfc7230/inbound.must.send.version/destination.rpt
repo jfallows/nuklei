@@ -14,28 +14,28 @@
 # limitations under the License.
 #
 
-property source ${streams:map("target/nukleus-itests/source/streams/echo", 1024 * 1024)}
-property nukleus ${streams:map("target/nukleus-itests/echo/streams/source", 1024 * 1024)}
+property destinationInitial ${streams:map("target/nukleus-itests/destination/streams/http", 1024 * 1024)}
+property destinationReply ${streams:map("target/nukleus-itests/http/streams/destination", 1024 * 1024)}
 
-property newServerStreamId ${streams:newServerStreamId()}
+property newDestinationStreamId ${streams:newReplyStreamId()}
 
 connect await BOUND
         agrona://stream/bidirectional
-        option reader ${agrona:manyToOneReader(nukleus.buffer)}
-        option writer ${agrona:manyToOneWriter(source.buffer)}
+        option reader ${agrona:manyToOneReader(destinationInitial.buffer)}
+        option writer ${agrona:manyToOneWriter(destinationReply.buffer)}
 connected
 
 read [0x00 0x00 0x00 0x01]
-read ([0..8]:clientStreamId)
-read ([0..8]:sourceRef)
+read ([0..8]:initialStreamId)
+read ([0..8]:referenceId)
 read [0x00] [0x07] ":method" [0x03] "GET"
 read [0x00] [0x07] ":scheme" [0x04] "http"
 read [0x00] [0x05] ":path"   [0x01] "/"
 read [0x00] [0x04] "host"    [0x0e] "localhost:8080"
 
 write [0x00 0x00 0x00 0x01]
-write ${newServerStreamId}
-write ${clientStreamId}
+write ${newDestinationStreamId}
+write ${initialStreamId}
 write [0x00] [0x07] ":status" [0x03] "200"
 write flush
 

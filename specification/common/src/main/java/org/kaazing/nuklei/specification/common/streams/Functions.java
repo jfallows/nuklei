@@ -45,7 +45,21 @@ public final class Functions
         };
 
     @Function
+    @Deprecated
     public static byte[] newClientStreamId()
+    {
+        return newInitialStreamId();
+    }
+
+    @Function
+    @Deprecated
+    public static byte[] newServerStreamId()
+    {
+        return newReplyStreamId();
+    }
+
+    @Function
+    public static byte[] newInitialStreamId()
     {
         // odd, positive, non-zero
         long value = (RANDOM.nextLong() & 0x3fffffffffffffffL) | 0x0000000000000001L;
@@ -58,7 +72,7 @@ public final class Functions
     }
 
     @Function
-    public static byte[] newServerStreamId()
+    public static byte[] newReplyStreamId()
     {
         // even, positive, non-zero
         long value;
