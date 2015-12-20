@@ -20,20 +20,20 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 public final class ReadableProxy
 {
-    private final String sourceName;
+    private final String captureName;
     private final ManyToOneConcurrentArrayQueue<ReadableCommand> commandQueue;
 
     ReadableProxy(
-        String sourceName,
+        String captureName,
         ManyToOneConcurrentArrayQueue<ReadableCommand> commandQueue)
     {
-        this.sourceName = sourceName;
+        this.captureName = captureName;
         this.commandQueue = commandQueue;
     }
 
     public String name()
     {
-        return sourceName;
+        return captureName;
     }
 
     public void doBind(
@@ -112,5 +112,11 @@ public final class ReadableProxy
         {
             throw new IllegalStateException("unable to offer command");
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s (proxy)", captureName);
     }
 }

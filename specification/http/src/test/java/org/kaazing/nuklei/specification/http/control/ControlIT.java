@@ -68,45 +68,40 @@ public class ControlIT
         k3po.notifyBarrier("ROUTED");
         k3po.finish();
     }
-/*
+
     @Test
     @Specification({
-        "unbind.source/controller",
-        "unbind.source/nukleus"
+        "unbind.source.destination/controller",
+        "unbind.source.destination/nukleus"
     })
-    public void shouldUnbindSource() throws Exception
+    public void shouldUnbindSourceDestination() throws Exception
     {
+        k3po.start();
+        k3po.notifyBarrier("BOUND");
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "prepare.destination/controller",
-        "prepare.destination/nukleus"
+        "prepare.source.destination/controller",
+        "prepare.source.destination/nukleus"
     })
     public void shouldPrepareDestination() throws Exception
     {
+        k3po.start();
+        k3po.notifyBarrier("ROUTED");
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "unprepare.destination/controller",
-        "unprepare.destination/nukleus"
+        "unprepare.source.destination/controller",
+        "unprepare.source.destination/nukleus"
     })
-    public void shouldUnprepareDestination() throws Exception
+    public void shouldUnprepareSourceDestination() throws Exception
     {
+        k3po.start();
+        k3po.notifyBarrier("PREPARED");
         k3po.finish();
     }
-
-    @Test
-    @Specification({
-        "connect.destination/controller",
-        "connect.destination/nukleus"
-    })
-    public void shouldConnectDestination() throws Exception
-    {
-        k3po.finish();
-    }
-*/
 }

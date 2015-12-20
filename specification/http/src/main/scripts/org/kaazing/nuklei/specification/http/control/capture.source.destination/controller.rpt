@@ -16,8 +16,7 @@
 
 property control ${control:map("target/nukleus-itests/http/control", 1024, 1024)}
 
-connect await CAPTURABLE
-        agrona://stream/bidirectional
+connect agrona://stream/bidirectional
         option reader ${agrona:broadcastReceiver(control.controller)}
         option writer ${agrona:manyToOneWriter(control.nukleus)}
 

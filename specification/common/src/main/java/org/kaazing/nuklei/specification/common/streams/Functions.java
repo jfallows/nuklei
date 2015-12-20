@@ -44,22 +44,59 @@ public final class Functions
             }
         };
 
-    @Function
     @Deprecated
+    @Function
     public static byte[] newClientStreamId()
     {
-        return newInitialStreamId();
+        return newInitiatingId();
+    }
+
+    @Deprecated
+    @Function
+    public static byte[] newServerStreamId()
+    {
+        return newReactingId();
+    }
+
+    @Deprecated
+    @Function
+    public static byte[] newReferenceId()
+    {
+        // positive
+        long value = (RANDOM.nextLong() & 0x3fffffffffffffffL);
+
+        final MutableDirectBuffer buffer = BUFFER_REF.get();
+        byte[] bytes = new byte[8];
+        buffer.wrap(bytes);
+        buffer.putLong(0, value);
+        return bytes;
     }
 
     @Function
-    @Deprecated
-    public static byte[] newServerStreamId()
+    public static byte[] newPrepareReferenceId()
     {
-        return newReplyStreamId();
+        return newInitiatingId();
+    }
+
+    @Function
+    public static byte[] newBindReferenceId()
+    {
+        return newReactingId();
     }
 
     @Function
     public static byte[] newInitialStreamId()
+    {
+        return newInitiatingId();
+    }
+
+    @Function
+    public static byte[] newReplyStreamId()
+    {
+        return newReactingId();
+    }
+
+    private static byte[] newInitiatingId()
     {
         // odd, positive, non-zero
         long value = (RANDOM.nextLong() & 0x3fffffffffffffffL) | 0x0000000000000001L;
@@ -72,7 +109,7 @@ public final class Functions
     }
 
     @Function
-    public static byte[] newReplyStreamId()
+    private static byte[] newReactingId()
     {
         // even, positive, non-zero
         long value;
@@ -81,19 +118,6 @@ public final class Functions
             value = (RANDOM.nextLong() & 0x3ffffffffffffffeL);
         }
         while (value == 0L);
-
-        final MutableDirectBuffer buffer = BUFFER_REF.get();
-        byte[] bytes = new byte[8];
-        buffer.wrap(bytes);
-        buffer.putLong(0, value);
-        return bytes;
-    }
-
-    @Function
-    public static byte[] newReferenceId()
-    {
-        // positive
-        long value = (RANDOM.nextLong() & 0x3fffffffffffffffL);
 
         final MutableDirectBuffer buffer = BUFFER_REF.get();
         byte[] bytes = new byte[8];
