@@ -32,11 +32,11 @@ public final class UnpreparedFW extends Flyweight
     private static final int FIELD_OFFSET_CORRELATION_ID = 0;
     private static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
 
-    private static final int FIELD_OFFSET_DESTINATION = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
+    private static final int FIELD_OFFSET_SOURCE = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
     private static final int FIELD_SIZE_DESTINATION_REF = BitUtil.SIZE_OF_LONG;
 
-    private final StringFW destinationRO = new StringFW();
     private final StringFW sourceRO = new StringFW();
+    private final StringFW destinationRO = new StringFW();
     private final HeadersFW headersRO = new HeadersFW();
 
     @Override
@@ -44,9 +44,9 @@ public final class UnpreparedFW extends Flyweight
     {
         super.wrap(buffer, offset);
 
-        this.destinationRO.wrap(buffer, offset + FIELD_OFFSET_DESTINATION, actingLimit);
-        this.sourceRO.wrap(buffer, destinationRO.limit() + FIELD_SIZE_DESTINATION_REF, actingLimit);
-        this.headersRO.wrap(buffer, sourceRO.limit(), actingLimit);
+        this.sourceRO.wrap(buffer, offset + FIELD_OFFSET_SOURCE, actingLimit);
+        this.destinationRO.wrap(buffer, sourceRO.limit(), actingLimit);
+        this.headersRO.wrap(buffer, destinationRO.limit() + FIELD_SIZE_DESTINATION_REF, actingLimit);
 
         checkLimit(limit(), actingLimit);
 
@@ -69,6 +69,11 @@ public final class UnpreparedFW extends Flyweight
         return buffer().getLong(offset() + FIELD_OFFSET_CORRELATION_ID);
     }
 
+    public StringFW source()
+    {
+        return sourceRO;
+    }
+
     public StringFW destination()
     {
         return destinationRO;
@@ -79,11 +84,6 @@ public final class UnpreparedFW extends Flyweight
         return buffer().getLong(destination().limit());
     }
 
-    public StringFW source()
-    {
-        return sourceRO;
-    }
-
     public HeadersFW headers()
     {
         return headersRO;
@@ -92,14 +92,14 @@ public final class UnpreparedFW extends Flyweight
     @Override
     public String toString()
     {
-        return String.format("[correlationId=%d, destination=\"%s\", destinationRef=%d, source=\"%s\"]",
-                correlationId(), destination(), destinationRef(), source());
+        return String.format("[correlationId=%d, source=%s, destination=%s, destinationRef=%d]",
+                correlationId(), source(), destination(), destinationRef());
     }
 
     public static final class Builder extends Flyweight.Builder<UnpreparedFW>
     {
-        private final StringFW.Builder destinationRW = new StringFW.Builder();
         private final StringFW.Builder sourceRW = new StringFW.Builder();
+        private final StringFW.Builder destinationRW = new StringFW.Builder();
         private final HeadersFW.Builder headersRW = new HeadersFW.Builder();
 
         public Builder()
@@ -111,9 +111,6 @@ public final class UnpreparedFW extends Flyweight
         public Builder wrap(MutableDirectBuffer buffer, int offset, int maxLimit)
         {
             super.wrap(buffer, offset, maxLimit);
-
-            this.destinationRW.wrap(buffer, offset + FIELD_OFFSET_DESTINATION, maxLimit);
-
             return this;
         }
 
@@ -123,22 +120,22 @@ public final class UnpreparedFW extends Flyweight
             return this;
         }
 
+        public Builder source(String source)
+        {
+            source().set(source, StandardCharsets.UTF_8);
+            return this;
+        }
+
         public Builder destination(String destination)
         {
             destination().set(destination, StandardCharsets.UTF_8);
+            headers();
             return this;
         }
 
         public Builder destinationRef(long destinationRef)
         {
             buffer().putLong(destination().build().limit(), destinationRef);
-            return this;
-        }
-
-        public Builder source(String source)
-        {
-            source().set(source, StandardCharsets.UTF_8);
-            headers();
             return this;
         }
 
@@ -149,19 +146,19 @@ public final class UnpreparedFW extends Flyweight
             return this;
         }
 
-        protected StringFW.Builder destination()
-        {
-            return this.destinationRW.wrap(buffer(), offset() + FIELD_OFFSET_DESTINATION, maxLimit());
-        }
-
         protected StringFW.Builder source()
         {
-            return this.sourceRW.wrap(buffer(), destination().build().limit() + FIELD_SIZE_DESTINATION_REF, maxLimit());
+            return this.sourceRW.wrap(buffer(), offset() + FIELD_OFFSET_SOURCE, maxLimit());
+        }
+
+        protected StringFW.Builder destination()
+        {
+            return this.destinationRW.wrap(buffer(), source().build().limit(), maxLimit());
         }
 
         protected HeadersFW.Builder headers()
         {
-            return this.headersRW.wrap(buffer(), source().build().limit(), maxLimit());
+            return this.headersRW.wrap(buffer(), destination().build().limit() + FIELD_SIZE_DESTINATION_REF, maxLimit());
         }
     }
 }

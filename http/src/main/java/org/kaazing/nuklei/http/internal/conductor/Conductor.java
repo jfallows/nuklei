@@ -220,9 +220,9 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
     {
         unpreparedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
                     .correlationId(correlationId)
+                    .source(source)
                     .destination(destination)
-                    .destinationRef(destinationRef)
-                    .source(source);
+                    .destinationRef(destinationRef);
 
         headers.forEach((name, value) ->
         {

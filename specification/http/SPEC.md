@@ -131,9 +131,9 @@ Prepares incoming streams from the handler to initiate HTTP/1.1 protocol streams
 ```
 PREPARE
 [long] correlation id
+[string] source nukleus name
 [string] destination nukleus name
 [long] destination nukleus reference
-[string] source nukleus name
 [headers] host, :path, upgrade
 ```
 
@@ -161,9 +161,9 @@ Indicates that the UNPREPARED command completed successfully.
 ```
 UNPREPARED
 [long] correlation id
+[string] source nukleus name
 [string] destination nukleus name
 [long] destination nukleus reference
-[string] source nukleus name
 [headers] :host, :path, upgrade
 ```
 

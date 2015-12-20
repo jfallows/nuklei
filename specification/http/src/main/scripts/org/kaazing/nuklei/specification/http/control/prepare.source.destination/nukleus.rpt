@@ -27,9 +27,9 @@ connected
 
 read [0x00 0x00 0x00 0x13]
 read ([0..8]:correlationId)
+read [0x06] "source"
 read [0x0b] "destination"
 read ([0..8]:destinationRef)
-read [0x06] "source"
 read [0x00] [0x05] ":path" [0x01] "/"
 read [0x00] [0x04] "host" [0x0e] "localhost:8080"
 
