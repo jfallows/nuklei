@@ -31,11 +31,11 @@ public final class UnbindFW extends Flyweight
     private static final int FIELD_OFFSET_REFERENCE_ID = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
     private static final int FIELD_SIZE_REFERENCE_ID = BitUtil.SIZE_OF_LONG;
 
-    public UnbindFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    public UnbindFW wrap(DirectBuffer buffer, int offset, int maxLimit)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, maxLimit);
 
-        checkLimit(limit(), actingLimit);
+        checkLimit(limit(), maxLimit);
 
         return this;
     }

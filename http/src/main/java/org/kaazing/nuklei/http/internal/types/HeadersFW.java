@@ -24,13 +24,13 @@ public final class HeadersFW extends Flyweight
 {
     private final HeaderFW headerRO = new HeaderFW();
 
-    public HeadersFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    public HeadersFW wrap(DirectBuffer buffer, int offset, int maxLimit)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, maxLimit);
 
-        forEach(actingLimit, (header) -> {});
+        forEach((header) -> {});
 
-        checkLimit(limit(), actingLimit);
+        checkLimit(limit(), maxLimit);
 
         return this;
     }
@@ -41,13 +41,13 @@ public final class HeadersFW extends Flyweight
         return headerRO.limit();
     }
 
-    public HeadersFW forEach(int actingLimit, Consumer<HeaderFW> consumer)
+    public HeadersFW forEach(Consumer<HeaderFW> consumer)
     {
         int offset = offset();
 
-        while (offset < actingLimit)
+        while (offset < maxLimit())
         {
-            consumer.accept(headerRO.wrap(buffer(), offset, actingLimit));
+            consumer.accept(headerRO.wrap(buffer(), offset, maxLimit()));
             offset = headerRO.limit();
         }
 

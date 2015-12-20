@@ -52,11 +52,11 @@ public final class BeginFW extends Flyweight
         return offset() + FIELD_OFFSET_REFERENCE_ID + FIELD_SIZE_REFERENCE_ID;
     }
 
-    public BeginFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    public BeginFW wrap(DirectBuffer buffer, int offset, int maxLimit)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, maxLimit);
 
-        checkLimit(limit(), actingLimit);
+        checkLimit(limit(), maxLimit);
 
         return this;
     }

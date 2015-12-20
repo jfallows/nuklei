@@ -29,11 +29,11 @@ public final class ErrorFW extends Flyweight
     private static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
 
     @Override
-    public ErrorFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    public ErrorFW wrap(DirectBuffer buffer, int offset, int maxLimit)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, maxLimit);
 
-        checkLimit(limit(), actingLimit);
+        checkLimit(limit(), maxLimit);
 
         return this;
     }

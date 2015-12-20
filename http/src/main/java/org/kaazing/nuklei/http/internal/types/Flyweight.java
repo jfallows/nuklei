@@ -22,6 +22,7 @@ public abstract class Flyweight
 {
     private DirectBuffer buffer;
     private int offset;
+    private int maxLimit;
 
     public final DirectBuffer buffer()
     {
@@ -40,20 +41,24 @@ public abstract class Flyweight
         return limit() - offset();
     }
 
-    protected final Flyweight wrap(DirectBuffer buffer, int offset)
+    protected final int maxLimit()
+    {
+        return maxLimit;
+    }
+
+    protected Flyweight wrap(DirectBuffer buffer, int offset, int maxLimit)
     {
         this.buffer = buffer;
         this.offset = offset;
+        this.maxLimit = maxLimit;
         return this;
     }
 
-    protected abstract Flyweight wrap(DirectBuffer buffer, int offset, int actingLimit);
-
-    protected static final void checkLimit(int limit, int actingLimit)
+    protected static final void checkLimit(int limit, int maxLimit)
     {
-        if (limit > actingLimit)
+        if (limit > maxLimit)
         {
-            final String msg = String.format("maxLimit=%d is beyond actingLimit=%d", limit, actingLimit);
+            final String msg = String.format("limit=%d is beyond maxLimit=%d", limit, maxLimit);
             throw new IndexOutOfBoundsException(msg);
         }
     }

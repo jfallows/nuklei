@@ -36,11 +36,11 @@ public final class FrameFW extends Flyweight
         return offset() + FIELD_OFFSET_STREAM_ID + FIELD_SIZE_STREAM_ID;
     }
 
-    public FrameFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    public FrameFW wrap(DirectBuffer buffer, int offset, int maxLimit)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, maxLimit);
 
-        checkLimit(limit(), actingLimit);
+        checkLimit(limit(), maxLimit);
 
         return this;
     }

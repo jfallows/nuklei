@@ -320,7 +320,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         String source = bindRO.source().asString();
 
         Map<String, String> headers = new LinkedHashMap<>();
-        bindRO.headers().forEach(index + length, (header) ->
+        bindRO.headers().forEach((header) ->
         {
             headers.put(header.name().asString(), header.value().asString());
         });
@@ -348,7 +348,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long destinationRef = prepareRO.destinationRef();
 
         Map<String, String> headers = new LinkedHashMap<>();
-        prepareRO.headers().forEach(index + length, (header) ->
+        prepareRO.headers().forEach((header) ->
         {
             headers.put(header.name().asString(), header.value().asString());
         });

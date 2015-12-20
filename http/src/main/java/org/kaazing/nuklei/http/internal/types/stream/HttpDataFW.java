@@ -38,13 +38,13 @@ public final class HttpDataFW extends Flyweight
         return limit;
     }
 
-    public HttpDataFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    public HttpDataFW wrap(DirectBuffer buffer, int offset, int maxLimit)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, maxLimit);
 
-        this.limit = actingLimit;
+        this.limit = maxLimit;
 
-        checkLimit(limit(), actingLimit);
+        checkLimit(limit(), maxLimit);
 
         return this;
     }

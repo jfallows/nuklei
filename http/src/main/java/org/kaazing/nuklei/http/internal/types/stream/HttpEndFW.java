@@ -28,11 +28,11 @@ public final class HttpEndFW extends Flyweight
     private static final int FIELD_OFFSET_STREAM_ID = 0;
     private static final int FIELD_SIZE_STREAM_ID = BitUtil.SIZE_OF_LONG;
 
-    public HttpEndFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    public HttpEndFW wrap(DirectBuffer buffer, int offset, int maxLimit)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, maxLimit);
 
-        checkLimit(limit(), actingLimit);
+        checkLimit(limit(), maxLimit);
 
         return this;
     }

@@ -37,13 +37,13 @@ public final class UnrouteFW extends Flyweight
     private final StringFW destinationRO = new StringFW();
 
     @Override
-    public UnrouteFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    public UnrouteFW wrap(DirectBuffer buffer, int offset, int maxLimit)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, maxLimit);
 
-        this.destinationRO.wrap(buffer, offset + FIELD_OFFSET_DESTINATION, actingLimit);
+        this.destinationRO.wrap(buffer, offset + FIELD_OFFSET_DESTINATION, maxLimit);
 
-        checkLimit(limit(), actingLimit);
+        checkLimit(limit(), maxLimit);
 
         return this;
     }

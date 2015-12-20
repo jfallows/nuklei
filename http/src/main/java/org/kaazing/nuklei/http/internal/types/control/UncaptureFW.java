@@ -37,13 +37,13 @@ public final class UncaptureFW extends Flyweight
     private final StringFW sourceRO = new StringFW();
 
     @Override
-    public UncaptureFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    public UncaptureFW wrap(DirectBuffer buffer, int offset, int maxLimit)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, maxLimit);
 
-        this.sourceRO.wrap(buffer, offset + FIELD_OFFSET_SOURCE, actingLimit);
+        this.sourceRO.wrap(buffer, offset + FIELD_OFFSET_SOURCE, maxLimit);
 
-        checkLimit(limit(), actingLimit);
+        checkLimit(limit(), maxLimit);
 
         return this;
     }

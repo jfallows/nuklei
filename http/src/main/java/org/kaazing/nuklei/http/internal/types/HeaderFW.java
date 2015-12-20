@@ -29,14 +29,14 @@ public final class HeaderFW extends Flyweight
     private final StringFW nameRO = new StringFW();
     private final StringFW valueRO = new StringFW();
 
-    public HeaderFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    public HeaderFW wrap(DirectBuffer buffer, int offset, int maxLimit)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, maxLimit);
 
-        this.nameRO.wrap(buffer, offset + FIELD_OFFSET_REPRESENTATION + FIELD_SIZE_REPRESENTATION, actingLimit);
-        this.valueRO.wrap(buffer, nameRO.limit(), actingLimit);
+        this.nameRO.wrap(buffer, offset + FIELD_OFFSET_REPRESENTATION + FIELD_SIZE_REPRESENTATION, maxLimit);
+        this.valueRO.wrap(buffer, nameRO.limit(), maxLimit);
 
-        checkLimit(limit(), actingLimit);
+        checkLimit(limit(), maxLimit);
 
         return this;
     }

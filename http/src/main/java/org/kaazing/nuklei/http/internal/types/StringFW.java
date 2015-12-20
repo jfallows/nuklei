@@ -40,10 +40,10 @@ public final class StringFW extends Flyweight
     }
 
     @Override
-    public StringFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    public StringFW wrap(DirectBuffer buffer, int offset, int maxLimit)
     {
-        super.wrap(buffer, offset);
-        checkLimit(limit(), actingLimit);
+        super.wrap(buffer, offset, maxLimit);
+        checkLimit(limit(), maxLimit);
         return this;
     }
 

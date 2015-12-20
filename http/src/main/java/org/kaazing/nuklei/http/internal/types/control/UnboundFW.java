@@ -40,15 +40,15 @@ public final class UnboundFW extends Flyweight
     private final HeadersFW headersRO = new HeadersFW();
 
     @Override
-    public UnboundFW wrap(DirectBuffer buffer, int offset, int actingLimit)
+    public UnboundFW wrap(DirectBuffer buffer, int offset, int maxLimit)
     {
-        super.wrap(buffer, offset);
+        super.wrap(buffer, offset, maxLimit);
 
-        this.destinationRO.wrap(buffer, offset + FIELD_OFFSET_DESTINATION, actingLimit);
-        this.sourceRO.wrap(buffer, destinationRO.limit() + FIELD_SIZE_DESTINATION_REF, actingLimit);
-        this.headersRO.wrap(buffer, sourceRO.limit(), actingLimit);
+        this.destinationRO.wrap(buffer, offset + FIELD_OFFSET_DESTINATION, maxLimit);
+        this.sourceRO.wrap(buffer, destinationRO.limit() + FIELD_SIZE_DESTINATION_REF, maxLimit);
+        this.headersRO.wrap(buffer, sourceRO.limit(), maxLimit);
 
-        checkLimit(limit(), actingLimit);
+        checkLimit(limit(), maxLimit);
 
         return this;
     }
