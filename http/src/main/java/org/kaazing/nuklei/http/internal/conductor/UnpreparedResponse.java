@@ -20,25 +20,25 @@ public final class UnpreparedResponse implements ConductorResponse
     private final long correlationId;
     private final String destination;
     private final long destinationRef;
-    private final String handler;
+    private final String source;
     private final Object headers;
 
     public UnpreparedResponse(
         long correlationId,
         String destination,
         long destinationRef,
-        String handler,
+        String source,
         Object headers)
     {
         this.correlationId = correlationId;
         this.destination = destination;
         this.destinationRef = destinationRef;
-        this.handler = handler;
+        this.source = source;
         this.headers = headers;
     }
 
     public void execute(Conductor conductor)
     {
-        conductor.onUnpreparedResponse(correlationId, destination, destinationRef, handler, headers);
+        conductor.onUnpreparedResponse(correlationId, destination, destinationRef, source, headers);
     }
 }

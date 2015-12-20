@@ -134,7 +134,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
 
     public void doBind(
         long correlationId,
-        long sourceRef,
+        long destinationRef,
         Object headers,
         ReadableProxy destination,
         RingBuffer sourceRoute,
@@ -142,16 +142,16 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
     {
         try
         {
-            // positive, even, non-zero destinationRef
+            // positive, even, non-zero sourceRef
             streamsBound.increment();
-            final long destinationRef = streamsBound.get() << 1L;
+            final long sourceRef = streamsBound.get() << 1L;
 
             ReadableState newState =
                     new ReadableState(sourceRef, destination, destinationRef, headers, sourceRoute, destinationRoute);
 
             stateByRef.put(newState.sourceRef(), newState);
 
-            readerProxy.onBoundResponse(captureName, correlationId, destinationRef);
+            readerProxy.onBoundResponse(captureName, correlationId, sourceRef);
         }
         catch (Exception ex)
         {
@@ -176,9 +176,10 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
             {
                 Object headers = oldState.headers();
                 ReadableProxy destination = oldState.destination();
+                long destinationRef = oldState.destinationRef();
                 String destinationName = destination.name();
 
-                conductorProxy.onUnboundResponse(correlationId, captureName, sourceRef, destinationName, headers);
+                conductorProxy.onUnboundResponse(correlationId, destinationName, destinationRef, captureName, headers);
             }
         }
         catch (Exception ex)
@@ -190,7 +191,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
 
     public void doPrepare(
         long correlationId,
-        long sourceRef,
+        long destinationRef,
         Object headers,
         ReadableProxy destination,
         RingBuffer sourceRoute,
@@ -198,15 +199,15 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
     {
         try
         {
-            // positive, odd destinationRef
-            final long destinationRef = (streamsPrepared.increment() << 1L) | 0x0000000000000001L;
+            // positive, odd sourceRef
+            final long sourceRef = (streamsPrepared.increment() << 1L) | 0x0000000000000001L;
 
             ReadableState newState =
                     new ReadableState(sourceRef, destination, destinationRef, headers, sourceRoute, destinationRoute);
 
             stateByRef.put(newState.sourceRef(), newState);
 
-            readerProxy.onPreparedResponse(captureName, correlationId, destinationRef);
+            readerProxy.onPreparedResponse(captureName, correlationId, sourceRef);
         }
         catch (Exception ex)
         {
@@ -231,9 +232,10 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
             {
                 Object headers = oldState.headers();
                 ReadableProxy destination = oldState.destination();
+                long destinationRef = oldState.destinationRef();
                 String destinationName = destination.name();
 
-                conductorProxy.onUnpreparedResponse(correlationId, captureName, sourceRef, destinationName, headers);
+                conductorProxy.onUnpreparedResponse(correlationId, destinationName, destinationRef, captureName, headers);
             }
         }
         catch (Exception ex)

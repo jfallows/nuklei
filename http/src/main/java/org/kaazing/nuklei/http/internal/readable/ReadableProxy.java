@@ -38,13 +38,13 @@ public final class ReadableProxy
 
     public void doBind(
         long correlationId,
-        long sourceRef,
+        long destinationRef,
         Object headers,
         ReadableProxy destination,
         RingBuffer sourceRoute,
         RingBuffer destinationRoute)
     {
-        BindCommand command = new BindCommand(correlationId, sourceRef, headers, destination, sourceRoute, destinationRoute);
+        BindCommand command = new BindCommand(correlationId, destinationRef, headers, destination, sourceRoute, destinationRoute);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");
@@ -64,13 +64,13 @@ public final class ReadableProxy
 
     public void doPrepare(
         long correlationId,
-        long sourceRef,
+        long destinationRef,
         Object headers,
         ReadableProxy destination,
         RingBuffer sourceRoute, RingBuffer destinationRoute)
     {
         PrepareCommand command =
-                new PrepareCommand(correlationId, sourceRef, headers, destination, sourceRoute, destinationRoute);
+                new PrepareCommand(correlationId, destinationRef, headers, destination, sourceRoute, destinationRoute);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");

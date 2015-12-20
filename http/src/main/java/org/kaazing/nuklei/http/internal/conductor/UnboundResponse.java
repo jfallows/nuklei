@@ -19,27 +19,27 @@ package org.kaazing.nuklei.http.internal.conductor;
 public final class UnboundResponse implements ConductorResponse
 {
     private final long correlationId;
+    private final String destination;
+    private final long destinationRef;
     private final String source;
-    private final long sourceRef;
-    private final String handler;
     private final Object headers;
 
     public UnboundResponse(
         long correlationId,
+        String destination,
+        long destinationRef,
         String source,
-        long sourceRef,
-        String handler,
         Object headers)
     {
         this.correlationId = correlationId;
+        this.destination = destination;
+        this.destinationRef = destinationRef;
         this.source = source;
-        this.sourceRef = sourceRef;
-        this.handler = handler;
         this.headers = headers;
     }
 
     public void execute(Conductor conductor)
     {
-        conductor.onUnboundResponse(correlationId, source, sourceRef, handler, headers);
+        conductor.onUnboundResponse(correlationId, destination, destinationRef, source, headers);
     }
 }

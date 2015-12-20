@@ -21,7 +21,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 public final class PrepareCommand implements ReadableCommand
 {
     private final long correlationId;
-    private final long sourceRef;
+    private final long destinationRef;
     private final ReadableProxy destinationProxy;
     private final Object headers;
     private final RingBuffer sourceRoute;
@@ -29,13 +29,14 @@ public final class PrepareCommand implements ReadableCommand
 
     public PrepareCommand(
         long correlationId,
-        long sourceRef,
+        long destinationRef,
         Object headers,
         ReadableProxy destinationProxy,
-        RingBuffer sourceRoute, RingBuffer destinationRoute)
+        RingBuffer sourceRoute,
+        RingBuffer destinationRoute)
     {
         this.correlationId = correlationId;
-        this.sourceRef = sourceRef;
+        this.destinationRef = destinationRef;
         this.headers = headers;
         this.destinationProxy = destinationProxy;
         this.sourceRoute = sourceRoute;
@@ -45,13 +46,13 @@ public final class PrepareCommand implements ReadableCommand
     @Override
     public void execute(Readable source)
     {
-        source.doPrepare(correlationId, sourceRef, headers, destinationProxy, sourceRoute, destinationRoute);
+        source.doPrepare(correlationId, destinationRef, headers, destinationProxy, sourceRoute, destinationRoute);
     }
 
     @Override
     public String toString()
     {
-        return format("PREPARE [correlationId=%d, sourceRef=%d, headers=%s, destinationProxy=\"%s\"]",
-                correlationId, sourceRef, headers, destinationProxy);
+        return format("PREPARE [correlationId=%d, destinationRef=%d, headers=%s, destinationProxy=\"%s\"]",
+                correlationId, destinationRef, headers, destinationProxy);
     }
 }

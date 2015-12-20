@@ -21,7 +21,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 public final class BindCommand implements ReadableCommand
 {
     private final long correlationId;
-    private final long sourceRef;
+    private final long destinationRef;
     private final ReadableProxy destination;
     private final Object headers;
     private final RingBuffer sourceRoute;
@@ -29,14 +29,14 @@ public final class BindCommand implements ReadableCommand
 
     public BindCommand(
         long correlationId,
-        long sourceRef,
+        long destinationRef,
         Object headers,
         ReadableProxy destination,
         RingBuffer sourceRoute,
         RingBuffer destinationRoute)
     {
         this.correlationId = correlationId;
-        this.sourceRef = sourceRef;
+        this.destinationRef = destinationRef;
         this.headers = headers;
         this.destination = destination;
         this.sourceRoute = sourceRoute;
@@ -46,13 +46,13 @@ public final class BindCommand implements ReadableCommand
     @Override
     public void execute(Readable source)
     {
-        source.doBind(correlationId, sourceRef, headers, destination, sourceRoute, destinationRoute);
+        source.doBind(correlationId, destinationRef, headers, destination, sourceRoute, destinationRoute);
     }
 
     @Override
     public String toString()
     {
-        return format("BIND [correlationId=%d, sourceRef=%d, headers=%s, destination=\"%s\"]",
-                correlationId, sourceRef, headers, destination);
+        return format("BIND [correlationId=%d, destinationRef=%d, headers=%s, destination=\"%s\"]",
+                correlationId, destinationRef, headers, destination);
     }
 }

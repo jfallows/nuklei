@@ -176,16 +176,16 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
 
     public void onUnboundResponse(
         long correlationId,
+        String destination,
+        long destinationRef,
         String source,
-        long sourceRef,
-        String handler,
         Object headers)
     {
         unboundRW.wrap(sendBuffer, 0, sendBuffer.capacity())
                  .correlationId(correlationId)
-                 .source(source)
-                 .sourceRef(sourceRef)
-                 .handler(handler);
+                 .destination(destination)
+                 .destinationRef(destinationRef)
+                 .source(source);
 
         // TODO: headers
 
@@ -210,14 +210,14 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long correlationId,
         String destination,
         long destinationRef,
-        String handler,
+        String source,
         Object headers)
     {
         unpreparedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
                     .correlationId(correlationId)
                     .destination(destination)
                     .destinationRef(destinationRef)
-                    .handler(handler);
+                    .source(source);
 
         // TODO: headers
 
@@ -306,12 +306,12 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         bindRO.wrap(buffer, index, index + length);
 
         long correlationId = bindRO.correlationId();
+        String destination = bindRO.destination().asString();
+        long destinationRef = bindRO.destinationRef();
         String source = bindRO.source().asString();
-        long sourceRef = bindRO.sourceRef();
-        String handler = bindRO.handler().asString();
         Object headers = new Object(); // TODO
 
-        readerProxy.doBind(correlationId, source, sourceRef, handler, headers);
+        readerProxy.doBind(correlationId, destination, destinationRef, source, headers);
     }
 
     private void handleUnbindCommand(DirectBuffer buffer, int index, int length)
@@ -331,10 +331,10 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long correlationId = prepareRO.correlationId();
         String destination = prepareRO.destination().asString();
         long destinationRef = prepareRO.destinationRef();
-        String handler = prepareRO.handler().asString();
+        String source = prepareRO.source().asString();
         Object headers = new Object(); // TODO
 
-        readerProxy.doPrepare(correlationId, destination, destinationRef, handler, headers);
+        readerProxy.doPrepare(correlationId, destination, destinationRef, source, headers);
     }
 
     private void handleUnprepareCommand(DirectBuffer buffer, int index, int length)

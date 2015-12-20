@@ -16,7 +16,7 @@
 
 property controlNew ${control:mapNew("target/nukleus-itests/http/control", 1024, 1024)}
 
-property newReferenceId ${streams:newReferenceId()}
+property newSourceRef ${streams:newReferenceId()}
 
 connect await ROUTED
         agrona://stream/bidirectional
@@ -27,15 +27,15 @@ connected
 
 read [0x00 0x00 0x00 0x11]
 read ([0..8]:correlationId)
-read [0x06] "source"
-read ([0..8]:sourceRef)
 read [0x0b] "destination"
+read ([0..8]:destinationRef)
+read [0x06] "source"
 read [0x00] [0x05] ":path" [0x01] "/"
 read [0x00] [0x04] "host" [0x0e] "localhost:8080"
 
 write [0x40 0x00 0x00 0x11]
 write ${correlationId}
-write ${newReferenceId}
+write ${newSourceRef}
 write flush
 
 close

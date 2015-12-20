@@ -22,33 +22,33 @@ public final class PrepareCommand implements ReaderCommand
     private final long correlationId;
     private final String destination;
     private final long destinationRef;
-    private final String handler;
+    private final String source;
     private final Object headers;
 
     public PrepareCommand(
         long correlationId,
         String destination,
         long destinationRef,
-        String handler,
+        String source,
         Object headers)
     {
         this.correlationId = correlationId;
         this.destination = destination;
         this.destinationRef = destinationRef;
-        this.handler = handler;
+        this.source = source;
         this.headers = headers;
     }
 
     @Override
     public void execute(Reader reader)
     {
-        reader.doPrepare(correlationId, destination, destinationRef, handler, headers);
+        reader.doPrepare(correlationId, destination, destinationRef, source, headers);
     }
 
     @Override
     public String toString()
     {
-        return format("PREPARE [correlationId=%d, destination=\"%s\", destinationRef=%d, handler=\"%s\", headers=%s]",
-                correlationId, destination, destinationRef, handler, headers);
+        return format("PREPARE [correlationId=%d, destination=\"%s\", destinationRef=%d, source=\"%s\", headers=%s]",
+                correlationId, destination, destinationRef, source, headers);
     }
 }

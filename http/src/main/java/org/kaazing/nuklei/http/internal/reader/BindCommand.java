@@ -19,36 +19,36 @@ import static java.lang.String.format;
 
 public final class BindCommand implements ReaderCommand
 {
+    private final String destination;
+    private final long destinationRef;
     private final String source;
-    private final long sourceRef;
-    private final String handler;
     private final long correlationId;
     private final Object headers;
 
     public BindCommand(
         long correlationId,
+        String destination,
+        long destinationRef,
         String source,
-        long sourceRef,
-        String handler,
         Object headers)
     {
         this.correlationId = correlationId;
+        this.destination = destination;
+        this.destinationRef = destinationRef;
         this.source = source;
-        this.sourceRef = sourceRef;
-        this.handler = handler;
         this.headers = headers;
     }
 
     @Override
     public void execute(Reader reader)
     {
-        reader.doBind(correlationId, source, sourceRef, handler, headers);
+        reader.doBind(correlationId, destination, destinationRef, source, headers);
     }
 
     @Override
     public String toString()
     {
-        return format("BIND [correlationId=%d, source=\"%s\", sourceRef=%d, handler=\"%s\", headers=%s]",
-                correlationId, source, sourceRef, handler, headers);
+        return format("BIND [correlationId=%d, destination=\"%s\", destinationRef=%d, source=\"%s\", headers=%s]",
+                correlationId, destination, destinationRef, source, headers);
     }
 }

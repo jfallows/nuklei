@@ -22,7 +22,6 @@ import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
 import java.io.File;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.DisableOnDebug;
@@ -67,7 +66,6 @@ public class ArchitectureIT
         createEmptyFile(destinationReply.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
     }
 
-    @Ignore
     @Test
     @Specification({
         "nuklei/specification/http/control/capture.source.destination/controller",

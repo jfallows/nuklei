@@ -56,7 +56,7 @@ connected
 
 write [0x00 0x00 0x00 0x01]
 write ${newInitialStreamId}
-write ${newReferenceId}
+write ${newDestinationRef}
 write [0x00] [0x07] ":method" [0x03] "GET"
 write [0x00] [0x07] ":scheme" [0x04] "http"
 write [0x00] [0x05] ":path"   [0x01] "/"

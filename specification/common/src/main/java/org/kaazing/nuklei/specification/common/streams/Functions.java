@@ -48,17 +48,16 @@ public final class Functions
     @Function
     public static byte[] newClientStreamId()
     {
-        return newInitiatingId();
+        return newInitialStreamId();
     }
 
     @Deprecated
     @Function
     public static byte[] newServerStreamId()
     {
-        return newReactingId();
+        return newReplyStreamId();
     }
 
-    @Deprecated
     @Function
     public static byte[] newReferenceId()
     {
@@ -73,30 +72,7 @@ public final class Functions
     }
 
     @Function
-    public static byte[] newPrepareReferenceId()
-    {
-        return newInitiatingId();
-    }
-
-    @Function
-    public static byte[] newBindReferenceId()
-    {
-        return newReactingId();
-    }
-
-    @Function
     public static byte[] newInitialStreamId()
-    {
-        return newInitiatingId();
-    }
-
-    @Function
-    public static byte[] newReplyStreamId()
-    {
-        return newReactingId();
-    }
-
-    private static byte[] newInitiatingId()
     {
         // odd, positive, non-zero
         long value = (RANDOM.nextLong() & 0x3fffffffffffffffL) | 0x0000000000000001L;
@@ -109,7 +85,7 @@ public final class Functions
     }
 
     @Function
-    private static byte[] newReactingId()
+    public static byte[] newReplyStreamId()
     {
         // even, positive, non-zero
         long value;

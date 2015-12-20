@@ -35,7 +35,7 @@ public final class PrepareFW extends Flyweight
     private static final int FIELD_SIZE_DESTINATION_REF = BitUtil.SIZE_OF_LONG;
 
     private final StringFW destinationRO = new StringFW();
-    private final StringFW handlerRO = new StringFW();
+    private final StringFW sourceRO = new StringFW();
 
     @Override
     public PrepareFW wrap(DirectBuffer buffer, int offset, int actingLimit)
@@ -43,7 +43,7 @@ public final class PrepareFW extends Flyweight
         super.wrap(buffer, offset);
 
         this.destinationRO.wrap(buffer, offset + FIELD_OFFSET_DESTINATION, actingLimit);
-        this.handlerRO.wrap(buffer, destinationRO.limit() + FIELD_SIZE_DESTINATION_REF, actingLimit);
+        this.sourceRO.wrap(buffer, destinationRO.limit() + FIELD_SIZE_DESTINATION_REF, actingLimit);
 
         checkLimit(limit(), actingLimit);
 
@@ -53,7 +53,7 @@ public final class PrepareFW extends Flyweight
     @Override
     public int limit()
     {
-        return handler().limit();
+        return source().limit();
     }
 
     public int typeId()
@@ -76,27 +76,27 @@ public final class PrepareFW extends Flyweight
         return buffer().getLong(destination().limit());
     }
 
-    public StringFW handler()
+    public StringFW source()
     {
-        return handlerRO;
+        return sourceRO;
     }
 
     public long headersOffset()
     {
-        return handlerRO.limit();
+        return sourceRO.limit();
     }
 
     @Override
     public String toString()
     {
         return String.format("[correlationId=%d, destination=\"%s\", destinationRef=%d, handler=\"%s\"]",
-                correlationId(), destination(), destinationRef(), handler());
+                correlationId(), destination(), destinationRef(), source());
     }
 
     public static final class Builder extends Flyweight.Builder<PrepareFW>
     {
         private final StringFW.Builder destinationRW = new StringFW.Builder();
-        private final StringFW.Builder handlerRW = new StringFW.Builder();
+        private final StringFW.Builder sourceRW = new StringFW.Builder();
 
         public Builder()
         {
@@ -131,9 +131,9 @@ public final class PrepareFW extends Flyweight
             return this;
         }
 
-        public Builder handler(String handler)
+        public Builder source(String source)
         {
-            handler().set(handler, StandardCharsets.UTF_8);
+            source().set(source, StandardCharsets.UTF_8);
             return this;
         }
 
@@ -142,9 +142,9 @@ public final class PrepareFW extends Flyweight
             return this.destinationRW.wrap(buffer(), offset() + FIELD_OFFSET_DESTINATION, maxLimit());
         }
 
-        protected StringFW.Builder handler()
+        protected StringFW.Builder source()
         {
-            return this.handlerRW.wrap(buffer(), destination().build().limit() + FIELD_SIZE_DESTINATION_REF, maxLimit());
+            return this.sourceRW.wrap(buffer(), destination().build().limit() + FIELD_SIZE_DESTINATION_REF, maxLimit());
         }
     }
 }

@@ -86,12 +86,12 @@ public final class ReaderProxy
 
     public void doBind(
         long correlationId,
+        String destination,
+        long destinationRef,
         String source,
-        long sourceRef,
-        String handler,
         Object headers)
     {
-        BindCommand command = new BindCommand(correlationId, source, sourceRef, handler, headers);
+        BindCommand command = new BindCommand(correlationId, destination, destinationRef, source, headers);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");
@@ -117,10 +117,10 @@ public final class ReaderProxy
         long correlationId,
         String destination,
         long destinationRef,
-        String handler,
+        String source,
         Object headers)
     {
-        PrepareCommand command = new PrepareCommand(correlationId, destination, destinationRef, handler, headers);
+        PrepareCommand command = new PrepareCommand(correlationId, destination, destinationRef, source, headers);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");

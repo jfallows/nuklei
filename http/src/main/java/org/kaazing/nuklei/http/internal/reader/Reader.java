@@ -219,9 +219,9 @@ public final class Reader extends CompositeNukleus implements Consumer<ReaderCom
 
     public void doBind(
         long correlationId,
-        String sourceName,
-        long sourceRef,
         String destinationName,
+        long destinationRef,
+        String sourceName,
         Object headers)
     {
         StreamsLayout sourceCapture = capturedStreams.get(sourceName);
@@ -242,7 +242,7 @@ public final class Reader extends CompositeNukleus implements Consumer<ReaderCom
             ReadableProxy destinationProxy = destination.proxy();
             RingBuffer destinationBuffer = destinationRoute.buffer();
 
-            sourceProxy.doBind(correlationId, sourceRef, headers, destinationProxy, sourceBuffer, destinationBuffer);
+            sourceProxy.doBind(correlationId, destinationRef, headers, destinationProxy, sourceBuffer, destinationBuffer);
         }
     }
 
@@ -268,9 +268,9 @@ public final class Reader extends CompositeNukleus implements Consumer<ReaderCom
 
     public void doPrepare(
         long correlationId,
-        String sourceName,
-        long sourceRef,
         String destinationName,
+        long destinationRef,
+        String sourceName,
         Object headers)
     {
         StreamsLayout sourceCapture = capturedStreams.get(sourceName);
@@ -292,7 +292,7 @@ public final class Reader extends CompositeNukleus implements Consumer<ReaderCom
             ReadableProxy destinationProxy = destination.proxy();
             RingBuffer destinationBuffer = destinationRoute.buffer();
 
-            sourceProxy.doPrepare(correlationId, sourceRef, headers, destinationProxy, sourceBuffer, destinationBuffer);
+            sourceProxy.doPrepare(correlationId, destinationRef, headers, destinationProxy, sourceBuffer, destinationBuffer);
         }
     }
 
