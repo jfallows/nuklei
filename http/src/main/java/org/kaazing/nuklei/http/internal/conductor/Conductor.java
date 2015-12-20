@@ -343,9 +343,9 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         prepareRO.wrap(buffer, index, index + length);
 
         long correlationId = prepareRO.correlationId();
+        String source = prepareRO.source().asString();
         String destination = prepareRO.destination().asString();
         long destinationRef = prepareRO.destinationRef();
-        String source = prepareRO.source().asString();
 
         Map<String, String> headers = new LinkedHashMap<>();
         prepareRO.headers().forEach(index + length, (header) ->
