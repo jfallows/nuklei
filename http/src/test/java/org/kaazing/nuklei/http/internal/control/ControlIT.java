@@ -36,7 +36,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 public class ControlIT
 {
     private final K3poRule k3po = new K3poRule()
-        .setScriptRoot("org/kaazing/nuklei/specification/http/control");
+        .setScriptRoot("org/kaazing/specification/nuklei/http/control");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 

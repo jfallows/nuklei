@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.specification.http.streams.rfc7230;
+package org.kaazing.specification.nuklei.http.streams.rfc7230;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
@@ -34,7 +34,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 public class ArchitectureIT
 {
-    private final K3poRule k3po = new K3poRule().setScriptRoot("org/kaazing");
+    private final K3poRule k3po = new K3poRule().setScriptRoot("org/kaazing/specification");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
@@ -61,15 +61,15 @@ public class ArchitectureIT
 
     @Test
     @Specification({
-        "nuklei/specification/http/control/capture.source.destination/controller",
-        "nuklei/specification/http/control/capture.source.destination/nukleus",
-        "nuklei/specification/http/control/route.source.destination/controller",
-        "nuklei/specification/http/control/route.source.destination/nukleus",
-        "nuklei/specification/http/control/bind.source.destination/controller",
-        "nuklei/specification/http/control/bind.source.destination/nukleus",
-        "nuklei/specification/http/streams/rfc7230/inbound.must.send.version/source",
-        "nuklei/specification/http/streams/rfc7230/inbound.must.send.version/nukleus",
-        "nuklei/specification/http/streams/rfc7230/inbound.must.send.version/destination" })
+        "nuklei/http/control/capture.source.destination/controller",
+        "nuklei/http/control/capture.source.destination/nukleus",
+        "nuklei/http/control/route.source.destination/controller",
+        "nuklei/http/control/route.source.destination/nukleus",
+        "nuklei/http/control/bind.source.destination/controller",
+        "nuklei/http/control/bind.source.destination/nukleus",
+        "nuklei/http/streams/rfc7230/inbound.must.send.version/source",
+        "nuklei/http/streams/rfc7230/inbound.must.send.version/nukleus",
+        "nuklei/http/streams/rfc7230/inbound.must.send.version/destination" })
     public void inboundMustSendVersion() throws Exception
     {
         k3po.finish();
@@ -77,15 +77,15 @@ public class ArchitectureIT
 
     @Test
     @Specification({
-        "nuklei/specification/http/control/capture.source.destination/controller",
-        "nuklei/specification/http/control/capture.source.destination/nukleus",
-        "nuklei/specification/http/control/route.source.destination/controller",
-        "nuklei/specification/http/control/route.source.destination/nukleus",
-        "nuklei/specification/http/control/bind.source.destination/controller",
-        "nuklei/specification/http/control/bind.source.destination/nukleus",
-        "nuklei/specification/http/streams/rfc7230/outbound.must.send.version/source",
-        "nuklei/specification/http/streams/rfc7230/outbound.must.send.version/nukleus",
-        "nuklei/specification/http/streams/rfc7230/outbound.must.send.version/destination" })
+        "nuklei/http/control/capture.source.destination/controller",
+        "nuklei/http/control/capture.source.destination/nukleus",
+        "nuklei/http/control/route.source.destination/controller",
+        "nuklei/http/control/route.source.destination/nukleus",
+        "nuklei/http/control/bind.source.destination/controller",
+        "nuklei/http/control/bind.source.destination/nukleus",
+        "nuklei/http/streams/rfc7230/outbound.must.send.version/source",
+        "nuklei/http/streams/rfc7230/outbound.must.send.version/nukleus",
+        "nuklei/http/streams/rfc7230/outbound.must.send.version/destination" })
     public void outboundMustSendVersion() throws Exception
     {
         k3po.finish();

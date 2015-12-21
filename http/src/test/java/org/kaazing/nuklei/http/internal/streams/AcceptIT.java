@@ -36,7 +36,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 public class AcceptIT
 {
-    private final K3poRule k3po = new K3poRule().setScriptRoot("org/kaazing");
+    private final K3poRule k3po = new K3poRule().setScriptRoot("org/kaazing/specification");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
@@ -61,9 +61,9 @@ public class AcceptIT
     @Ignore
     @Test
     @Specification({
-        "nuklei/specification/http/control/bind.address.and.port/controller",
-        "specification/tcp/rfc793/establish.connection/client",
-        "nuklei/specification/http/streams/accept/establish.connection/source" })
+        "nuklei/http/control/bind.address.and.port/controller",
+        "tcp/rfc793/establish.connection/client",
+        "nuklei/http/streams/accept/establish.connection/source" })
     public void shouldEstablishConnection() throws Exception
     {
         k3po.finish();
@@ -72,9 +72,9 @@ public class AcceptIT
     @Ignore
     @Test
     @Specification({
-        "nuklei/specification/tcp/control/bind.address.and.port/controller",
-        "specification/tcp/rfc793/server.sent.data/client",
-        "nuklei/specification/tcp/streams/accept/handler.sent.data/handler" })
+        "nuklei/tcp/control/bind.address.and.port/controller",
+        "tcp/rfc793/server.sent.data/client",
+        "nuklei/tcp/streams/accept/handler.sent.data/handler" })
     public void shouldReceiveServerSentData() throws Exception
     {
         k3po.finish();
@@ -83,9 +83,9 @@ public class AcceptIT
     @Ignore
     @Test
     @Specification({
-        "nuklei/specification/tcp/control/bind.address.and.port/controller",
-        "specification/tcp/rfc793/client.sent.data/client",
-        "nuklei/specification/tcp/streams/accept/nukleus.sent.data/handler" })
+        "nuklei/tcp/control/bind.address.and.port/controller",
+        "tcp/rfc793/client.sent.data/client",
+        "nuklei/tcp/streams/accept/nukleus.sent.data/handler" })
     public void shouldReceiveClientSentData() throws Exception
     {
         k3po.finish();
@@ -94,9 +94,9 @@ public class AcceptIT
     @Ignore
     @Test
     @Specification({
-        "nuklei/specification/tcp/control/bind.address.and.port/controller",
-        "specification/tcp/rfc793/echo.data/client",
-        "nuklei/specification/tcp/streams/accept/echo.data/handler" })
+        "nuklei/tcp/control/bind.address.and.port/controller",
+        "tcp/rfc793/echo.data/client",
+        "nuklei/tcp/streams/accept/echo.data/handler" })
     public void shouldEchoData() throws Exception
     {
         k3po.finish();
@@ -105,9 +105,9 @@ public class AcceptIT
     @Ignore
     @Test
     @Specification({
-        "nuklei/specification/tcp/control/bind.address.and.port/controller",
-        "specification/tcp/rfc793/server.close/client",
-        "nuklei/specification/tcp/streams/accept/initiate.handler.close/handler" })
+        "nuklei/tcp/control/bind.address.and.port/controller",
+        "tcp/rfc793/server.close/client",
+        "nuklei/tcp/streams/accept/initiate.handler.close/handler" })
     public void shouldInitiateServerClose() throws Exception
     {
         k3po.finish();
@@ -116,9 +116,9 @@ public class AcceptIT
     @Ignore
     @Test
     @Specification({
-        "nuklei/specification/tcp/control/bind.address.and.port/controller",
-        "specification/tcp/rfc793/client.close/client",
-        "nuklei/specification/tcp/streams/accept/initiate.nukleus.close/handler" })
+        "nuklei/tcp/control/bind.address.and.port/controller",
+        "tcp/rfc793/client.close/client",
+        "nuklei/tcp/streams/accept/initiate.nukleus.close/handler" })
     public void shouldInitiateClientClose() throws Exception
     {
         k3po.finish();
@@ -127,9 +127,9 @@ public class AcceptIT
     @Ignore("non-deterministic ordering of multiple streams")
     @Test
     @Specification({
-        "nuklei/specification/tcp/control/bind.address.and.port/controller",
-        "specification/tcp/rfc793/concurrent.connections/client",
-        "nuklei/specification/tcp/streams/accept/concurrent.connections/handler" })
+        "nuklei/tcp/control/bind.address.and.port/controller",
+        "tcp/rfc793/concurrent.connections/client",
+        "nuklei/tcp/streams/accept/concurrent.connections/handler" })
     public void shouldEstablishConcurrentConnections() throws Exception
     {
         k3po.finish();
