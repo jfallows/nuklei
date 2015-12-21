@@ -18,8 +18,12 @@ package org.kaazing.nuklei.http.internal.readable.stream;
 import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_BEGIN;
 import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_DATA;
 import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_END;
+import static org.kaazing.nuklei.http.internal.util.BufferUtil.limitOfBytes;
 
+import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.kaazing.nuklei.http.internal.readable.ReadableProxy;
 import org.kaazing.nuklei.http.internal.types.stream.BeginFW;
@@ -29,6 +33,7 @@ import org.kaazing.nuklei.http.internal.types.stream.HttpBeginFW;
 import org.kaazing.nuklei.http.internal.types.stream.HttpDataFW;
 import org.kaazing.nuklei.http.internal.types.stream.HttpEndFW;
 
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
@@ -37,6 +42,13 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 public final class AcceptDecoderStreamPool
 {
+    private static final byte[] CRLFCRLF_BYTES = "\r\n\r\n".getBytes(StandardCharsets.US_ASCII);
+
+    private static enum DecoderState
+    {
+        IDLE, HEADERS, BODY, TRAILERS
+    }
+
     private final BeginFW.Builder beginRW = new BeginFW.Builder();
 
     private final BeginFW beginRO = new BeginFW();
@@ -60,37 +72,44 @@ public final class AcceptDecoderStreamPool
     }
 
     public MessageHandler acquire(
+        long destinationRef,
         long sourceReplyStreamId,
         ReadableProxy destination,
         RingBuffer sourceRoute,
         RingBuffer destinationRoute,
         Consumer<MessageHandler> released)
     {
-        return new AcceptDecoderStream(released, sourceReplyStreamId, destination, sourceRoute, destinationRoute);
+        return new AcceptDecoderStream(released, destinationRef, sourceReplyStreamId,
+                                       destination, sourceRoute, destinationRoute);
     }
 
     private final class AcceptDecoderStream implements MessageHandler
     {
         private final Consumer<MessageHandler> cleanup;
+        private final long destinationRef;
         private final long sourceReplyStreamId;
         private final ReadableProxy destination;
         private final RingBuffer sourceRoute;
         private final RingBuffer destinationRoute;
 
         private long destinationInitialStreamId;
+        private DecoderState decoderState;
 
         public AcceptDecoderStream(
             Consumer<MessageHandler> cleanup,
+            long destinationRef,
             long sourceReplyStreamId,
             ReadableProxy destination,
             RingBuffer sourceRoute,
             RingBuffer destinationRoute)
         {
             this.cleanup = cleanup;
+            this.destinationRef = destinationRef;
             this.sourceReplyStreamId = sourceReplyStreamId;
             this.destination = destination;
             this.sourceRoute = sourceRoute;
             this.destinationRoute = destinationRoute;
+            this.decoderState = DecoderState.IDLE;
         }
 
         @Override
@@ -130,7 +149,7 @@ public final class AcceptDecoderStreamPool
 
             if (!sourceRoute.write(begin.typeId(), begin.buffer(), begin.offset(), begin.length()))
             {
-                 throw new IllegalStateException("could not write to ring buffer");
+                throw new IllegalStateException("could not write to ring buffer");
             }
         }
 
@@ -141,48 +160,27 @@ public final class AcceptDecoderStreamPool
         {
             dataRO.wrap(buffer, index, index + length);
 
-            // TODO: decode httpBegin, httpData, httpEnd
+            final DirectBuffer payload = dataRO.payload();
+            final int limit = payload.capacity();
 
-            // assume fully decoded HTTP request
-
-            // positive, odd destination stream id
-            this.destinationInitialStreamId = (streamsAccepted.increment() << 1L) | 0x0000000000000001L;
-
-            destination.doRegisterEncoder(destinationInitialStreamId, sourceReplyStreamId, sourceRoute);
-
-            final HttpBeginFW httpBegin = httpBeginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                                     .streamId(destinationInitialStreamId)
-                                                     .build();
-
-            // TODO: http request headers
-
-            if (!destinationRoute.write(httpBegin.typeId(), httpBegin.buffer(), httpBegin.offset(), httpBegin.length()))
+            for (int offset = 0; offset < limit;)
             {
-                 throw new IllegalStateException("could not write to ring buffer");
+                switch (decoderState)
+                {
+                case IDLE:
+                    offset = decodeHttpBegin(payload, offset, limit);
+                    break;
+                case HEADERS:
+                    // TODO: partial headers
+                    break;
+                case BODY:
+                    offset = decodeHttpData(payload, offset, limit);
+                    break;
+                case TRAILERS:
+                    offset = decodeHttpEnd(payload, offset, limit);
+                    break;
+                }
             }
-
-            final HttpDataFW httpData = httpDataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                                  .streamId(destinationInitialStreamId)
-                                                  .build();
-
-            // TODO: http chunk flag and extension
-
-            if (!destinationRoute.write(httpData.typeId(), httpData.buffer(), httpData.offset(), httpData.length()))
-            {
-                throw new IllegalStateException("could not write to ring buffer");
-            }
-
-            final HttpEndFW httpEnd = httpEndRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                               .streamId(destinationInitialStreamId)
-                                               .build();
-
-            // TODO: http trailers
-
-            if (!destinationRoute.write(httpEnd.typeId(), httpEnd.buffer(), httpEnd.offset(), httpEnd.length()))
-            {
-                throw new IllegalStateException("could not write to ring buffer");
-            }
-
         }
 
         private void onEnd(
@@ -197,6 +195,101 @@ public final class AcceptDecoderStreamPool
             // example release
             cleanup.accept(this);
         }
-    }
 
+        private int decodeHttpBegin(
+            final DirectBuffer payload,
+            final int offset,
+            final int limit)
+        {
+            final int endOfHeadersAt = limitOfBytes(payload, offset, limit, CRLFCRLF_BYTES);
+            if (endOfHeadersAt == -1)
+            {
+                throw new IllegalStateException("incomplete http headers");
+            }
+
+            // TODO: replace with lightweight approach (start)
+            String[] lines = payload.getStringWithoutLengthUtf8(0, endOfHeadersAt).split("\r\n");
+            String[] start = lines[0].split("\\s+");
+
+            // positive, odd destination stream id
+            this.destinationInitialStreamId = (streamsAccepted.increment() << 1L) | 0x0000000000000001L;
+
+            httpBeginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                       .streamId(destinationInitialStreamId)
+                       .referenceId(destinationRef)
+                       .header(":scheme", "http") // TODO: detect https
+                       .header(":method", start[0])
+                       .header(":path", start[1]);
+
+            Pattern pattern = Pattern.compile("([^\\s:]+)\\s*:\\s*(.*)");
+            for (int i = 1; i < lines.length; i++)
+            {
+                Matcher matcher = pattern.matcher(lines[i]);
+                if (!matcher.matches())
+                {
+                    throw new IllegalStateException("illegal http header syntax");
+                }
+
+                String name = matcher.group(1).toLowerCase();
+                String value = matcher.group(2);
+
+                httpBeginRW.header(name, value);
+            }
+            // TODO: replace with lightweight approach (end)
+
+            destination.doRegisterEncoder(destinationInitialStreamId, sourceReplyStreamId, sourceRoute);
+
+            final HttpBeginFW httpBegin = httpBeginRW.build();
+
+            if (!destinationRoute.write(httpBegin.typeId(), httpBegin.buffer(), httpBegin.offset(), httpBegin.length()))
+            {
+                throw new IllegalStateException("could not write to ring buffer");
+            }
+
+            decoderState = DecoderState.BODY;
+
+            return endOfHeadersAt;
+        }
+
+        private int decodeHttpData(
+            DirectBuffer payload,
+            int offset,
+            int limit)
+        {
+            final HttpDataFW httpData = httpDataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                                  .streamId(destinationInitialStreamId)
+                                                  .payload(payload, offset, limit - offset)
+                                                  .build();
+
+            // TODO: http chunk flag and extension
+
+            if (!destinationRoute.write(httpData.typeId(), httpData.buffer(), httpData.offset(), httpData.length()))
+            {
+                throw new IllegalStateException("could not write to ring buffer");
+            }
+
+            return limit;
+        }
+
+        private int decodeHttpEnd(
+            DirectBuffer payload,
+            int offset,
+            int limit)
+        {
+
+            final HttpEndFW httpEnd = httpEndRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                               .streamId(destinationInitialStreamId)
+                                               .build();
+
+            // TODO: http trailers
+
+            if (!destinationRoute.write(httpEnd.typeId(), httpEnd.buffer(), httpEnd.offset(), httpEnd.length()))
+            {
+                throw new IllegalStateException("could not write to ring buffer");
+            }
+
+            // TODO Auto-generated method stub
+            return 0;
+        }
+    }
 }

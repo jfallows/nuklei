@@ -18,6 +18,7 @@ package org.kaazing.nuklei.http.internal.types.stream;
 import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_BEGIN;
 
 import org.kaazing.nuklei.http.internal.types.Flyweight;
+import org.kaazing.nuklei.http.internal.types.HeadersFW;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
@@ -30,6 +31,10 @@ public final class HttpBeginFW extends Flyweight
 
     private static final int FIELD_OFFSET_REFERENCE_ID = FIELD_OFFSET_STREAM_ID + FIELD_SIZE_STREAM_ID;
     private static final int FIELD_SIZE_REFERENCE_ID = BitUtil.SIZE_OF_LONG;
+
+    private static final int FIELD_OFFSET_HEADERS = FIELD_OFFSET_REFERENCE_ID + FIELD_SIZE_REFERENCE_ID;
+
+    private final HeadersFW headersRO = new HeadersFW();
 
     public int typeId()
     {
@@ -46,15 +51,22 @@ public final class HttpBeginFW extends Flyweight
         return buffer().getLong(offset() + FIELD_OFFSET_REFERENCE_ID);
     }
 
+    public HeadersFW headers()
+    {
+        return headersRO;
+    }
+
     @Override
     public int limit()
     {
-        return offset() + FIELD_OFFSET_REFERENCE_ID + FIELD_SIZE_REFERENCE_ID;
+        return headersRO.limit();
     }
 
     public HttpBeginFW wrap(DirectBuffer buffer, int offset, int maxLimit)
     {
         super.wrap(buffer, offset, maxLimit);
+
+        this.headersRO.wrap(buffer, offset + FIELD_OFFSET_HEADERS, maxLimit);
 
         checkLimit(limit(), maxLimit);
 
@@ -69,6 +81,8 @@ public final class HttpBeginFW extends Flyweight
 
     public static final class Builder extends Flyweight.Builder<HttpBeginFW>
     {
+        private final HeadersFW.Builder headersRW = new HeadersFW.Builder();
+
         public Builder()
         {
             super(new HttpBeginFW());
@@ -78,6 +92,9 @@ public final class HttpBeginFW extends Flyweight
         public Builder wrap(MutableDirectBuffer buffer, int offset, int maxLimit)
         {
             super.wrap(buffer, offset, maxLimit);
+
+            limit(offset + FIELD_OFFSET_HEADERS);
+            headers(offset + FIELD_OFFSET_HEADERS);
             return this;
         }
 
@@ -91,6 +108,18 @@ public final class HttpBeginFW extends Flyweight
         {
             buffer().putLong(offset() + FIELD_OFFSET_REFERENCE_ID, referenceId);
             return this;
+        }
+
+        public Builder header(String name, String value)
+        {
+            headersRW.header(name, value);
+            limit(headersRW.limit());
+            return this;
+        }
+
+        protected HeadersFW.Builder headers(int offset)
+        {
+            return this.headersRW.wrap(buffer(), offset, maxLimit());
         }
     }
 }

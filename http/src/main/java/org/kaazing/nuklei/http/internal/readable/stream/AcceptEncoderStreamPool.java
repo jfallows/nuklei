@@ -19,12 +19,21 @@ import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_BEGIN;
 import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_DATA;
 import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_END;
 
+
+
+
 import java.util.function.Consumer;
+
+
+
 
 import org.kaazing.nuklei.http.internal.types.stream.DataFW;
 import org.kaazing.nuklei.http.internal.types.stream.HttpBeginFW;
 import org.kaazing.nuklei.http.internal.types.stream.HttpDataFW;
 import org.kaazing.nuklei.http.internal.types.stream.HttpEndFW;
+
+
+
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
@@ -100,10 +109,32 @@ public final class AcceptEncoderStreamPool
         {
             httpBeginRO.wrap(buffer, index, index + length);
 
-            // TODO
+            StringBuilder request = new StringBuilder();
+            StringBuilder headers = new StringBuilder();
+            httpBeginRO.headers().forEach((header) ->
+            {
+                String name = header.name().asString();
+                String value = header.value().asString();
 
-            final DataFW data = dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                      .streamId(sourceReplyStreamId)
+                if (":status".equals(name))
+                {
+                    request.append("HTTP/1.1 ").append(value).append(" OK\r\n");
+                }
+                else
+                {
+                    headers.append(name).append(": ").append(value).append("\r\n");
+                }
+            });
+            request.append(headers).append("\r\n");
+
+            dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                  .streamId(sourceReplyStreamId);
+
+            String payloadChars = request.toString();
+            int payloadOffset = dataRW.payloadOffset();
+            int payloadLength = atomicBuffer.putStringWithoutLengthUtf8(payloadOffset, payloadChars);
+
+            final DataFW data = dataRW.payloadLength(payloadLength)
                                       .build();
 
             if (!sourceRoute.write(data.typeId(), data.buffer(), data.offset(), data.length()))
@@ -119,7 +150,7 @@ public final class AcceptEncoderStreamPool
         {
             httpDataRO.wrap(buffer, index, index + length);
 
-            // TODO: decode httpBegin, httpData, httpEnd
+            // TODO
         }
 
         private void onEnd(
@@ -129,7 +160,10 @@ public final class AcceptEncoderStreamPool
         {
             httpEndRO.wrap(buffer, index, index + length);
 
-            // TODO: httpReset if necessary?
+            // TODO
+
+            // release
+            cleanup.accept(this);
         }
     }
 

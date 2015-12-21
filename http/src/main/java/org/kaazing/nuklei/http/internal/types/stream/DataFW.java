@@ -22,6 +22,7 @@ import org.kaazing.nuklei.http.internal.types.Flyweight;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public final class DataFW extends Flyweight
 {
@@ -30,19 +31,19 @@ public final class DataFW extends Flyweight
 
     private static final int FIELD_OFFSET_PAYLOAD = FIELD_OFFSET_STREAM_ID + FIELD_SIZE_STREAM_ID;
 
-    private int limit;
+    private final DirectBuffer payloadRO = new UnsafeBuffer(new byte[0]);
 
     @Override
     public int limit()
     {
-        return limit;
+        return maxLimit();
     }
 
     public DataFW wrap(DirectBuffer buffer, int offset, int maxLimit)
     {
         super.wrap(buffer, offset, maxLimit);
 
-        this.limit = maxLimit;
+        payloadRO.wrap(buffer, offset + FIELD_OFFSET_PAYLOAD, maxLimit - (offset + FIELD_OFFSET_PAYLOAD));
 
         checkLimit(limit(), maxLimit);
 
@@ -59,14 +60,9 @@ public final class DataFW extends Flyweight
         return buffer().getLong(offset() + FIELD_OFFSET_STREAM_ID);
     }
 
-    public int payloadOffset()
+    public DirectBuffer payload()
     {
-        return offset() + FIELD_OFFSET_PAYLOAD;
-    }
-
-    public int payloadLength()
-    {
-        return limit() - payloadOffset();
+        return payloadRO;
     }
 
     @Override

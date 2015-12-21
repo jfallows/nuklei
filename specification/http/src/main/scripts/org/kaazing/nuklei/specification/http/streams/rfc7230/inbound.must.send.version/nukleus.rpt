@@ -45,6 +45,12 @@ read "GET / HTTP/1.1\r\n"
 read "Host: localhost:8080\r\n"
 read "\r\n"
 
+write [0x00 0x00 0x00 0x02]
+write ${newReplyStreamId}
+write "HTTP/1.1 200 OK\r\n"
+write "\r\n"
+write flush
+
 close
 closed
 
@@ -57,8 +63,8 @@ connected
 write [0x00 0x00 0x00 0x01]
 write ${newInitialStreamId}
 write ${newDestinationRef}
-write [0x00] [0x07] ":method" [0x03] "GET"
 write [0x00] [0x07] ":scheme" [0x04] "http"
+write [0x00] [0x07] ":method" [0x03] "GET"
 write [0x00] [0x05] ":path"   [0x01] "/"
 write [0x00] [0x04] "host"    [0x0e] "localhost:8080"
 write flush

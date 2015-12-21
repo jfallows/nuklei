@@ -21,6 +21,7 @@ import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_BEGIN;
 
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.LongFunction;
 
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.http.internal.Context;
@@ -64,6 +65,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
     private final Long2ObjectHashMap<ReadableState> stateByRef;
 
     private final Long2ObjectHashMap<MessageHandler> handlersByStreamId;
+    private final Long2ObjectHashMap<LongFunction<MessageHandler>> registrationsByStreamId;
 
     private final ManyToOneConcurrentArrayQueue<ReadableCommand> commandQueue;
     private final ReadableProxy proxy;
@@ -97,6 +99,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
 
         this.stateByRef = new Long2ObjectHashMap<>();
         this.handlersByStreamId = new Long2ObjectHashMap<>();
+        this.registrationsByStreamId = new Long2ObjectHashMap<>();
     }
 
     @Override
@@ -251,10 +254,13 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         long sourceReplyStreamId,
         RingBuffer sourceRoute)
     {
-        MessageHandler newAcceptEncoder = acceptEncoderPool.acquire(sourceReplyStreamId, sourceRoute,
-                (acceptEncoder) -> { handlersByStreamId.remove(destinationInitialStreamId); });
+        LongFunction<MessageHandler> handlerSupplier = (destinationReplyStreamId) ->
+        {
+            return acceptEncoderPool.acquire(sourceReplyStreamId, sourceRoute,
+                (acceptEncoder) -> { handlersByStreamId.remove(destinationReplyStreamId); });
+        };
 
-        handlersByStreamId.put(destinationInitialStreamId, newAcceptEncoder);
+        registrationsByStreamId.put(destinationInitialStreamId, handlerSupplier);
     }
 
     public void doRegisterDecoder(
@@ -262,10 +268,13 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         long sourceInitialStreamId,
         RingBuffer sourceRoute)
     {
-        MessageHandler newConnectDecoder = connectDecoderPool.acquire(sourceInitialStreamId, sourceRoute,
-                (connectDecoder) -> { handlersByStreamId.remove(destinationInitialStreamId); });
+        LongFunction<MessageHandler> handlerSupplier = (destinationReplyStreamId) ->
+        {
+            return connectDecoderPool.acquire(sourceInitialStreamId, sourceRoute,
+                    (connectDecoder) -> { handlersByStreamId.remove(destinationReplyStreamId); });
+        };
 
-        handlersByStreamId.put(destinationInitialStreamId, newConnectDecoder);
+        registrationsByStreamId.put(destinationInitialStreamId, handlerSupplier);
     }
 
     private void handleRead(
@@ -295,8 +304,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
                 }
                 else
                 {
-                    // TODO: resolve race condition versus register command
-                    throw new IllegalStateException("stream not found: " + streamId);
+                    handleBeginReply(buffer, index, length);
                 }
                 break;
 
@@ -344,14 +352,37 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
                 final long sourceReplyStreamId = (initialStreamId & ~1L) << 1L;
 
                 MessageHandler newAcceptDecoder =
-                        acceptDecoderPool.acquire(sourceReplyStreamId, destination, sourceRoute, destinationRoute,
-                                (acceptDecoder) -> { handlersByStreamId.remove(initialStreamId); });
+                        acceptDecoderPool.acquire(destinationRef, sourceReplyStreamId, destination, sourceRoute,
+                                destinationRoute, (acceptDecoder) -> { handlersByStreamId.remove(initialStreamId); });
 
                 handlersByStreamId.put(initialStreamId, newAcceptDecoder);
 
                 newAcceptDecoder.onMessage(TYPE_ID_BEGIN, buffer, index, length);
             }
         }
+    }
+
+    private void handleBeginReply(
+        MutableDirectBuffer buffer,
+        int index,
+        int length)
+    {
+        beginRO.wrap(buffer, index, index + length);
+
+        final long replyStreamId = beginRO.streamId();
+        final long initialStreamId = beginRO.referenceId();
+
+        LongFunction<MessageHandler> handlerSupplier = registrationsByStreamId.remove(initialStreamId);
+        if (handlerSupplier == null)
+        {
+            // TODO: resolve race condition versus register command
+            throw new IllegalStateException("stream not found: " + replyStreamId);
+        }
+
+        MessageHandler handler = handlerSupplier.apply(replyStreamId);
+        handlersByStreamId.put(replyStreamId, handler);
+
+        handler.onMessage(TYPE_ID_BEGIN, buffer, index, length);
     }
 
     private static boolean initiating(
