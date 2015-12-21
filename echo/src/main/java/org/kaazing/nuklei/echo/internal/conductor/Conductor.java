@@ -31,7 +31,6 @@ import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.echo.internal.Context;
 import org.kaazing.nuklei.echo.internal.reflector.ReflectorProxy;
 import org.kaazing.nuklei.echo.internal.types.control.BindFW;
-import org.kaazing.nuklei.echo.internal.types.control.BindingFW;
 import org.kaazing.nuklei.echo.internal.types.control.BoundFW;
 import org.kaazing.nuklei.echo.internal.types.control.CaptureFW;
 import org.kaazing.nuklei.echo.internal.types.control.CapturedFW;
@@ -184,15 +183,12 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
 
     public void onUnboundResponse(
         long correlationId,
-        String source,
-        long sourceRef)
+        String source)
     {
-        unboundRW.wrap(sendBuffer, 0, sendBuffer.capacity())
-                 .correlationId(correlationId)
-                 .binding()
-                     .source(source)
-                     .sourceRef(sourceRef);
-        UnboundFW unboundRO = unboundRW.build();
+        UnboundFW unboundRO = unboundRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                                       .correlationId(correlationId)
+                                       .source(source)
+                                       .build();
 
         conductorResponses.transmit(unboundRO.typeId(), unboundRO.buffer(), unboundRO.offset(), unboundRO.length());
     }
@@ -319,12 +315,9 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         bindRO.wrap(buffer, index, index + length);
 
         long correlationId = bindRO.correlationId();
-        BindingFW binding = bindRO.binding();
+        String source = bindRO.source().asString();
 
-        String source = binding.source().asString();
-        long sourceRef = binding.sourceRef();
-
-        reflectorProxy.doBind(correlationId, source, sourceRef);
+        reflectorProxy.doBind(correlationId, source);
     }
 
     private void handleUnbindCommand(DirectBuffer buffer, int index, int length)

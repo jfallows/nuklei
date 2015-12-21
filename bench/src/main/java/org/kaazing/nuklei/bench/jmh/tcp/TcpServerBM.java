@@ -76,29 +76,30 @@ public class TcpServerBM
         this.nukleus = (TcpNukleus) factory.create("tcp", config);
         this.controller = (TcpController) factory.create("tcp.controller", config);
 
-        controller.capture("handler");
-        while (this.nukleus.process() != 0L)
+        controller.capture("destination");
+        while (this.nukleus.process() != 0L || this.controller.process() != 0L)
         {
             // intentional
         }
 
         int streamCapacity = 1024 * 1024;
-        File source = new File("target/nukleus-benchmarks/handler/streams/tcp");
-        createEmptyFile(source.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
+        File destination = new File("target/nukleus-benchmarks/destination/streams/tcp");
+        createEmptyFile(destination.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
 
-        controller.route("handler");
-        while (this.nukleus.process() != 0L)
+        controller.route("destination");
+        while (this.nukleus.process() != 0L || this.controller.process() != 0L)
         {
             // intentional
         }
 
-        controller.bind("handler", new InetSocketAddress("localhost", 8080));
-        while (this.nukleus.process() != 0L)
+        final long destinationRef = (long) (Math.random() * Long.MAX_VALUE);
+        controller.bind("destination", destinationRef, new InetSocketAddress("localhost", 8080));
+        while (this.nukleus.process() != 0L || this.controller.process() != 0L)
         {
             // intentional
         }
 
-        this.streams = controller.streams("handler");
+        this.streams = controller.streams("destination");
 
         this.sendByteArray = "Hello, world".getBytes(StandardCharsets.UTF_8);
     }
@@ -107,6 +108,7 @@ public class TcpServerBM
     public void close() throws Exception
     {
         this.nukleus.close();
+        this.controller.close();
     }
 
     @Benchmark
@@ -138,7 +140,7 @@ public class TcpServerBM
     @Benchmark
     @Group("process")
     @GroupThreads(1)
-    public void handler(Control control) throws Exception
+    public void destination(Control control) throws Exception
     {
         while (control.startMeasurement && !control.stopMeasurement)
         {

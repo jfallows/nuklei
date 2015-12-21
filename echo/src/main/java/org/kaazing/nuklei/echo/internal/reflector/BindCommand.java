@@ -21,27 +21,24 @@ public final class BindCommand implements ReflectorCommand
 {
     private final long correlationId;
     private final String source;
-    private final long sourceRef;
 
     public BindCommand(
         long correlationId,
-        String source,
-        long sourceRef)
+        String source)
     {
         this.correlationId = correlationId;
         this.source = source;
-        this.sourceRef = sourceRef;
     }
 
     @Override
     public void execute(Reflector reflector)
     {
-        reflector.doBind(correlationId, source, sourceRef);
+        reflector.doBind(correlationId, source);
     }
 
     @Override
     public String toString()
     {
-        return format("BIND [correlationId=%d, source=\"%s\", sourceRef=%d]", correlationId, source, sourceRef);
+        return format("BIND [correlationId=%d, source=%s]", correlationId, source);
     }
 }

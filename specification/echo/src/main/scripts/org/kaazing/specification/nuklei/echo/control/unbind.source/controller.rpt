@@ -16,49 +16,23 @@
 
 property control ${control:map("target/nukleus-itests/echo/control", 1024, 1024)}
 
-property newSourceRef ${streams:newReferenceId()}
+property sourceRef ${streams:newReferenceId()}
 
-connect agrona://stream/bidirectional
+connect await BOUND
+        agrona://stream/bidirectional
         option reader ${agrona:broadcastReceiver(control.controller)}
         option writer ${agrona:manyToOneWriter(control.nukleus)}
 
 connected
 
-write [0x00 0x00 0x00 0x01]
-write ${control.nextCorrelationId()}
-write [0x06] "source"
-write flush
-
-read [0x40 0x00 0x00 0x01]
-read ${control.correlationId()}
-
-write [0x00 0x00 0x00 0x03]
-write ${control.nextCorrelationId()}
-write [0x06] "source"
-write flush
-
-read [0x40 0x00 0x00 0x03]
-read ${control.correlationId()}
-
-write [0x00 0x00 0x00 0x11]
-write ${control.nextCorrelationId()}
-write [0x06] "source"
-write ${newSourceRef}
-write flush
-
-read [0x40 0x00 0x00 0x11]
-read ${control.correlationId()}
-read ([0..8]:referenceId)
-
 write [0x00 0x00 0x00 0x12]
 write ${control.nextCorrelationId()}
-write ${referenceId}
+write ${sourceRef}
 write flush
 
 read [0x40 0x00 0x00 0x12]
 read ${control.correlationId()}
 read [0x06] "source"
-read ${newSourceRef}
 
 close
 closed

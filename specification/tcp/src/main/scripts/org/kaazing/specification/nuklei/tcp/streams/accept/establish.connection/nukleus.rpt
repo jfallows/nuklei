@@ -14,26 +14,26 @@
 # limitations under the License.
 #
 
-property handler ${streams:map("target/nukleus-itests/handler/streams/tcp", 1024 * 1024)}
-property nukleus ${streams:map("target/nukleus-itests/tcp/streams/handler", 1024 * 1024)}
+property destination ${streams:map("target/nukleus-itests/destination/streams/tcp", 1024 * 1024)}
+property nukleus ${streams:map("target/nukleus-itests/tcp/streams/destination", 1024 * 1024)}
 
-property newClientStreamId ${streams:newClientStreamId()}
-property newReferenceId ${streams:newReferenceId()}
+property newInitialStreamId ${streams:newInitialStreamId()}
+property newDestinationRef ${streams:newReferenceId()}
 
 connect await BOUND
         agrona://stream/bidirectional
         option reader ${agrona:manyToOneReader(nukleus.buffer)}
-        option writer ${agrona:manyToOneWriter(handler.buffer)}
+        option writer ${agrona:manyToOneWriter(destination.buffer)}
 connected
 
 write [0x00 0x00 0x00 0x01]
-write ${newClientStreamId}
-write ${newReferenceId}
+write ${newInitialStreamId}
+write ${newDestinationRef}
 write flush
 
 read [0x00 0x00 0x00 0x01]
 read ([0..8]:serverStreamId)
-read ${newClientStreamId}
+read ${newInitialStreamId}
 
 close
 closed

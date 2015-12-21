@@ -84,31 +84,30 @@ UNROUTED
 ```
 
 ### BIND command (0x00000011)
-Binds incoming streams to be echoed. 
+Binds incoming streams from the specified source nukleus to be echoed. 
 
 ```
 BIND
 [long] correlation id
 [string] source nukleus name
-[long] source nukleus reference
 ```
 
 ### BOUND response (0x40000011)
-Indicates that the BIND command completed successfully, returning a bind reference. 
+Indicates that the BIND command completed successfully, returning a source nukleus reference. 
 
 ```
 BOUND
 [long] correlation id
-[long] bind reference
+[long] source nukleus reference
 ```
 
 ### UNBIND command (0x00000012)
-No longer binds incoming streams to be echoed for the previously bound source and source reference.
+No longer binds incoming streams to be echoed for the previously bound source nukleus and source nukleus reference.
 
 ```
 UNBIND
 [long] correlation id
-[long] bind reference
+[long] source nukleus reference
 ```
 
 ### UNBOUND response (0x40000012)
@@ -139,7 +138,7 @@ PREPARED
 ```
 
 ### UNPREPARE command (0x00000014)
-No longer prepares incoming streams from the handler for this prepare reference.
+No longer prepares outgoing streams to the destination nukleus and destination reference for this prepare reference.
 
 ```
 UNPREPARE
@@ -157,14 +156,6 @@ UNPREPARED
 
 ## Stream Events
 The Echo Nukleus describes unidirectional streams of data with the following events.
-
-### RESET event (0x00000000)
-Resets the stream as an error condition has occurred.
-
-```
-RESET
-[long] stream id
-```
 
 ### BEGIN event (0x00000001)
 Indicates the beginning of a new stream.
@@ -194,3 +185,12 @@ Indicates the end of an existing stream
 END
 [long] stream id
 ```
+
+### RESET event (0x00000004)
+Resets the stream as an error condition has occurred.
+
+```
+RESET
+[long] stream id
+```
+

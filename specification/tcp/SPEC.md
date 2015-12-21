@@ -16,12 +16,12 @@ ERROR
 ```
 
 ### CAPTURE command (0x00000001)
-Creates, maps and reads streams from a memory-mapped file at `[config-dir]/tcp/streams/[handler]`.
+Creates, maps and reads streams from a memory-mapped file at `[config-dir]/tcp/streams/[source]`.
 
 ```
 CAPTURE
 [long] correlation id
-[string] handler nukleus name
+[string] source nukleus name
 ```
 
 ### CAPTURED response (0x40000001)
@@ -33,12 +33,12 @@ CAPTURED
 ```
 
 ### UNCAPTURE command (0x00000002)
-No longer reads streams from the memory-mapped file at `[config-dir]/tcp/streams/[handler]`.
+No longer reads streams from the memory-mapped file at `[config-dir]/tcp/streams/[source]`.
 
 ```
 UNCAPTURE
 [long] correlation id
-[string] handler nukleus name
+[string] source nukleus name
 ```
 
 ### UNCAPTURED response (0x40000002)
@@ -50,12 +50,12 @@ UNCAPTURED
 ```
 
 ### ROUTE command (0x00000003)
-Maps existing file and writes streams to a memory-mapped file at `[config-dir]/[handler]/streams/tcp`.
+Maps existing file and writes streams to a memory-mapped file at `[config-dir]/[destination]/streams/tcp`.
 
 ```
 ROUTE
 [long] correlation id
-[string] handler nukleus name
+[string] destination nukleus name
 ```
 
 ### ROUTED response (0x40000003)
@@ -67,7 +67,7 @@ ROUTED
 ```
 
 ### UNROUTE command (0x00000004)
-Unmaps and no longer writes streams to the memory-mapped file at `[config-dir]/[handler]/streams/tcp`.
+Unmaps and no longer writes streams to the memory-mapped file at `[config-dir]/[destination]/streams/tcp`.
 
 ```
 UNROUTE
@@ -84,12 +84,14 @@ UNROUTED
 ```
 
 ### BIND command (0x00000011)
-Binds the specified device or IP address and port to initiate streams to the handler for inbound TCP connections.
+Binds the specified device or IP address and port to initiate streams for inbound TCP connections to the specified destination 
+nukleus and destination nukleus reference.
 
 ```
 BIND
 [long] correlation id
-[string] handler nukleus name
+[string] destination nukleus name
+[long] destination nukleus reference
 [union]
   [uint8] kind - device (0x00), IPv4 (0x01), IPv6 (0x02)
   [string] device name
@@ -99,12 +101,12 @@ BIND
 ```
 
 ### BOUND response (0x40000011)
-Indicates that the BIND command completed successfully, returning a handler reference. 
+Indicates that the BIND command completed successfully, returning a bind reference. 
 
 ```
 BOUND
 [long] correlation id
-[long] handler reference
+[long] bind reference
 ```
 
 ### UNBIND command (0x00000012)
@@ -113,7 +115,7 @@ No longer binds incoming streams to be echoed for the previously bound device or
 ```
 UNBIND
 [long] correlation id
-[long] handler reference
+[long] bind reference
 ```
 
 ### UNBOUND response (0x40000012)
@@ -125,31 +127,32 @@ UNBOUND
 ```
 
 ### PREPARE command (0x00000013)
-Prepares to initiate streams to the specified destination and destination reference.
+Prepares to initiate streams from the specified source nukleus to the specified destination and destination reference.
 
 ```
 PREPARE
 [long] correlation id
+[string] source nukleus name
 [string] destination nukleus name
 [long] destination nukleus reference
 ```
 
 ### PREPARED response (0x40000013)
-Indicates that the PREPARE command completed successfully, returning a handler reference. 
+Indicates that the PREPARE command completed successfully, returning a source nukleus reference. 
 
 ```
 PREPARED
 [long] correlation id
-[long] handler reference
+[long] source nukleus reference
 ```
 
 ### UNPREPARE command (0x00000014)
-No longer prepares incoming streams from the handler for this handler reference.
+No longer prepares incoming streams from the source nukleus for the source nukleus reference.
 
 ```
 UNPREPARE
 [long] correlation id
-[long] handler reference
+[long] source nukleus reference
 ```
 
 ### UNPREPARED response (0x40000014)
@@ -174,13 +177,14 @@ RESET
 ### BEGIN event (0x00000001)
 Indicates the beginning of a new stream.
 
-If the stream identifier is odd, then the handler reference is required as it is initiating a bidirectional connection.
-If the stream identifier is even and non-zero, then the correlating stream identifier of the initiating stream is required instead as this stream represents the opposite direction of an already initiated bidirectional connection.
+If the stream identifier is odd, then the nukleus reference is required as it is initiating a bidirectional connection.
+If the stream identifier is even and non-zero, then the correlating stream identifier of the initiating stream is required 
+instead as this stream represents the opposite direction of an already initiated bidirectional connection.
 
 ```
 BEGIN
 [long] stream id
-[long] handler reference | correlating stream id
+[long] nukleus reference | correlating stream id
 [union] local address
   [uint8] kind - IPv4 (0x01), IPv6 (0x02)
   [bytes[4]] IPv4 address

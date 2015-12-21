@@ -14,41 +14,41 @@
 # limitations under the License.
 #
 
-property handler ${streams:map("target/nukleus-itests/handler/streams/tcp", 1024 * 1024)}
-property nukleus ${streams:map("target/nukleus-itests/tcp/streams/handler", 1024 * 1024)}
+property source ${streams:map("target/nukleus-itests/source/streams/tcp", 1024 * 1024)}
+property nukleus ${streams:map("target/nukleus-itests/tcp/streams/source", 1024 * 1024)}
 
-property newServerStreamId ${streams:newServerStreamId()}
+property newReplyStreamId ${streams:newReplyStreamId()}
 
 connect await PREPARED
         agrona://stream/bidirectional
         option reader ${agrona:manyToOneReader(nukleus.buffer)}
-        option writer ${agrona:manyToOneWriter(handler.buffer)}
+        option writer ${agrona:manyToOneWriter(source.buffer)}
 connected
 
 read [0x00 0x00 0x00 0x01]
-read ([0..8]:clientStreamId)
-read ([0..8]:referenceId)
+read ([0..8]:initialStreamId)
+read ([0..8]:oldSourceRef)
 
 write [0x00 0x00 0x00 0x01]
-write ${newServerStreamId}
-write ${clientStreamId}
+write ${newReplyStreamId}
+write ${initialStreamId}
 write flush
 
 read [0x00 0x00 0x00 0x02]
-read ${clientStreamId}
+read ${initialStreamId}
 read "client data 1"
 
 write [0x00 0x00 0x00 0x02]
-write ${newServerStreamId}
+write ${newReplyStreamId}
 write "server data 1"
 write flush
 
 read [0x00 0x00 0x00 0x02]
-read ${clientStreamId}
+read ${initialStreamId}
 read "client data 2"
 
 write [0x00 0x00 0x00 0x02]
-write ${newServerStreamId}
+write ${newReplyStreamId}
 write "server data 2"
 write flush
 

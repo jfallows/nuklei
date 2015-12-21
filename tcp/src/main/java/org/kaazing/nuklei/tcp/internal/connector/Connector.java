@@ -86,18 +86,18 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
 
     public void doPrepare(
         long correlationId,
-        String handler,
+        String source,
         InetSocketAddress remoteAddress)
     {
         try
         {
-            final long handlerRef = streamsPrepared.increment();
+            final long sourceRef = streamsPrepared.increment();
 
-            final ConnectorState newState = new ConnectorState(handler, handlerRef, remoteAddress);
+            final ConnectorState newState = new ConnectorState(source, sourceRef, remoteAddress);
 
-            stateByRef.put(newState.handlerRef(), newState);
+            stateByRef.put(newState.sourceRef(), newState);
 
-            conductorProxy.onPreparedResponse(correlationId, newState.handlerRef());
+            conductorProxy.onPreparedResponse(correlationId, newState.sourceRef());
         }
         catch (Exception ex)
         {
@@ -120,10 +120,10 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
         {
             try
             {
-                String handler = state.handler();
+                String source = state.source();
                 InetSocketAddress remoteAddress = state.remoteAddress();
 
-                conductorProxy.onUnpreparedResponse(correlationId, handler, remoteAddress);
+                conductorProxy.onUnpreparedResponse(correlationId, source, remoteAddress);
             }
             catch (Exception ex)
             {
@@ -134,16 +134,16 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
     }
 
     public void doConnect(
-        String handler,
-        long handlerRef,
+        String source,
+        long sourceRef,
         long streamId)
     {
         // TODO: reference uniqueness, scope by handler too
-        final ConnectorState state = stateByRef.get(handlerRef);
+        final ConnectorState state = stateByRef.get(sourceRef);
 
         if (state == null)
         {
-            writerProxy.doReset(handler, handlerRef, streamId);
+            writerProxy.doReset(source, sourceRef, streamId);
         }
         else
         {
@@ -158,8 +158,8 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
                     // even, positive, non-zero
                     final long newServerStreamId = streamsConnected.increment() << 1L;
 
-                    readerProxy.doRegister(handler, handlerRef, streamId, newServerStreamId, channel);
-                    writerProxy.doRegister(handler, handlerRef, streamId, newServerStreamId, channel);
+                    readerProxy.doRegister(source, sourceRef, streamId, newServerStreamId, channel);
+                    writerProxy.doRegister(source, sourceRef, streamId, newServerStreamId, channel);
                 }
                 else
                 {
@@ -169,7 +169,7 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
             }
             catch (Exception ex)
             {
-                writerProxy.doReset(handler, handlerRef, streamId);
+                writerProxy.doReset(source, sourceRef, streamId);
                 LangUtil.rethrowUnchecked(ex);
             }
         }
@@ -194,8 +194,8 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
         long streamId = attachment.streamId();
         SocketChannel channel = attachment.channel();
 
-        String handler = state.handler();
-        long handlerRef = state.handlerRef();
+        String handler = state.source();
+        long handlerRef = state.sourceRef();
 
         try
         {

@@ -20,20 +20,17 @@ public final class UnboundResponse implements ConductorResponse
 {
     private final long correlationId;
     private final String source;
-    private final long sourceRef;
 
     public UnboundResponse(
         long correlationId,
-        String source,
-        long sourceRef)
+        String source)
     {
         this.correlationId = correlationId;
         this.source = source;
-        this.sourceRef = sourceRef;
     }
 
     public void execute(Conductor conductor)
     {
-        conductor.onUnboundResponse(correlationId, source, sourceRef);
+        conductor.onUnboundResponse(correlationId, source);
     }
 }

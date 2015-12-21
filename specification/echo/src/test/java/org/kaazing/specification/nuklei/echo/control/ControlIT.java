@@ -37,11 +37,57 @@ public class ControlIT
 
     @Test
     @Specification({
+        "capture.source/nukleus",
+        "capture.source/controller"
+    })
+    public void shouldCaptureSource() throws Exception
+    {
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "capture.destination/nukleus",
+        "capture.destination/controller"
+    })
+    public void shouldCaptureDestination() throws Exception
+    {
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "route.source/nukleus",
+        "route.source/controller"
+    })
+    public void shouldRouteSource() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("CAPTURED");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "route.destination/nukleus",
+        "route.destination/controller"
+    })
+    public void shouldRouteDestination() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("CAPTURED");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
         "bind.source/nukleus",
         "bind.source/controller"
     })
     public void shouldBindSource() throws Exception
     {
+        k3po.start();
+        k3po.notifyBarrier("ROUTED");
         k3po.finish();
     }
 
@@ -52,6 +98,8 @@ public class ControlIT
     })
     public void shouldUnbindSource() throws Exception
     {
+        k3po.start();
+        k3po.notifyBarrier("BOUND");
         k3po.finish();
     }
 
@@ -62,6 +110,8 @@ public class ControlIT
     })
     public void shouldPrepareDestination() throws Exception
     {
+        k3po.start();
+        k3po.notifyBarrier("ROUTED");
         k3po.finish();
     }
 
@@ -72,6 +122,8 @@ public class ControlIT
     })
     public void shouldUnprepareDestination() throws Exception
     {
+        k3po.start();
+        k3po.notifyBarrier("PREPARED");
         k3po.finish();
     }
 
@@ -82,6 +134,8 @@ public class ControlIT
     })
     public void shouldConnectDestination() throws Exception
     {
+        k3po.start();
+        k3po.notifyBarrier("PREPARED");
         k3po.finish();
     }
 }

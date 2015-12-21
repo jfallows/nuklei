@@ -26,12 +26,12 @@ connect await BOUND
 connected
 
 read [0x00 0x00 0x00 0x01]
-read ([0..8]:clientStreamId)
-read ([0..8]:sourceRef)
+read ([0..8]:initialStreamId)
+read ([0..8]:oldSourceRef)
 
 write [0x00 0x00 0x00 0x01]
 write ${newServerStreamId}
-write ${clientStreamId}
+write ${initialStreamId}
 write flush
 
 close

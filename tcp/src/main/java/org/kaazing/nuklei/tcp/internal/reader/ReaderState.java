@@ -43,25 +43,25 @@ public class ReaderState implements AutoCloseable
     private final Long2ObjectHashMap<ConnectingState> connectingStateByStreamId;
     private final Long2ObjectHashMap<StreamState> stateByStreamId;
 
-    private final String handler;
+    private final String source;
     private final RingBuffer buffer;
 
     public ReaderState(
         ConnectorProxy.FromReader connectorProxy,
-        String handler,
+        String source,
         RingBuffer buffer)
     {
         this.connectorProxy = connectorProxy;
         this.connectingStateByStreamId = new Long2ObjectHashMap<>();
         this.stateByStreamId = new Long2ObjectHashMap<>();
 
-        this.handler = handler;
+        this.source = source;
         this.buffer = buffer;
     }
 
-    public String handler()
+    public String source()
     {
-        return this.handler;
+        return this.source;
     }
 
     public RingBuffer buffer()
@@ -115,7 +115,7 @@ public class ReaderState implements AutoCloseable
     @Override
     public String toString()
     {
-        return String.format("[handler=%d]", handler());
+        return String.format("[source=%d]", source());
     }
 
     private void handleRead(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
@@ -130,10 +130,10 @@ public class ReaderState implements AutoCloseable
 
             if ((streamId & 0x0000000000000001L) != 0L)
             {
-                final String handler = this.handler;
-                final long handlerRef = referenceId;
+                final String source = this.source;
+                final long sourceRef = referenceId;
 
-                connectorProxy.doConnect(handler, handlerRef, streamId);
+                connectorProxy.doConnect(source, sourceRef, streamId);
             }
             else
             {

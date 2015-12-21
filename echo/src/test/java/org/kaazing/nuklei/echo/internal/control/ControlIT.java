@@ -63,6 +63,46 @@ public class ControlIT
 
     @Test
     @Specification({
+        "capture.source/controller"
+    })
+    public void shouldCaptureSource() throws Exception
+    {
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "capture.destination/controller"
+    })
+    public void shouldCaptureDestination() throws Exception
+    {
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "capture.source/controller",
+        "route.source/controller"
+    })
+    public void shouldRouteSource() throws Exception
+    {
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "capture.destination/controller",
+        "route.destination/controller"
+    })
+    public void shouldRouteDestination() throws Exception
+    {
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "capture.source/controller",
+        "route.source/controller",
         "bind.source/controller"
     })
     public void shouldBindSource() throws Exception
@@ -72,6 +112,9 @@ public class ControlIT
 
     @Test
     @Specification({
+        "capture.source/controller",
+        "route.source/controller",
+        "bind.source/controller",
         "unbind.source/controller"
     })
     public void shouldUnbindSource() throws Exception
@@ -81,6 +124,8 @@ public class ControlIT
 
     @Test
     @Specification({
+        "capture.destination/controller",
+        "route.destination/controller",
         "prepare.destination/controller"
     })
     public void shouldPrepareDestination() throws Exception
@@ -90,6 +135,9 @@ public class ControlIT
 
     @Test
     @Specification({
+        "capture.destination/controller",
+        "route.destination/controller",
+        "prepare.destination/controller",
         "unprepare.destination/controller"
     })
     public void shouldUnprepareDestination() throws Exception
@@ -99,6 +147,9 @@ public class ControlIT
 
     @Test
     @Specification({
+        "capture.destination/controller",
+        "route.destination/controller",
+        "prepare.destination/controller",
         "connect.destination/controller"
     })
     public void shouldConnectDestination() throws Exception

@@ -32,9 +32,9 @@ public final class ReaderProxy
 
     public void doCapture(
         long correlationId,
-        String handler)
+        String source)
     {
-        CaptureCommand command = new CaptureCommand(correlationId, handler);
+        CaptureCommand command = new CaptureCommand(correlationId, source);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");

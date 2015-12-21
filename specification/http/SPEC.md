@@ -84,7 +84,8 @@ UNROUTED
 ```
 
 ### BIND command (0x00000011)
-Binds incoming HTTP/1.1 protocol streams with matching HTTP headers to the handler. 
+Binds incoming HTTP/1.1 protocol streams from the specified source nukleus with matching HTTP headers to the specified
+destination nukleus and destination nukleus reference. 
 
 ```
 BIND
@@ -126,7 +127,8 @@ UNBOUND
 ```
 
 ### PREPARE command (0x00000013)
-Prepares incoming streams from the handler to initiate HTTP/1.1 protocol streams with specified HTTP headers.
+Prepares incoming streams from the specified source nukleus to initiate HTTP/1.1 protocol streams with specified HTTP headers
+to the specified destination nukleus and destination nukleus reference.
 
 ```
 PREPARE
@@ -138,21 +140,21 @@ PREPARE
 ```
 
 ### PREPARED response (0x40000013)
-Indicates that the PREPARE command completed successfully, returning a source reference. 
+Indicates that the PREPARE command completed successfully, returning a source nukleus reference. 
 
 ```
 PREPARED
 [long] correlation id
-[long] source reference
+[long] source nukleus reference
 ```
 
 ### UNPREPARE command (0x00000014)
-No longer prepares incoming streams from the handler for this source reference.
+No longer prepares incoming streams from the source nukleus for this source nukleus reference.
 
 ```
 UNPREPARE
 [long] correlation id
-[long] source reference
+[long] source nukleus reference
 ```
 
 ### UNPREPARED response (0x40000014)
@@ -181,14 +183,14 @@ RESET
 ### BEGIN event (0x00000001)
 Indicates the beginning of a new stream.
 
-If the stream identifier is odd, then the handler reference is required and it represents an HTTP request.
+If the stream identifier is odd, then the nukleus reference is required and it represents an HTTP request.
 If the stream identifier is even and non-zero, then it represents an HTTP response, and the correlating HTTP 
 request stream identifier is required instead.
 
 ```
 BEGIN
 [long] stream id
-[long] handler reference | correlating stream id
+[long] nukleus reference | correlating stream id
 [headers] :scheme, :method, :authority, :path, :status, host, ...
 ```
 

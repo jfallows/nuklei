@@ -18,28 +18,12 @@ property controlNew ${control:mapNew("target/nukleus-itests/echo/control", 1024,
 
 property newReferenceId ${streams:newReferenceId()}
 
-accept agrona://stream/bidirectional
-       option reader ${agrona:manyToOneReader(controlNew.nukleus)}
-       option writer ${agrona:broadcastTransmitter(controlNew.controller)}
+connect await ROUTED
+        agrona://stream/bidirectional
+        option reader ${agrona:manyToOneReader(controlNew.nukleus)}
+        option writer ${agrona:broadcastTransmitter(controlNew.controller)}
 
-accepted
 connected
-
-read [0x00 0x00 0x00 0x01]
-read ([0..8]:correlationId)
-read [0x0b] "destination"
-
-write [0x40 0x00 0x00 0x01]
-write ${correlationId}
-write flush
-
-read [0x00 0x00 0x00 0x03]
-read ([0..8]:correlationId)
-read [0x0b] "destination"
-
-write [0x40 0x00 0x00 0x03]
-write ${correlationId}
-write flush
 
 read [0x00 0x00 0x00 0x13]
 read ([0..8]:correlationId)

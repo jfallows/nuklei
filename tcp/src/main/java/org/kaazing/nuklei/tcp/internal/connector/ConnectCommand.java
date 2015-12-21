@@ -19,8 +19,8 @@ import static java.lang.String.format;
 
 public final class ConnectCommand implements ConnectorCommand
 {
-    private final String handler;
-    private final long handlerRef;
+    private final String source;
+    private final long sourceRef;
     private final long streamId;
 
     public ConnectCommand(
@@ -28,19 +28,19 @@ public final class ConnectCommand implements ConnectorCommand
         long handlerRef,
         long streamId)
     {
-        this.handler = handler;
-        this.handlerRef = handlerRef;
+        this.source = handler;
+        this.sourceRef = handlerRef;
         this.streamId = streamId;
     }
 
     public void execute(Connector connector)
     {
-        connector.doConnect(handler, handlerRef, streamId);
+        connector.doConnect(source, sourceRef, streamId);
     }
 
     @Override
     public String toString()
     {
-        return format("CONNECT [handler=\"%s\", handlerRef=%d, streamId=%d]", handler, handlerRef, streamId);
+        return format("CONNECT [source=\"%s\", sourceRef=%d, streamId=%d]", source, sourceRef, streamId);
     }
 }

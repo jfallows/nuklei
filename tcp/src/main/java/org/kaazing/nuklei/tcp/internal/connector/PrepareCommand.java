@@ -22,28 +22,28 @@ import java.net.InetSocketAddress;
 public final class PrepareCommand implements ConnectorCommand
 {
     private final long correlationId;
-    private final String handler;
+    private final String source;
     private final InetSocketAddress remoteAddress;
 
     public PrepareCommand(
         long correlationId,
-        String handler,
+        String source,
         InetSocketAddress remoteAddress)
     {
         this.correlationId = correlationId;
-        this.handler = handler;
+        this.source = source;
         this.remoteAddress = remoteAddress;
     }
 
     @Override
     public void execute(Connector connector)
     {
-        connector.doPrepare(correlationId, handler, remoteAddress);
+        connector.doPrepare(correlationId, source, remoteAddress);
     }
 
     @Override
     public String toString()
     {
-        return format("PREPARE [correlationId=%d, handler=\"%s\", remoteAddress=%s]", correlationId, handler, remoteAddress);
+        return format("PREPARE [correlationId=%d, source=\"%s\", remoteAddress=%s]", correlationId, source, remoteAddress);
     }
 }

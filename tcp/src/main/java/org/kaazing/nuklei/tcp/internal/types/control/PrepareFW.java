@@ -17,7 +17,11 @@ package org.kaazing.nuklei.tcp.internal.types.control;
 
 import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_PREPARE_COMMAND;
 
+import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
+
 import org.kaazing.nuklei.tcp.internal.types.Flyweight;
+import org.kaazing.nuklei.tcp.internal.types.StringFW;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
@@ -28,8 +32,9 @@ public final class PrepareFW extends Flyweight
     private static final int FIELD_OFFSET_CORRELATION_ID = 0;
     private static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
 
-    private static final int FIELD_OFFSET_PREPARATION = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
+    private static final int FIELD_OFFSET_SOURCE = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
 
+    private final StringFW sourceRO = new StringFW();
     private final BindingFW bindingRO = new BindingFW();
 
     @Override
@@ -37,7 +42,8 @@ public final class PrepareFW extends Flyweight
     {
         super.wrap(buffer, offset);
 
-        this.bindingRO.wrap(buffer, offset + FIELD_OFFSET_PREPARATION, actingLimit);
+        this.sourceRO.wrap(buffer, offset + FIELD_OFFSET_SOURCE, actingLimit);
+        this.bindingRO.wrap(buffer, sourceRO.limit(), actingLimit);
 
         checkLimit(limit(), actingLimit);
 
@@ -47,7 +53,7 @@ public final class PrepareFW extends Flyweight
     @Override
     public int limit()
     {
-        return binding().limit();
+        return bindingRO.limit();
     }
 
     public int typeId()
@@ -60,19 +66,31 @@ public final class PrepareFW extends Flyweight
         return buffer().getLong(offset() + FIELD_OFFSET_CORRELATION_ID);
     }
 
-    public BindingFW binding()
+    public StringFW source()
     {
-        return bindingRO;
+        return sourceRO;
+    }
+
+    public AddressFW address()
+    {
+        return bindingRO.address();
+    }
+
+    public int port()
+    {
+        return bindingRO.port();
     }
 
     @Override
     public String toString()
     {
-        return String.format("[correlationId=%d, binding=%s]", correlationId(), binding());
+        return String.format("[correlationId=%d, source=%s, address=%s, port=%d]",
+                correlationId(), source(), address(), port());
     }
 
     public static final class Builder extends Flyweight.Builder<PrepareFW>
     {
+        private final StringFW.Builder sourceRW = new StringFW.Builder();
         private final BindingFW.Builder bindingRW = new BindingFW.Builder();
 
         public Builder()
@@ -84,9 +102,6 @@ public final class PrepareFW extends Flyweight
         public Builder wrap(MutableDirectBuffer buffer, int offset, int maxLimit)
         {
             super.wrap(buffer, offset, maxLimit);
-
-            this.bindingRW.wrap(buffer, offset + FIELD_OFFSET_PREPARATION, maxLimit);
-
             return this;
         }
 
@@ -96,9 +111,32 @@ public final class PrepareFW extends Flyweight
             return this;
         }
 
-        public BindingFW.Builder binding()
+        public Builder source(String source)
         {
-            return bindingRW;
+            source().set(source, StandardCharsets.UTF_8);
+            return this;
+        }
+
+        public Builder address(InetAddress ipAddress)
+        {
+            binding().address(ipAddress);
+            return this;
+        }
+
+        public Builder port(int port)
+        {
+            binding().port(port);
+            return this;
+        }
+
+        protected StringFW.Builder source()
+        {
+            return this.sourceRW.wrap(buffer(), offset() + FIELD_OFFSET_SOURCE, maxLimit());
+        }
+
+        protected BindingFW.Builder binding()
+        {
+            return this.bindingRW.wrap(buffer(), source().build().limit(), maxLimit());
         }
     }
 }

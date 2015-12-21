@@ -124,9 +124,9 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
 
     public void doCapture(
         long correlationId,
-        String handler)
+        String source)
     {
-        StreamsLayout layout = layoutsByHandler.get(handler);
+        StreamsLayout layout = layoutsByHandler.get(source);
         if (layout != null)
         {
             conductorProxy.onErrorResponse(correlationId);
@@ -135,14 +135,14 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
         {
             try
             {
-                StreamsLayout newLayout = new StreamsLayout.Builder().streamsFile(streamsFile.apply(handler))
+                StreamsLayout newLayout = new StreamsLayout.Builder().streamsFile(streamsFile.apply(source))
                                                                      .streamsCapacity(streamsCapacity)
                                                                      .createFile(true)
                                                                      .build();
 
-                layoutsByHandler.put(handler, newLayout);
+                layoutsByHandler.put(source, newLayout);
 
-                ReaderState newCaptureState = new ReaderState(connectorProxy, handler, newLayout.buffer());
+                ReaderState newCaptureState = new ReaderState(connectorProxy, source, newLayout.buffer());
 
                 readerStates = ArrayUtil.add(readerStates, newCaptureState);
 
@@ -172,7 +172,7 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
                 ReaderState[] readerStates = this.readerStates;
                 for (int i=0; i < readerStates.length; i++)
                 {
-                    if (handler.equals(readerStates[i].handler()))
+                    if (handler.equals(readerStates[i].source()))
                     {
                         ReaderState oldCaptureState = readerStates[i];
                         oldCaptureState.close();
@@ -203,7 +203,7 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
         ReaderState[] readerStates = this.readerStates;
         for (int i=0; i < readerStates.length; i++)
         {
-            if (handler.equals(readerStates[i].handler()))
+            if (handler.equals(readerStates[i].source()))
             {
                 ReaderState readerState = readerStates[i];
                 readerState.doRegister(handler, handlerRef, clientStreamId, serverStreamId, channel);

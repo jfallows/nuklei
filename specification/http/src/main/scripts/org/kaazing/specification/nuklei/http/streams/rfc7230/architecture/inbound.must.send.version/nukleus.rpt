@@ -22,7 +22,7 @@ property destinationReply ${streams:map("target/nukleus-itests/http/streams/dest
 
 property newInitialStreamId ${streams:newInitialStreamId()}
 property newReplyStreamId ${streams:newReplyStreamId()}
-property newReferenceId ${streams:newReferenceId()}
+property newDestinationRef ${streams:newReferenceId()}
 
 connect await BOUND
         agrona://stream/bidirectional

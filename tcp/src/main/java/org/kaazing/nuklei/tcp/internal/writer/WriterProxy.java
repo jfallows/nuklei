@@ -32,9 +32,9 @@ public final class WriterProxy
 
     public void doRoute(
         long correlationId,
-        String handler)
+        String destination)
     {
-        RouteCommand command = new RouteCommand(correlationId, handler);
+        RouteCommand command = new RouteCommand(correlationId, destination);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");
@@ -43,9 +43,9 @@ public final class WriterProxy
 
     public void doUnroute(
         long correlationId,
-        String handler)
+        String destination)
     {
-        UnrouteCommand command = new UnrouteCommand(correlationId, handler);
+        UnrouteCommand command = new UnrouteCommand(correlationId, destination);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");

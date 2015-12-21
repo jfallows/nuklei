@@ -147,20 +147,21 @@ public final class TcpController implements Nukleus
     }
 
     public CompletableFuture<Long> bind(
-        String handler,
+        String destination,
+        long destinationRef,
         InetSocketAddress localAddress)
     {
         final CompletableFuture<Long> promise = new CompletableFuture<Long>();
 
         long correlationId = conductorCommands.nextCorrelationId();
 
-        bindRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-              .correlationId(correlationId)
-              .binding()
-                  .address(localAddress.getAddress())
-                  .port(localAddress.getPort());
-
-        BindFW bindRO = bindRW.build();
+        BindFW bindRO = bindRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                              .correlationId(correlationId)
+                              .destination(destination)
+                              .destinationRef(destinationRef)
+                              .address(localAddress.getAddress())
+                              .port(localAddress.getPort())
+                              .build();
 
         if (!conductorCommands.write(bindRO.typeId(), bindRO.buffer(), bindRO.offset(), bindRO.length()))
         {

@@ -17,12 +17,10 @@ package org.kaazing.nuklei.tcp.internal.types.control;
 
 import static java.lang.String.format;
 import static java.nio.ByteOrder.BIG_ENDIAN;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.net.InetAddress;
 
 import org.kaazing.nuklei.tcp.internal.types.Flyweight;
-import org.kaazing.nuklei.tcp.internal.types.StringFW;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
@@ -30,18 +28,16 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public final class BindingFW extends Flyweight
 {
-    private static final int FIELD_OFFSET_HANDLER = 0;
+    private static final int FIELD_OFFSET_ADDRESS = 0;
     private static final int FIELD_SIZE_PORT = BitUtil.SIZE_OF_SHORT;
 
-    private final StringFW handlerRO = new StringFW();
     private final AddressFW addressRO = new AddressFW();
 
     public BindingFW wrap(DirectBuffer buffer, int offset, int actingLimit)
     {
         super.wrap(buffer, offset);
 
-        this.handlerRO.wrap(buffer, offset + FIELD_OFFSET_HANDLER, actingLimit);
-        this.addressRO.wrap(buffer, handlerRO.limit(), actingLimit);
+        this.addressRO.wrap(buffer, offset + FIELD_OFFSET_ADDRESS, actingLimit);
 
         checkLimit(limit(), actingLimit);
 
@@ -51,11 +47,6 @@ public final class BindingFW extends Flyweight
     public int limit()
     {
         return address().limit() + FIELD_SIZE_PORT;
-    }
-
-    public StringFW handler()
-    {
-        return handlerRO;
     }
 
     public AddressFW address()
@@ -71,13 +62,12 @@ public final class BindingFW extends Flyweight
     @Override
     public String toString()
     {
-        return format("[handler=%s, address=%s, port=%d]", handler(), address(), port());
+        return format("[address=%s, port=%d]", address(), port());
     }
 
     public static final class Builder extends Flyweight.Builder<BindingFW>
     {
         private final AddressFW.Builder addressRW = new AddressFW.Builder();
-        private final StringFW.Builder handlerRW = new StringFW.Builder();
 
         public Builder()
         {
@@ -88,12 +78,6 @@ public final class BindingFW extends Flyweight
         public Builder wrap(MutableDirectBuffer buffer, int offset, int maxLimit)
         {
             super.wrap(buffer, offset, maxLimit);
-            return this;
-        }
-
-        public Builder handler(String handler)
-        {
-            handler().set(handler, UTF_8);
             return this;
         }
 
@@ -109,14 +93,9 @@ public final class BindingFW extends Flyweight
             return this;
         }
 
-        public StringFW.Builder handler()
-        {
-            return handlerRW.wrap(buffer(), offset() + FIELD_OFFSET_HANDLER, maxLimit());
-        }
-
         public AddressFW.Builder address()
         {
-            return addressRW.wrap(buffer(), handler().build().limit(), maxLimit());
+            return addressRW.wrap(buffer(), offset() + FIELD_OFFSET_ADDRESS, maxLimit());
         }
     }
 }
