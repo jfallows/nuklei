@@ -84,33 +84,34 @@ UNROUTED
 ```
 
 ### BIND command (0x00000011)
-Binds incoming HTTP/1.1 protocol streams with matching HTTP headers to the handler. 
+Binds incoming HTTP/1.1 protocol streams from the specified source nukleus with matching HTTP headers to the specified
+destination nukleus and destination nukleus reference. 
 
 ```
 BIND
 [long] correlation id
+[string] destination nukleus name
+[long] destination nukleus reference
 [string] source nukleus name
-[long] source nukleus reference
-[string] handler nukleus name
 [headers] :host, :path, upgrade
 ```
 
 ### BOUND response (0x40000011)
-Indicates that the BIND command completed successfully, returning a handler reference. 
+Indicates that the BIND command completed successfully, returning a source reference. 
 
 ```
 BOUND
 [long] correlation id
-[long] handler reference
+[long] source reference
 ```
 
 ### UNBIND command (0x00000012)
-No longer binds incoming HTTP/1.1 protocol streams to the previously bound handler.
+No longer binds incoming HTTP/1.1 protocol streams to the previously bound source reference.
 
 ```
 UNBIND
 [long] correlation id
-[long] handler reference
+[long] source reference
 ```
 
 ### UNBOUND response (0x40000012)
@@ -119,36 +120,41 @@ Indicates that the UNBIND command completed successfully.
 ```
 UNBOUND
 [long] correlation id
+[string] destination nukleus name
+[long] destination nukleus reference
+[string] source nukleus name
+[headers] :host, :path, upgrade
 ```
 
 ### PREPARE command (0x00000013)
-Prepares incoming streams from the handler to initiate HTTP/1.1 protocol streams with specified HTTP headers.
+Prepares incoming streams from the specified source nukleus to initiate HTTP/1.1 protocol streams with specified HTTP headers
+to the specified destination nukleus and destination nukleus reference.
 
 ```
 PREPARE
 [long] correlation id
+[string] source nukleus name
 [string] destination nukleus name
 [long] destination nukleus reference
-[string] handler nukleus name
 [headers] host, :path, upgrade
 ```
 
 ### PREPARED response (0x40000013)
-Indicates that the PREPARE command completed successfully, returning a handler reference. 
+Indicates that the PREPARE command completed successfully, returning a source nukleus reference. 
 
 ```
 PREPARED
 [long] correlation id
-[long] handler reference
+[long] source nukleus reference
 ```
 
 ### UNPREPARE command (0x00000014)
-No longer prepares incoming streams from the handler for this handler reference.
+No longer prepares incoming streams from the source nukleus for this source nukleus reference.
 
 ```
 UNPREPARE
 [long] correlation id
-[long] handler reference
+[long] source nukleus reference
 ```
 
 ### UNPREPARED response (0x40000014)
@@ -157,6 +163,10 @@ Indicates that the UNPREPARED command completed successfully.
 ```
 UNPREPARED
 [long] correlation id
+[string] source nukleus name
+[string] destination nukleus name
+[long] destination nukleus reference
+[headers] :host, :path, upgrade
 ```
 
 ## Stream Events
@@ -173,13 +183,14 @@ RESET
 ### BEGIN event (0x00000001)
 Indicates the beginning of a new stream.
 
-If the stream identifier is odd, then the handler reference is required and it represents an HTTP request.
-If the stream identifier is even and non-zero, then it represents an HTTP response, and the correlating HTTP request stream identifier is required instead.
+If the stream identifier is odd, then the nukleus reference is required and it represents an HTTP request.
+If the stream identifier is even and non-zero, then it represents an HTTP response, and the correlating HTTP 
+request stream identifier is required instead.
 
 ```
 BEGIN
 [long] stream id
-[long] handler reference | correlating stream id
+[long] nukleus reference | correlating stream id
 [headers] :scheme, :method, :authority, :path, :status, host, ...
 ```
 

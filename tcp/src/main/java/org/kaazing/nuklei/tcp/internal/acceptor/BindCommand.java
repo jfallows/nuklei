@@ -22,28 +22,31 @@ import java.net.InetSocketAddress;
 public final class BindCommand implements AcceptorCommand
 {
     private final long correlationId;
-    private final String handler;
+    private final String destination;
+    private final long destinationRef;
     private final InetSocketAddress localAddress;
 
     public BindCommand(
         long correlationId,
-        String handler,
+        String destination,
+        long destinationRef,
         InetSocketAddress localAddress)
     {
         this.correlationId = correlationId;
-        this.handler = handler;
+        this.destination = destination;
+        this.destinationRef = destinationRef;
         this.localAddress = localAddress;
     }
 
     @Override
     public void execute(Acceptor acceptor)
     {
-        acceptor.doBind(correlationId, handler, localAddress);
+        acceptor.doBind(correlationId, destination, destinationRef, localAddress);
     }
 
     @Override
     public String toString()
     {
-        return format("BIND [correlationId=%d, handler=\"%s\", localAddress=%s]", correlationId, handler, localAddress);
+        return format("BIND [correlationId=%d, destination=\"%s\", localAddress=%s]", correlationId, destination, localAddress);
     }
 }

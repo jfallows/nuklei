@@ -37,10 +37,10 @@ public abstract class ConnectorProxy
 
         public void doPrepare(
             long correlationId,
-            String handler,
+            String source,
             InetSocketAddress remoteAddress)
         {
-            PrepareCommand command = new PrepareCommand(correlationId, handler, remoteAddress);
+            PrepareCommand command = new PrepareCommand(correlationId, source, remoteAddress);
             if (!commandQueue.offer(command))
             {
                 throw new IllegalStateException("unable to offer command");
@@ -75,11 +75,11 @@ public abstract class ConnectorProxy
         }
 
         public void doConnect(
-            String handler,
-            long handlerRef,
+            String source,
+            long sourceRef,
             long streamId)
         {
-            ConnectCommand command = new ConnectCommand(handler, handlerRef, streamId);
+            ConnectCommand command = new ConnectCommand(source, sourceRef, streamId);
             if (!commandQueue.offer(command))
             {
                 throw new IllegalStateException("unable to offer command");

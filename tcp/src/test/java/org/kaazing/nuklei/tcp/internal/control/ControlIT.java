@@ -36,7 +36,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 public class ControlIT
 {
     private final K3poRule k3po = new K3poRule()
-            .setScriptRoot("org/kaazing/nuklei/specification/tcp/control");
+            .setScriptRoot("org/kaazing/specification/nuklei/tcp/control");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
@@ -54,44 +54,94 @@ public class ControlIT
     {
         int streamCapacity = 1024 * 1024;
 
-        File handler = new File("target/nukleus-itests/handler/streams/tcp");
-        createEmptyFile(handler.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
+        File source = new File("target/nukleus-itests/source/streams/tcp");
+        createEmptyFile(source.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
+
+        File destination = new File("target/nukleus-itests/destination/streams/tcp");
+        createEmptyFile(destination.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
     }
 
     @Test
     @Specification({
-        "bind.address.and.port/controller"
+        "capture.source/controller"
     })
-    public void shouldBindAddressAndPort() throws Exception
+    public void shouldCaptureSource() throws Exception
     {
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "unbind.address.and.port/controller",
+        "capture.destination/controller"
     })
-    public void shouldUnbindAddressAndPort() throws Exception
+    public void shouldCaptureDestination() throws Exception
     {
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "prepare.address.and.port/controller",
+        "capture.source/controller",
+        "route.source/controller"
     })
-    public void shouldPrepareAddressAndPort() throws Exception
+    public void shouldRouteSource() throws Exception
     {
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "unprepare.address.and.port/controller",
+        "capture.destination/controller",
+        "route.destination/controller"
     })
-    public void shouldUnprepareAddressAndPort() throws Exception
+    public void shouldRouteDestination() throws Exception
     {
         k3po.finish();
     }
 
+    @Test
+    @Specification({
+        "capture.destination/controller",
+        "route.destination/controller",
+        "bind.socket.destination/controller"
+    })
+    public void shouldBindSocketDestination() throws Exception
+    {
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "capture.destination/controller",
+        "route.destination/controller",
+        "bind.socket.destination/controller",
+        "unbind.socket.destination/controller"
+    })
+    public void shouldUnbindSocketDestination() throws Exception
+    {
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "capture.source/controller",
+        "route.source/controller",
+        "prepare.source.socket/controller"
+    })
+    public void shouldPrepareSourceSocket() throws Exception
+    {
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "capture.source/controller",
+        "route.source/controller",
+        "prepare.source.socket/controller",
+        "unprepare.source.socket/controller"
+    })
+    public void shouldUnprepareSourceSocket() throws Exception
+    {
+        k3po.finish();
+    }
 }

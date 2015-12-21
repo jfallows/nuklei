@@ -19,19 +19,19 @@ package org.kaazing.nuklei.tcp.internal.reader;
 public final class CaptureCommand implements ReaderCommand
 {
     private final long correlationId;
-    private final String handler;
+    private final String source;
 
     public CaptureCommand(
         long correlationId,
-        String handler)
+        String source)
     {
         this.correlationId = correlationId;
-        this.handler = handler;
+        this.source = source;
     }
 
     @Override
     public void execute(Reader reader)
     {
-        reader.doCapture(correlationId, handler);
+        reader.doCapture(correlationId, source);
     }
 }

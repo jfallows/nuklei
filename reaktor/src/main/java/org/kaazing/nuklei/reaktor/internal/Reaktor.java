@@ -15,39 +15,67 @@
  */
 package org.kaazing.nuklei.reaktor.internal;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static uk.co.real_logic.agrona.LangUtil.rethrowUnchecked;
 
 import org.kaazing.nuklei.Configuration;
+import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.NukleusFactory;
 
 import uk.co.real_logic.agrona.ErrorHandler;
+import uk.co.real_logic.agrona.IoUtil;
+import uk.co.real_logic.agrona.collections.ArrayUtil;
+import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.AgentRunner;
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.CountersManager;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.SigIntBarrier;
+import uk.co.real_logic.agrona.concurrent.SleepingIdleStrategy;
 
 public final class Reaktor implements AutoCloseable
 {
-    private final Context context;
     private final AgentRunner runner;
 
     private Reaktor(Configuration config)
     {
-        Context context = new Context();
-        this.context = context.conclude(config);
+        NukleusFactory factory = NukleusFactory.instantiate();
 
-        IdleStrategy idleStrategy = context.idleStrategy();
-        ErrorHandler errorHandler = context.errorHandler();
-        AtomicBuffer labelsBuffer = context.counterLabelsBuffer();
-        AtomicBuffer countersBuffer = context.counterValuesBuffer();
+        Nukleus[] nuklei = new Nukleus[0];
 
-        CountersManager countersManager = new CountersManager(labelsBuffer, countersBuffer);
-        AtomicCounter errorCounter = countersManager.newCounter("errors");
+        for (String name : factory.names())
+        {
+            if (!name.endsWith(".controller"))
+            {
+                Nukleus nukleus = factory.create(name, config);
+                nuklei = ArrayUtil.add(nuklei, nukleus);
+            }
+        }
 
-        Conductor conductor = new Conductor(context);
+        final Nukleus[] workers = nuklei;
+        IdleStrategy idleStrategy = new SleepingIdleStrategy(MILLISECONDS.toNanos(50L));
+        ErrorHandler errorHandler = (throwable) -> { throwable.printStackTrace(System.err); };
+        Agent agent = new Agent()
+        {
+            @Override
+            public String roleName()
+            {
+                return "reaktor";
+            }
 
-        this.runner = new AgentRunner(idleStrategy, errorHandler, errorCounter, conductor);
+            @Override
+            public int doWork() throws Exception
+            {
+                int work = 0;
+
+                for (int i=0; i < workers.length; i++)
+                {
+                    work += workers[i].process();
+                }
+
+                return work;
+            }
+        };
+
+        this.runner = new AgentRunner(idleStrategy, errorHandler, null, agent);
     }
 
     public Reaktor start()
@@ -62,7 +90,6 @@ public final class Reaktor implements AutoCloseable
         try
         {
             runner.close();
-            context.close();
         }
         catch (final Exception ex)
         {
@@ -84,8 +111,14 @@ public final class Reaktor implements AutoCloseable
 
     public static void main(final String[] args) throws Exception
     {
+        // TODO: command line parameter for directory
+        String directory = IoUtil.tmpDirName() + "org.kaazing.nuklei.reaktor";
+        System.setProperty(Configuration.DIRECTORY_PROPERTY_NAME, directory);
+
         try (final Reaktor reaktor = Reaktor.launch())
         {
+            System.out.println("Started in " + directory);
+
             new SigIntBarrier().await();
         }
     }

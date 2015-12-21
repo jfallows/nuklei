@@ -17,13 +17,14 @@ package org.kaazing.nuklei.bench.jmh.echo;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
-import static org.kaazing.nuklei.Configuration.STREAMS_CAPACITY_PROPERTY_NAME;
+import static org.kaazing.nuklei.Configuration.STREAMS_BUFFER_CAPACITY_PROPERTY_NAME;
 import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.NukleusFactory;
@@ -69,7 +70,7 @@ public class EchoServerBM
     {
         final Properties properties = new Properties();
         properties.setProperty(DIRECTORY_PROPERTY_NAME, "target/nukleus-benchmarks");
-        properties.setProperty(STREAMS_CAPACITY_PROPERTY_NAME, Long.toString(1024 * 1024 * 16));
+        properties.setProperty(STREAMS_BUFFER_CAPACITY_PROPERTY_NAME, Long.toString(1024 * 1024 * 16));
         final Configuration config = new Configuration(properties);
 
         NukleusFactory factory = NukleusFactory.instantiate();
@@ -78,7 +79,7 @@ public class EchoServerBM
         this.controller = (EchoController) factory.create("echo.controller", config);
 
         controller.capture("source");
-        while (this.nukleus.process() != 0L)
+        while (this.nukleus.process() != 0L || this.controller.process() != 0L)
         {
             // intentional
         }
@@ -88,23 +89,22 @@ public class EchoServerBM
         createEmptyFile(source.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
 
         controller.route("source");
-        while (this.nukleus.process() != 0L)
+        while (this.nukleus.process() != 0L || this.controller.process() != 0L)
         {
             // intentional
         }
 
-        final Random random = new Random();
-
-        final long sourceRef = random.nextLong() & 0x3fffffffffffffffL;
-        controller.bind("source", sourceRef);
-        while (this.nukleus.process() != 0L)
+        CompletableFuture<Long> sourceRefFuture = controller.bind("source");
+        while (this.nukleus.process() != 0L || this.controller.process() != 0L)
         {
             // intentional
         }
+        final long sourceRef = sourceRefFuture.get();
 
         this.streams = controller.streams("source");
 
         // odd, positive, non-zero
+        final Random random = new Random();
         this.streamId = (random.nextLong() & 0x3fffffffffffffffL) | 0x0000000000000001L;
 
         this.streams.begin(streamId, sourceRef);
@@ -125,6 +125,7 @@ public class EchoServerBM
     public void close() throws Exception
     {
         this.nukleus.close();
+        this.controller.close();
     }
 
     @Benchmark
@@ -138,7 +139,7 @@ public class EchoServerBM
     @Benchmark
     @Group("process")
     @GroupThreads(1)
-    public void handler(Control control) throws Exception
+    public void source(Control control) throws Exception
     {
         while (control.startMeasurement && !control.stopMeasurement)
         {

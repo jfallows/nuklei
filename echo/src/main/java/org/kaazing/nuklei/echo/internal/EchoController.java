@@ -41,7 +41,6 @@ import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-
 public final class EchoController implements Nukleus
 {
     private static final int MAX_SEND_LENGTH = 1024; // TODO: Configuration and Context
@@ -72,7 +71,7 @@ public final class EchoController implements Nukleus
     }
 
     @Override
-    public int process() throws Exception
+    public int process()
     {
         int weight = 0;
 
@@ -146,20 +145,16 @@ public final class EchoController implements Nukleus
     }
 
     public CompletableFuture<Long> bind(
-        String source,
-        long sourceRef)
+        String source)
     {
         final CompletableFuture<Long> promise = new CompletableFuture<Long>();
 
         long correlationId = conductorCommands.nextCorrelationId();
 
-        bindRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-              .correlationId(correlationId)
-              .binding()
-                  .source(source)
-                  .sourceRef(sourceRef);
-
-        BindFW bindRO = bindRW.build();
+        BindFW bindRO = bindRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                              .correlationId(correlationId)
+                              .source(source)
+                              .build();
 
         if (!conductorCommands.write(bindRO.typeId(), bindRO.buffer(), bindRO.offset(), bindRO.length()))
         {

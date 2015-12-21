@@ -85,10 +85,9 @@ public final class ConductorProxy
 
     public void onUnboundResponse(
         long correlationId,
-        String source,
-        long sourceRef)
+        String source)
     {
-        UnboundResponse response = new UnboundResponse(correlationId, source, sourceRef);
+        UnboundResponse response = new UnboundResponse(correlationId, source);
         if (!responseQueue.offer(response))
         {
             throw new IllegalStateException("unable to offer response");

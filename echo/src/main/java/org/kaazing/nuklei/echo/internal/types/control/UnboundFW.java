@@ -17,7 +17,10 @@ package org.kaazing.nuklei.echo.internal.types.control;
 
 import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_UNBOUND_RESPONSE;
 
+import java.nio.charset.StandardCharsets;
+
 import org.kaazing.nuklei.echo.internal.types.Flyweight;
+import org.kaazing.nuklei.echo.internal.types.StringFW;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
@@ -28,16 +31,16 @@ public final class UnboundFW extends Flyweight
     private static final int FIELD_OFFSET_CORRELATION_ID = 0;
     private static final int FIELD_SIZE_CORRELATION_ID = BitUtil.SIZE_OF_LONG;
 
-    private static final int FIELD_OFFSET_BINDING = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
+    private static final int FIELD_OFFSET_SOURCE = FIELD_OFFSET_CORRELATION_ID + FIELD_SIZE_CORRELATION_ID;
 
-    private final BindingFW bindingRO = new BindingFW();
+    private final StringFW sourceRO = new StringFW();
 
     @Override
     public UnboundFW wrap(DirectBuffer buffer, int offset, int actingLimit)
     {
         super.wrap(buffer, offset);
 
-        this.bindingRO.wrap(buffer, offset + FIELD_OFFSET_BINDING, actingLimit);
+        this.sourceRO.wrap(buffer, offset + FIELD_OFFSET_SOURCE, actingLimit);
 
         checkLimit(limit(), actingLimit);
 
@@ -47,7 +50,7 @@ public final class UnboundFW extends Flyweight
     @Override
     public int limit()
     {
-        return binding().limit();
+        return source().limit();
     }
 
     public int typeId()
@@ -60,20 +63,20 @@ public final class UnboundFW extends Flyweight
         return buffer().getLong(offset() + FIELD_OFFSET_CORRELATION_ID);
     }
 
-    public BindingFW binding()
+    public StringFW source()
     {
-        return bindingRO;
+        return sourceRO;
     }
 
     @Override
     public String toString()
     {
-        return String.format("[correlationId=%d, bindingRO=%s]", correlationId(), binding());
+        return String.format("[correlationId=%d, sourceRO=%s]", correlationId(), source());
     }
 
     public static final class Builder extends Flyweight.Builder<UnboundFW>
     {
-        private final BindingFW.Builder bindingRW = new BindingFW.Builder();
+        private final StringFW.Builder sourceRW = new StringFW.Builder();
 
         public Builder()
         {
@@ -85,7 +88,7 @@ public final class UnboundFW extends Flyweight
         {
             super.wrap(buffer, offset, maxLimit);
 
-            this.bindingRW.wrap(buffer, offset + FIELD_OFFSET_BINDING, maxLimit);
+            this.sourceRW.wrap(buffer, offset + FIELD_OFFSET_SOURCE, maxLimit);
 
             return this;
         }
@@ -96,9 +99,10 @@ public final class UnboundFW extends Flyweight
             return this;
         }
 
-        public BindingFW.Builder binding()
+        public Builder source(String source)
         {
-            return bindingRW;
+            sourceRW.set(source, StandardCharsets.UTF_8);
+            return this;
         }
     }
 }

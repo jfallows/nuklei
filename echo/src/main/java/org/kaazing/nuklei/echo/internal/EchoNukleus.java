@@ -15,7 +15,7 @@
  */
 package org.kaazing.nuklei.echo.internal;
 
-import java.util.function.Consumer;
+import java.util.function.ToIntFunction;
 
 import org.kaazing.nuklei.CompositeNukleus;
 import org.kaazing.nuklei.Nukleus;
@@ -34,26 +34,19 @@ public final class EchoNukleus extends CompositeNukleus
     }
 
     @Override
-    public int process() throws Exception
-    {
-        int weight = 0;
-
-        weight += conductor.process();
-        weight += reflector.process();
-
-        return weight;
-    }
-
-    @Override
     public String name()
     {
         return "echo";
     }
 
     @Override
-    public void forEach(Consumer<? super Nukleus> action)
+    public int process(ToIntFunction<? super Nukleus> function)
     {
-        action.accept(conductor);
-        action.accept(reflector);
+        int weight = 0;
+
+        weight += function.applyAsInt(conductor);
+        weight += function.applyAsInt(reflector);
+
+        return weight;
     }
 }

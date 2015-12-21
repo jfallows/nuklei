@@ -37,7 +37,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 public class AcceptIT
 {
     private final K3poRule k3po = new K3poRule()
-        .setScriptRoot("org/kaazing/nuklei/specification/echo");
+        .setScriptRoot("org/kaazing/specification/nuklei/echo");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
@@ -61,6 +61,8 @@ public class AcceptIT
 
     @Test
     @Specification({
+        "control/capture.source/controller",
+        "control/route.source/controller",
         "control/bind.source/controller",
         "streams/accept/establish.connection/source"
     })
@@ -71,6 +73,8 @@ public class AcceptIT
 
     @Test
     @Specification({
+        "control/capture.source/controller",
+        "control/route.source/controller",
         "control/bind.source/controller",
         "streams/accept/echo.source.data/source" })
     public void shouldEchoSourceData() throws Exception
@@ -81,6 +85,8 @@ public class AcceptIT
     @Ignore("TODO: nukleus CLOSE command")
     @Test
     @Specification({
+        "control/capture.source/controller",
+        "control/route.source/controller",
         "control/bind.source/controller",
         "streams/accept/initiate.nukleus.close/source" })
     public void shouldInitiateNukleusClose() throws Exception
@@ -90,6 +96,8 @@ public class AcceptIT
 
     @Test
     @Specification({
+        "control/capture.source/controller",
+        "control/route.source/controller",
         "control/bind.source/controller",
         "streams/accept/initiate.source.close/source" })
     public void shouldInitiateSourceClose() throws Exception

@@ -37,7 +37,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 public class ConnectIT
 {
     private final K3poRule k3po = new K3poRule()
-        .setScriptRoot("org/kaazing/nuklei/specification/echo");
+        .setScriptRoot("org/kaazing/specification/nuklei/echo");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
@@ -61,6 +61,9 @@ public class ConnectIT
 
     @Test
     @Specification({
+        "control/capture.destination/controller",
+        "control/route.destination/controller",
+        "control/prepare.destination/controller",
         "control/connect.destination/controller",
         "streams/connect/establish.connection/destination" })
     public void shouldEstablishConnection() throws Exception
@@ -70,6 +73,9 @@ public class ConnectIT
 
     @Test
     @Specification({
+        "control/capture.destination/controller",
+        "control/route.destination/controller",
+        "control/prepare.destination/controller",
         "control/connect.destination/controller",
         "streams/connect/echo.destination.data/destination" })
     public void shouldEchoDestinationData() throws Exception
@@ -79,6 +85,9 @@ public class ConnectIT
 
     @Test
     @Specification({
+        "control/capture.destination/controller",
+        "control/route.destination/controller",
+        "control/prepare.destination/controller",
         "control/connect.destination/controller",
         "streams/connect/initiate.destination.close/destination" })
     public void shouldInitiateDestinationClose() throws Exception
@@ -89,6 +98,9 @@ public class ConnectIT
     @Ignore("TODO: nukleus CLOSE command")
     @Test
     @Specification({
+        "control/capture.destination/controller",
+        "control/route.destination/controller",
+        "control/prepare.destination/controller",
         "control/connect.destination/controller",
         "streams/connect/initiate.nukleus.close/destination" })
     public void shouldInitiateNukleusClose() throws Exception

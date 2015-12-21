@@ -36,7 +36,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 public class ConnectIT
 {
-    private final K3poRule k3po = new K3poRule().setScriptRoot("org/kaazing");
+    private final K3poRule k3po = new K3poRule().setScriptRoot("org/kaazing/specification");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
@@ -54,15 +54,17 @@ public class ConnectIT
     {
         int streamCapacity = 1024 * 1024;
 
-        File handler = new File("target/nukleus-itests/handler/streams/tcp");
-        createEmptyFile(handler.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
+        File source = new File("target/nukleus-itests/source/streams/tcp");
+        createEmptyFile(source.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
     }
 
     @Test
     @Specification({
-        "nuklei/specification/tcp/control/prepare.address.and.port/controller",
-        "specification/tcp/rfc793/establish.connection/server",
-        "nuklei/specification/tcp/streams/connect/establish.connection/handler" })
+        "nuklei/tcp/control/capture.source/controller",
+        "nuklei/tcp/control/route.source/controller",
+        "nuklei/tcp/control/prepare.source.socket/controller",
+        "tcp/rfc793/establish.connection/server",
+        "nuklei/tcp/streams/connect/establish.connection/source" })
     public void shouldEstablishConnection() throws Exception
     {
         k3po.finish();
@@ -70,9 +72,11 @@ public class ConnectIT
 
     @Test
     @Specification({
-        "nuklei/specification/tcp/control/prepare.address.and.port/controller",
-        "specification/tcp/rfc793/server.sent.data/server",
-        "nuklei/specification/tcp/streams/connect/nukleus.sent.data/handler" })
+        "nuklei/tcp/control/capture.source/controller",
+        "nuklei/tcp/control/route.source/controller",
+        "nuklei/tcp/control/prepare.source.socket/controller",
+        "tcp/rfc793/server.sent.data/server",
+        "nuklei/tcp/streams/connect/nukleus.sent.data/source" })
     public void shouldReceiveServerSentData() throws Exception
     {
         k3po.finish();
@@ -80,9 +84,11 @@ public class ConnectIT
 
     @Test
     @Specification({
-        "nuklei/specification/tcp/control/prepare.address.and.port/controller",
-        "specification/tcp/rfc793/client.sent.data/server",
-        "nuklei/specification/tcp/streams/connect/handler.sent.data/handler" })
+        "nuklei/tcp/control/capture.source/controller",
+        "nuklei/tcp/control/route.source/controller",
+        "nuklei/tcp/control/prepare.source.socket/controller",
+        "tcp/rfc793/client.sent.data/server",
+        "nuklei/tcp/streams/connect/source.sent.data/source" })
     public void shouldReceiveClientSentData() throws Exception
     {
         k3po.finish();
@@ -90,9 +96,11 @@ public class ConnectIT
 
     @Test
     @Specification({
-        "nuklei/specification/tcp/control/prepare.address.and.port/controller",
-        "specification/tcp/rfc793/echo.data/server",
-        "nuklei/specification/tcp/streams/connect/echo.data/handler" })
+        "nuklei/tcp/control/capture.source/controller",
+        "nuklei/tcp/control/route.source/controller",
+        "nuklei/tcp/control/prepare.source.socket/controller",
+        "tcp/rfc793/echo.data/server",
+        "nuklei/tcp/streams/connect/echo.data/source" })
     public void shouldEchoData() throws Exception
     {
         k3po.finish();
@@ -100,9 +108,11 @@ public class ConnectIT
 
     @Test
     @Specification({
-        "nuklei/specification/tcp/control/prepare.address.and.port/controller",
-        "specification/tcp/rfc793/server.close/server",
-        "nuklei/specification/tcp/streams/connect/initiate.nukleus.close/handler" })
+        "nuklei/tcp/control/capture.source/controller",
+        "nuklei/tcp/control/route.source/controller",
+        "nuklei/tcp/control/prepare.source.socket/controller",
+        "tcp/rfc793/server.close/server",
+        "nuklei/tcp/streams/connect/initiate.nukleus.close/source" })
     public void shouldInitiateServerClose() throws Exception
     {
         k3po.finish();
@@ -110,9 +120,11 @@ public class ConnectIT
 
     @Test
     @Specification({
-        "nuklei/specification/tcp/control/prepare.address.and.port/controller",
-        "specification/tcp/rfc793/client.close/server",
-        "nuklei/specification/tcp/streams/connect/initiate.handler.close/handler" })
+        "nuklei/tcp/control/capture.source/controller",
+        "nuklei/tcp/control/route.source/controller",
+        "nuklei/tcp/control/prepare.source.socket/controller",
+        "tcp/rfc793/client.close/server",
+        "nuklei/tcp/streams/connect/initiate.source.close/source" })
     public void shouldInitiateClientClose() throws Exception
     {
         k3po.finish();
@@ -121,9 +133,11 @@ public class ConnectIT
     @Ignore("non-deterministic ordering of multiple streams")
     @Test
     @Specification({
-        "nuklei/specification/tcp/control/prepare.address.and.port/controller",
-        "specification/tcp/rfc793/concurrent.connections/server",
-        "nuklei/specification/tcp/streams/connect/concurrent.connections/handler" })
+        "nuklei/tcp/control/capture.source/controller",
+        "nuklei/tcp/control/route.source/controller",
+        "nuklei/tcp/control/prepare.source.socket/controller",
+        "tcp/rfc793/concurrent.connections/server",
+        "nuklei/tcp/streams/connect/concurrent.connections/source" })
     public void shouldEstablishConcurrentConnections() throws Exception
     {
         k3po.finish();

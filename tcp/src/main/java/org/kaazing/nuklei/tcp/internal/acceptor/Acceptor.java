@@ -58,11 +58,11 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
     }
 
     @Override
-    public int process() throws Exception
+    public int process()
     {
         int weight = 0;
 
-        selector.selectNow();
+        selectNow();
         weight += selectedKeySet.forEach(this::processAccept);
         weight += commandQueue.drain(this);
 
@@ -101,26 +101,27 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
 
     public void doBind(
         long correlationId,
-        String handler,
+        String destination,
+        long destinationRef,
         InetSocketAddress localAddress)
     {
 
         try
         {
-            final long handlerRef = streamsBound.increment();
+            final long newReferenceId = streamsBound.increment();
 
             final ServerSocketChannel serverChannel = ServerSocketChannel.open();
             serverChannel.bind(localAddress);
             serverChannel.configureBlocking(false);
 
-            AcceptorState newState = new AcceptorState(handler, handlerRef, localAddress);
+            AcceptorState newState = new AcceptorState(destination, destinationRef, localAddress);
 
             serverChannel.register(selector, OP_ACCEPT, newState);
             newState.attach(serverChannel);
 
-            stateByRef.put(newState.handlerRef(), newState);
+            stateByRef.put(newReferenceId, newState);
 
-            conductorProxy.onBoundResponse(correlationId, newState.handlerRef());
+            conductorProxy.onBoundResponse(correlationId, newReferenceId);
         }
         catch (IOException e)
         {
@@ -147,10 +148,11 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
                 serverChannel.close();
                 selector.selectNow();
 
-                String destination = state.handler();
+                String destination = state.destination();
+                long destinationRef = state.destinationRef();
                 InetSocketAddress localAddress = state.localAddress();
 
-                conductorProxy.onUnboundResponse(correlationId, destination, localAddress);
+                conductorProxy.onUnboundResponse(correlationId, destination, destinationRef, localAddress);
             }
             catch (IOException e)
             {
@@ -159,22 +161,34 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
         }
     }
 
+    private void selectNow()
+    {
+        try
+        {
+            selector.selectNow();
+        }
+        catch (IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+    }
+
     private int processAccept(SelectionKey selectionKey)
     {
         try
         {
             AcceptorState state = (AcceptorState) selectionKey.attachment();
-            String handler = state.handler();
-            long handlerRef = state.handlerRef();
+            String destination = state.destination();
+            long destinationRef = state.destinationRef();
             ServerSocketChannel serverChannel = state.channel();
 
             // odd, positive, non-zero
             streamsAccepted.increment();
-            final long newClientStreamId = (streamsAccepted.get() << 1L) | 0x0000000000000001L;
+            final long newInitialStreamId = (streamsAccepted.get() << 1L) | 0x0000000000000001L;
             final SocketChannel channel = serverChannel.accept();
 
-            writerProxy.doRegister(handler, handlerRef, newClientStreamId, 0L, channel);
-            readerProxy.doRegister(handler, handlerRef, newClientStreamId, 0L, channel);
+            writerProxy.doRegister(destination, destinationRef, newInitialStreamId, 0L, channel);
+            readerProxy.doRegister(destination, destinationRef, newInitialStreamId, 0L, channel);
         }
         catch (Exception ex)
         {

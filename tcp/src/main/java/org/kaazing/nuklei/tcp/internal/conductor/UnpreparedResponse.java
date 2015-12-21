@@ -20,21 +20,21 @@ import java.net.InetSocketAddress;
 public final class UnpreparedResponse implements ConductorResponse
 {
     private final long correlationId;
-    private final String handler;
+    private final String source;
     private final InetSocketAddress remoteAddress;
 
     public UnpreparedResponse(
         long correlationId,
-        String handler,
+        String source,
         InetSocketAddress remoteAddress)
     {
         this.correlationId = correlationId;
-        this.handler = handler;
+        this.source = source;
         this.remoteAddress = remoteAddress;
     }
 
     public void execute(Conductor conductor)
     {
-        conductor.onUnpreparedResponse(correlationId, handler, remoteAddress);
+        conductor.onUnpreparedResponse(correlationId, source, remoteAddress);
     }
 }

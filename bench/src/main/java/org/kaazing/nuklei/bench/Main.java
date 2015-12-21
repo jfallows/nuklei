@@ -73,8 +73,11 @@ public final class Main
         tcpctl.route("echo").get();
         echoctl.route("tcp").get();
 
-        tcpctl.bind("echo", new InetSocketAddress("localhost", 8080))
-              .thenAccept((tcpRef) -> { echoctl.bind("tcp", tcpRef); }).get();
+        echoctl.bind("tcp")
+               .thenAccept((echoRef) ->
+                   {
+                       tcpctl.bind("echo", echoRef, new InetSocketAddress("localhost", 8080));
+                   }).get();
 
         // TODO: resource cleanup via try-with-resources
         System.out.println("echo listening on localhost:8080");

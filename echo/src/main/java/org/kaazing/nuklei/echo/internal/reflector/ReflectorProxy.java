@@ -86,10 +86,9 @@ public final class ReflectorProxy
 
     public void doBind(
         long correlationId,
-        String source,
-        long sourceRef)
+        String source)
     {
-        BindCommand command = new BindCommand(correlationId, source, sourceRef);
+        BindCommand command = new BindCommand(correlationId, source);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");

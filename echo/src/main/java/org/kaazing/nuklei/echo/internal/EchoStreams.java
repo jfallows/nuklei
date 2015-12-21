@@ -47,13 +47,13 @@ public final class EchoStreams
         Context context,
         String source)
     {
-        this.captureStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsCapacity())
+        this.captureStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsBufferCapacity())
                                                          .streamsFile(context.captureStreamsFile().apply(source))
                                                          .createFile(false)
                                                          .build();
         this.streamsInput = this.captureStreams.buffer();
 
-        this.routeStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsCapacity())
+        this.routeStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsBufferCapacity())
                                                        .streamsFile(context.routeStreamsFile().apply(source))
                                                        .createFile(false)
                                                        .build();

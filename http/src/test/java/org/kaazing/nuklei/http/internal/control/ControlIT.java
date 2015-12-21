@@ -22,7 +22,6 @@ import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
 import java.io.File;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.DisableOnDebug;
@@ -37,7 +36,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 public class ControlIT
 {
     private final K3poRule k3po = new K3poRule()
-        .setScriptRoot("org/kaazing/nuklei/specification/http/control");
+        .setScriptRoot("org/kaazing/specification/nuklei/http/control");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
@@ -62,52 +61,67 @@ public class ControlIT
         createEmptyFile(destination.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
     }
 
-    @Ignore
     @Test
     @Specification({
-        "bind.source/controller"
+        "capture.source.destination/controller"
     })
-    public void shouldBindSource() throws Exception
+    public void shouldCaptureSourceDestination() throws Exception
     {
         k3po.finish();
     }
 
-    @Ignore
     @Test
     @Specification({
-        "unbind.source/controller"
+        "capture.source.destination/controller",
+        "route.source.destination/controller"
     })
-    public void shouldUnbindSource() throws Exception
+    public void shouldRouteSourceDestination() throws Exception
     {
         k3po.finish();
     }
 
-    @Ignore
     @Test
     @Specification({
-        "prepare.destination/controller"
+        "capture.source.destination/controller",
+        "route.source.destination/controller",
+        "bind.source.destination/controller"
     })
-    public void shouldPrepareDestination() throws Exception
+    public void shouldBindSourceDestination() throws Exception
     {
         k3po.finish();
     }
 
-    @Ignore
     @Test
     @Specification({
-        "unprepare.destination/controller"
+        "capture.source.destination/controller",
+        "route.source.destination/controller",
+        "bind.source.destination/controller",
+        "unbind.source.destination/controller"
     })
-    public void shouldUnprepareDestination() throws Exception
+    public void shouldUnbindSourceDestination() throws Exception
     {
         k3po.finish();
     }
 
-    @Ignore
     @Test
     @Specification({
-        "connect.destination/controller"
+        "capture.source.destination/controller",
+        "route.source.destination/controller",
+        "prepare.source.destination/controller"
     })
-    public void shouldConnectDestination() throws Exception
+    public void shouldPrepareSourceDestination() throws Exception
+    {
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "capture.source.destination/controller",
+        "route.source.destination/controller",
+        "prepare.source.destination/controller",
+        "unprepare.source.destination/controller"
+    })
+    public void shouldUnprepareSourceDestination() throws Exception
     {
         k3po.finish();
     }

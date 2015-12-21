@@ -72,16 +72,16 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         this.byteBuffer = allocateDirect(MAX_RECEIVE_LENGTH).order(nativeOrder());
         this.atomicBuffer = new UnsafeBuffer(byteBuffer.duplicate());
         this.streamsFile = context.routeStreamsFile();
-        this.streamsCapacity = context.streamsCapacity();
+        this.streamsCapacity = context.streamsBufferCapacity();
         this.layoutsByHandler = new HashMap<>();
     }
 
     @Override
-    public int process() throws Exception
+    public int process()
     {
         int weight = 0;
 
-        selector.selectNow();
+        selectNow();
         weight += selectedKeySet.forEach(this::processRead);
         weight += commandQueue.drain(this);
 
@@ -253,6 +253,18 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         if (!writeBuffer.write(resetRO.typeId(), resetRO.buffer(), resetRO.offset(), resetRO.length()))
         {
             throw new IllegalStateException("could not write to ring buffer");
+        }
+    }
+
+    private void selectNow()
+    {
+        try
+        {
+            selector.selectNow();
+        }
+        catch (IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 

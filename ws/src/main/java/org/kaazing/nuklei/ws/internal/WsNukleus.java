@@ -15,7 +15,7 @@
  */
 package org.kaazing.nuklei.ws.internal;
 
-import java.util.function.Consumer;
+import java.util.function.ToIntFunction;
 
 import org.kaazing.nuklei.CompositeNukleus;
 import org.kaazing.nuklei.Nukleus;
@@ -27,14 +27,6 @@ public final class WsNukleus extends CompositeNukleus
     WsNukleus(Context context)
     {
         this.context = context;
-    }
-
-    @Override
-    public int process() throws Exception
-    {
-        int weight = 0;
-
-        return weight;
     }
 
     @Override
@@ -50,7 +42,10 @@ public final class WsNukleus extends CompositeNukleus
     }
 
     @Override
-    public void forEach(Consumer<? super Nukleus> action)
+    public int process(ToIntFunction<? super Nukleus> function)
     {
+        int weight = 0;
+
+        return weight;
     }
 }

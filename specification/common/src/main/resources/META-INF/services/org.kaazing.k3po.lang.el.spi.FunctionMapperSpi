@@ -1,2 +1,2 @@
-org.kaazing.nuklei.specification.common.control.Functions$Mapper
-org.kaazing.nuklei.specification.common.streams.Functions$Mapper
+org.kaazing.specification.nuklei.common.control.Functions$Mapper
+org.kaazing.specification.nuklei.common.streams.Functions$Mapper

@@ -19,21 +19,18 @@ public class AcceptorState
 {
     private final long reference;
     private final String source;
-    private final long sourceRef;
 
     private Object attachment;
 
     public AcceptorState(
-        long reference,
         String source,
         long sourceRef)
     {
-        this.reference = reference;
+        this.reference = sourceRef;
         this.source = source;
-        this.sourceRef = sourceRef;
     }
 
-    public long reference()
+    public long sourceRef()
     {
         return this.reference;
     }
@@ -43,15 +40,10 @@ public class AcceptorState
         return source;
     }
 
-    public long sourceRef()
-    {
-        return sourceRef;
-    }
-
     @Override
     public String toString()
     {
-        return String.format("[reference=%d, source=\"%s\", sourceRef=%d]", reference, source, sourceRef);
+        return String.format("[source=\"%s\", sourceRef=%d]", source, reference);
     }
 
     public void attach(Object attachment)

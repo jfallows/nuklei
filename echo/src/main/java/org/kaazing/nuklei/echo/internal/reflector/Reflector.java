@@ -78,7 +78,6 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
 
     private final AtomicBuffer atomicBuffer;
 
-    private final Long2ObjectHashMap<AcceptorState> acceptorStateBySourceRef;
     private RingBuffer[] readBuffers;
 
     public Reflector(Context context)
@@ -98,16 +97,15 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
         this.atomicBuffer = new UnsafeBuffer(allocateDirect(context.maxMessageLength()).order(nativeOrder()));
         this.captureStreamsFile = context.captureStreamsFile();
         this.routeStreamsFile = context.routeStreamsFile();
-        this.streamsCapacity = context.streamsCapacity();
+        this.streamsCapacity = context.streamsBufferCapacity();
         this.streamsBySource = new HashMap<>();
         this.streamsByDestination = new HashMap<>();
 
         this.readBuffers = new RingBuffer[0];
-        this.acceptorStateBySourceRef = new Long2ObjectHashMap<>();
     }
 
     @Override
-    public int process() throws Exception
+    public int process()
     {
         int weight = 0;
 
@@ -248,8 +246,7 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
 
     public void doBind(
         long correlationId,
-        String source,
-        long sourceRef)
+        String source)
     {
         StreamsLayout layout = streamsBySource.get(source);
 
@@ -261,16 +258,13 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
         {
             try
             {
-                final long referenceId = streamsBound.increment();
+                final long sourceRef = streamsBound.increment();
 
-                AcceptorState newState = new AcceptorState(referenceId, source, sourceRef);
+                AcceptorState newState = new AcceptorState(source, sourceRef);
 
-                acceptorStateByRef.put(newState.reference(), newState);
+                acceptorStateByRef.put(newState.sourceRef(), newState);
 
-                // TODO: scope by source
-                acceptorStateBySourceRef.put(newState.sourceRef(), newState);
-
-                conductorProxy.onBoundResponse(correlationId, newState.reference());
+                conductorProxy.onBoundResponse(correlationId, newState.sourceRef());
             }
             catch (Exception e)
             {
@@ -295,7 +289,6 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
             try
             {
                 String source = oldState.source();
-                long sourceRef = oldState.sourceRef();
 
                 StreamsLayout streams = streamsBySource.get(source);
 
@@ -305,10 +298,7 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
                 }
                 else
                 {
-                    // TODO: scope by source
-                    acceptorStateBySourceRef.remove(oldState.sourceRef());
-
-                    conductorProxy.onUnboundResponse(correlationId, source, sourceRef);
+                    conductorProxy.onUnboundResponse(correlationId, source);
                 }
             }
             catch (Exception e)
@@ -440,8 +430,8 @@ public final class Reflector implements Nukleus, Consumer<ReflectorCommand>
 
             if ((streamId & 0x0000000000000001L) != 0L)
             {
-                // accepted stream (TODO: scope by source)
-                AcceptorState acceptorState = acceptorStateBySourceRef.get(referenceId);
+                // accepted stream (TODO: scope by source?)
+                AcceptorState acceptorState = acceptorStateByRef.get(referenceId);
                 if (acceptorState == null)
                 {
                     throw new IllegalStateException("reference not found: " + referenceId);
