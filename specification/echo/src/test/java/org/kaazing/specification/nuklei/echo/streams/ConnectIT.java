@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.specification.echo.streams;
+package org.kaazing.specification.nuklei.echo.streams;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
@@ -32,7 +32,7 @@ import org.kaazing.k3po.junit.rules.K3poRule;
 
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
-public class AcceptIT
+public class ConnectIT
 {
     private final K3poRule k3po = new K3poRule();
 
@@ -46,55 +46,56 @@ public class AcceptIT
     {
         int streamCapacity = 1024 * 1024;
 
-        File source = new File("target/nukleus-itests/echo/streams/source");
+        File source = new File("target/nukleus-itests/echo/streams/destination");
         createEmptyFile(source.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
 
-        File nukleus = new File("target/nukleus-itests/source/streams/echo");
+        File nukleus = new File("target/nukleus-itests/destination/streams/echo");
         createEmptyFile(nukleus.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
     }
 
     @Test
     @Specification({
-        "accept/establish.connection/nukleus",
-        "accept/establish.connection/source"
+        "connect/establish.connection/nukleus",
+        "connect/establish.connection/destination"
     })
     public void shouldEstablishConnection() throws Exception
     {
         k3po.start();
-        k3po.notifyBarrier("BOUND");
+        k3po.notifyBarrier("PREPARED");
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "accept/echo.source.data/nukleus",
-        "accept/echo.source.data/source" })
-    public void shouldEchoSourceData() throws Exception
+        "connect/echo.destination.data/nukleus",
+        "connect/echo.destination.data/destination"
+    })
+    public void shouldEchoDestinationData() throws Exception
     {
         k3po.start();
-        k3po.notifyBarrier("BOUND");
+        k3po.notifyBarrier("PREPARED");
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "accept/initiate.nukleus.close/nukleus",
-        "accept/initiate.nukleus.close/source" })
+        "connect/initiate.destination.close/nukleus",
+        "connect/initiate.destination.close/destination" })
+    public void shouldInitiateDestinationClose() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("PREPARED");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "connect/initiate.nukleus.close/nukleus",
+        "connect/initiate.nukleus.close/destination" })
     public void shouldInitiateNukleusClose() throws Exception
     {
         k3po.start();
-        k3po.notifyBarrier("BOUND");
-        k3po.finish();
-    }
-
-    @Test
-    @Specification({
-        "accept/initiate.source.close/nukleus",
-        "accept/initiate.source.close/source" })
-    public void shouldInitiateSourceClose() throws Exception
-    {
-        k3po.start();
-        k3po.notifyBarrier("BOUND");
+        k3po.notifyBarrier("PREPARED");
         k3po.finish();
     }
 }

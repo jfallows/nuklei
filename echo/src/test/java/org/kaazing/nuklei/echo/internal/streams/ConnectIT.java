@@ -37,7 +37,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 public class ConnectIT
 {
     private final K3poRule k3po = new K3poRule()
-        .setScriptRoot("org/kaazing/nuklei/specification/echo");
+        .setScriptRoot("org/kaazing/specification/nuklei/echo");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
