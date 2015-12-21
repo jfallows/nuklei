@@ -67,9 +67,9 @@ public class ArchitectureIT
         "nuklei/http/control/route.source.destination/nukleus",
         "nuklei/http/control/bind.source.destination/controller",
         "nuklei/http/control/bind.source.destination/nukleus",
-        "nuklei/http/streams/rfc7230/inbound.must.send.version/source",
-        "nuklei/http/streams/rfc7230/inbound.must.send.version/nukleus",
-        "nuklei/http/streams/rfc7230/inbound.must.send.version/destination" })
+        "nuklei/http/streams/rfc7230/architecture/inbound.must.send.version/source",
+        "nuklei/http/streams/rfc7230/architecture/inbound.must.send.version/nukleus",
+        "nuklei/http/streams/rfc7230/architecture/inbound.must.send.version/destination" })
     public void inboundMustSendVersion() throws Exception
     {
         k3po.finish();
@@ -83,9 +83,9 @@ public class ArchitectureIT
         "nuklei/http/control/route.source.destination/nukleus",
         "nuklei/http/control/bind.source.destination/controller",
         "nuklei/http/control/bind.source.destination/nukleus",
-        "nuklei/http/streams/rfc7230/outbound.must.send.version/source",
-        "nuklei/http/streams/rfc7230/outbound.must.send.version/nukleus",
-        "nuklei/http/streams/rfc7230/outbound.must.send.version/destination" })
+        "nuklei/http/streams/rfc7230/architecture/outbound.must.send.version/source",
+        "nuklei/http/streams/rfc7230/architecture/outbound.must.send.version/nukleus",
+        "nuklei/http/streams/rfc7230/architecture/outbound.must.send.version/destination" })
     public void outboundMustSendVersion() throws Exception
     {
         k3po.finish();
