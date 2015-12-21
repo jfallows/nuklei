@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.specification.tcp.streams;
+package org.kaazing.specification.nuklei.tcp.streams;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
@@ -22,7 +22,6 @@ import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
 import java.io.File;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.DisableOnDebug;
@@ -33,7 +32,7 @@ import org.kaazing.k3po.junit.rules.K3poRule;
 
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
-public class ConnectIT
+public class AcceptIT
 {
     private final K3poRule k3po = new K3poRule();
 
@@ -56,83 +55,81 @@ public class ConnectIT
 
     @Test
     @Specification({
-        "connect/establish.connection/nukleus",
-        "connect/establish.connection/handler"
+        "accept/establish.connection/nukleus",
+        "accept/establish.connection/handler"
     })
     public void shouldEstablishConnection() throws Exception
     {
         k3po.start();
-        k3po.notifyBarrier("PREPARED");
+        k3po.notifyBarrier("BOUND");
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "connect/nukleus.sent.data/nukleus",
-        "connect/nukleus.sent.data/handler"
+        "accept/handler.sent.data/nukleus",
+        "accept/handler.sent.data/handler"
     })
-    public void shouldReceiveNukleusSentData() throws Exception
-    {
-        k3po.start();
-        k3po.notifyBarrier("PREPARED");
-        k3po.finish();
-    }
-
-
-    @Test
-    @Specification({
-        "connect/handler.sent.data/nukleus",
-        "connect/handler.sent.data/handler" })
     public void shouldReceiveHandlerSentData() throws Exception
     {
         k3po.start();
-        k3po.notifyBarrier("PREPARED");
+        k3po.notifyBarrier("BOUND");
+        k3po.finish();
+    }
+
+
+    @Test
+    @Specification({
+        "accept/nukleus.sent.data/nukleus",
+        "accept/nukleus.sent.data/handler" })
+    public void shouldReceiveNukleusSentData() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("BOUND");
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "connect/echo.data/nukleus",
-        "connect/echo.data/handler"
-    })
+        "accept/echo.data/nukleus",
+        "accept/echo.data/handler" })
     public void shouldEchoData() throws Exception
     {
         k3po.start();
-        k3po.notifyBarrier("PREPARED");
+        k3po.notifyBarrier("BOUND");
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "connect/initiate.nukleus.close/nukleus",
-        "connect/initiate.nukleus.close/handler" })
-    public void shouldInitiateNukleusClose() throws Exception
-    {
-        k3po.start();
-        k3po.notifyBarrier("PREPARED");
-        k3po.finish();
-    }
-
-    @Test
-    @Specification({
-        "connect/initiate.handler.close/nukleus",
-        "connect/initiate.handler.close/handler" })
+        "accept/initiate.handler.close/nukleus",
+        "accept/initiate.handler.close/handler" })
     public void shouldInitiateHandlerClose() throws Exception
     {
         k3po.start();
-        k3po.notifyBarrier("PREPARED");
+        k3po.notifyBarrier("BOUND");
         k3po.finish();
     }
 
-    @Ignore
     @Test
     @Specification({
-        "connect/concurrent.connections/nukleus",
-        "connect/concurrent.connections/handler" })
+        "accept/initiate.nukleus.close/nukleus",
+        "accept/initiate.nukleus.close/handler" })
+    public void shouldInitiateNukleusClose() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("BOUND");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "accept/concurrent.connections/nukleus",
+        "accept/concurrent.connections/handler" })
     public void shouldEstablishConcurrentConnections() throws Exception
     {
         k3po.start();
-        k3po.notifyBarrier("PREPARED");
+        k3po.notifyBarrier("BOUND");
         k3po.finish();
     }
 }
