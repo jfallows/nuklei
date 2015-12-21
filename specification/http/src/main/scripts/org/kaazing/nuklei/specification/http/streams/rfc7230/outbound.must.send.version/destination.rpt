@@ -33,5 +33,11 @@ read [0x00] [0x07] ":method" [0x03] "GET"
 read [0x00] [0x05] ":path"   [0x01] "/"
 read [0x00] [0x04] "host"    [0x0e] "localhost:8080"
 
+write [0x00 0x00 0x00 0x01]
+write ${newDestinationStreamId}
+write ${initialStreamId}
+write [0x00] [0x07] ":status" [0x03] "200"
+write flush
+
 close
 closed

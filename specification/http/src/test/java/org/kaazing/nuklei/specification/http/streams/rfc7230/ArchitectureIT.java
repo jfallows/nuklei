@@ -74,4 +74,20 @@ public class ArchitectureIT
     {
         k3po.finish();
     }
+
+    @Test
+    @Specification({
+        "nuklei/specification/http/control/capture.source.destination/controller",
+        "nuklei/specification/http/control/capture.source.destination/nukleus",
+        "nuklei/specification/http/control/route.source.destination/controller",
+        "nuklei/specification/http/control/route.source.destination/nukleus",
+        "nuklei/specification/http/control/bind.source.destination/controller",
+        "nuklei/specification/http/control/bind.source.destination/nukleus",
+        "nuklei/specification/http/streams/rfc7230/outbound.must.send.version/source",
+        "nuklei/specification/http/streams/rfc7230/outbound.must.send.version/nukleus",
+        "nuklei/specification/http/streams/rfc7230/outbound.must.send.version/destination" })
+    public void outboundMustSendVersion() throws Exception
+    {
+        k3po.finish();
+    }
 }

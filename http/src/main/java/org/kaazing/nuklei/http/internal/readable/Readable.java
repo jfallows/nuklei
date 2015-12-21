@@ -287,11 +287,11 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
 
         final long streamId = frameRO.streamId();
 
-        final MessageHandler streamHandler = handlersByStreamId.get(streamId);
+        final MessageHandler handler = handlersByStreamId.get(streamId);
 
-        if (streamHandler != null)
+        if (handler != null)
         {
-            streamHandler.onMessage(msgTypeId, buffer, index, length);
+            handler.onMessage(msgTypeId, buffer, index, length);
         }
         else
         {
