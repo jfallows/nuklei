@@ -18,7 +18,6 @@ package org.kaazing.nuklei.http.internal.streams.rfc7230;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.DisableOnDebug;
@@ -44,7 +43,6 @@ public class MessageFormatIT
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);
 
-    @Ignore("not yet implemented")
     @Test
     @Specification({
         "nuklei/http/control/capture.source.destination/controller",
@@ -52,7 +50,6 @@ public class MessageFormatIT
         "nuklei/http/control/bind.source.destination/controller",
 //      "http/rfc7230/message.format/inbound.should.process.request.with.content.length/request",
         "nuklei/http/streams/rfc7230/message.format/inbound.should.process.request.with.content.length/source",
-        "nuklei/http/streams/rfc7230/message.format/inbound.should.process.request.with.content.length/nukleus",
         "nuklei/http/streams/rfc7230/message.format/inbound.should.process.request.with.content.length/destination" })
     public void inboundShouldProcessRequestWithContentLength() throws Exception
     {
