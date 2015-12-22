@@ -24,13 +24,14 @@
     <dependencies>
         <dependency>
             <groupId>org.kaazing</groupId>
-            <artifactId>nuklei-api</artifactId>
+            <artifactId>nuklei-specification-common</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.kaazing</groupId>
-            <artifactId>nuklei-specification-common</artifactId>
-            <version>${project.version}</version>
+            <artifactId>specification.http</artifactId>
+            <version>${k3po.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.kaazing</groupId>

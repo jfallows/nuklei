@@ -17,11 +17,7 @@ package org.kaazing.specification.nuklei.http.streams.rfc7230;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
-import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
 
-import java.io.File;
-
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.DisableOnDebug;
@@ -29,8 +25,7 @@ import org.junit.rules.TestRule;
 import org.junit.rules.Timeout;
 import org.kaazing.k3po.junit.annotation.Specification;
 import org.kaazing.k3po.junit.rules.K3poRule;
-
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+import org.kaazing.specification.nuklei.common.NukleusRule;
 
 public class ArchitectureIT
 {
@@ -38,26 +33,15 @@ public class ArchitectureIT
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
+    private final NukleusRule nukleus = new NukleusRule()
+        .setDirectory("target/nukleus-itests")
+        .initialize("http", "source")
+        .initialize("source", "http")
+        .initialize("http", "destination")
+        .initialize("destination", "http");
+
     @Rule
-    public final TestRule chain = outerRule(k3po).around(timeout);
-
-    @Before
-    public void setupStreamFiles() throws Exception
-    {
-        int streamCapacity = 1024 * 1024;
-
-        File sourceInitial = new File("target/nukleus-itests/http/streams/source");
-        createEmptyFile(sourceInitial.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
-
-        File sourceReply = new File("target/nukleus-itests/source/streams/http");
-        createEmptyFile(sourceReply.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
-
-        File destinationInitial = new File("target/nukleus-itests/http/streams/destination");
-        createEmptyFile(destinationInitial.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
-
-        File destinationReply = new File("target/nukleus-itests/destination/streams/http");
-        createEmptyFile(destinationReply.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
-    }
+    public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);
 
     @Test
     @Specification({
@@ -67,6 +51,7 @@ public class ArchitectureIT
         "nuklei/http/control/route.source.destination/nukleus",
         "nuklei/http/control/bind.source.destination/controller",
         "nuklei/http/control/bind.source.destination/nukleus",
+//      "http/rfc7230/architecture/inbound.must.send.version/request",
         "nuklei/http/streams/rfc7230/architecture/inbound.must.send.version/source",
         "nuklei/http/streams/rfc7230/architecture/inbound.must.send.version/nukleus",
         "nuklei/http/streams/rfc7230/architecture/inbound.must.send.version/destination" })
@@ -83,6 +68,7 @@ public class ArchitectureIT
         "nuklei/http/control/route.source.destination/nukleus",
         "nuklei/http/control/bind.source.destination/controller",
         "nuklei/http/control/bind.source.destination/nukleus",
+//      "http/rfc7230/architecture/outbound.must.send.version/request",
         "nuklei/http/streams/rfc7230/architecture/outbound.must.send.version/source",
         "nuklei/http/streams/rfc7230/architecture/outbound.must.send.version/nukleus",
         "nuklei/http/streams/rfc7230/architecture/outbound.must.send.version/destination" })

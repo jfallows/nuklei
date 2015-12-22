@@ -38,7 +38,7 @@ public final class HeadersFW extends Flyweight
     @Override
     public int limit()
     {
-        return headerRO.limit();
+        return (maxLimit() == offset()) ? maxLimit() : headerRO.limit();
     }
 
     public HeadersFW forEach(Consumer<HeaderFW> consumer)

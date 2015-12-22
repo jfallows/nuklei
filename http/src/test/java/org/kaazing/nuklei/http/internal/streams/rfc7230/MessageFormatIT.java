@@ -18,6 +18,7 @@ package org.kaazing.nuklei.http.internal.streams.rfc7230;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.DisableOnDebug;
@@ -27,7 +28,7 @@ import org.kaazing.k3po.junit.annotation.Specification;
 import org.kaazing.k3po.junit.rules.K3poRule;
 import org.kaazing.nuklei.test.NukleusRule;
 
-public class ArchitectureIT
+public class MessageFormatIT
 {
     private final K3poRule k3po = new K3poRule().setScriptRoot("org/kaazing/specification");
 
@@ -38,36 +39,24 @@ public class ArchitectureIT
             .setCommandBufferCapacity(1024)
             .setResponseBufferCapacity(1024)
             .setCounterValuesBufferCapacity(1024)
-            .initialize("destination", "http");;
+            .initialize("destination", "http");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);
 
+    @Ignore("not yet implemented")
     @Test
     @Specification({
         "nuklei/http/control/capture.source.destination/controller",
         "nuklei/http/control/route.source.destination/controller",
         "nuklei/http/control/bind.source.destination/controller",
-//      "http/rfc7230/architecture/inbound.must.send.version/request",
-        "nuklei/http/streams/rfc7230/architecture/inbound.must.send.version/source",
-        "nuklei/http/streams/rfc7230/architecture/inbound.must.send.version/destination" })
-    public void inboundMustSendVersion() throws Exception
+//      "http/rfc7230/message.format/inbound.should.process.request.with.content.length/request",
+        "nuklei/http/streams/rfc7230/message.format/inbound.should.process.request.with.content.length/source",
+        "nuklei/http/streams/rfc7230/message.format/inbound.should.process.request.with.content.length/nukleus",
+        "nuklei/http/streams/rfc7230/message.format/inbound.should.process.request.with.content.length/destination" })
+    public void inboundShouldProcessRequestWithContentLength() throws Exception
     {
 //      k3po.property("transport", "nuklei://bidirectional/http/streams/source#sourceRef");
-        k3po.finish();
-    }
-
-    @Test
-    @Specification({
-        "nuklei/http/control/capture.source.destination/controller",
-        "nuklei/http/control/route.source.destination/controller",
-        "nuklei/http/control/bind.source.destination/controller",
-//      "http/rfc7230/architecture/outbound.must.send.version/request",
-        "nuklei/http/streams/rfc7230/architecture/outbound.must.send.version/source",
-        "nuklei/http/streams/rfc7230/architecture/outbound.must.send.version/destination" })
-    public void outboundMustSendVersion() throws Exception
-    {
-//        k3po.property("transport", "nuklei://bidirectional/http/streams/source#sourceRef");
         k3po.finish();
     }
 }

@@ -17,6 +17,8 @@
 property destinationInitial ${streams:map("target/nukleus-itests/destination/streams/http", 1024 * 1024)}
 property destinationReply ${streams:map("target/nukleus-itests/http/streams/destination", 1024 * 1024)}
 
+property newDestinationStreamId ${streams:newReplyStreamId()}
+
 connect await BOUND
         agrona://stream/bidirectional
         option reader ${agrona:manyToOneReader(destinationInitial.buffer)}
@@ -27,9 +29,20 @@ read [0x00 0x00 0x00 0x01]
 read ([0..8]:initialStreamId)
 read ([0..8]:destinationRef)
 read [0x00] [0x07] ":scheme" [0x04] "http"
-read [0x00] [0x07] ":method" [0x03] "GET"
+read [0x00] [0x07] ":method" [0x04] "POST"
 read [0x00] [0x05] ":path" [0x01] "/"
 read [0x00] [0x04] "host" [0x0e] "localhost:8080"
+read [0x00] [0x0e] "content-length" [0x02] "11"
+
+read [0x00 0x00 0x00 0x02]
+read ${initialStreamId}
+read "hello world"
+
+write [0x00 0x00 0x00 0x01]
+write ${newDestinationStreamId}
+write ${initialStreamId}
+write [0x00] [0x07] ":status" [0x03] "200"
+write flush
 
 close
 closed

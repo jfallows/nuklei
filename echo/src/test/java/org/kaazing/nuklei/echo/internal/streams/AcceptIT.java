@@ -17,11 +17,7 @@ package org.kaazing.nuklei.echo.internal.streams;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
-import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
 
-import java.io.File;
-
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,8 +27,6 @@ import org.junit.rules.Timeout;
 import org.kaazing.k3po.junit.annotation.Specification;
 import org.kaazing.k3po.junit.rules.K3poRule;
 import org.kaazing.nuklei.test.NukleusRule;
-
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 public class AcceptIT
 {
@@ -45,19 +39,11 @@ public class AcceptIT
         .setDirectory("target/nukleus-itests")
         .setCommandBufferCapacity(1024)
         .setResponseBufferCapacity(1024)
-        .setCounterValuesBufferCapacity(1024);
+        .setCounterValuesBufferCapacity(1024)
+        .initialize("source", "echo");
 
     @Rule
     public final TestRule chain = outerRule(k3po).around(timeout).around(nukleus);
-
-    @Before
-    public void setupStreamFiles() throws Exception
-    {
-        int streamCapacity = 1024 * 1024;
-
-        File source = new File("target/nukleus-itests/source/streams/echo");
-        createEmptyFile(source.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
-    }
 
     @Test
     @Specification({

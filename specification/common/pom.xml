@@ -23,9 +23,13 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.kaazing</groupId>
-            <artifactId>nuklei-api</artifactId>
-            <version>${project.version}</version>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>uk.co.real-logic</groupId>
+            <artifactId>Agrona</artifactId>
+            <version>0.4.5</version>
         </dependency>
         <dependency>
             <groupId>org.kaazing</groupId>
@@ -36,11 +40,6 @@
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-all</artifactId>
             <version>1.3</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
