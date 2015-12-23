@@ -31,7 +31,6 @@
             <groupId>org.kaazing</groupId>
             <artifactId>specification.http</artifactId>
             <version>${k3po.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.kaazing</groupId>

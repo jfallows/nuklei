@@ -20,7 +20,7 @@ property sourceReply ${streams:map("target/nukleus-itests/source/streams/http", 
 property newSourceStreamId ${streams:newInitialStreamId()}
 property sourceRef ${streams:newReferenceId()}
 
-connect await PREPARED
+connect await BOUND
         agrona://stream/bidirectional
         option reader ${agrona:manyToOneReader(sourceReply.buffer)}
         option writer ${agrona:manyToOneWriter(sourceInitial.buffer)}
@@ -29,8 +29,19 @@ connected
 write [0x00 0x00 0x00 0x01]
 write ${newSourceStreamId}
 write ${sourceRef}
-write [0x00] [0x07] ":scheme" [0x04] "http"
-write [0x00] [0x07] ":method" [0x03] "GET"
-write [0x00] [0x05] ":path"   [0x01] "/"
-write [0x00] [0x04] "host"    [0x0e] "localhost:8080"
 write flush
+
+read [0x00 0x00 0x00 0x01]
+read ([0..8]:replyStreamId)
+read ${newSourceStreamId}
+
+write [0x00 0x00 0x00 0x02]
+write ${newSourceStreamId}
+write "GET / HTTP/1.2\r\n"
+write "Host: localhost:8080\r\n"
+write "\r\n"
+write flush
+
+read [0x00 0x00 0x00 0x02]
+read ${replyStreamId}
+read "HTTP/1.1"

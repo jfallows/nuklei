@@ -19,38 +19,26 @@ import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_BEGIN;
 import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_DATA;
 import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_END;
 
-
-
-
 import java.util.function.Consumer;
 
-
-
-
+import org.kaazing.nuklei.http.internal.types.stream.BeginFW;
 import org.kaazing.nuklei.http.internal.types.stream.DataFW;
-import org.kaazing.nuklei.http.internal.types.stream.HttpBeginFW;
-import org.kaazing.nuklei.http.internal.types.stream.HttpDataFW;
-import org.kaazing.nuklei.http.internal.types.stream.HttpEndFW;
-
-
-
+import org.kaazing.nuklei.http.internal.types.stream.EndFW;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-public final class AcceptEncoderStreamPool
+public final class ReplyDecodingStreamPool
 {
-    private final HttpBeginFW httpBeginRO = new HttpBeginFW();
-    private final HttpDataFW httpDataRO = new HttpDataFW();
-    private final HttpEndFW httpEndRO = new HttpEndFW();
-
-    private final DataFW.Builder dataRW = new DataFW.Builder();
+    private final BeginFW beginRO = new BeginFW();
+    private final DataFW dataRO = new DataFW();
+    private final EndFW endRO = new EndFW();
 
     private final AtomicBuffer atomicBuffer;
 
-    public AcceptEncoderStreamPool(
+    public ReplyDecodingStreamPool(
         int capacity,
         AtomicBuffer atomicBuffer)
     {
@@ -58,26 +46,26 @@ public final class AcceptEncoderStreamPool
     }
 
     public MessageHandler acquire(
-        long sourceReplyStreamId,
+        long sourceInitialStreamId,
         RingBuffer sourceRoute,
         Consumer<MessageHandler> released)
     {
-        return new AcceptEncoderStream(released, sourceReplyStreamId, sourceRoute);
+        return new ReplyDecodingStream(released, sourceInitialStreamId, sourceRoute);
     }
 
-    private final class AcceptEncoderStream implements MessageHandler
+    private final class ReplyDecodingStream implements MessageHandler
     {
         private final Consumer<MessageHandler> cleanup;
-        private final long sourceReplyStreamId;
+        private final long sourceInitialStreamId;
         private final RingBuffer sourceRoute;
 
-        public AcceptEncoderStream(
+        public ReplyDecodingStream(
             Consumer<MessageHandler> cleanup,
-            long sourceReplyStreamId,
+            long sourceInitialStreamId,
             RingBuffer sourceRoute)
         {
             this.cleanup = cleanup;
-            this.sourceReplyStreamId = sourceReplyStreamId;
+            this.sourceInitialStreamId = sourceInitialStreamId;
             this.sourceRoute = sourceRoute;
         }
 
@@ -107,40 +95,9 @@ public final class AcceptEncoderStreamPool
             int index,
             int length)
         {
-            httpBeginRO.wrap(buffer, index, index + length);
+            beginRO.wrap(buffer, index, index + length);
 
-            StringBuilder request = new StringBuilder();
-            StringBuilder headers = new StringBuilder();
-            httpBeginRO.headers().forEach((header) ->
-            {
-                String name = header.name().asString();
-                String value = header.value().asString();
-
-                if (":status".equals(name))
-                {
-                    request.append("HTTP/1.1 ").append(value).append(" OK\r\n");
-                }
-                else
-                {
-                    headers.append(name).append(": ").append(value).append("\r\n");
-                }
-            });
-            request.append(headers).append("\r\n");
-
-            dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                  .streamId(sourceReplyStreamId);
-
-            String payloadChars = request.toString();
-            int payloadOffset = dataRW.payloadOffset();
-            int payloadLength = atomicBuffer.putStringWithoutLengthUtf8(payloadOffset, payloadChars);
-
-            final DataFW data = dataRW.payloadLength(payloadLength)
-                                      .build();
-
-            if (!sourceRoute.write(data.typeId(), data.buffer(), data.offset(), data.length()))
-            {
-                 throw new IllegalStateException("could not write to ring buffer");
-            }
+            // TODO
         }
 
         private void onData(
@@ -148,9 +105,11 @@ public final class AcceptEncoderStreamPool
             int index,
             int length)
         {
-            httpDataRO.wrap(buffer, index, index + length);
+            dataRO.wrap(buffer, index, index + length);
 
-            // TODO
+            // TODO: decode httpBegin, httpData, httpEnd
+
+            // after decoding HTTP response, generate httpReplyStreamId, pass httpInitialStreamId
         }
 
         private void onEnd(
@@ -158,12 +117,9 @@ public final class AcceptEncoderStreamPool
             int index,
             int length)
         {
-            httpEndRO.wrap(buffer, index, index + length);
+            endRO.wrap(buffer, index, index + length);
 
-            // TODO
-
-            // release
-            cleanup.accept(this);
+            // TODO: httpReset if necessary?
         }
     }
 

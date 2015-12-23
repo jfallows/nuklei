@@ -56,25 +56,25 @@ public final class NukleusRule implements TestRule
         this.properties = new Properties();
     }
 
-    public NukleusRule setDirectory(String directory)
+    public NukleusRule directory(String directory)
     {
         properties.setProperty(DIRECTORY_PROPERTY_NAME, directory);
         return this;
     }
 
-    public NukleusRule setCommandBufferCapacity(int commandBufferCapacity)
+    public NukleusRule commandBufferCapacity(int commandBufferCapacity)
     {
         properties.setProperty(COMMAND_BUFFER_CAPACITY_PROPERTY_NAME, valueOf(commandBufferCapacity));
         return this;
     }
 
-    public NukleusRule setResponseBufferCapacity(int responseBufferCapacity)
+    public NukleusRule responseBufferCapacity(int responseBufferCapacity)
     {
         properties.setProperty(RESPONSE_BUFFER_CAPACITY_PROPERTY_NAME, valueOf(responseBufferCapacity));
         return this;
     }
 
-    public NukleusRule setCounterValuesBufferCapacity(int counterValuesBufferCapacity)
+    public NukleusRule counterValuesBufferCapacity(int counterValuesBufferCapacity)
     {
         properties.setProperty(COUNTERS_BUFFER_CAPACITY_PROPERTY_NAME, valueOf(counterValuesBufferCapacity));
         return this;

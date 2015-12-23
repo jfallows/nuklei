@@ -35,10 +35,10 @@ public class ConnectIT
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
     private final NukleusRule nukleus = new NukleusRule("tcp")
-            .setDirectory("target/nukleus-itests")
-            .setCommandBufferCapacity(1024)
-            .setResponseBufferCapacity(1024)
-            .setCounterValuesBufferCapacity(1024)
+            .directory("target/nukleus-itests")
+            .commandBufferCapacity(1024)
+            .responseBufferCapacity(1024)
+            .counterValuesBufferCapacity(1024)
             .initialize("source", "tcp");
 
     @Rule

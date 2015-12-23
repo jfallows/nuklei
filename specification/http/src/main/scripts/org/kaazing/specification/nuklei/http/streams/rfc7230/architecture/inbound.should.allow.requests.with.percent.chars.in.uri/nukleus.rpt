@@ -24,7 +24,7 @@ property newInitialStreamId ${streams:newInitialStreamId()}
 property newReplyStreamId ${streams:newReplyStreamId()}
 property newDestinationRef ${streams:newReferenceId()}
 
-connect await PREPARED
+connect await BOUND
         agrona://stream/bidirectional
         option reader ${agrona:manyToOneReader(sourceInitial.buffer)}
         option writer ${agrona:manyToOneWriter(sourceReply.buffer)}
@@ -33,12 +33,22 @@ connected
 read [0x00 0x00 0x00 0x01]
 read ([0..8]:sourceStreamId)
 read ([0..8]:sourceRef)
-read [0x00] [0x07] ":scheme" [0x04] "http"
-read [0x00] [0x07] ":method" [0x03] "GET"
-read [0x00] [0x05] ":path" [0x01] "/"
-read [0x00] [0x04] "host" [0x0e] "localhost:8080"
 
-connect await PREPARED
+write [0x00 0x00 0x00 0x01]
+write ${newReplyStreamId}
+write ${sourceStreamId}
+write flush
+
+read [0x00 0x00 0x00 0x02]
+read ${sourceStreamId}
+read "GET /Some%20Path HTTP/1.1\r\n"
+read "Host: localhost:8080\r\n"
+read "\r\n"
+
+close
+closed
+
+connect await BOUND
         agrona://stream/bidirectional
         option reader ${agrona:manyToOneReader(destinationReply.buffer)}
         option writer ${agrona:manyToOneWriter(destinationInitial.buffer)}
@@ -47,15 +57,11 @@ connected
 write [0x00 0x00 0x00 0x01]
 write ${newInitialStreamId}
 write ${newDestinationRef}
+write [0x00] [0x07] ":scheme" [0x04] "http"
+write [0x00] [0x07] ":method" [0x03] "GET"
+write [0x00] [0x05] ":path"   [0x0a] "/Some Path"
+write [0x00] [0x04] "host"    [0x0e] "localhost:8080"
 write flush
 
-read [0x00 0x00 0x00 0x01]
-read ([0..8]:destinationStreamId)
-read ${newInitialStreamId}
-
-write [0x00 0x00 0x00 0x02]
-write ${newInitialStreamId}
-write "GET / HTTP/1.1\r\n"
-write "Host: localhost:8080\r\n"
-write "\r\n"
-write flush
+close
+closed

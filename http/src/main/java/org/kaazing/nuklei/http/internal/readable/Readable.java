@@ -26,10 +26,10 @@ import java.util.function.LongFunction;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.http.internal.Context;
 import org.kaazing.nuklei.http.internal.conductor.ConductorProxy;
-import org.kaazing.nuklei.http.internal.readable.stream.AcceptDecoderStreamPool;
-import org.kaazing.nuklei.http.internal.readable.stream.AcceptEncoderStreamPool;
-import org.kaazing.nuklei.http.internal.readable.stream.ConnectDecoderStreamPool;
-import org.kaazing.nuklei.http.internal.readable.stream.ConnectEncoderStreamPool;
+import org.kaazing.nuklei.http.internal.readable.stream.InitialDecodingStreamPool;
+import org.kaazing.nuklei.http.internal.readable.stream.ReplyEncodingStreamPool;
+import org.kaazing.nuklei.http.internal.readable.stream.ReplyDecodingStreamPool;
+import org.kaazing.nuklei.http.internal.readable.stream.InitialEncodingStreamPool;
 import org.kaazing.nuklei.http.internal.reader.ReaderProxy;
 import org.kaazing.nuklei.http.internal.types.stream.BeginFW;
 import org.kaazing.nuklei.http.internal.types.stream.FrameFW;
@@ -54,10 +54,10 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
     private final AtomicCounter streamsBound;
     private final AtomicCounter streamsPrepared;
 
-    private final AcceptDecoderStreamPool acceptDecoderPool;
-    private final AcceptEncoderStreamPool acceptEncoderPool;
-    private final ConnectEncoderStreamPool connectEncoderPool;
-    private final ConnectDecoderStreamPool connectDecoderPool;
+    private final InitialDecodingStreamPool acceptDecoderPool;
+    private final ReplyEncodingStreamPool acceptEncoderPool;
+    private final InitialEncodingStreamPool connectEncoderPool;
+    private final ReplyDecodingStreamPool connectDecoderPool;
 
     private final String captureName;
     private final RingBuffer captureBuffer;
@@ -85,10 +85,10 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         AtomicCounter streamsAccepted = context.counters().streamsAccepted();
         AtomicBuffer atomicBuffer = new UnsafeBuffer(allocateDirect(captureBuffer.maxMsgLength()).order(nativeOrder()));
 
-        this.acceptDecoderPool = new AcceptDecoderStreamPool(maximumStreamsCount, atomicBuffer, streamsAccepted);
-        this.acceptEncoderPool = new AcceptEncoderStreamPool(maximumStreamsCount, atomicBuffer);
-        this.connectEncoderPool = new ConnectEncoderStreamPool(maximumStreamsCount, atomicBuffer, streamsConnected);
-        this.connectDecoderPool = new ConnectDecoderStreamPool(maximumStreamsCount, atomicBuffer);
+        this.acceptDecoderPool = new InitialDecodingStreamPool(maximumStreamsCount, atomicBuffer, streamsAccepted);
+        this.acceptEncoderPool = new ReplyEncodingStreamPool(maximumStreamsCount, atomicBuffer);
+        this.connectEncoderPool = new InitialEncodingStreamPool(maximumStreamsCount, atomicBuffer, streamsConnected);
+        this.connectDecoderPool = new ReplyDecodingStreamPool(maximumStreamsCount, atomicBuffer);
 
         this.captureName = captureName;
         this.captureBuffer = captureBuffer;
