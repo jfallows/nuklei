@@ -20,6 +20,7 @@ import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_DATA;
 import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_END;
 import static org.kaazing.nuklei.http.internal.util.BufferUtil.limitOfBytes;
 
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -40,13 +41,13 @@ import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-public final class AcceptDecoderStreamPool
+public final class InitialDecodingStreamPool
 {
     private static final byte[] CRLFCRLF_BYTES = "\r\n\r\n".getBytes(StandardCharsets.US_ASCII);
 
     private static enum DecoderState
     {
-        IDLE, HEADERS, BODY, TRAILERS
+        IDLE, HEADERS, BODY, TRAILERS, END
     }
 
     private final BeginFW.Builder beginRW = new BeginFW.Builder();
@@ -55,6 +56,9 @@ public final class AcceptDecoderStreamPool
     private final DataFW dataRO = new DataFW();
     private final EndFW endRO = new EndFW();
 
+    private final DataFW.Builder dataRW = new DataFW.Builder();
+    private final EndFW.Builder endRW = new EndFW.Builder();
+
     private final HttpBeginFW.Builder httpBeginRW = new HttpBeginFW.Builder();
     private final HttpDataFW.Builder httpDataRW = new HttpDataFW.Builder();
     private final HttpEndFW.Builder httpEndRW = new HttpEndFW.Builder();
@@ -62,7 +66,7 @@ public final class AcceptDecoderStreamPool
     private final AtomicBuffer atomicBuffer;
     private final AtomicCounter streamsAccepted;
 
-    public AcceptDecoderStreamPool(
+    public InitialDecodingStreamPool(
         int capacity,
         AtomicBuffer atomicBuffer,
         AtomicCounter streamsAccepted)
@@ -79,11 +83,11 @@ public final class AcceptDecoderStreamPool
         RingBuffer destinationRoute,
         Consumer<MessageHandler> released)
     {
-        return new AcceptDecoderStream(released, destinationRef, sourceReplyStreamId,
+        return new InitialDecodingStream(released, destinationRef, sourceReplyStreamId,
                                        destination, sourceRoute, destinationRoute);
     }
 
-    private final class AcceptDecoderStream implements MessageHandler
+    private final class InitialDecodingStream implements MessageHandler
     {
         private final Consumer<MessageHandler> cleanup;
         private final long destinationRef;
@@ -95,7 +99,7 @@ public final class AcceptDecoderStreamPool
         private long destinationInitialStreamId;
         private DecoderState decoderState;
 
-        public AcceptDecoderStream(
+        public InitialDecodingStream(
             Consumer<MessageHandler> cleanup,
             long destinationRef,
             long sourceReplyStreamId,
@@ -163,6 +167,7 @@ public final class AcceptDecoderStreamPool
             final DirectBuffer payload = dataRO.payload();
             final int limit = payload.capacity();
 
+            loop:
             for (int offset = 0; offset < limit;)
             {
                 switch (decoderState)
@@ -179,6 +184,8 @@ public final class AcceptDecoderStreamPool
                 case TRAILERS:
                     offset = decodeHttpEnd(payload, offset, limit);
                     break;
+                case END:
+                    break loop;
                 }
             }
         }
@@ -192,8 +199,9 @@ public final class AcceptDecoderStreamPool
 
             // TODO: httpReset if necessary?
 
-            // example release
             cleanup.accept(this);
+
+            decoderState = DecoderState.END;
         }
 
         private int decodeHttpBegin(
@@ -211,46 +219,69 @@ public final class AcceptDecoderStreamPool
             String[] lines = payload.getStringWithoutLengthUtf8(0, endOfHeadersAt).split("\r\n");
             String[] start = lines[0].split("\\s+");
 
-            // positive, odd destination stream id
-            this.destinationInitialStreamId = (streamsAccepted.increment() << 1L) | 0x0000000000000001L;
-
-            httpBeginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                       .streamId(destinationInitialStreamId)
-                       .referenceId(destinationRef)
-                       .header(":scheme", "http") // TODO: detect https
-                       .header(":method", start[0])
-                       .header(":path", start[1]);
-
-            Pattern pattern = Pattern.compile("([^\\s:]+)\\s*:\\s*(.*)");
-            for (int i = 1; i < lines.length; i++)
+            Pattern versionPattern = Pattern.compile("HTTP/1\\.(\\d)");
+            Matcher versionMatcher = versionPattern.matcher(start[2]);
+            if (!versionMatcher.matches())
             {
-                Matcher matcher = pattern.matcher(lines[i]);
-                if (!matcher.matches())
+                errorResponse("HTTP/1.1 505 HTTP Version Not Supported\r\n\r\n");
+            }
+            else
+            {
+                URI requestURI = URI.create(start[1]);
+
+                httpBeginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                           .referenceId(destinationRef)
+                           .header(":scheme", "http") // TODO: detect https
+                           .header(":method", start[0])
+                           .header(":path", requestURI.getPath());
+
+                String host = null;
+                Pattern headerPattern = Pattern.compile("([^\\s:]+)\\s*:\\s*(.*)");
+                for (int i = 1; i < lines.length; i++)
                 {
-                    throw new IllegalStateException("illegal http header syntax");
+                    Matcher headerMatcher = headerPattern.matcher(lines[i]);
+                    if (!headerMatcher.matches())
+                    {
+                        throw new IllegalStateException("illegal http header syntax");
+                    }
+
+                    String name = headerMatcher.group(1).toLowerCase();
+                    String value = headerMatcher.group(2);
+
+                    if ("host".equals(name))
+                    {
+                        host = value;
+                    }
+
+                    httpBeginRW.header(name, value);
                 }
+                // TODO: replace with lightweight approach (end)
 
-                String name = matcher.group(1).toLowerCase();
-                String value = matcher.group(2);
+                if (host == null || requestURI.getUserInfo() != null)
+                {
+                    errorResponse("HTTP/1.1 400 Bad Request\r\n\r\n");
+                }
+                else
+                {
+                    // positive, odd destination stream id
+                    this.destinationInitialStreamId = (streamsAccepted.increment() << 1L) | 0x0000000000000001L;
 
-                httpBeginRW.header(name, value);
+                    destination.doRegisterEncoder(destinationInitialStreamId, sourceReplyStreamId, sourceRoute);
+
+                    final HttpBeginFW httpBegin = httpBeginRW.streamId(destinationInitialStreamId)
+                                                             .build();
+
+                    if (!destinationRoute.write(httpBegin.typeId(), httpBegin.buffer(), httpBegin.offset(), httpBegin.length()))
+                    {
+                        throw new IllegalStateException("could not write to ring buffer");
+                    }
+
+                    decoderState = DecoderState.BODY;
+                }
             }
-            // TODO: replace with lightweight approach (end)
-
-            destination.doRegisterEncoder(destinationInitialStreamId, sourceReplyStreamId, sourceRoute);
-
-            final HttpBeginFW httpBegin = httpBeginRW.build();
-
-            if (!destinationRoute.write(httpBegin.typeId(), httpBegin.buffer(), httpBegin.offset(), httpBegin.length()))
-            {
-                throw new IllegalStateException("could not write to ring buffer");
-            }
-
-            decoderState = DecoderState.BODY;
 
             return endOfHeadersAt;
         }
-
         private int decodeHttpData(
             DirectBuffer payload,
             int offset,
@@ -290,6 +321,36 @@ public final class AcceptDecoderStreamPool
 
             // TODO Auto-generated method stub
             return 0;
+        }
+
+
+        private void errorResponse(
+            String payloadChars)
+        {
+            dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                  .streamId(sourceReplyStreamId);
+
+            int payloadOffset = dataRW.payloadOffset();
+            int payloadLength = atomicBuffer.putStringWithoutLengthUtf8(payloadOffset, payloadChars);
+
+            final DataFW data = dataRW.payloadLength(payloadLength)
+                                      .build();
+
+            if (!sourceRoute.write(data.typeId(), data.buffer(), data.offset(), data.length()))
+            {
+                 throw new IllegalStateException("could not write to ring buffer");
+            }
+
+            EndFW end = endRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                             .streamId(sourceReplyStreamId)
+                             .build();
+
+            if (!sourceRoute.write(end.typeId(), end.buffer(), end.offset(), end.length()))
+            {
+                 throw new IllegalStateException("could not write to ring buffer");
+            }
+
+            decoderState = DecoderState.END;
         }
     }
 }

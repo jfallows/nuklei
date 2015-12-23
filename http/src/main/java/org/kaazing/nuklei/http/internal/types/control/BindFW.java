@@ -100,6 +100,7 @@ public final class BindFW extends Flyweight
     {
         private final StringFW.Builder destinationRW = new StringFW.Builder();
         private final StringFW.Builder sourceRW = new StringFW.Builder();
+        private final HeadersFW.Builder headersRW = new HeadersFW.Builder();
 
         public Builder()
         {
@@ -135,6 +136,15 @@ public final class BindFW extends Flyweight
         public Builder source(String source)
         {
             source().set(source, StandardCharsets.UTF_8);
+            headers(source().build().limit());
+            limit(source().build().limit());
+            return this;
+        }
+
+        public Builder header(String name, String value)
+        {
+            headersRW.header(name, value);
+            limit(headersRW.limit());
             return this;
         }
 
@@ -146,6 +156,11 @@ public final class BindFW extends Flyweight
         protected StringFW.Builder source()
         {
             return this.sourceRW.wrap(buffer(), destination().build().limit() + FIELD_SIZE_DESTINATION_REF, maxLimit());
+        }
+
+        protected HeadersFW.Builder headers(int offset)
+        {
+            return this.headersRW.wrap(buffer(), offset, maxLimit());
         }
     }
 }

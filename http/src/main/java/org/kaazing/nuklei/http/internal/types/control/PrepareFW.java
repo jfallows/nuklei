@@ -130,6 +130,7 @@ public final class PrepareFW extends Flyweight
         {
             destination().set(destination, StandardCharsets.UTF_8);
             headers();
+            limit(destination().build().limit() + FIELD_SIZE_DESTINATION_REF);
             return this;
         }
 

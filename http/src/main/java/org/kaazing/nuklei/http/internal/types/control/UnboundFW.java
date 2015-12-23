@@ -137,6 +137,7 @@ public final class UnboundFW extends Flyweight
         {
             source().set(source, StandardCharsets.UTF_8);
             headers(source().build().limit());
+            limit(source().build().limit());
             return this;
         }
 

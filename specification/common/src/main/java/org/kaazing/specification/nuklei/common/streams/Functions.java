@@ -19,13 +19,13 @@ import static uk.co.real_logic.agrona.IoUtil.mapExistingFile;
 import static uk.co.real_logic.agrona.IoUtil.unmap;
 
 import java.io.File;
+import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.util.Random;
 
 import org.kaazing.k3po.lang.el.Function;
 import org.kaazing.k3po.lang.el.spi.FunctionMapperSpi;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
@@ -34,54 +34,18 @@ public final class Functions
 {
     private static final Random RANDOM = new Random();
 
-    private static final ThreadLocal<MutableDirectBuffer> BUFFER_REF =
-        new ThreadLocal<MutableDirectBuffer>()
-        {
-            @Override
-            protected MutableDirectBuffer initialValue()
-            {
-                return new UnsafeBuffer(new byte[0]);
-            }
-        };
-
-    @Deprecated
-    @Function
-    public static byte[] newClientStreamId()
-    {
-        return newInitialStreamId();
-    }
-
-    @Deprecated
-    @Function
-    public static byte[] newServerStreamId()
-    {
-        return newReplyStreamId();
-    }
-
     @Function
     public static byte[] newReferenceId()
     {
         // positive
-        long value = (RANDOM.nextLong() & 0x3fffffffffffffffL);
-
-        final MutableDirectBuffer buffer = BUFFER_REF.get();
-        byte[] bytes = new byte[8];
-        buffer.wrap(bytes);
-        buffer.putLong(0, value);
-        return bytes;
+        return longToBytesNative(RANDOM.nextLong() & 0x3fffffffffffffffL);
     }
 
     @Function
     public static byte[] newInitialStreamId()
     {
         // odd, positive, non-zero
-        long value = (RANDOM.nextLong() & 0x3fffffffffffffffL) | 0x0000000000000001L;
-
-        final MutableDirectBuffer buffer = BUFFER_REF.get();
-        byte[] bytes = new byte[8];
-        buffer.wrap(bytes);
-        buffer.putLong(0, value);
-        return bytes;
+        return longToBytesNative((RANDOM.nextLong() & 0x3fffffffffffffffL) | 0x0000000000000001L);
     }
 
     @Function
@@ -95,11 +59,7 @@ public final class Functions
         }
         while (value == 0L);
 
-        final MutableDirectBuffer buffer = BUFFER_REF.get();
-        byte[] bytes = new byte[8];
-        buffer.wrap(bytes);
-        buffer.putLong(0, value);
-        return bytes;
+        return longToBytesNative(value);
     }
 
     @Function
@@ -198,6 +158,36 @@ public final class Functions
         public String getPrefixName()
         {
             return "streams";
+        }
+    }
+
+    private static byte[] longToBytesNative(long value)
+    {
+        if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN)
+        {
+            return new byte[] {
+                    (byte) (value >> 56),
+                    (byte) (value >> 48),
+                    (byte) (value >> 40),
+                    (byte) (value >> 32),
+                    (byte) (value >> 24),
+                    (byte) (value >> 16),
+                    (byte) (value >> 8),
+                    (byte) (value >> 0)
+            };
+        }
+        else
+        {
+            return new byte[] {
+                    (byte) (value >> 0),
+                    (byte) (value >> 8),
+                    (byte) (value >> 16),
+                    (byte) (value >> 24),
+                    (byte) (value >> 32),
+                    (byte) (value >> 40),
+                    (byte) (value >> 48),
+                    (byte) (value >> 56)
+            };
         }
     }
 

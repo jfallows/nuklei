@@ -19,7 +19,10 @@ import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_BEGIN;
 import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_DATA;
 import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_END;
 
+import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.kaazing.nuklei.http.internal.readable.ReadableProxy;
 import org.kaazing.nuklei.http.internal.types.stream.BeginFW;
@@ -33,9 +36,10 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.MessageHandler;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-public final class ConnectEncoderStreamPool
+public final class InitialEncodingStreamPool
 {
     private final HttpBeginFW httpBeginRO = new HttpBeginFW();
     private final HttpDataFW httpDataRO = new HttpDataFW();
@@ -48,7 +52,7 @@ public final class ConnectEncoderStreamPool
     private final AtomicBuffer atomicBuffer;
     private final AtomicCounter streamsConnected;
 
-    public ConnectEncoderStreamPool(
+    public InitialEncodingStreamPool(
         int capacity,
         AtomicBuffer atomicBuffer,
         AtomicCounter streamsConnected)
@@ -64,10 +68,10 @@ public final class ConnectEncoderStreamPool
         ReadableProxy destination,
         Consumer<MessageHandler> released)
     {
-        return new ConnectEncoderStream(released, destinationRef, sourceRoute, destinationRoute, destination);
+        return new InitialEncodingStream(released, destinationRef, sourceRoute, destinationRoute, destination);
     }
 
-    private final class ConnectEncoderStream implements MessageHandler
+    private final class InitialEncodingStream implements MessageHandler
     {
         private final Consumer<MessageHandler> cleanup;
         private final long destinationRef;
@@ -77,7 +81,7 @@ public final class ConnectEncoderStreamPool
 
         private long destinationInitialStreamId;
 
-        private ConnectEncoderStream(
+        private InitialEncodingStream(
             Consumer<MessageHandler> cleanup,
             long destinationRef,
             RingBuffer sourceRoute,
@@ -121,11 +125,11 @@ public final class ConnectEncoderStreamPool
 
             long sourceInitialStreamId = httpBeginRO.streamId();
 
-            streamsConnected.increment();
-
-            // TODO: start of connection pool section
+            // TODO: replace with connection pool (start)
             // connection pool for reference id (for http origin instead?)
             this.destinationInitialStreamId = (streamsConnected.get() << 1L) | 0x0000000000000001L;
+
+            destination.doRegisterDecoder(destinationInitialStreamId, sourceInitialStreamId, sourceRoute);
 
             BeginFW begin = beginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                                    .streamId(destinationInitialStreamId)
@@ -136,14 +140,57 @@ public final class ConnectEncoderStreamPool
             {
                  throw new IllegalStateException("could not write to ring buffer");
             }
-            // TODO: end of connection pool section
+            // TODO: replace with connection pool (end)
 
-            destination.doRegisterDecoder(destinationInitialStreamId, sourceInitialStreamId, sourceRoute);
+            streamsConnected.increment();
 
-            // TODO
+            String[] start = new String[2];
+            StringBuilder headers = new StringBuilder();
+            httpBeginRO.headers().forEach((header) ->
+            {
+                String name = header.name().asString();
+                String value = header.value().asString();
+
+                if (name.charAt(0) == ':')
+                {
+                    if (":method".equals(name))
+                    {
+                        start[0] = value;
+                    }
+                    else if (":path".equals(name))
+                    {
+                        start[1] = value;
+                    }
+                }
+                else
+                {
+                    Pattern pattern = Pattern.compile("^\\p{Lower}|-\\p{Lower}");
+                    Matcher matcher = pattern.matcher(name);
+                    StringBuffer sb = new StringBuffer();
+                    while (matcher.find())
+                    {
+                        matcher.appendReplacement(sb, matcher.group().toUpperCase());
+                    }
+                    matcher.appendTail(sb);
+                    String canonicalName = sb.toString();
+
+                    headers.append(canonicalName).append(": ").append(value).append("\r\n");
+                }
+            });
+
+            // TODO: validate method and path
+            String method = start[0];
+            String requestURI = start[1];
+
+            StringBuilder request = new StringBuilder();
+            request.append(method).append(" ").append(requestURI).append(" HTTP/1.1\r\n");
+            request.append(headers).append("\r\n");
+
+            MutableDirectBuffer payload = new UnsafeBuffer(request.toString().getBytes(StandardCharsets.US_ASCII));
 
             final DataFW data = dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                                       .streamId(destinationInitialStreamId)
+                                      .payload(payload, 0, payload.capacity())
                                       .build();
 
             if (!destinationRoute.write(data.typeId(), data.buffer(), data.offset(), data.length()))
@@ -159,7 +206,17 @@ public final class ConnectEncoderStreamPool
         {
             httpDataRO.wrap(buffer, index, index + length);
 
-            // TODO: decode httpBegin, httpData, httpEnd
+            // TODO: unwrap chunk syntax (if necessary)
+
+            final DataFW data = dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                      .streamId(destinationInitialStreamId)
+                                      .payload(buffer, httpDataRO.payloadOffset(), httpDataRO.payloadLength())
+                                      .build();
+
+            if (!destinationRoute.write(data.typeId(), data.buffer(), data.offset(), data.length()))
+            {
+                 throw new IllegalStateException("could not write to ring buffer");
+            }
         }
 
         private void onEnd(
@@ -169,7 +226,20 @@ public final class ConnectEncoderStreamPool
         {
             httpEndRO.wrap(buffer, index, index + length);
 
-            // TODO: httpReset if necessary?
+            // TODO: trailers (if necessary)
+
+            // TODO: replace with connection pool (start)
+            final EndFW end = endRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                   .streamId(destinationInitialStreamId)
+                                   .build();
+
+            if (!destinationRoute.write(end.typeId(), end.buffer(), end.offset(), end.length()))
+            {
+                throw new IllegalStateException("could not write to ring buffer");
+            }
+
+            cleanup.accept(this);
+            // TODO: replace with connection pool (end)
         }
     }
 

@@ -17,11 +17,7 @@ package org.kaazing.nuklei.tcp.internal.streams;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
-import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
 
-import java.io.File;
-
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,8 +28,6 @@ import org.kaazing.k3po.junit.annotation.Specification;
 import org.kaazing.k3po.junit.rules.K3poRule;
 import org.kaazing.nuklei.test.NukleusRule;
 
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
-
 public class AcceptIT
 {
     private final K3poRule k3po = new K3poRule().setScriptRoot("org/kaazing/specification");
@@ -41,25 +35,15 @@ public class AcceptIT
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
     private final NukleusRule nukleus = new NukleusRule("tcp")
-            .setDirectory("target/nukleus-itests")
-            .setCommandBufferCapacity(1024)
-            .setResponseBufferCapacity(1024)
-            .setCounterValuesBufferCapacity(1024);
+            .directory("target/nukleus-itests")
+            .commandBufferCapacity(1024)
+            .responseBufferCapacity(1024)
+            .counterValuesBufferCapacity(1024)
+            .initialize("source", "tcp")
+            .initialize("destination", "tcp");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);
-
-    @Before
-    public void setupStreamFiles() throws Exception
-    {
-        int streamCapacity = 1024 * 1024;
-
-        File source = new File("target/nukleus-itests/source/streams/tcp");
-        createEmptyFile(source.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
-
-        File destination = new File("target/nukleus-itests/destination/streams/tcp");
-        createEmptyFile(destination.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
-    }
 
     @Test
     @Specification({

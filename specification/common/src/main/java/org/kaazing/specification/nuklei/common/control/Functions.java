@@ -157,6 +157,12 @@ public final class Functions
             }
         }
 
+        @Override
+        public String toString()
+        {
+            return String.format("Layout [%s]", location);
+        }
+
         void ensureInitialized()
         {
             if (delegate == null)

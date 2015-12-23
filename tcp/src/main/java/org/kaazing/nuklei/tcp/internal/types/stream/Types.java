@@ -17,10 +17,10 @@ package org.kaazing.nuklei.tcp.internal.types.stream;
 
 public final class Types
 {
-    public static final int TYPE_ID_RESET = 0x00000000;
     public static final int TYPE_ID_BEGIN = 0x00000001;
     public static final int TYPE_ID_DATA = 0x00000002;
     public static final int TYPE_ID_END = 0x00000003;
+    public static final int TYPE_ID_RESET = 0x00000004;
 
     private Types()
     {

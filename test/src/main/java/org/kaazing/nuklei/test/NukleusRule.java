@@ -19,11 +19,13 @@ import static java.lang.String.valueOf;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
-import static org.kaazing.nuklei.Configuration.RESPONSE_BUFFER_CAPACITY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.COMMAND_BUFFER_CAPACITY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.COUNTERS_BUFFER_CAPACITY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
+import static org.kaazing.nuklei.Configuration.RESPONSE_BUFFER_CAPACITY_PROPERTY_NAME;
+import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
 
+import java.io.File;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,40 +39,81 @@ import org.kaazing.nuklei.NukleusFactory;
 
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.SleepingIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 public final class NukleusRule implements TestRule
 {
-    private final String name;
+    private final String[] names;
+    private final Nukleus[] nuklei;
     private final Properties properties;
 
-    public NukleusRule(String name)
+    private Configuration configuration;
+
+    public NukleusRule(String... names)
     {
-        this.name = requireNonNull(name);
+        this.names = requireNonNull(names);
+        this.nuklei = new Nukleus[names.length];
         this.properties = new Properties();
     }
 
-    public NukleusRule setDirectory(String directory)
+    public NukleusRule directory(String directory)
     {
         properties.setProperty(DIRECTORY_PROPERTY_NAME, directory);
         return this;
     }
 
-    public NukleusRule setCommandBufferCapacity(int commandBufferCapacity)
+    public NukleusRule commandBufferCapacity(int commandBufferCapacity)
     {
         properties.setProperty(COMMAND_BUFFER_CAPACITY_PROPERTY_NAME, valueOf(commandBufferCapacity));
         return this;
     }
 
-    public NukleusRule setResponseBufferCapacity(int responseBufferCapacity)
+    public NukleusRule responseBufferCapacity(int responseBufferCapacity)
     {
         properties.setProperty(RESPONSE_BUFFER_CAPACITY_PROPERTY_NAME, valueOf(responseBufferCapacity));
         return this;
     }
 
-    public NukleusRule setCounterValuesBufferCapacity(int counterValuesBufferCapacity)
+    public NukleusRule counterValuesBufferCapacity(int counterValuesBufferCapacity)
     {
         properties.setProperty(COUNTERS_BUFFER_CAPACITY_PROPERTY_NAME, valueOf(counterValuesBufferCapacity));
         return this;
+    }
+
+    public NukleusRule initialize(
+        String reader,
+        String writer)
+    {
+        Configuration configuration = configuration();
+        int streamsBufferCapacity = configuration.streamsBufferCapacity();
+        File directory = configuration.directory();
+
+        File streams = new File(directory, String.format("%s/streams/%s", reader, writer));
+        createEmptyFile(streams.getAbsoluteFile(), streamsBufferCapacity + RingBufferDescriptor.TRAILER_LENGTH);
+
+        return this;
+    }
+
+    public <T extends Nukleus> T lookup(Class<T> clazz)
+    {
+        for (Nukleus nukleus : nuklei)
+        {
+            if (clazz.isInstance(nukleus))
+            {
+                return clazz.cast(nukleus);
+            }
+        }
+
+        throw new IllegalStateException("nukleus not found: " + clazz.getName());
+    }
+
+    private Configuration configuration()
+    {
+        if (configuration == null)
+        {
+            configuration = new Configuration(properties);
+        }
+        return configuration;
     }
 
     @Override
@@ -82,18 +125,27 @@ public final class NukleusRule implements TestRule
             public void evaluate() throws Throwable
             {
                 NukleusFactory factory = NukleusFactory.instantiate();
-                Configuration config = new Configuration(properties);
+                Configuration config = configuration();
                 final AtomicBoolean finished = new AtomicBoolean();
                 final AtomicInteger errorCount = new AtomicInteger();
                 final IdleStrategy idler = new SleepingIdleStrategy(MILLISECONDS.toNanos(50L));
-                final Nukleus nukleus = factory.create(name, config);
+                for (int i=0; i < names.length; i++)
+                {
+                    nuklei[i] = factory.create(names[i], config);
+                }
                 Runnable runnable = () ->
                 {
                     while (!finished.get())
                     {
                         try
                         {
-                            int workCount = nukleus.process();
+                            int workCount = 0;
+
+                            for (int i=0; i < nuklei.length; i++)
+                            {
+                                workCount += nuklei[i].process();
+                            }
+
                             idler.idle(workCount);
                         }
                         catch (Exception ex)
@@ -104,7 +156,10 @@ public final class NukleusRule implements TestRule
                     }
                     try
                     {
-                        nukleus.close();
+                        for (int i=0; i < nuklei.length; i++)
+                        {
+                            nuklei[i].close();
+                        }
                     }
                     catch (Exception ex)
                     {
