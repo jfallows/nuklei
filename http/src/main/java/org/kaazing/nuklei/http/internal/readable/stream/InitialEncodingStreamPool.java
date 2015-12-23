@@ -127,7 +127,7 @@ public final class InitialEncodingStreamPool
 
             // TODO: replace with connection pool (start)
             // connection pool for reference id (for http origin instead?)
-            this.destinationInitialStreamId = (streamsConnected.get() << 1L) | 0x0000000000000001L;
+            this.destinationInitialStreamId = (streamsConnected.increment() << 1L) | 0x0000000000000001L;
 
             destination.doRegisterDecoder(destinationInitialStreamId, sourceInitialStreamId, sourceRoute);
 
@@ -141,8 +141,6 @@ public final class InitialEncodingStreamPool
                  throw new IllegalStateException("could not write to ring buffer");
             }
             // TODO: replace with connection pool (end)
-
-            streamsConnected.increment();
 
             String[] start = new String[2];
             StringBuilder headers = new StringBuilder();

@@ -282,6 +282,7 @@ public final class InitialDecodingStreamPool
 
             return endOfHeadersAt;
         }
+
         private int decodeHttpData(
             DirectBuffer payload,
             int offset,
@@ -319,10 +320,8 @@ public final class InitialDecodingStreamPool
                 throw new IllegalStateException("could not write to ring buffer");
             }
 
-            // TODO Auto-generated method stub
-            return 0;
+            return limit;
         }
-
 
         private void errorResponse(
             String payloadChars)

@@ -59,4 +59,21 @@ public class MessageFormatIT
     {
         k3po.finish();
     }
+
+    @Test
+    @Specification({
+        "nuklei/http/control/capture.source.destination/controller",
+        "nuklei/http/control/capture.source.destination/nukleus",
+        "nuklei/http/control/route.source.destination/controller",
+        "nuklei/http/control/route.source.destination/nukleus",
+        "nuklei/http/control/prepare.source.destination/controller",
+        "nuklei/http/control/prepare.source.destination/nukleus",
+        "nuklei/http/streams/rfc7230/message.format/outbound.should.accept.headers/source",
+        "nuklei/http/streams/rfc7230/message.format/outbound.should.accept.headers/nukleus",
+//      "http/rfc7230/message.format/outbound.should.accept.headers/response",
+        "nuklei/http/streams/rfc7230/message.format/outbound.should.accept.headers/destination" })
+    public void ouboundShouldAcceptHeaders() throws Exception
+    {
+        k3po.finish();
+    }
 }

@@ -23,6 +23,7 @@ import static org.kaazing.nuklei.Configuration.COMMAND_BUFFER_CAPACITY_PROPERTY_
 import static org.kaazing.nuklei.Configuration.COUNTERS_BUFFER_CAPACITY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.RESPONSE_BUFFER_CAPACITY_PROPERTY_NAME;
+import static org.kaazing.nuklei.Configuration.STREAMS_BUFFER_CAPACITY_PROPERTY_NAME;
 import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
 
 import java.io.File;
@@ -77,6 +78,12 @@ public final class NukleusRule implements TestRule
     public NukleusRule counterValuesBufferCapacity(int counterValuesBufferCapacity)
     {
         properties.setProperty(COUNTERS_BUFFER_CAPACITY_PROPERTY_NAME, valueOf(counterValuesBufferCapacity));
+        return this;
+    }
+
+    public NukleusRule streamsBufferCapacity(int streamsBufferCapacity)
+    {
+        properties.setProperty(STREAMS_BUFFER_CAPACITY_PROPERTY_NAME, valueOf(streamsBufferCapacity));
         return this;
     }
 
