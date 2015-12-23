@@ -33,7 +33,9 @@ write [0x00 0x00 0x00 0x01]
 write ${newDestinationStreamId}
 write ${initialStreamId}
 write flush
+write notify CONNECTION_POOL_READY
 
+read await CONNECTION_POOL_READY
 read [0x00 0x00 0x00 0x02]
 read ${initialStreamId}
 read "GET / HTTP/1.1\r\n"

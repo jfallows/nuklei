@@ -18,7 +18,6 @@ package org.kaazing.nuklei.http.internal.streams.rfc7230;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.DisableOnDebug;
@@ -44,7 +43,6 @@ public class ArchitectureIT
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);
 
-    @Ignore("not yet implemented")
     @Test
     @Specification({
         "nuklei/http/control/capture.source.destination/controller",
@@ -110,7 +108,6 @@ public class ArchitectureIT
         k3po.finish();
     }
 
-    @Ignore("not yet implemented")
     @Test
     @Specification({
         "nuklei/http/control/capture.source.destination/controller",

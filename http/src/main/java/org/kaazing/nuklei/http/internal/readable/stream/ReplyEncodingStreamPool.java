@@ -109,7 +109,7 @@ public final class ReplyEncodingStreamPool
         {
             httpBeginRO.wrap(buffer, index, index + length);
 
-            StringBuilder request = new StringBuilder();
+            StringBuilder response = new StringBuilder();
             StringBuilder headers = new StringBuilder();
             httpBeginRO.headers().forEach((header) ->
             {
@@ -118,19 +118,19 @@ public final class ReplyEncodingStreamPool
 
                 if (":status".equals(name))
                 {
-                    request.append("HTTP/1.1 ").append(value).append(" OK\r\n");
+                    response.append("HTTP/1.1 ").append(value).append(" OK\r\n");
                 }
                 else
                 {
                     headers.append(name).append(": ").append(value).append("\r\n");
                 }
             });
-            request.append(headers).append("\r\n");
+            response.append(headers).append("\r\n");
 
             dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                   .streamId(sourceReplyStreamId);
 
-            String payloadChars = request.toString();
+            String payloadChars = response.toString();
             int payloadOffset = dataRW.payloadOffset();
             int payloadLength = atomicBuffer.putStringWithoutLengthUtf8(payloadOffset, payloadChars);
 
