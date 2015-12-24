@@ -15,6 +15,7 @@
  */
 package org.kaazing.nuklei.bench;
 
+import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
 import static uk.co.real_logic.agrona.concurrent.AgentRunner.startOnThread;
@@ -26,6 +27,7 @@ import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.NukleusFactory;
 import org.kaazing.nuklei.echo.internal.EchoController;
+import org.kaazing.nuklei.http.internal.HttpController;
 import org.kaazing.nuklei.tcp.internal.TcpController;
 
 import uk.co.real_logic.agrona.ErrorHandler;
@@ -57,31 +59,42 @@ public final class Main
         NukleusFactory factory = NukleusFactory.instantiate();
 
         Nukleus echo = factory.create("echo", config);
+        Nukleus http = factory.create("http", config);
         Nukleus tcp = factory.create("tcp", config);
 
-        Agent agent = new CompositeAgent(new NukleusAgent(tcp), new NukleusAgent(echo));
+        Agent agent = new CompositeAgent(new NukleusAgent(tcp),
+                                         new CompositeAgent(new NukleusAgent(http), new NukleusAgent(echo)));
         startOnThread(new AgentRunner(idleStrategy, errorHandler, errorCounter, agent));
 
         TcpController tcpctl = (TcpController) factory.create("tcp.controller", config);
+        HttpController httpctl = (HttpController) factory.create("http.controller", config);
         EchoController echoctl = (EchoController) factory.create("echo.controller", config);
 
-        Agent control = new CompositeAgent(new NukleusAgent(tcpctl), new NukleusAgent(echoctl));
+        Agent control = new CompositeAgent(new NukleusAgent(tcpctl),
+                                           new CompositeAgent(new NukleusAgent(httpctl), new NukleusAgent(echoctl)));
         startOnThread(new AgentRunner(idleStrategy, errorHandler, errorCounter, control));
 
-        tcpctl.capture("echo").get();
-        echoctl.capture("tcp").get();
-        tcpctl.route("echo").get();
-        echoctl.route("tcp").get();
+        echoctl.capture("http").get();
+        httpctl.capture("echo").get();
+        httpctl.capture("tcp").get();
+        tcpctl.capture("http").get();
 
-        echoctl.bind("tcp")
-               .thenAccept((echoRef) ->
-                   {
-                       tcpctl.bind("echo", echoRef, new InetSocketAddress("localhost", 8080));
-                   }).get();
+        echoctl.route("http").get();
+        httpctl.route("echo").get();
+        httpctl.route("tcp").get();
+        tcpctl.route("http").get();
+
+        long echoRef = echoctl.bind("http").get();
+        long httpRef = httpctl.bind("echo", echoRef, "tcp", singletonMap(":path", "/")).get();
+        long tcpRef = tcpctl.bind("http", httpRef, new InetSocketAddress("localhost", 8080)).get();
 
         // TODO: resource cleanup via try-with-resources
-        System.out.println("echo listening on localhost:8080");
+        System.out.println("echo listening on http://localhost:8080/");
         new SigIntBarrier().await();
+
+        tcpctl.unbind(tcpRef).get();
+        httpctl.unbind(httpRef).get();
+        echoctl.unbind(echoRef).get();
     }
 
     private static class NukleusAgent implements Agent

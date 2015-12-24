@@ -22,7 +22,12 @@ import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_END;
 
 
 
+
+
+import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
+
+
 
 
 
@@ -31,6 +36,8 @@ import org.kaazing.nuklei.http.internal.types.stream.DataFW;
 import org.kaazing.nuklei.http.internal.types.stream.HttpBeginFW;
 import org.kaazing.nuklei.http.internal.types.stream.HttpDataFW;
 import org.kaazing.nuklei.http.internal.types.stream.HttpEndFW;
+
+
 
 
 
@@ -109,7 +116,9 @@ public final class ReplyEncodingStreamPool
         {
             httpBeginRO.wrap(buffer, index, index + length);
 
-            StringBuilder response = new StringBuilder();
+            // default status (and reason)
+            String[] status = new String[] { "200", "OK" };
+
             StringBuilder headers = new StringBuilder();
             httpBeginRO.headers().forEach((header) ->
             {
@@ -118,23 +127,21 @@ public final class ReplyEncodingStreamPool
 
                 if (":status".equals(name))
                 {
-                    response.append("HTTP/1.1 ").append(value).append(" OK\r\n");
+                    status[0] = value;
                 }
                 else
                 {
                     headers.append(name).append(": ").append(value).append("\r\n");
                 }
             });
-            response.append(headers).append("\r\n");
 
-            dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                  .streamId(sourceReplyStreamId);
+            String payloadChars =
+                    new StringBuilder().append("HTTP/1.1 ").append(status[0]).append(" ").append(status[1]).append("\r\n")
+                                       .append(headers).append("\r\n").toString();
 
-            String payloadChars = response.toString();
-            int payloadOffset = dataRW.payloadOffset();
-            int payloadLength = atomicBuffer.putStringWithoutLengthUtf8(payloadOffset, payloadChars);
-
-            final DataFW data = dataRW.payloadLength(payloadLength)
+            final DataFW data = dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                      .streamId(sourceReplyStreamId)
+                                      .payload(payloadChars.getBytes(StandardCharsets.US_ASCII))
                                       .build();
 
             if (!sourceRoute.write(data.typeId(), data.buffer(), data.offset(), data.length()))
@@ -150,7 +157,17 @@ public final class ReplyEncodingStreamPool
         {
             httpDataRO.wrap(buffer, index, index + length);
 
-            // TODO
+            // TODO: unwrap chunk syntax (if necessary)
+
+            final DataFW data = dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                      .streamId(sourceReplyStreamId)
+                                      .payload(buffer, httpDataRO.payloadOffset(), httpDataRO.payloadLength())
+                                      .build();
+
+            if (!sourceRoute.write(data.typeId(), data.buffer(), data.offset(), data.length()))
+            {
+                 throw new IllegalStateException("could not write to ring buffer");
+            }
         }
 
         private void onEnd(

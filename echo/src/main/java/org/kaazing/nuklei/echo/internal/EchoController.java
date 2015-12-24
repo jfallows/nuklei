@@ -21,6 +21,7 @@ import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_BOUND
 import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_CAPTURED_RESPONSE;
 import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_ERROR_RESPONSE;
 import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_ROUTED_RESPONSE;
+import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_UNBOUND_RESPONSE;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -32,6 +33,8 @@ import org.kaazing.nuklei.echo.internal.types.control.CapturedFW;
 import org.kaazing.nuklei.echo.internal.types.control.ErrorFW;
 import org.kaazing.nuklei.echo.internal.types.control.RouteFW;
 import org.kaazing.nuklei.echo.internal.types.control.RoutedFW;
+import org.kaazing.nuklei.echo.internal.types.control.UnbindFW;
+import org.kaazing.nuklei.echo.internal.types.control.UnboundFW;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
@@ -49,11 +52,13 @@ public final class EchoController implements Nukleus
     private final CaptureFW.Builder captureRW = new CaptureFW.Builder();
     private final RouteFW.Builder routeRW = new RouteFW.Builder();
     private final BindFW.Builder bindRW = new BindFW.Builder();
+    private final UnbindFW.Builder unbindRW = new UnbindFW.Builder();
 
     private final ErrorFW errorRO = new ErrorFW();
     private final CapturedFW capturedRO = new CapturedFW();
     private final RoutedFW routedRO = new RoutedFW();
     private final BoundFW boundRO = new BoundFW();
+    private final UnboundFW unboundRO = new UnboundFW();
 
     private final Context context;
     private final RingBuffer conductorCommands;
@@ -168,6 +173,30 @@ public final class EchoController implements Nukleus
         return promise;
     }
 
+    public CompletableFuture<Void> unbind(
+        long referenceId)
+    {
+        final CompletableFuture<Void> promise = new CompletableFuture<>();
+
+        long correlationId = conductorCommands.nextCorrelationId();
+
+        UnbindFW unbindRO = unbindRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                    .correlationId(correlationId)
+                                    .referenceId(referenceId)
+                                    .build();
+
+        if (!conductorCommands.write(unbindRO.typeId(), unbindRO.buffer(), unbindRO.offset(), unbindRO.length()))
+        {
+            promise.completeExceptionally(new IllegalStateException("unable to offer command"));
+        }
+        else
+        {
+            promisesByCorrelationId.put(correlationId, promise);
+        }
+
+        return promise;
+    }
+
     private int handleResponse(
         int msgTypeId,
         DirectBuffer buffer,
@@ -187,6 +216,9 @@ public final class EchoController implements Nukleus
             break;
         case TYPE_ID_BOUND_RESPONSE:
             handleBoundResponse(buffer, index, length);
+            break;
+        case TYPE_ID_UNBOUND_RESPONSE:
+            handleUnboundResponse(buffer, index, length);
             break;
         default:
             break;
@@ -253,6 +285,22 @@ public final class EchoController implements Nukleus
         if (promise != null)
         {
             promise.complete(boundRO.referenceId());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void handleUnboundResponse(
+        DirectBuffer buffer,
+        int index,
+        int length)
+    {
+        unboundRO.wrap(buffer, index, length);
+        long correlationId = unboundRO.correlationId();
+
+        CompletableFuture<Void> promise = (CompletableFuture<Void>)promisesByCorrelationId.remove(correlationId);
+        if (promise != null)
+        {
+            promise.complete(null);
         }
     }
 }

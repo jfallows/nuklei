@@ -103,6 +103,20 @@ public final class DataFW extends Flyweight
             return this;
         }
 
+        public Builder payload(byte[] bytes)
+        {
+            buffer().putBytes(payloadOffset(), bytes);
+            payloadLength(bytes.length);
+            return this;
+        }
+
+        public Builder payload(byte[] bytes, int offset, int length)
+        {
+            buffer().putBytes(payloadOffset(), bytes, offset, length);
+            payloadLength(length);
+            return this;
+        }
+
         public Builder payloadLength(int payloadLength)
         {
             assert (payloadLength >= 0);
