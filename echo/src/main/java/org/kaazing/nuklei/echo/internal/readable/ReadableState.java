@@ -13,37 +13,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.echo.internal.reflector;
+package org.kaazing.nuklei.echo.internal.readable;
 
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-public class ConnectingState
+public class ReadableState
 {
-    private final long streamId;
-    private final RingBuffer writeBuffer;
+    private final long sourceRef;
+    private final long destinationRef;
+    private final RingBuffer routeBuffer;
 
-    public ConnectingState(
-        long streamId,
-        RingBuffer writeBuffer)
+    public ReadableState(
+        long sourceRef,
+        long destinationRef,
+        RingBuffer routeBuffer)
     {
-        this.streamId = streamId;
-        this.writeBuffer = writeBuffer;
+        this.sourceRef = sourceRef;
+        this.destinationRef = destinationRef;
+        this.routeBuffer = routeBuffer;
     }
 
-    public long streamId()
+    public long sourceRef()
     {
-        return this.streamId;
+        return this.sourceRef;
     }
 
-    public RingBuffer writeBuffer()
+    public long destinationRef()
     {
-        return writeBuffer;
+        return this.destinationRef;
+    }
+
+    public RingBuffer routeBuffer()
+    {
+        return routeBuffer;
     }
 
     @Override
     public String toString()
     {
-        return String.format("[streamId=%d]", streamId());
+        return String.format("[sourceRef=%d]", sourceRef());
     }
 
 }

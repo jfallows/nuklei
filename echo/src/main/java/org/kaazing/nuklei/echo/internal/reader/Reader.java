@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.http.internal.reader;
+package org.kaazing.nuklei.echo.internal.reader;
 
 import java.io.File;
 import java.util.HashMap;
@@ -22,31 +22,29 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.kaazing.nuklei.Nukleus;
-import org.kaazing.nuklei.http.internal.Context;
-import org.kaazing.nuklei.http.internal.conductor.ConductorProxy;
-import org.kaazing.nuklei.http.internal.layouts.StreamsLayout;
-import org.kaazing.nuklei.http.internal.readable.Readable;
-import org.kaazing.nuklei.http.internal.readable.ReadableProxy;
+import org.kaazing.nuklei.echo.internal.Context;
+import org.kaazing.nuklei.echo.internal.conductor.ConductorProxy;
+import org.kaazing.nuklei.echo.internal.layouts.StreamsLayout;
+import org.kaazing.nuklei.echo.internal.readable.Readable;
+import org.kaazing.nuklei.echo.internal.readable.ReadableProxy;
 
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.collections.ArrayUtil;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 public final class Reader implements Nukleus, Consumer<ReaderCommand>
 {
+    private Context context;
     private final ConductorProxy conductorProxy;
-    private final ManyToOneConcurrentArrayQueue<ReaderCommand> commandQueue;
+    private final OneToOneConcurrentArrayQueue<ReaderCommand> commandQueue;
 
-    private final Context context;
+    private final Long2ObjectHashMap<String> boundSources;
+    private final Long2ObjectHashMap<String> preparedDestinations;
 
     private final Map<String, StreamsLayout> capturedStreams;
     private final Map<String, StreamsLayout> routedStreams;
-
-    private final Long2ObjectHashMap<String> boundSources;
-    private final Long2ObjectHashMap<String> preparedSources;
-
     private final Function<String, File> captureStreamsFile;
     private final Function<String, File> routeStreamsFile;
     private final int streamsCapacity;
@@ -58,13 +56,14 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         this.context = context;
         this.conductorProxy = new ConductorProxy(context);
         this.commandQueue = context.readerCommandQueue();
+        this.boundSources = new Long2ObjectHashMap<>();
+        this.preparedDestinations = new Long2ObjectHashMap<>();
         this.captureStreamsFile = context.captureStreamsFile();
         this.routeStreamsFile = context.routeStreamsFile();
         this.streamsCapacity = context.streamsBufferCapacity();
         this.capturedStreams = new HashMap<>();
         this.routedStreams = new HashMap<>();
-        this.boundSources = new Long2ObjectHashMap<>();
-        this.preparedSources = new Long2ObjectHashMap<>();
+
         this.readables = new Readable[0];
     }
 
@@ -217,30 +216,22 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
 
     public void doBind(
         long correlationId,
-        String destinationName,
-        long destinationRef,
-        String sourceName,
-        Map<String, String> headers)
+        String sourceName)
     {
         StreamsLayout sourceCapture = capturedStreams.get(sourceName);
         StreamsLayout sourceRoute = routedStreams.get(sourceName);
-        StreamsLayout destinationCapture = capturedStreams.get(destinationName);
-        StreamsLayout destinationRoute = routedStreams.get(destinationName);
 
-        if (sourceCapture == null || sourceRoute == null || destinationCapture == null || destinationRoute == null)
+        if (sourceCapture == null || sourceRoute == null)
         {
             conductorProxy.onErrorResponse(correlationId);
         }
         else
         {
             Readable source = (Readable) sourceCapture.attachment();
+            RingBuffer routeBuffer = sourceRoute.buffer();
             ReadableProxy sourceProxy = source.proxy();
-            RingBuffer sourceBuffer = sourceRoute.buffer();
-            Readable destination = (Readable) destinationCapture.attachment();
-            ReadableProxy destinationProxy = destination.proxy();
-            RingBuffer destinationBuffer = destinationRoute.buffer();
 
-            sourceProxy.doBind(correlationId, destinationRef, headers, destinationProxy, sourceBuffer, destinationBuffer);
+            sourceProxy.doBind(correlationId, routeBuffer);
         }
     }
 
@@ -267,30 +258,22 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
     public void doPrepare(
         long correlationId,
         String destinationName,
-        long destinationRef,
-        String sourceName,
-        Map<String, String> headers)
+        long destinationRef)
     {
-        StreamsLayout sourceCapture = capturedStreams.get(sourceName);
-        StreamsLayout sourceRoute = routedStreams.get(sourceName);
         StreamsLayout destinationCapture = capturedStreams.get(destinationName);
         StreamsLayout destinationRoute = routedStreams.get(destinationName);
 
-        if (sourceCapture == null || sourceRoute == null || destinationCapture == null || destinationRoute == null)
+        if (destinationCapture == null || destinationRoute == null)
         {
             conductorProxy.onErrorResponse(correlationId);
         }
         else
         {
-            Readable source = (Readable) sourceCapture.attachment();
-            ReadableProxy sourceProxy = source.proxy();
-            RingBuffer sourceBuffer = sourceRoute.buffer();
-
             Readable destination = (Readable) destinationCapture.attachment();
-            ReadableProxy destinationProxy = destination.proxy();
             RingBuffer destinationBuffer = destinationRoute.buffer();
+            ReadableProxy destinationProxy = destination.proxy();
 
-            sourceProxy.doPrepare(correlationId, destinationRef, headers, destinationProxy, sourceBuffer, destinationBuffer);
+            destinationProxy.doPrepare(correlationId, destinationRef, destinationBuffer);
         }
     }
 
@@ -298,19 +281,39 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         long correlationId,
         long referenceId)
     {
-        String source = preparedSources.remove(referenceId);
+        String destination = preparedDestinations.remove(referenceId);
 
-        if (source == null)
+        if (destination == null)
         {
             conductorProxy.onErrorResponse(correlationId);
         }
         else
         {
-            StreamsLayout capture = capturedStreams.get(source);
-            Readable sourceReadable = (Readable) capture.attachment();
+            StreamsLayout capture = capturedStreams.get(destination);
+            Readable destinationReadable = (Readable) capture.attachment();
 
-            ReadableProxy sourceProxy = sourceReadable.proxy();
-            sourceProxy.doUnprepare(correlationId, referenceId);
+            ReadableProxy destinationProxy = destinationReadable.proxy();
+            destinationProxy.doUnprepare(correlationId, referenceId);
+        }
+    }
+
+    public void doConnect(
+        long correlationId,
+        long referenceId)
+    {
+        String destination = preparedDestinations.get(referenceId);
+
+        if (destination == null)
+        {
+            conductorProxy.onErrorResponse(correlationId);
+        }
+        else
+        {
+            StreamsLayout capture = capturedStreams.get(destination);
+            Readable destinationReadable = (Readable) capture.attachment();
+
+            ReadableProxy destinationProxy = destinationReadable.proxy();
+            destinationProxy.doConnect(correlationId, referenceId);
         }
     }
 
@@ -325,11 +328,11 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
     }
 
     public void onPreparedResponse(
-        String source,
+        String destination,
         long correlationId,
         long referenceId)
     {
-        preparedSources.put(referenceId, source);
+        preparedDestinations.put(referenceId, destination);
 
         conductorProxy.onPreparedResponse(correlationId, referenceId);
     }

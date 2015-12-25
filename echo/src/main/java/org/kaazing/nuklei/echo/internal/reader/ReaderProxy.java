@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.echo.internal.reflector;
+package org.kaazing.nuklei.echo.internal.reader;
 
 import java.util.logging.Logger;
 
@@ -21,15 +21,15 @@ import org.kaazing.nuklei.echo.internal.Context;
 
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
-public final class ReflectorProxy
+public final class ReaderProxy
 {
     private final Logger logger;
-    private final OneToOneConcurrentArrayQueue<ReflectorCommand> commandQueue;
+    private final OneToOneConcurrentArrayQueue<ReaderCommand> commandQueue;
 
-    public ReflectorProxy(Context context)
+    public ReaderProxy(Context context)
     {
         this.logger = context.logger();
-        this.commandQueue = context.reflectorCommandQueue();
+        this.commandQueue = context.readerCommandQueue();
     }
 
     public void doCapture(
@@ -142,6 +142,34 @@ public final class ReflectorProxy
         long referenceId)
     {
         ConnectCommand command = new ConnectCommand(correlationId, referenceId);
+        if (!commandQueue.offer(command))
+        {
+            throw new IllegalStateException("unable to offer command");
+        }
+
+        logger.finest(() -> { return command.toString(); });
+    }
+
+    public void onBoundResponse(
+        String source,
+        long correlationId,
+        long referenceId)
+    {
+        BoundResponse command = new BoundResponse(source, correlationId, referenceId);
+        if (!commandQueue.offer(command))
+        {
+            throw new IllegalStateException("unable to offer command");
+        }
+
+        logger.finest(() -> { return command.toString(); });
+    }
+
+    public void onPreparedResponse(
+        String source,
+        long correlationId,
+        long referenceId)
+    {
+        PreparedResponse command = new PreparedResponse(source, correlationId, referenceId);
         if (!commandQueue.offer(command))
         {
             throw new IllegalStateException("unable to offer command");

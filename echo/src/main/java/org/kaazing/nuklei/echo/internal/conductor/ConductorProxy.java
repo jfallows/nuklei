@@ -17,15 +17,15 @@ package org.kaazing.nuklei.echo.internal.conductor;
 
 import org.kaazing.nuklei.echo.internal.Context;
 
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 public final class ConductorProxy
 {
-    private final OneToOneConcurrentArrayQueue<ConductorResponse> responseQueue;
+    private final ManyToOneConcurrentArrayQueue<ConductorResponse> responseQueue;
 
     public ConductorProxy(Context context)
     {
-        this.responseQueue = context.reflectorResponseQueue();
+        this.responseQueue = context.conductorResponseQueue();
     }
 
     public void onErrorResponse(long correlationId)

@@ -39,8 +39,8 @@ public final class TcpStreams
 
     private final StreamsLayout captureStreams;
     private final StreamsLayout routeStreams;
-    private final RingBuffer streamsInput;
-    private final RingBuffer streamsOutput;
+    private final RingBuffer captureBuffer;
+    private final RingBuffer routeBuffer;
     private final AtomicBuffer atomicBuffer;
 
     TcpStreams(
@@ -51,15 +51,21 @@ public final class TcpStreams
                                                          .streamsFile(context.captureStreamsFile().apply(handler))
                                                          .createFile(false)
                                                          .build();
-        this.streamsInput = this.captureStreams.buffer();
+        this.captureBuffer = this.captureStreams.buffer();
 
         this.routeStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsBufferCapacity())
                                                        .streamsFile(context.routeStreamsFile().apply(handler))
                                                        .createFile(false)
                                                        .build();
-        this.streamsOutput = this.routeStreams.buffer();
+        this.routeBuffer = this.routeStreams.buffer();
 
         this.atomicBuffer = new UnsafeBuffer(allocateDirect(MAX_SEND_LENGTH).order(nativeOrder()));
+    }
+
+    public void close()
+    {
+        captureStreams.close();
+        routeStreams.close();
     }
 
     public void begin(
@@ -71,7 +77,7 @@ public final class TcpStreams
                                  .referenceId(referenceId)
                                  .build();
 
-        if (!streamsInput.write(beginRO.typeId(), beginRO.buffer(), beginRO.offset(), beginRO.length()))
+        if (!captureBuffer.write(beginRO.typeId(), beginRO.buffer(), beginRO.offset(), beginRO.length()))
         {
             throw new IllegalStateException("unable to write to captureStreams");
         }
@@ -88,7 +94,7 @@ public final class TcpStreams
                               .payload(buffer, offset, length)
                               .build();
 
-        if (!streamsInput.write(dataRO.typeId(), dataRO.buffer(), dataRO.offset(), dataRO.length()))
+        if (!captureBuffer.write(dataRO.typeId(), dataRO.buffer(), dataRO.offset(), dataRO.length()))
         {
             throw new IllegalStateException("unable to write to captureStreams");
         }
@@ -101,7 +107,7 @@ public final class TcpStreams
                            .streamId(streamId)
                            .build();
 
-        if (!streamsInput.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.length()))
+        if (!captureBuffer.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.length()))
         {
             throw new IllegalStateException("unable to write to captureStreams");
         }
@@ -109,6 +115,6 @@ public final class TcpStreams
 
     public int read(MessageHandler handler)
     {
-        return streamsOutput.read(handler);
+        return routeBuffer.read(handler);
     }
 }

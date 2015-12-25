@@ -15,14 +15,11 @@
  */
 package org.kaazing.nuklei.http.internal;
 
-import java.util.function.ToIntFunction;
-
-import org.kaazing.nuklei.CompositeNukleus;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.http.internal.conductor.Conductor;
 import org.kaazing.nuklei.http.internal.reader.Reader;
 
-public final class HttpNukleus extends CompositeNukleus
+public final class HttpNukleus implements Nukleus
 {
     private final Context context;
     private final Conductor conductor;
@@ -50,12 +47,12 @@ public final class HttpNukleus extends CompositeNukleus
     }
 
     @Override
-    public int process(ToIntFunction<? super Nukleus> function)
+    public int process()
     {
         int weight = 0;
 
-        weight += function.applyAsInt(conductor);
-        weight += reader.process(function);
+        weight += conductor.process();
+        weight += reader.process();
 
         return weight;
     }

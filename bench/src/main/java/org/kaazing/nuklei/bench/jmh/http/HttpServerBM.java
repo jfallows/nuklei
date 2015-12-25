@@ -13,27 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.bench.jmh.tcp;
+package org.kaazing.nuklei.bench.jmh.http;
 
-import static java.nio.ByteBuffer.allocateDirect;
-import static java.nio.ByteOrder.nativeOrder;
+import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.STREAMS_BUFFER_CAPACITY_PROPERTY_NAME;
 import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
 
 import java.io.File;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
+import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.NukleusFactory;
-import org.kaazing.nuklei.tcp.internal.TcpController;
-import org.kaazing.nuklei.tcp.internal.TcpNukleus;
-import org.kaazing.nuklei.tcp.internal.TcpStreams;
+import org.kaazing.nuklei.http.internal.HttpController;
+import org.kaazing.nuklei.http.internal.HttpNukleus;
+import org.kaazing.nuklei.http.internal.HttpStreams;
 import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -51,6 +49,8 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Control;
 
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 @State(Scope.Benchmark)
@@ -59,16 +59,18 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 @Warmup(iterations = 5, time = 1, timeUnit = SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = SECONDS)
 @OutputTimeUnit(SECONDS)
-public class TcpServerBM
+public class HttpServerBM
 {
-    private TcpNukleus nukleus;
-    private TcpController controller;
-    private TcpStreams streams;
+    private HttpNukleus nukleus;
+    private HttpController controller;
+    private HttpStreams requestStreams;
+    private HttpStreams responseStreams;
 
-    private ByteBuffer sendByteBuffer;
+    private MutableDirectBuffer sendBuffer;
+    private long streamId;
 
     @Setup
-    public void create() throws Exception
+    public void init() throws Exception
     {
         int streamsCapacity = 1024 * 1024 * 16;
 
@@ -79,8 +81,14 @@ public class TcpServerBM
 
         NukleusFactory factory = NukleusFactory.instantiate();
 
-        this.nukleus = (TcpNukleus) factory.create("tcp", config);
-        this.controller = (TcpController) factory.create("tcp.controller", config);
+        this.nukleus = (HttpNukleus) factory.create("http", config);
+        this.controller = (HttpController) factory.create("http.controller", config);
+
+        controller.capture("source");
+        while (this.nukleus.process() != 0L || this.controller.process() != 0L)
+        {
+            // intentional
+        }
 
         controller.capture("destination");
         while (this.nukleus.process() != 0L || this.controller.process() != 0L)
@@ -88,8 +96,17 @@ public class TcpServerBM
             // intentional
         }
 
-        File destination = new File("target/nukleus-benchmarks/destination/streams/tcp");
-        createEmptyFile(destination.getAbsoluteFile(), streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH);
+        File source = new File("target/nukleus-benchmarks/source/streams/http").getAbsoluteFile();
+        createEmptyFile(source, streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH);
+
+        controller.route("source");
+        while (this.nukleus.process() != 0L || this.controller.process() != 0L)
+        {
+            // intentional
+        }
+
+        File destination = new File("target/nukleus-benchmarks/destination/streams/http").getAbsoluteFile();
+        createEmptyFile(destination, streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH);
 
         controller.route("destination");
         while (this.nukleus.process() != 0L || this.controller.process() != 0L)
@@ -97,25 +114,42 @@ public class TcpServerBM
             // intentional
         }
 
-        final long destinationRef = (long) (Math.random() * Long.MAX_VALUE);
-        controller.bind("destination", destinationRef, new InetSocketAddress("localhost", 8080));
+        CompletableFuture<Long> sourceRefFuture = controller.bind("destination", 0x1234L, "source", emptyMap());
         while (this.nukleus.process() != 0L || this.controller.process() != 0L)
         {
             // intentional
         }
+        final long sourceRef = sourceRefFuture.get();
 
-        this.streams = controller.streams("destination");
+        this.requestStreams = controller.streams("source", "destination");
+        this.responseStreams = controller.streams("destination", "source");
 
-        byte[] sendByteArray = "Hello, world".getBytes(StandardCharsets.UTF_8);
-        this.sendByteBuffer = allocateDirect(sendByteArray.length).order(nativeOrder()).put(sendByteArray);
+        // odd, positive, non-zero
+        final Random random = new Random();
+        this.streamId = (random.nextLong() & 0x3fffffffffffffffL) | 0x0000000000000001L;
+
+        this.requestStreams.begin(streamId, sourceRef);
+        while (this.nukleus.process() != 0L)
+        {
+            // intentional
+        }
+        while (this.responseStreams.read((msgTypeId, buffer, offset, length) -> {}) != 0)
+        {
+            // intentional
+        }
+
+        byte[] byteArray = "POST / HTTP/1.1\r\nHost: localhost:8080\r\nContent-Length:12\r\n\r\nHello, world"
+                                .getBytes(StandardCharsets.UTF_8);
+        this.sendBuffer = new UnsafeBuffer(byteArray);
     }
 
     @TearDown
-    public void close() throws Exception
+    public void destroy() throws Exception
     {
         this.nukleus.close();
         this.controller.close();
-        this.streams.close();
+        this.requestStreams.close();
+        this.responseStreams.close();
     }
 
     @AuxCounters
@@ -136,17 +170,10 @@ public class TcpServerBM
     @GroupThreads(1)
     public void writer(Control control) throws Exception
     {
-        if (control.startMeasurement && !control.stopMeasurement)
+        while (!control.stopMeasurement &&
+               !requestStreams.data(streamId, sendBuffer, 0, sendBuffer.capacity()))
         {
-            try (SocketChannel channel = SocketChannel.open())
-            {
-                channel.connect(new InetSocketAddress("localhost", 8080));
-                while (control.startMeasurement && !control.stopMeasurement)
-                {
-                    sendByteBuffer.rewind();
-                    channel.write(sendByteBuffer);
-                }
-            }
+            Thread.yield();
         }
     }
 
@@ -164,7 +191,7 @@ public class TcpServerBM
     public void reader(Control control) throws Exception
     {
         while (!control.stopMeasurement &&
-               streams.read((msgTypeId, buffer, offset, length) -> {}) == 0)
+               requestStreams.read((msgTypeId, buffer, offset, length) -> {}) == 0)
         {
             Thread.yield();
         }

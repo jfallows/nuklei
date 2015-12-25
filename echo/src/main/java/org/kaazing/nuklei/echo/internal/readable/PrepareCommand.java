@@ -13,32 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.echo.internal.reflector;
+package org.kaazing.nuklei.echo.internal.readable;
 
 import static java.lang.String.format;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-public final class UnbindCommand implements ReflectorCommand
+public final class PrepareCommand implements ReadableCommand
 {
     private final long correlationId;
-    private final long referenceId;
+    private final RingBuffer destinationRoute;
+    private final long destinationRef;
 
-    public UnbindCommand(
+    public PrepareCommand(
         long correlationId,
-        long referenceId)
+        long destinationRef,
+        RingBuffer destinationRoute)
     {
         this.correlationId = correlationId;
-        this.referenceId = referenceId;
+        this.destinationRef = destinationRef;
+        this.destinationRoute = destinationRoute;
     }
 
     @Override
-    public void execute(Reflector reflector)
+    public void execute(Readable readable)
     {
-        reflector.doUnbind(correlationId, referenceId);
+        readable.doPrepare(correlationId, destinationRef, destinationRoute);
     }
 
     @Override
     public String toString()
     {
-        return format("UNBIND [correlationId=%d, referenceId=%d]", correlationId, referenceId);
+        return format("PREPARE [correlationId=%d, destinationRef=%d]", correlationId, destinationRef);
     }
 }

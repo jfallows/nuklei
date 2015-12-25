@@ -18,6 +18,7 @@ package org.kaazing.nuklei.http.internal.types.control;
 import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_BIND_COMMAND;
 
 import java.nio.charset.StandardCharsets;
+import java.util.function.Consumer;
 
 import org.kaazing.nuklei.http.internal.types.Flyweight;
 import org.kaazing.nuklei.http.internal.types.HeadersFW;
@@ -112,6 +113,14 @@ public final class BindFW extends Flyweight
         {
             super.wrap(buffer, offset, maxLimit);
 
+            return this;
+        }
+
+        public <E> Builder iterate(
+            Iterable<E> iterable,
+            Consumer<E> action)
+        {
+            iterable.forEach(action);
             return this;
         }
 

@@ -13,37 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.echo.internal;
+package org.kaazing.nuklei.echo.internal.readable;
 
-import org.kaazing.nuklei.Nukleus;
-import org.kaazing.nuklei.echo.internal.conductor.Conductor;
-import org.kaazing.nuklei.echo.internal.reader.Reader;
+import static java.lang.String.format;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-public final class EchoNukleus implements Nukleus
+public final class BindCommand implements ReadableCommand
 {
-    private final Conductor conductor;
-    private final Reader reader;
+    private final long correlationId;
+    private final RingBuffer sourceRoute;
 
-    public EchoNukleus(Context context)
+    public BindCommand(
+        long correlationId,
+        RingBuffer sourceRoute)
     {
-        this.conductor = new Conductor(context);
-        this.reader = new Reader(context);
+        this.correlationId = correlationId;
+        this.sourceRoute = sourceRoute;
     }
 
     @Override
-    public String name()
+    public void execute(Readable readable)
     {
-        return "echo";
+        readable.doBind(correlationId, sourceRoute);
     }
 
     @Override
-    public int process()
+    public String toString()
     {
-        int weight = 0;
-
-        weight += conductor.process();
-        weight += reader.process();
-
-        return weight;
+        return format("BIND [correlationId=%d]", correlationId);
     }
 }

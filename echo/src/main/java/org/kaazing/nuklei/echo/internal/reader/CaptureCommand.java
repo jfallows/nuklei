@@ -13,16 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei;
+package org.kaazing.nuklei.echo.internal.reader;
 
-import java.util.function.ToIntFunction;
 
-public abstract class CompositeNukleus implements Nukleus
+public final class CaptureCommand implements ReaderCommand
 {
-    public final int process()
+    private final long correlationId;
+    private final String handler;
+
+    public CaptureCommand(
+        long correlationId,
+        String handler)
     {
-        return process(nukleus -> { return nukleus.process(); });
+        this.correlationId = correlationId;
+        this.handler = handler;
     }
 
-    public abstract int process(ToIntFunction<? super Nukleus> function);
+    @Override
+    public void execute(Reader reader)
+    {
+        reader.doCapture(correlationId, handler);
+    }
 }

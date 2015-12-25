@@ -13,32 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.echo.internal.reflector;
+package org.kaazing.nuklei.echo.internal.reader;
 
 import static java.lang.String.format;
 
-public final class UnprepareCommand implements ReflectorCommand
+public final class PrepareCommand implements ReaderCommand
 {
     private final long correlationId;
-    private final long referenceId;
+    private final String destination;
+    private final long destinationRef;
 
-    public UnprepareCommand(
+    public PrepareCommand(
         long correlationId,
-        long referenceId)
+        String destination,
+        long destinationRef)
     {
         this.correlationId = correlationId;
-        this.referenceId = referenceId;
+        this.destination = destination;
+        this.destinationRef = destinationRef;
     }
 
     @Override
-    public void execute(Reflector reflector)
+    public void execute(Reader reader)
     {
-        reflector.doUnprepare(correlationId, referenceId);
+        reader.doPrepare(correlationId, destination, destinationRef);
     }
 
     @Override
     public String toString()
     {
-        return format("PREPARE [correlationId=%d, referenceId=%d]", correlationId, referenceId);
+        return format("PREPARE [correlationId=%d, destination=\"%s\", destinationRef=%d]",
+                correlationId, destination, destinationRef);
     }
 }

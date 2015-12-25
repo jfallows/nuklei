@@ -72,7 +72,7 @@ public final class HttpDataFW extends Flyweight
     @Override
     public String toString()
     {
-        return String.format("[streamId=%d,remaining=%d]", streamId(), length());
+        return String.format("[streamId=%d, length=%d]", streamId(), length());
     }
 
     public static final class Builder extends Flyweight.Builder<HttpDataFW>

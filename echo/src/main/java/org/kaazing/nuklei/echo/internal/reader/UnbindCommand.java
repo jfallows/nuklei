@@ -13,37 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.echo.internal;
+package org.kaazing.nuklei.echo.internal.reader;
 
-import org.kaazing.nuklei.Nukleus;
-import org.kaazing.nuklei.echo.internal.conductor.Conductor;
-import org.kaazing.nuklei.echo.internal.reader.Reader;
+import static java.lang.String.format;
 
-public final class EchoNukleus implements Nukleus
+public final class UnbindCommand implements ReaderCommand
 {
-    private final Conductor conductor;
-    private final Reader reader;
+    private final long correlationId;
+    private final long referenceId;
 
-    public EchoNukleus(Context context)
+    public UnbindCommand(
+        long correlationId,
+        long referenceId)
     {
-        this.conductor = new Conductor(context);
-        this.reader = new Reader(context);
+        this.correlationId = correlationId;
+        this.referenceId = referenceId;
     }
 
     @Override
-    public String name()
+    public void execute(Reader reader)
     {
-        return "echo";
+        reader.doUnbind(correlationId, referenceId);
     }
 
     @Override
-    public int process()
+    public String toString()
     {
-        int weight = 0;
-
-        weight += conductor.process();
-        weight += reader.process();
-
-        return weight;
+        return format("UNBIND [correlationId=%d, referenceId=%d]", correlationId, referenceId);
     }
 }

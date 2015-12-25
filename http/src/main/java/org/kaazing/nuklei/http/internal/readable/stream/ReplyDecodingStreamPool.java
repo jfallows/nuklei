@@ -18,13 +18,21 @@ package org.kaazing.nuklei.http.internal.readable.stream;
 import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_BEGIN;
 import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_DATA;
 import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_END;
+import static org.kaazing.nuklei.http.internal.util.BufferUtil.limitOfBytes;
 
+import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.kaazing.nuklei.http.internal.types.stream.BeginFW;
 import org.kaazing.nuklei.http.internal.types.stream.DataFW;
 import org.kaazing.nuklei.http.internal.types.stream.EndFW;
+import org.kaazing.nuklei.http.internal.types.stream.HttpBeginFW;
+import org.kaazing.nuklei.http.internal.types.stream.HttpDataFW;
+import org.kaazing.nuklei.http.internal.types.stream.HttpEndFW;
 
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.MessageHandler;
@@ -32,9 +40,20 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 public final class ReplyDecodingStreamPool
 {
+    private static final byte[] CRLFCRLF_BYTES = "\r\n\r\n".getBytes(StandardCharsets.US_ASCII);
+
+    private static enum DecoderState
+    {
+        IDLE, HEADERS, BODY, TRAILERS, END
+    }
+
     private final BeginFW beginRO = new BeginFW();
     private final DataFW dataRO = new DataFW();
     private final EndFW endRO = new EndFW();
+
+    private final HttpBeginFW.Builder httpBeginRW = new HttpBeginFW.Builder();
+    private final HttpDataFW.Builder httpDataRW = new HttpDataFW.Builder();
+    private final HttpEndFW.Builder httpEndRW = new HttpEndFW.Builder();
 
     private final AtomicBuffer atomicBuffer;
 
@@ -59,6 +78,9 @@ public final class ReplyDecodingStreamPool
         private final long sourceInitialStreamId;
         private final RingBuffer sourceRoute;
 
+        private DecoderState decoderState;
+        private long sourceReplyStreamId;
+
         public ReplyDecodingStream(
             Consumer<MessageHandler> cleanup,
             long sourceInitialStreamId,
@@ -67,6 +89,7 @@ public final class ReplyDecodingStreamPool
             this.cleanup = cleanup;
             this.sourceInitialStreamId = sourceInitialStreamId;
             this.sourceRoute = sourceRoute;
+            this.decoderState = DecoderState.IDLE;
         }
 
         @Override
@@ -97,7 +120,7 @@ public final class ReplyDecodingStreamPool
         {
             beginRO.wrap(buffer, index, index + length);
 
-            // TODO
+            // connection pool setup, connection established
         }
 
         private void onData(
@@ -107,9 +130,30 @@ public final class ReplyDecodingStreamPool
         {
             dataRO.wrap(buffer, index, index + length);
 
-            // TODO: decode httpBegin, httpData, httpEnd
+            final DirectBuffer payload = dataRO.payload();
+            final int limit = payload.capacity();
 
-            // after decoding HTTP response, generate httpReplyStreamId, pass httpInitialStreamId
+            loop:
+            for (int offset = 0; offset < limit;)
+            {
+                switch (decoderState)
+                {
+                case IDLE:
+                    offset = decodeHttpBegin(payload, offset, limit);
+                    break;
+                case HEADERS:
+                    // TODO: partial headers
+                    break;
+                case BODY:
+                    offset = decodeHttpData(payload, offset, limit);
+                    break;
+                case TRAILERS:
+                    offset = decodeHttpEnd(payload, offset, limit);
+                    break;
+                case END:
+                    break loop;
+                }
+            }
         }
 
         private void onEnd(
@@ -120,7 +164,99 @@ public final class ReplyDecodingStreamPool
             endRO.wrap(buffer, index, index + length);
 
             // TODO: httpReset if necessary?
+
+            cleanup.accept(this);
+
+            decoderState = DecoderState.END;
+        }
+
+        private int decodeHttpBegin(
+            final DirectBuffer payload,
+            final int offset,
+            final int limit)
+        {
+            final int endOfHeadersAt = limitOfBytes(payload, offset, limit, CRLFCRLF_BYTES);
+            if (endOfHeadersAt == -1)
+            {
+                throw new IllegalStateException("incomplete http headers");
+            }
+
+            // positive, non-zero, even source reply stream id
+            this.sourceReplyStreamId = (sourceInitialStreamId << 1L);
+
+            // TODO: replace with lightweight approach (start)
+            String[] lines = payload.getStringWithoutLengthUtf8(0, endOfHeadersAt).split("\r\n");
+            String[] start = lines[0].split("\\s+");
+
+            httpBeginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                       .streamId(sourceReplyStreamId)
+                       .referenceId(sourceInitialStreamId)
+                       .header(":status", start[1]);
+
+            Pattern headerPattern = Pattern.compile("([^\\s:]+)\\s*:\\s*(.*)");
+            for (int i = 1; i < lines.length; i++)
+            {
+                Matcher headerMatcher = headerPattern.matcher(lines[i]);
+                if (!headerMatcher.matches())
+                {
+                    throw new IllegalStateException("illegal http header syntax");
+                }
+
+                String name = headerMatcher.group(1).toLowerCase();
+                String value = headerMatcher.group(2);
+                httpBeginRW.header(name, value);
+            }
+            // TODO: replace with lightweight approach (end)
+
+            final HttpBeginFW httpBegin = httpBeginRW.build();
+
+            if (!sourceRoute.write(httpBegin.typeId(), httpBegin.buffer(), httpBegin.offset(), httpBegin.length()))
+            {
+                throw new IllegalStateException("could not write to ring buffer");
+            }
+
+            decoderState = DecoderState.BODY;
+
+            return endOfHeadersAt;
+        }
+
+        private int decodeHttpData(
+            DirectBuffer payload,
+            int offset,
+            int limit)
+        {
+            final HttpDataFW httpData = httpDataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                    .streamId(sourceReplyStreamId)
+                    .payload(payload, offset, limit - offset)
+                    .build();
+
+            // TODO: http chunk flag and extension
+
+            if (!sourceRoute.write(httpData.typeId(), httpData.buffer(), httpData.offset(), httpData.length()))
+            {
+                throw new IllegalStateException("could not write to ring buffer");
+            }
+
+            return limit;
+        }
+
+        private int decodeHttpEnd(
+            DirectBuffer payload,
+            int offset,
+            int limit)
+        {
+            final HttpEndFW httpEnd = httpEndRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                               .streamId(sourceReplyStreamId)
+                                               .build();
+
+            // TODO: http trailers
+
+            if (!sourceRoute.write(httpEnd.typeId(), httpEnd.buffer(), httpEnd.offset(), httpEnd.length()))
+            {
+                throw new IllegalStateException("could not write to ring buffer");
+            }
+
+            return limit;
         }
     }
-
 }
