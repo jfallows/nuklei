@@ -20,9 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.ToIntFunction;
 
-import org.kaazing.nuklei.CompositeNukleus;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.http.internal.Context;
 import org.kaazing.nuklei.http.internal.conductor.ConductorProxy;
@@ -36,7 +34,7 @@ import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-public final class Reader extends CompositeNukleus implements Consumer<ReaderCommand>
+public final class Reader implements Nukleus, Consumer<ReaderCommand>
 {
     private final ConductorProxy conductorProxy;
     private final ManyToOneConcurrentArrayQueue<ReaderCommand> commandQueue;
@@ -71,7 +69,7 @@ public final class Reader extends CompositeNukleus implements Consumer<ReaderCom
     }
 
     @Override
-    public int process(ToIntFunction<? super Nukleus> function)
+    public int process()
     {
         int weight = 0;
 
@@ -80,7 +78,7 @@ public final class Reader extends CompositeNukleus implements Consumer<ReaderCom
         int length = readables.length;
         for (int i = 0; i < length; i++)
         {
-            weight += function.applyAsInt(readables[i]);
+            weight += readables[i].process();
         }
 
         return weight;

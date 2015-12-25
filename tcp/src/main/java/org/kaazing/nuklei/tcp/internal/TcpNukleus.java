@@ -15,9 +15,6 @@
  */
 package org.kaazing.nuklei.tcp.internal;
 
-import java.util.function.ToIntFunction;
-
-import org.kaazing.nuklei.CompositeNukleus;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.acceptor.Acceptor;
 import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
@@ -25,7 +22,7 @@ import org.kaazing.nuklei.tcp.internal.connector.Connector;
 import org.kaazing.nuklei.tcp.internal.reader.Reader;
 import org.kaazing.nuklei.tcp.internal.writer.Writer;
 
-public final class TcpNukleus extends CompositeNukleus
+public final class TcpNukleus implements Nukleus
 {
     private final Context context;
     private final Conductor conductor;
@@ -62,15 +59,15 @@ public final class TcpNukleus extends CompositeNukleus
     }
 
     @Override
-    public int process(ToIntFunction<? super Nukleus> function)
+    public int process()
     {
         int weight = 0;
 
-        weight += function.applyAsInt(conductor);
-        weight += function.applyAsInt(acceptor);
-        weight += function.applyAsInt(connector);
-        weight += function.applyAsInt(reader);
-        weight += function.applyAsInt(writer);
+        weight += conductor.process();
+        weight += acceptor.process();
+        weight += connector.process();
+        weight += reader.process();
+        weight += writer.process();
 
         return weight;
     }

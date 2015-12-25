@@ -15,14 +15,11 @@
  */
 package org.kaazing.nuklei.echo.internal;
 
-import java.util.function.ToIntFunction;
-
-import org.kaazing.nuklei.CompositeNukleus;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.echo.internal.conductor.Conductor;
 import org.kaazing.nuklei.echo.internal.reflector.Reflector;
 
-public final class EchoNukleus extends CompositeNukleus
+public final class EchoNukleus implements Nukleus
 {
     private final Conductor conductor;
     private final Reflector reflector;
@@ -40,12 +37,12 @@ public final class EchoNukleus extends CompositeNukleus
     }
 
     @Override
-    public int process(ToIntFunction<? super Nukleus> function)
+    public int process()
     {
         int weight = 0;
 
-        weight += function.applyAsInt(conductor);
-        weight += function.applyAsInt(reflector);
+        weight += conductor.process();
+        weight += reflector.process();
 
         return weight;
     }

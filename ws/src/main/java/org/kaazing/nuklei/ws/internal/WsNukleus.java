@@ -15,12 +15,9 @@
  */
 package org.kaazing.nuklei.ws.internal;
 
-import java.util.function.ToIntFunction;
-
-import org.kaazing.nuklei.CompositeNukleus;
 import org.kaazing.nuklei.Nukleus;
 
-public final class WsNukleus extends CompositeNukleus
+public final class WsNukleus implements Nukleus
 {
     private final Context context;
 
@@ -42,7 +39,7 @@ public final class WsNukleus extends CompositeNukleus
     }
 
     @Override
-    public int process(ToIntFunction<? super Nukleus> function)
+    public int process()
     {
         int weight = 0;
 
