@@ -13,24 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.echo.internal.reflector;
+package org.kaazing.nuklei.echo.internal.reader;
 
-public final class UncaptureCommand implements ReflectorCommand
+public final class RouteCommand implements ReaderCommand
 {
     private final long correlationId;
-    private final String handler;
+    private final String destination;
 
-    public UncaptureCommand(
+    public RouteCommand(
         long correlationId,
-        String handler)
+        String destination)
     {
         this.correlationId = correlationId;
-        this.handler = handler;
+        this.destination = destination;
     }
 
     @Override
-    public void execute(Reflector reflector)
+    public void execute(Reader reader)
     {
-        reflector.doUncapture(correlationId, handler);
+        reader.doRoute(correlationId, destination);
     }
 }

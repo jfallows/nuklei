@@ -13,44 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.echo.internal.reflector;
+package org.kaazing.nuklei.echo.internal.reader;
 
 import static java.lang.String.format;
 
-public class ConnectorState
+public final class ConnectCommand implements ReaderCommand
 {
-    private final long reference;
-    private final String destination;
-    private final long destinationRef;
+    private final long correlationId;
+    private final long referenceId;
 
-    public ConnectorState(
-        long reference,
-        String destination,
-        long destinationRef)
+    public ConnectCommand(
+        long correlationId,
+        long referenceId)
     {
-        this.reference = reference;
-        this.destination = destination;
-        this.destinationRef = destinationRef;
+        this.correlationId = correlationId;
+        this.referenceId = referenceId;
     }
 
-    public long reference()
+    @Override
+    public void execute(Reader reader)
     {
-        return this.reference;
-    }
-
-    public String destination()
-    {
-        return destination;
-    }
-
-    public long destinationRef()
-    {
-        return destinationRef;
+        reader.doConnect(correlationId, referenceId);
     }
 
     @Override
     public String toString()
     {
-        return format("[reference=%d, destination=\"%s\", destinationRef=%d]", reference, destination, destinationRef);
+        return format("CONNECT [correlationId=%d, referenceId=%d]", correlationId, referenceId);
     }
 }

@@ -13,46 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.echo.internal.reflector;
+package org.kaazing.nuklei.echo.internal.readable;
 
-public class AcceptorState
+import static java.lang.String.format;
+
+public final class ConnectCommand implements ReadableCommand
 {
-    private final long reference;
-    private final String source;
+    private final long correlationId;
+    private final long sourceRef;
 
-    private Object attachment;
-
-    public AcceptorState(
-        String source,
+    public ConnectCommand(
+        long correlationId,
         long sourceRef)
     {
-        this.reference = sourceRef;
-        this.source = source;
+        this.correlationId = correlationId;
+        this.sourceRef = sourceRef;
     }
 
-    public long sourceRef()
+    @Override
+    public void execute(Readable readable)
     {
-        return this.reference;
-    }
-
-    public String source()
-    {
-        return source;
+        readable.doConnect(correlationId, sourceRef);
     }
 
     @Override
     public String toString()
     {
-        return String.format("[source=\"%s\", sourceRef=%d]", source, reference);
-    }
-
-    public void attach(Object attachment)
-    {
-        this.attachment = attachment;
-    }
-
-    public Object attachment()
-    {
-        return attachment;
+        return format("CONNECT [correlationId=%d, sourceRef=%d]", correlationId, sourceRef);
     }
 }

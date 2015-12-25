@@ -13,25 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.echo.internal.reflector;
+package org.kaazing.nuklei.echo.internal.readable;
 
-
-public final class UnrouteCommand implements ReflectorCommand
+public interface ReadableCommand
 {
-    private final long correlationId;
-    private final String destination;
-
-    public UnrouteCommand(
-        long correlationId,
-        String destination)
-    {
-        this.correlationId = correlationId;
-        this.destination = destination;
-    }
-
-    @Override
-    public void execute(Reflector reflector)
-    {
-        reflector.doUnroute(correlationId, destination);
-    }
+    void execute(Readable readable);
 }

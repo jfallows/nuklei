@@ -27,12 +27,13 @@ import java.util.logging.Logger;
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.echo.internal.conductor.ConductorResponse;
 import org.kaazing.nuklei.echo.internal.layouts.ControlLayout;
-import org.kaazing.nuklei.echo.internal.reflector.ReflectorCommand;
+import org.kaazing.nuklei.echo.internal.reader.ReaderCommand;
 
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.CountersManager;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
+import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -43,6 +44,7 @@ public final class Context implements Closeable
     private final ControlLayout.Builder controlRW = new ControlLayout.Builder();
 
     private boolean readonly;
+    private int maximumStreamsCount;
     private File configDirectory;
     private ControlLayout controlRO;
     private int streamsBufferCapacity;
@@ -56,8 +58,8 @@ public final class Context implements Closeable
     private AtomicBuffer fromConductorResponseBuffer;
     private BroadcastTransmitter fromConductorResponses;
 
-    private OneToOneConcurrentArrayQueue<ReflectorCommand> fromConductorToReflectorCommands;
-    private OneToOneConcurrentArrayQueue<ConductorResponse> fromReflectorToConductorResponses;
+    private OneToOneConcurrentArrayQueue<ReaderCommand> readerCommandQueue;
+    private ManyToOneConcurrentArrayQueue<ConductorResponse> conductorResponseQueue;
 
     public Context readonly(
         boolean readonly)
@@ -69,6 +71,11 @@ public final class Context implements Closeable
     public boolean readonly()
     {
         return readonly;
+    }
+
+    public int maximumStreamsCount()
+    {
+        return maximumStreamsCount;
     }
 
     public int streamsBufferCapacity()
@@ -176,28 +183,28 @@ public final class Context implements Closeable
         return Logger.getLogger("nuklei.echo");
     }
 
-    public Context reflectorCommandQueue(
-            OneToOneConcurrentArrayQueue<ReflectorCommand> reflectorCommandQueue)
+    public Context readerCommandQueue(
+            OneToOneConcurrentArrayQueue<ReaderCommand> readerCommandQueue)
     {
-        this.fromConductorToReflectorCommands = reflectorCommandQueue;
+        this.readerCommandQueue = readerCommandQueue;
         return this;
     }
 
-    public OneToOneConcurrentArrayQueue<ReflectorCommand> reflectorCommandQueue()
+    public OneToOneConcurrentArrayQueue<ReaderCommand> readerCommandQueue()
     {
-        return fromConductorToReflectorCommands;
+        return readerCommandQueue;
     }
 
-    public Context reflectorResponseQueue(
-            OneToOneConcurrentArrayQueue<ConductorResponse> reflectorResponseQueue)
+    public Context conductorResponseQueue(
+            ManyToOneConcurrentArrayQueue<ConductorResponse> conductorResponseQueue)
     {
-        this.fromReflectorToConductorResponses = reflectorResponseQueue;
+        this.conductorResponseQueue = conductorResponseQueue;
         return this;
     }
 
-    public OneToOneConcurrentArrayQueue<ConductorResponse> reflectorResponseQueue()
+    public ManyToOneConcurrentArrayQueue<ConductorResponse> conductorResponseQueue()
     {
-        return fromReflectorToConductorResponses;
+        return conductorResponseQueue;
     }
 
     public Context countersManager(CountersManager countersManager)
@@ -221,6 +228,8 @@ public final class Context implements Closeable
         try
         {
             this.configDirectory = config.directory();
+
+            this.maximumStreamsCount = config.maximumStreamsCount();
 
             this.streamsBufferCapacity = config.streamsBufferCapacity();
 
@@ -248,11 +257,11 @@ public final class Context implements Closeable
             conductorResponses(
                     new BroadcastTransmitter(conductorResponseBuffer()));
 
-            reflectorCommandQueue(
-                    new OneToOneConcurrentArrayQueue<ReflectorCommand>(1024));
+            readerCommandQueue(
+                    new OneToOneConcurrentArrayQueue<ReaderCommand>(1024));
 
-            reflectorResponseQueue(
-                    new OneToOneConcurrentArrayQueue<ConductorResponse>(1024));
+            conductorResponseQueue(
+                    new ManyToOneConcurrentArrayQueue<ConductorResponse>(1024));
 
             concludeCounters();
         }

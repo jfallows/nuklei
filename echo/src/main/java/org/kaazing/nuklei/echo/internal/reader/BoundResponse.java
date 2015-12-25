@@ -13,32 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.echo.internal.reflector;
+package org.kaazing.nuklei.echo.internal.reader;
 
-import static java.lang.String.format;
 
-public final class ConnectCommand implements ReflectorCommand
+public final class BoundResponse implements ReaderCommand
 {
     private final long correlationId;
+    private final String sourceName;
     private final long referenceId;
 
-    public ConnectCommand(
+    public BoundResponse(
+        String sourceName,
         long correlationId,
         long referenceId)
     {
         this.correlationId = correlationId;
+        this.sourceName = sourceName;
         this.referenceId = referenceId;
     }
 
-    @Override
-    public void execute(Reflector reflector)
+    public void execute(Reader reader)
     {
-        reflector.doConnect(correlationId, referenceId);
-    }
-
-    @Override
-    public String toString()
-    {
-        return format("CONNECT [correlationId=%d, referenceId=%d]", correlationId, referenceId);
+        reader.onBoundResponse(sourceName, correlationId, referenceId);
     }
 }

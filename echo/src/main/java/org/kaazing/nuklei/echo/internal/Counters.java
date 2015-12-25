@@ -24,8 +24,8 @@ public final class Counters implements AutoCloseable
     private final AtomicCounter streamsPrepared;
     private final AtomicCounter streamsAccepted;
     private final AtomicCounter streamsConnected;
-    private final AtomicCounter messagesReflected;
-    private final AtomicCounter bytesReflected;
+    private final AtomicCounter messagesWritten;
+    private final AtomicCounter bytesWritten;
 
     Counters(CountersManager countersManager)
     {
@@ -33,8 +33,8 @@ public final class Counters implements AutoCloseable
         streamsPrepared = countersManager.newCounter("streamsPrepared");
         streamsAccepted = countersManager.newCounter("streamsAccepted");
         streamsConnected = countersManager.newCounter("streamsConnected");
-        messagesReflected = countersManager.newCounter("messagesReflected");
-        bytesReflected = countersManager.newCounter("bytesReflected");
+        messagesWritten = countersManager.newCounter("messagesWritten");
+        bytesWritten = countersManager.newCounter("bytesWritten");
     }
 
     @Override
@@ -44,8 +44,8 @@ public final class Counters implements AutoCloseable
         streamsPrepared.close();
         streamsAccepted.close();
         streamsConnected.close();
-        messagesReflected.close();
-        bytesReflected.close();
+        messagesWritten.close();
+        bytesWritten.close();
     }
 
     public AtomicCounter streamsBound()
@@ -68,13 +68,13 @@ public final class Counters implements AutoCloseable
         return streamsConnected;
     }
 
-    public AtomicCounter messagesReflected()
+    public AtomicCounter messagesWritten()
     {
-        return messagesReflected;
+        return messagesWritten;
     }
 
-    public AtomicCounter bytesReflected()
+    public AtomicCounter bytesWritten()
     {
-        return bytesReflected;
+        return bytesWritten;
     }
 }

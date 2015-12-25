@@ -13,37 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.echo.internal.reflector;
+package org.kaazing.nuklei.echo.internal.reader;
 
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+import static java.lang.String.format;
 
-public class ReflectorState
+public final class UnprepareCommand implements ReaderCommand
 {
-    private final long streamId;
-    private final RingBuffer writeBuffer;
+    private final long correlationId;
+    private final long referenceId;
 
-    public ReflectorState(
-        long streamId,
-        RingBuffer writeBuffer)
+    public UnprepareCommand(
+        long correlationId,
+        long referenceId)
     {
-        this.streamId = streamId;
-        this.writeBuffer = writeBuffer;
+        this.correlationId = correlationId;
+        this.referenceId = referenceId;
     }
 
-    public long streamId()
+    @Override
+    public void execute(Reader reader)
     {
-        return this.streamId;
-    }
-
-    public RingBuffer writeBuffer()
-    {
-        return writeBuffer;
+        reader.doUnprepare(correlationId, referenceId);
     }
 
     @Override
     public String toString()
     {
-        return String.format("[streamId=%d]", streamId());
+        return format("UNPREPARE [correlationId=%d, referenceId=%d]", correlationId, referenceId);
     }
-
 }

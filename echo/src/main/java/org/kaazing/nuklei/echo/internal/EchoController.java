@@ -72,8 +72,8 @@ public final class EchoController implements Nukleus
     public EchoController(Context context)
     {
         this.context = context;
-        this.messagesReflected = context.counters().messagesReflected();
-        this.bytesReflected = context.counters().bytesReflected();
+        this.messagesReflected = context.counters().messagesWritten();
+        this.bytesReflected = context.counters().bytesWritten();
         this.conductorCommands = context.conductorCommands();
         this.conductorResponses = new CopyBroadcastReceiver(new BroadcastReceiver(context.conductorResponseBuffer()));
         this.atomicBuffer = new UnsafeBuffer(allocateDirect(MAX_SEND_LENGTH).order(nativeOrder()));
