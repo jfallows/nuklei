@@ -91,12 +91,10 @@ public final class Readable implements Nukleus, Consumer<ReadableCommand>
         this.registrationsByStreamId = new Long2ObjectHashMap<>();
 
         int maximumStreamsCount = context.maximumStreamsCount();
-        AtomicCounter messagesWritten = context.counters().messagesWritten();
-        AtomicCounter bytesWritten = context.counters().bytesWritten();
         this.atomicBuffer = new UnsafeBuffer(allocateDirect(captureBuffer.maxMsgLength()).order(nativeOrder()));
 
-        this.initialStreamPool = new InitialStreamPool(maximumStreamsCount, atomicBuffer, messagesWritten, bytesWritten);
-        this.replyStreamPool = new ReplyStreamPool(maximumStreamsCount, atomicBuffer, messagesWritten, bytesWritten);
+        this.initialStreamPool = new InitialStreamPool(maximumStreamsCount, atomicBuffer);
+        this.replyStreamPool = new ReplyStreamPool(maximumStreamsCount, atomicBuffer);
 
         this.captureName = captureName;
         this.captureBuffer = captureBuffer;

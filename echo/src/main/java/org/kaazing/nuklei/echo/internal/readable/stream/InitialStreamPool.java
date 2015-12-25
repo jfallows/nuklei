@@ -24,7 +24,6 @@ import org.kaazing.nuklei.echo.internal.types.stream.Types;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
@@ -39,18 +38,12 @@ public final class InitialStreamPool
     private final EndFW endRO = new EndFW();
 
     private final AtomicBuffer atomicBuffer;
-    private final AtomicCounter messagesWritten;
-    private final AtomicCounter bytesWritten;
 
     public InitialStreamPool(
         int capacity,
-        AtomicBuffer atomicBuffer,
-        AtomicCounter messagesWritten,
-        AtomicCounter bytesWritten)
+        AtomicBuffer atomicBuffer)
     {
         this.atomicBuffer = atomicBuffer;
-        this.messagesWritten = messagesWritten;
-        this.bytesWritten = bytesWritten;
     }
 
     public MessageHandler acquire(
@@ -114,9 +107,6 @@ public final class InitialStreamPool
                         .streamId(replyStreamId)
                         .payloadLength(dataRO.payloadLength())
                         .build();
-
-                messagesWritten.increment();
-                bytesWritten.add(data.payloadLength());
 
                 if (!routeBuffer.write(data.typeId(), data.buffer(), data.offset(), data.length()))
                 {
