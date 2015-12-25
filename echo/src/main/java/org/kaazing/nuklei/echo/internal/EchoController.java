@@ -39,6 +39,7 @@ import org.kaazing.nuklei.echo.internal.types.control.UnboundFW;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
@@ -61,6 +62,8 @@ public final class EchoController implements Nukleus
     private final UnboundFW unboundRO = new UnboundFW();
 
     private final Context context;
+    private final AtomicCounter messagesReflected;
+    private final AtomicCounter bytesReflected;
     private final RingBuffer conductorCommands;
     private final CopyBroadcastReceiver conductorResponses;
     private final AtomicBuffer atomicBuffer;
@@ -69,6 +72,8 @@ public final class EchoController implements Nukleus
     public EchoController(Context context)
     {
         this.context = context;
+        this.messagesReflected = context.counters().messagesReflected();
+        this.bytesReflected = context.counters().bytesReflected();
         this.conductorCommands = context.conductorCommands();
         this.conductorResponses = new CopyBroadcastReceiver(new BroadcastReceiver(context.conductorResponseBuffer()));
         this.atomicBuffer = new UnsafeBuffer(allocateDirect(MAX_SEND_LENGTH).order(nativeOrder()));
@@ -95,6 +100,16 @@ public final class EchoController implements Nukleus
     public String name()
     {
         return "echo.controller";
+    }
+
+    public AtomicCounter messagesReflected()
+    {
+        return messagesReflected;
+    }
+
+    public AtomicCounter bytesReflected()
+    {
+        return bytesReflected;
     }
 
     public EchoStreams streams(String source)

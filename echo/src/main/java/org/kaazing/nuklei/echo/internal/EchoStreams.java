@@ -39,8 +39,8 @@ public final class EchoStreams
 
     private final StreamsLayout captureStreams;
     private final StreamsLayout routeStreams;
-    private final RingBuffer streamsInput;
-    private final RingBuffer streamsOutput;
+    private final RingBuffer captureBuffer;
+    private final RingBuffer routeBuffer;
     private final AtomicBuffer atomicBuffer;
 
     EchoStreams(
@@ -51,18 +51,24 @@ public final class EchoStreams
                                                          .streamsFile(context.captureStreamsFile().apply(source))
                                                          .createFile(false)
                                                          .build();
-        this.streamsInput = this.captureStreams.buffer();
+        this.captureBuffer = this.captureStreams.buffer();
 
         this.routeStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsBufferCapacity())
                                                        .streamsFile(context.routeStreamsFile().apply(source))
                                                        .createFile(false)
                                                        .build();
-        this.streamsOutput = this.routeStreams.buffer();
+        this.routeBuffer = this.routeStreams.buffer();
 
         this.atomicBuffer = new UnsafeBuffer(allocateDirect(MAX_SEND_LENGTH).order(nativeOrder()));
     }
 
-    public void begin(
+    public void close()
+    {
+        captureStreams.close();
+        routeStreams.close();
+    }
+
+    public boolean begin(
         long streamId,
         long referenceId)
     {
@@ -71,13 +77,10 @@ public final class EchoStreams
                                  .referenceId(referenceId)
                                  .build();
 
-        if (!streamsInput.write(beginRO.typeId(), beginRO.buffer(), beginRO.offset(), beginRO.length()))
-        {
-            throw new IllegalStateException("unable to write to captureStreams");
-        }
+        return captureBuffer.write(beginRO.typeId(), beginRO.buffer(), beginRO.offset(), beginRO.length());
     }
 
-    public void data(
+    public boolean data(
         long streamId,
         DirectBuffer buffer,
         int offset,
@@ -88,27 +91,21 @@ public final class EchoStreams
                               .payload(buffer, offset, length)
                               .build();
 
-        if (!streamsInput.write(dataRO.typeId(), dataRO.buffer(), dataRO.offset(), dataRO.length()))
-        {
-            throw new IllegalStateException("unable to write to captureStreams");
-        }
+        return captureBuffer.write(dataRO.typeId(), dataRO.buffer(), dataRO.offset(), dataRO.length());
     }
 
-    public void end(
+    public boolean end(
         long streamId)
     {
         EndFW endRO = endRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                            .streamId(streamId)
                            .build();
 
-        if (!streamsInput.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.length()))
-        {
-            throw new IllegalStateException("unable to write to captureStreams");
-        }
+        return captureBuffer.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.length());
     }
 
     public int read(MessageHandler handler)
     {
-        return streamsOutput.read(handler);
+        return routeBuffer.read(handler);
     }
 }

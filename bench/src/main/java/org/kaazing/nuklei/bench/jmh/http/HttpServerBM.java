@@ -32,11 +32,13 @@ import org.kaazing.nuklei.NukleusFactory;
 import org.kaazing.nuklei.http.internal.HttpController;
 import org.kaazing.nuklei.http.internal.HttpNukleus;
 import org.kaazing.nuklei.http.internal.HttpStreams;
+import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Group;
 import org.openjdk.jmh.annotations.GroupThreads;
+import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
@@ -61,18 +63,20 @@ public class HttpServerBM
 {
     private HttpNukleus nukleus;
     private HttpController controller;
-    private HttpStreams sourceStreams;
-    private HttpStreams destinationStreams;
+    private HttpStreams requestStreams;
+    private HttpStreams responseStreams;
 
     private MutableDirectBuffer sendBuffer;
     private long streamId;
 
     @Setup
-    public void create() throws Exception
+    public void init() throws Exception
     {
+        int streamsCapacity = 1024 * 1024 * 16;
+
         final Properties properties = new Properties();
         properties.setProperty(DIRECTORY_PROPERTY_NAME, "target/nukleus-benchmarks");
-        properties.setProperty(STREAMS_BUFFER_CAPACITY_PROPERTY_NAME, Long.toString(1024 * 1024 * 16));
+        properties.setProperty(STREAMS_BUFFER_CAPACITY_PROPERTY_NAME, Long.toString(streamsCapacity));
         final Configuration config = new Configuration(properties);
 
         NukleusFactory factory = NukleusFactory.instantiate();
@@ -92,9 +96,8 @@ public class HttpServerBM
             // intentional
         }
 
-        int streamCapacity = 1024 * 1024;
-        File source = new File("target/nukleus-benchmarks/source/streams/http");
-        createEmptyFile(source.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
+        File source = new File("target/nukleus-benchmarks/source/streams/http").getAbsoluteFile();
+        createEmptyFile(source, streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH);
 
         controller.route("source");
         while (this.nukleus.process() != 0L || this.controller.process() != 0L)
@@ -102,8 +105,8 @@ public class HttpServerBM
             // intentional
         }
 
-        File destination = new File("target/nukleus-benchmarks/destination/streams/http");
-        createEmptyFile(destination.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
+        File destination = new File("target/nukleus-benchmarks/destination/streams/http").getAbsoluteFile();
+        createEmptyFile(destination, streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH);
 
         controller.route("destination");
         while (this.nukleus.process() != 0L || this.controller.process() != 0L)
@@ -118,19 +121,19 @@ public class HttpServerBM
         }
         final long sourceRef = sourceRefFuture.get();
 
-        this.sourceStreams = controller.streams("source");
-        this.destinationStreams = controller.streams("destination");
+        this.requestStreams = controller.streams("source", "destination");
+        this.responseStreams = controller.streams("destination", "source");
 
         // odd, positive, non-zero
         final Random random = new Random();
         this.streamId = (random.nextLong() & 0x3fffffffffffffffL) | 0x0000000000000001L;
 
-        this.sourceStreams.begin(streamId, sourceRef);
+        this.requestStreams.begin(streamId, sourceRef);
         while (this.nukleus.process() != 0L)
         {
             // intentional
         }
-        while (this.sourceStreams.read((msgTypeId, buffer, offset, length) -> {}) != 0)
+        while (this.responseStreams.read((msgTypeId, buffer, offset, length) -> {}) != 0)
         {
             // intentional
         }
@@ -141,32 +144,56 @@ public class HttpServerBM
     }
 
     @TearDown
-    public void close() throws Exception
+    public void destroy() throws Exception
     {
         this.nukleus.close();
         this.controller.close();
+        this.requestStreams.close();
+        this.responseStreams.close();
     }
 
-    @Benchmark
-    @Group("process")
-    @GroupThreads(1)
-    public void nukleus() throws Exception
+    @AuxCounters
+    @State(Scope.Thread)
+    public static class Counters
     {
-        this.nukleus.process();
-    }
+        public int messages;
 
-    @Benchmark
-    @Group("process")
-    @GroupThreads(1)
-    public void source(Control control) throws Exception
-    {
-        while (control.startMeasurement && !control.stopMeasurement)
+        @Setup(Level.Iteration)
+        public void init()
         {
-            this.sourceStreams.data(streamId, sendBuffer, 0, sendBuffer.capacity());
-            while (this.destinationStreams.read((msgTypeId, buffer, offset, length) -> {}) != 0)
-            {
-                // intentional
-            }
+            messages = 0;
+        }
+    }
+
+    @Benchmark
+    @Group("asymmetric")
+    @GroupThreads(1)
+    public void writer(Control control) throws Exception
+    {
+        while (!control.stopMeasurement &&
+               !requestStreams.data(streamId, sendBuffer, 0, sendBuffer.capacity()))
+        {
+            Thread.yield();
+        }
+    }
+
+    @Benchmark
+    @Group("asymmetric")
+    @GroupThreads(1)
+    public void nukleus(Counters counters) throws Exception
+    {
+        counters.messages += this.nukleus.process();
+    }
+
+    @Benchmark
+    @Group("asymmetric")
+    @GroupThreads(1)
+    public void reader(Control control) throws Exception
+    {
+        while (!control.stopMeasurement &&
+               requestStreams.read((msgTypeId, buffer, offset, length) -> {}) == 0)
+        {
+            Thread.yield();
         }
     }
 }

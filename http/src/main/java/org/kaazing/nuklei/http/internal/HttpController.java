@@ -204,9 +204,10 @@ public final class HttpController implements Nukleus
     }
 
     public HttpStreams streams(
-        String source)
+        String capture,
+        String route)
     {
-        return new HttpStreams(context, source);
+        return new HttpStreams(context, capture, route);
     }
 
     private int handleResponse(

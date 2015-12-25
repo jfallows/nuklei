@@ -46,30 +46,37 @@ public final class HttpStreams
 
     private final StreamsLayout captureStreams;
     private final StreamsLayout routeStreams;
-    private final RingBuffer sourceStreams;
-    private final RingBuffer destinationStreams;
+    private final RingBuffer captureBuffer;
+    private final RingBuffer routeBuffer;
     private final AtomicBuffer atomicBuffer;
 
     HttpStreams(
         Context context,
-        String source)
+        String capture,
+        String route)
     {
         this.captureStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsBufferCapacity())
-                                                         .streamsFile(context.captureStreamsFile().apply(source))
+                                                         .streamsFile(context.captureStreamsFile().apply(capture))
                                                          .createFile(false)
                                                          .build();
-        this.sourceStreams = this.captureStreams.buffer();
+        this.captureBuffer = this.captureStreams.buffer();
 
         this.routeStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsBufferCapacity())
-                                                       .streamsFile(context.routeStreamsFile().apply(source))
+                                                       .streamsFile(context.routeStreamsFile().apply(route))
                                                        .createFile(false)
                                                        .build();
-        this.destinationStreams = this.routeStreams.buffer();
+        this.routeBuffer = this.routeStreams.buffer();
 
         this.atomicBuffer = new UnsafeBuffer(allocateDirect(MAX_SEND_LENGTH).order(nativeOrder()));
     }
 
-    public void begin(
+    public void close()
+    {
+        captureStreams.close();
+        routeStreams.close();
+    }
+
+    public boolean begin(
         long streamId,
         long referenceId)
     {
@@ -78,13 +85,10 @@ public final class HttpStreams
                                  .referenceId(referenceId)
                                  .build();
 
-        if (!sourceStreams.write(beginRO.typeId(), beginRO.buffer(), beginRO.offset(), beginRO.length()))
-        {
-            throw new IllegalStateException("unable to write to captureStreams");
-        }
+        return captureBuffer.write(beginRO.typeId(), beginRO.buffer(), beginRO.offset(), beginRO.length());
     }
 
-    public void data(
+    public boolean data(
         long streamId,
         DirectBuffer buffer,
         int offset,
@@ -95,26 +99,20 @@ public final class HttpStreams
                               .payload(buffer, offset, length)
                               .build();
 
-        if (!sourceStreams.write(dataRO.typeId(), dataRO.buffer(), dataRO.offset(), dataRO.length()))
-        {
-            throw new IllegalStateException("unable to write to captureStreams");
-        }
+        return captureBuffer.write(dataRO.typeId(), dataRO.buffer(), dataRO.offset(), dataRO.length());
     }
 
-    public void end(
+    public boolean end(
         long streamId)
     {
         EndFW endRO = endRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                            .streamId(streamId)
                            .build();
 
-        if (!sourceStreams.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.length()))
-        {
-            throw new IllegalStateException("unable to write to captureStreams");
-        }
+        return captureBuffer.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.length());
     }
 
-    public void httpBegin(
+    public boolean httpBegin(
         long streamId,
         long referenceId)
     {
@@ -123,13 +121,10 @@ public final class HttpStreams
                                            .referenceId(referenceId)
                                            .build();
 
-        if (!sourceStreams.write(httpBegin.typeId(), httpBegin.buffer(), httpBegin.offset(), httpBegin.length()))
-        {
-            throw new IllegalStateException("unable to write to captureStreams");
-        }
+        return captureBuffer.write(httpBegin.typeId(), httpBegin.buffer(), httpBegin.offset(), httpBegin.length());
     }
 
-    public void httpData(
+    public boolean httpData(
         long streamId,
         DirectBuffer buffer,
         int offset,
@@ -140,27 +135,21 @@ public final class HttpStreams
                                     .payload(buffer, offset, length)
                                     .build();
 
-        if (!sourceStreams.write(data.typeId(), data.buffer(), data.offset(), data.length()))
-        {
-            throw new IllegalStateException("unable to write to captureStreams");
-        }
+        return captureBuffer.write(data.typeId(), data.buffer(), data.offset(), data.length());
     }
 
-    public void httpEnd(
+    public boolean httpEnd(
         long streamId)
     {
         HttpEndFW end = httpEndRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                                  .streamId(streamId)
                                  .build();
 
-        if (!sourceStreams.write(end.typeId(), end.buffer(), end.offset(), end.length()))
-        {
-            throw new IllegalStateException("unable to write to captureStreams");
-        }
+        return captureBuffer.write(end.typeId(), end.buffer(), end.offset(), end.length());
     }
 
     public int read(MessageHandler handler)
     {
-        return destinationStreams.read(handler);
+        return routeBuffer.read(handler);
     }
 }
