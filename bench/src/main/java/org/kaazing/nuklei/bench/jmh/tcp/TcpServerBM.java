@@ -32,11 +32,13 @@ import org.kaazing.nuklei.NukleusFactory;
 import org.kaazing.nuklei.tcp.internal.TcpController;
 import org.kaazing.nuklei.tcp.internal.TcpNukleus;
 import org.kaazing.nuklei.tcp.internal.TcpStreams;
+import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Group;
 import org.openjdk.jmh.annotations.GroupThreads;
+import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
@@ -66,9 +68,11 @@ public class TcpServerBM
     @Setup
     public void create() throws Exception
     {
+        int streamsCapacity = 1024 * 1024 * 16;
+
         final Properties properties = new Properties();
         properties.setProperty(DIRECTORY_PROPERTY_NAME, "target/nukleus-benchmarks");
-        properties.setProperty(STREAMS_BUFFER_CAPACITY_PROPERTY_NAME, Long.toString(1024 * 1024 * 16));
+        properties.setProperty(STREAMS_BUFFER_CAPACITY_PROPERTY_NAME, Long.toString(streamsCapacity));
         final Configuration config = new Configuration(properties);
 
         NukleusFactory factory = NukleusFactory.instantiate();
@@ -82,9 +86,8 @@ public class TcpServerBM
             // intentional
         }
 
-        int streamCapacity = 1024 * 1024;
         File destination = new File("target/nukleus-benchmarks/destination/streams/tcp");
-        createEmptyFile(destination.getAbsoluteFile(), streamCapacity + RingBufferDescriptor.TRAILER_LENGTH);
+        createEmptyFile(destination.getAbsoluteFile(), streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH);
 
         controller.route("destination");
         while (this.nukleus.process() != 0L || this.controller.process() != 0L)
@@ -109,12 +112,26 @@ public class TcpServerBM
     {
         this.nukleus.close();
         this.controller.close();
+        this.streams.close();
+    }
+
+    @AuxCounters
+    @State(Scope.Thread)
+    public static class Counters
+    {
+        public int messages;
+
+        @Setup(Level.Iteration)
+        public void init()
+        {
+            messages = 0;
+        }
     }
 
     @Benchmark
-    @Group("process")
+    @Group("asymmetric")
     @GroupThreads(1)
-    public void socket(Control control) throws Exception
+    public void writer(Control control) throws Exception
     {
         if (control.startMeasurement && !control.stopMeasurement)
         {
@@ -130,24 +147,22 @@ public class TcpServerBM
     }
 
     @Benchmark
-    @Group("process")
+    @Group("asymmetric")
     @GroupThreads(1)
-    public void nukleus() throws Exception
+    public void nukleus(Counters counters) throws Exception
     {
-        this.nukleus.process();
+        counters.messages += this.nukleus.process();
     }
 
     @Benchmark
-    @Group("process")
+    @Group("asymmetric")
     @GroupThreads(1)
-    public void destination(Control control) throws Exception
+    public void reader(Control control) throws Exception
     {
-        while (control.startMeasurement && !control.stopMeasurement)
+        while (!control.stopMeasurement &&
+               streams.read((msgTypeId, buffer, offset, length) -> {}) == 0)
         {
-            while (this.streams.read((msgTypeId, buffer, offset, length) -> {}) != 0)
-            {
-                // intentional
-            }
+            Thread.yield();
         }
     }
 }
