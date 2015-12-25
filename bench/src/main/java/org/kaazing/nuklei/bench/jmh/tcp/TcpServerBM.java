@@ -15,15 +15,17 @@
  */
 package org.kaazing.nuklei.bench.jmh.tcp;
 
+import static java.nio.ByteBuffer.allocateDirect;
+import static java.nio.ByteOrder.nativeOrder;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.STREAMS_BUFFER_CAPACITY_PROPERTY_NAME;
 import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
 
 import java.io.File;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
@@ -63,7 +65,7 @@ public class TcpServerBM
     private TcpController controller;
     private TcpStreams streams;
 
-    private byte[] sendByteArray;
+    private ByteBuffer sendByteBuffer;
 
     @Setup
     public void create() throws Exception
@@ -104,7 +106,8 @@ public class TcpServerBM
 
         this.streams = controller.streams("destination");
 
-        this.sendByteArray = "Hello, world".getBytes(StandardCharsets.UTF_8);
+        byte[] sendByteArray = "Hello, world".getBytes(StandardCharsets.UTF_8);
+        this.sendByteBuffer = allocateDirect(sendByteArray.length).order(nativeOrder()).put(sendByteArray);
     }
 
     @TearDown
@@ -135,12 +138,13 @@ public class TcpServerBM
     {
         if (control.startMeasurement && !control.stopMeasurement)
         {
-            try (Socket socket = new Socket("localhost", 8080))
+            try (SocketChannel channel = SocketChannel.open())
             {
-                OutputStream output = socket.getOutputStream();
+                channel.connect(new InetSocketAddress("localhost", 8080));
                 while (control.startMeasurement && !control.stopMeasurement)
                 {
-                    output.write(sendByteArray);
+                    sendByteBuffer.rewind();
+                    channel.write(sendByteBuffer);
                 }
             }
         }
