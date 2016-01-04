@@ -15,8 +15,6 @@
  */
 package org.kaazing.nuklei.ws.internal;
 
-import java.io.File;
-
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.NukleusFactorySpi;
 
@@ -32,8 +30,7 @@ public final class WsNukleusFactorySpi implements NukleusFactorySpi
     public WsNukleus create(Configuration config)
     {
         Context context = new Context();
-        context.controlFile(new File(config.directory(), "ws/control"))
-               .conclude(config);
+        context.conclude(config);
         return new WsNukleus(context);
     }
 }

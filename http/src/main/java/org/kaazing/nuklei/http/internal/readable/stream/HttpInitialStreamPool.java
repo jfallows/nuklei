@@ -39,7 +39,7 @@ import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-public final class InitialEncodingStreamPool
+public final class HttpInitialStreamPool
 {
     private final HttpBeginFW httpBeginRO = new HttpBeginFW();
     private final HttpDataFW httpDataRO = new HttpDataFW();
@@ -52,7 +52,7 @@ public final class InitialEncodingStreamPool
     private final AtomicBuffer atomicBuffer;
     private final AtomicCounter streamsConnected;
 
-    public InitialEncodingStreamPool(
+    public HttpInitialStreamPool(
         int capacity,
         AtomicBuffer atomicBuffer,
         AtomicCounter streamsConnected)
@@ -68,10 +68,10 @@ public final class InitialEncodingStreamPool
         ReadableProxy destination,
         Consumer<MessageHandler> released)
     {
-        return new InitialEncodingStream(released, destinationRef, sourceRoute, destinationRoute, destination);
+        return new HttpInitialStream(released, destinationRef, sourceRoute, destinationRoute, destination);
     }
 
-    private final class InitialEncodingStream implements MessageHandler
+    private final class HttpInitialStream implements MessageHandler
     {
         private final Consumer<MessageHandler> cleanup;
         private final long destinationRef;
@@ -81,7 +81,7 @@ public final class InitialEncodingStreamPool
 
         private long destinationInitialStreamId;
 
-        private InitialEncodingStream(
+        private HttpInitialStream(
             Consumer<MessageHandler> cleanup,
             long destinationRef,
             RingBuffer sourceRoute,

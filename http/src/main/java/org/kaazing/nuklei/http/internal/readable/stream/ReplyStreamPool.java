@@ -47,7 +47,7 @@ import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-public final class ReplyEncodingStreamPool
+public final class ReplyStreamPool
 {
     private final HttpBeginFW httpBeginRO = new HttpBeginFW();
     private final HttpDataFW httpDataRO = new HttpDataFW();
@@ -57,7 +57,7 @@ public final class ReplyEncodingStreamPool
 
     private final AtomicBuffer atomicBuffer;
 
-    public ReplyEncodingStreamPool(
+    public ReplyStreamPool(
         int capacity,
         AtomicBuffer atomicBuffer)
     {
@@ -69,16 +69,16 @@ public final class ReplyEncodingStreamPool
         RingBuffer sourceRoute,
         Consumer<MessageHandler> released)
     {
-        return new ReplyEncodingStream(released, sourceReplyStreamId, sourceRoute);
+        return new ReplyStream(released, sourceReplyStreamId, sourceRoute);
     }
 
-    private final class ReplyEncodingStream implements MessageHandler
+    private final class ReplyStream implements MessageHandler
     {
         private final Consumer<MessageHandler> cleanup;
         private final long sourceReplyStreamId;
         private final RingBuffer sourceRoute;
 
-        public ReplyEncodingStream(
+        public ReplyStream(
             Consumer<MessageHandler> cleanup,
             long sourceReplyStreamId,
             RingBuffer sourceRoute)
