@@ -46,7 +46,7 @@
         <module>test</module>
         <module>tcp</module>
         <module>http</module>
-        <module>ws</module>
+        <!--module>ws</module-->
         <module>echo</module>
         <module>shell</module>
         <module>reaktor</module>

@@ -34,6 +34,11 @@
         </dependency>
         <dependency>
             <groupId>org.kaazing</groupId>
+            <artifactId>specification.ws</artifactId>
+            <version>${k3po.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kaazing</groupId>
             <artifactId>k3po.junit</artifactId>
             <version>${k3po.version}</version>
         </dependency>
