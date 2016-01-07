@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.specification.nuklei.echo.streams;
+package org.kaazing.nuklei.ws.internal.streams;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
@@ -25,64 +25,39 @@ import org.junit.rules.TestRule;
 import org.junit.rules.Timeout;
 import org.kaazing.k3po.junit.annotation.Specification;
 import org.kaazing.k3po.junit.rules.K3poRule;
-import org.kaazing.specification.nuklei.common.NukleusRule;
+import org.kaazing.nuklei.test.NukleusRule;
 
-public class AcceptIT
+/**
+ * RFC-6455, section 4.1 "Client-Side Requirements" RFC-6455, section 4.2
+ * "Server-Side Requirements"
+ */
+public class OpeningHandshakeIT
 {
-    private final K3poRule k3po = new K3poRule();
+    private final K3poRule k3po = new K3poRule()
+            .setScriptRoot("org/kaazing/specification/nuklei/ws");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
-    private final NukleusRule nukleus = new NukleusRule()
+    private final NukleusRule nukleus = new NukleusRule("ws")
         .directory("target/nukleus-itests")
-        .initialize("echo", "source")
-        .initialize("source", "echo");
+        .commandBufferCapacity(1024)
+        .responseBufferCapacity(1024)
+        .counterValuesBufferCapacity(1024)
+        .initialize("source", "ws")
+        .initialize("destination", "ws");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);
 
     @Test
     @Specification({
-        "accept/establish.connection/nukleus",
-        "accept/establish.connection/source"
-    })
+        "control/capture.source.destination/controller",
+        "control/route.source.destination/controller",
+        "control/bind.source.destination/controller",
+        "streams/opening/connection.established/source.accept",
+        "streams/opening/connection.established/destination.accept" })
     public void shouldEstablishConnection() throws Exception
     {
-        k3po.start();
-        k3po.notifyBarrier("BOUND");
-        k3po.finish();
-    }
-
-    @Test
-    @Specification({
-        "accept/echo.source.data/nukleus",
-        "accept/echo.source.data/source" })
-    public void shouldEchoSourceData() throws Exception
-    {
-        k3po.start();
-        k3po.notifyBarrier("BOUND");
-        k3po.finish();
-    }
-
-    @Test
-    @Specification({
-        "accept/initiate.nukleus.close/nukleus",
-        "accept/initiate.nukleus.close/source" })
-    public void shouldInitiateNukleusClose() throws Exception
-    {
-        k3po.start();
-        k3po.notifyBarrier("BOUND");
-        k3po.finish();
-    }
-
-    @Test
-    @Specification({
-        "accept/initiate.source.close/nukleus",
-        "accept/initiate.source.close/source" })
-    public void shouldInitiateSourceClose() throws Exception
-    {
-        k3po.start();
-        k3po.notifyBarrier("BOUND");
         k3po.finish();
     }
 }

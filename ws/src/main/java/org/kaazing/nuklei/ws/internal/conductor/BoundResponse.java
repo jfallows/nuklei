@@ -13,25 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.http.internal.reader;
+package org.kaazing.nuklei.ws.internal.conductor;
 
 
-public final class CaptureCommand implements ReaderCommand
+public final class BoundResponse implements ConductorResponse
 {
     private final long correlationId;
-    private final String source;
+    private final long referenceId;
 
-    public CaptureCommand(
+    public BoundResponse(
         long correlationId,
-        String source)
+        long referenceId)
     {
         this.correlationId = correlationId;
-        this.source = source;
+        this.referenceId = referenceId;
     }
 
-    @Override
-    public void execute(Reader reader)
+    public void execute(Conductor conductor)
     {
-        reader.doCapture(correlationId, source);
+        conductor.onBoundResponse(correlationId, referenceId);
     }
 }

@@ -13,25 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.http.internal.reader;
+package org.kaazing.nuklei.ws.internal.types.stream;
 
-
-public final class CaptureCommand implements ReaderCommand
+public final class Types
 {
-    private final long correlationId;
-    private final String source;
+    public static final int TYPE_ID_BEGIN = 0x00000001;
+    public static final int TYPE_ID_DATA = 0x00000002;
+    public static final int TYPE_ID_END = 0x00000003;
 
-    public CaptureCommand(
-        long correlationId,
-        String source)
+    private Types()
     {
-        this.correlationId = correlationId;
-        this.source = source;
-    }
-
-    @Override
-    public void execute(Reader reader)
-    {
-        reader.doCapture(correlationId, source);
+        // no instances
     }
 }

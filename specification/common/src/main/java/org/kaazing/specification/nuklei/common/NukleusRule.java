@@ -37,13 +37,13 @@ public final class NukleusRule implements TestRule
         this.streamsBufferCapacity = STREAMS_BUFFER_CAPACITY_DEFAULT;
     }
 
-    public NukleusRule setDirectory(String directory)
+    public NukleusRule directory(String directory)
     {
         this.directory = new File("./" + directory);
         return this;
     }
 
-    public NukleusRule setStreamsBufferCapacity(int streamsBufferCapacity)
+    public NukleusRule streamsBufferCapacity(int streamsBufferCapacity)
     {
         this.streamsBufferCapacity = streamsBufferCapacity;
         return this;

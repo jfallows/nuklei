@@ -13,25 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.http.internal.reader;
+package org.kaazing.nuklei.ws.internal;
 
+import org.kaazing.nuklei.Configuration;
+import org.kaazing.nuklei.NukleusFactorySpi;
 
-public final class CaptureCommand implements ReaderCommand
+public final class WsControllerFactorySpi implements NukleusFactorySpi
 {
-    private final long correlationId;
-    private final String source;
 
-    public CaptureCommand(
-        long correlationId,
-        String source)
+    @Override
+    public String name()
     {
-        this.correlationId = correlationId;
-        this.source = source;
+        return "ws.controller";
     }
 
     @Override
-    public void execute(Reader reader)
+    public WsController create(Configuration config)
     {
-        reader.doCapture(correlationId, source);
+        Context context = new Context();
+        context.readonly(true)
+               .conclude(config);
+        return new WsController(context);
     }
+
 }

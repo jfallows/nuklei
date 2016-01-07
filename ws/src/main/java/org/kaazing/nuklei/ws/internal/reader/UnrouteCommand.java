@@ -13,25 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.http.internal.reader;
+package org.kaazing.nuklei.ws.internal.reader;
 
 
-public final class CaptureCommand implements ReaderCommand
+public final class UnrouteCommand implements ReaderCommand
 {
     private final long correlationId;
-    private final String source;
+    private final String destination;
 
-    public CaptureCommand(
+    public UnrouteCommand(
         long correlationId,
-        String source)
+        String destination)
     {
         this.correlationId = correlationId;
-        this.source = source;
+        this.destination = destination;
     }
 
     @Override
-    public void execute(Reader reader)
+    public void execute(Reader reflector)
     {
-        reader.doCapture(correlationId, source);
+        reflector.doUnroute(correlationId, destination);
     }
 }
