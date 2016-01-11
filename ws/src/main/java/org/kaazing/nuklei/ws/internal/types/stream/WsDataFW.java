@@ -100,6 +100,11 @@ public final class WsDataFW extends Flyweight
             return offset() + FIELD_OFFSET_PAYLOAD;
         }
 
+        public Builder payload(DirectBuffer payload)
+        {
+            return payload(payload, 0, payload.capacity());
+        }
+
         public Builder payload(DirectBuffer buffer, int offset, int length)
         {
             buffer().putBytes(payloadOffset(), buffer, offset, length);

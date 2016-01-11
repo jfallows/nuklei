@@ -31,6 +31,7 @@ import org.kaazing.nuklei.ws.internal.types.stream.HttpEndFW;
 import org.kaazing.nuklei.ws.internal.types.stream.WsBeginFW;
 import org.kaazing.nuklei.ws.internal.types.stream.WsDataFW;
 import org.kaazing.nuklei.ws.internal.types.stream.WsEndFW;
+import org.kaazing.nuklei.ws.internal.types.stream.WsFrameFW;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
@@ -46,12 +47,13 @@ public final class HttpInitialStreamPool
     private final HttpEndFW httpEndRO = new HttpEndFW();
 
     private final HttpBeginFW.Builder httpBeginRW = new HttpBeginFW.Builder();
-    private final HttpDataFW.Builder httpDataRW = new HttpDataFW.Builder();
     private final HttpEndFW.Builder httpEndRW = new HttpEndFW.Builder();
 
     private final WsBeginFW.Builder wsBeginRW = new WsBeginFW.Builder();
     private final WsDataFW.Builder wsDataRW = new WsDataFW.Builder();
     private final WsEndFW.Builder wsEndRW = new WsEndFW.Builder();
+
+    private final WsFrameFW wsFrameRO = new WsFrameFW();
 
     private final AtomicBuffer atomicBuffer;
     private final AtomicCounter streamsAccepted;
@@ -201,26 +203,36 @@ public final class HttpInitialStreamPool
 
             DirectBuffer payload = httpDataRO.payload();
 
-            // TODO: read ws frame (data vs ping vs pong vs end)
-            // TODO: ws flags
+            wsFrameRO.wrap(payload, 0, payload.capacity());
 
-            final WsDataFW wsData = wsDataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                            .streamId(destinationInitialStreamId)
-                                            .payload(payload, 0, payload.capacity())
-                                            .build();
-
-            if (!destinationRoute.write(wsData.typeId(), wsData.buffer(), wsData.offset(), wsData.length()))
+            switch (wsFrameRO.opcode())
             {
-                throw new IllegalStateException("could not write to ring buffer");
-            }
+            case 2: // BINARY
+                // TODO: binary versus text in WsDataFW metadata
+                final WsDataFW wsData = wsDataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                                .streamId(destinationInitialStreamId)
+                                                .payload(wsFrameRO.payload())
+                                                .build();
 
-            final WsEndFW wsEnd = wsEndRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                         .streamId(destinationInitialStreamId)
-                                         .build();
+                if (!destinationRoute.write(wsData.typeId(), wsData.buffer(), wsData.offset(), wsData.length()))
+                {
+                    throw new IllegalStateException("could not write to ring buffer");
+                }
+                break;
 
-            if (!destinationRoute.write(wsEnd.typeId(), wsEnd.buffer(), wsEnd.offset(), wsEnd.length()))
-            {
-                throw new IllegalStateException("could not write to ring buffer");
+            case 8: // CLOSE
+                final WsEndFW wsEnd = wsEndRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                             .streamId(destinationInitialStreamId)
+                                             .build();
+
+                if (!destinationRoute.write(wsEnd.typeId(), wsEnd.buffer(), wsEnd.offset(), wsEnd.length()))
+                {
+                    throw new IllegalStateException("could not write to ring buffer");
+                }
+                break;
+
+            default:
+                throw new IllegalStateException("not yet implemented");
             }
         }
 

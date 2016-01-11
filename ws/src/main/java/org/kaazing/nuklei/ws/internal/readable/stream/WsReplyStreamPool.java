@@ -30,6 +30,7 @@ import org.kaazing.nuklei.ws.internal.types.stream.HttpDataFW;
 import org.kaazing.nuklei.ws.internal.types.stream.WsBeginFW;
 import org.kaazing.nuklei.ws.internal.types.stream.WsDataFW;
 import org.kaazing.nuklei.ws.internal.types.stream.WsEndFW;
+import org.kaazing.nuklei.ws.internal.types.stream.WsFrameFW;
 
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
@@ -49,6 +50,8 @@ public final class WsReplyStreamPool
 
     private final HttpBeginFW.Builder httpBeginRW = new HttpBeginFW.Builder();
     private final HttpDataFW.Builder httpDataRW = new HttpDataFW.Builder();
+
+    private final WsFrameFW.Builder wsFrameRW = new WsFrameFW.Builder();
 
     private final AtomicBuffer atomicBuffer;
 
@@ -80,7 +83,8 @@ public final class WsReplyStreamPool
             Consumer<MessageHandler> cleanup,
             long sourceInitialStreamId,
             long sourceReplyStreamId,
-            RingBuffer sourceRoute, byte[] handshakeKey)
+            RingBuffer sourceRoute,
+            byte[] handshakeKey)
         {
             this.cleanup = cleanup;
             this.sourceInitialStreamId = sourceInitialStreamId;
@@ -144,7 +148,22 @@ public final class WsReplyStreamPool
         {
             wsDataRO.wrap(buffer, index, index + length);
 
-            // TODO
+            // TODO: combine httpDataRW with wsFrameRW
+            httpDataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                      .streamId(sourceReplyStreamId);
+
+            WsFrameFW wsFrame = wsFrameRW.wrap(atomicBuffer, httpDataRW.payloadOffset(), atomicBuffer.capacity())
+                                         .flagsAndOpcode(0x82) // TODO: via WsData metadata
+                                         .payload(wsDataRO.buffer(), wsDataRO.payloadOffset(), wsDataRO.payloadLength())
+                                         .build();
+
+            HttpDataFW httpData = httpDataRW.payload(wsFrame.buffer(), wsFrame.offset(), wsFrame.length())
+                                            .build();
+
+            if (!sourceRoute.write(httpData.typeId(), httpData.buffer(), httpData.offset(), httpData.length()))
+            {
+                 throw new IllegalStateException("could not write to ring buffer");
+            }
         }
 
         private void onEnd(

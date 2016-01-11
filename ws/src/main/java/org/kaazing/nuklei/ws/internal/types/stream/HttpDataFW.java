@@ -95,10 +95,15 @@ public final class HttpDataFW extends Flyweight
             return this;
         }
 
+        public int payloadOffset()
+        {
+            return offset() + FIELD_OFFSET_PAYLOAD;
+        }
+
         public Builder payload(DirectBuffer buffer, int offset, int length)
         {
-            buffer().putBytes(offset() + FIELD_OFFSET_PAYLOAD, buffer, offset, length);
-            limit(offset() + FIELD_OFFSET_PAYLOAD + length);
+            buffer().putBytes(payloadOffset(), buffer, offset, length);
+            limit(payloadOffset() + length);
             return this;
         }
     }

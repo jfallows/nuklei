@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.specification.nuklei.ws.streams;
+package org.kaazing.nuklei.ws.internal.streams;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
@@ -25,7 +25,7 @@ import org.junit.rules.TestRule;
 import org.junit.rules.Timeout;
 import org.kaazing.k3po.junit.annotation.Specification;
 import org.kaazing.k3po.junit.rules.K3poRule;
-import org.kaazing.specification.nuklei.common.NukleusRule;
+import org.kaazing.nuklei.test.NukleusRule;
 
 /**
  * RFC-6455, section 5.2 "Base Framing Protocol"
@@ -33,15 +33,16 @@ import org.kaazing.specification.nuklei.common.NukleusRule;
 public class BaseFramingIT
 {
     private final K3poRule k3po = new K3poRule()
-        .setScriptRoot("org/kaazing/specification/nuklei/ws");
+            .setScriptRoot("org/kaazing/specification/nuklei/ws");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
-    private final NukleusRule nukleus = new NukleusRule()
+    private final NukleusRule nukleus = new NukleusRule("ws")
         .directory("target/nukleus-itests")
-        .initialize("ws", "source")
+        .commandBufferCapacity(1024)
+        .responseBufferCapacity(1024)
+        .counterValuesBufferCapacity(1024)
         .initialize("source", "ws")
-        .initialize("ws", "destination")
         .initialize("destination", "ws");
 
     @Rule
@@ -50,13 +51,9 @@ public class BaseFramingIT
     @Test
     @Specification({
         "control/capture.source.destination/controller",
-        "control/capture.source.destination/nukleus",
         "control/route.source.destination/controller",
-        "control/route.source.destination/nukleus",
         "control/bind.source.destination/controller",
-        "control/bind.source.destination/nukleus",
         "streams/framing/echo.binary.payload.length.0/source.accept",
-        "streams/framing/echo.binary.payload.length.0/nukleus.accept",
         "streams/framing/echo.binary.payload.length.0/destination.accept" })
     public void shouldEchoBinaryFrameWithPayloadLength0() throws Exception
     {
