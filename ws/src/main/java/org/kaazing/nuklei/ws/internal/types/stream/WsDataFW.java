@@ -112,7 +112,7 @@ public final class WsDataFW extends Flyweight
             return this;
         }
 
-        public Builder payloadLength(int payloadLength)
+        private Builder payloadLength(int payloadLength)
         {
             assert (payloadLength >= 0);
 

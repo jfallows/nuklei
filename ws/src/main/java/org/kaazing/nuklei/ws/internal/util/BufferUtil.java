@@ -15,37 +15,72 @@
  */
 package org.kaazing.nuklei.ws.internal.util;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import static java.nio.ByteOrder.BIG_ENDIAN;
+import static java.nio.ByteOrder.nativeOrder;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public final class BufferUtil
 {
-    public static int limitOfBytes(
-        DirectBuffer buffer,
-        int offset,
-        int limit,
-        byte[] value)
+    private static final int REMAINING_SHIFT_1ST_BYTE;
+    private static final int REMAINING_SHIFT_1ST_SHORT;
+    private static final int REMAINING_SHIFT_3RD_BYTE;
+
+    static
     {
-        int matchedBytes = 0;
-
-        for (int cursor = offset; cursor < limit; cursor++)
+        if (nativeOrder() == BIG_ENDIAN)
         {
-            if (buffer.getByte(cursor) != value[matchedBytes])
-            {
-                matchedBytes = 0;
-                continue;
-            }
-
-            if (value.length == ++matchedBytes)
-            {
-                return cursor + 1;
-            }
+            REMAINING_SHIFT_1ST_BYTE = 24;
+            REMAINING_SHIFT_1ST_SHORT = 16;
+            REMAINING_SHIFT_3RD_BYTE = 8;
         }
-
-        return -1;
+        else
+        {
+            REMAINING_SHIFT_1ST_BYTE = 0;
+            REMAINING_SHIFT_1ST_SHORT = 0;
+            REMAINING_SHIFT_3RD_BYTE = 16;
+        }
     }
 
     private BufferUtil()
     {
         // utility class, no instances
+    }
+
+    public static void xor(
+        final MutableDirectBuffer buffer,
+        final int offset,
+        final int length,
+        final int bits)
+    {
+        if (bits != 0)
+        {
+            int index = offset;
+            int remaining = length;
+
+            while (remaining > BitUtil.SIZE_OF_INT)
+            {
+                buffer.putInt(index, buffer.getInt(index) ^ bits);
+                index += BitUtil.SIZE_OF_INT;
+                remaining -= BitUtil.SIZE_OF_INT;
+            }
+
+            switch (remaining)
+            {
+            case 0:
+                break;
+            case 1:
+                buffer.putByte(index, (byte) (buffer.getByte(index) ^ ((bits >> REMAINING_SHIFT_1ST_BYTE) & 0xff)));
+                break;
+            case 2:
+                buffer.putShort(index, (short) (buffer.getShort(index) ^ ((bits >> REMAINING_SHIFT_1ST_SHORT) & 0xffff)));
+                break;
+            case 3:
+                buffer.putShort(index, (short) (buffer.getShort(index) ^ ((bits >> REMAINING_SHIFT_1ST_SHORT) & 0xffff)));
+                index += BitUtil.SIZE_OF_SHORT;
+                buffer.putByte(index, (byte) (buffer.getByte(index) ^ ((bits >> REMAINING_SHIFT_3RD_BYTE) & 0xff)));
+                break;
+            }
+        }
     }
 }

@@ -32,6 +32,7 @@ import org.kaazing.nuklei.ws.internal.types.stream.WsBeginFW;
 import org.kaazing.nuklei.ws.internal.types.stream.WsDataFW;
 import org.kaazing.nuklei.ws.internal.types.stream.WsEndFW;
 import org.kaazing.nuklei.ws.internal.types.stream.WsFrameFW;
+import org.kaazing.nuklei.ws.internal.util.BufferUtil;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
@@ -205,6 +206,11 @@ public final class HttpInitialStreamPool
 
             wsFrameRO.wrap(payload, 0, payload.capacity());
 
+            if (!wsFrameRO.mask())
+            {
+                throw new IllegalStateException("client frame not masked");
+            }
+
             switch (wsFrameRO.opcode())
             {
             case 2: // BINARY
@@ -213,6 +219,8 @@ public final class HttpInitialStreamPool
                                                 .streamId(destinationInitialStreamId)
                                                 .payload(wsFrameRO.payload())
                                                 .build();
+
+                BufferUtil.xor(atomicBuffer, wsData.payloadOffset(), wsData.payloadLength(), wsFrameRO.maskingKey());
 
                 if (!destinationRoute.write(wsData.typeId(), wsData.buffer(), wsData.offset(), wsData.length()))
                 {

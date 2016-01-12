@@ -63,12 +63,12 @@ public final class WsFrameFW extends Flyweight
 
     public boolean mask()
     {
-        return (buffer().getByte(offset() + FIELD_OFFSET_MASK_AND_LENGTH) & 0x08) != 0;
+        return (buffer().getByte(offset() + FIELD_OFFSET_MASK_AND_LENGTH) & 0x80) != 0;
     }
 
     public int maskingKey()
     {
-        return buffer().getInt(offset() + FIELD_OFFSET_FLAGS_AND_OPCODE + lengthSize());
+        return buffer().getInt(offset() + FIELD_OFFSET_FLAGS_AND_OPCODE + FIELD_SIZE_FLAGS_AND_OPCODE + lengthSize());
     }
 
     public DirectBuffer payload()
@@ -173,46 +173,51 @@ public final class WsFrameFW extends Flyweight
             switch (highestOneBit(length))
             {
             case 0:
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-            case 6:
+            case 8:
+            case 16:
+            case 24:
+            case 32:
+            case 40:
+            case 48:
+            case 56:
                 buffer().putByte(offset() + FIELD_OFFSET_MASK_AND_LENGTH, (byte) length);
+                buffer().putBytes(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 1, buffer, offset, length);
                 limit(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 1 + length);
                 break;
-            case 7:
+            case 64:
                 switch (length)
                 {
                 case 126:
                 case 127:
                     buffer().putByte(offset() + FIELD_OFFSET_MASK_AND_LENGTH, (byte) 126);
                     buffer().putShort(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 1, (short) length);
+                    buffer().putBytes(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 3, buffer, offset, length);
                     limit(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 3 + length);
                     break;
                 default:
                     buffer().putByte(offset() + FIELD_OFFSET_MASK_AND_LENGTH, (byte) length);
+                    buffer().putBytes(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 1, buffer, offset, length);
                     limit(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 1 + length);
                     break;
                 }
                 break;
-            case 8:
-            case 9:
-            case 10:
-            case 11:
-            case 12:
-            case 13:
-            case 14:
-            case 15:
-            case 16:
+            case 72:
+            case 80:
+            case 88:
+            case 96:
+            case 104:
+            case 112:
+            case 120:
+            case 132:
                 buffer().putByte(offset() + FIELD_OFFSET_MASK_AND_LENGTH, (byte) 126);
                 buffer().putShort(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 1, (short) length);
+                buffer().putBytes(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 3, buffer, offset, length);
                 limit(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 3 + length);
                 break;
             default:
                 buffer().putByte(offset() + FIELD_OFFSET_MASK_AND_LENGTH, (byte) 127);
                 buffer().putLong(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 1, length);
+                buffer().putBytes(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 9, buffer, offset, length);
                 limit(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 9 + length);
                 break;
             }

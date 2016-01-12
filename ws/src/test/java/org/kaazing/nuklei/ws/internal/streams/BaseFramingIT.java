@@ -62,8 +62,11 @@ public class BaseFramingIT
 
     @Test
     @Specification({
-        "streams/framing/echo.binary.payload.length.125/handshake.request.and.frame",
-        "streams/framing/echo.binary.payload.length.125/handshake.response.and.frame" })
+        "control/capture.source.destination/controller",
+        "control/route.source.destination/controller",
+        "control/bind.source.destination/controller",
+        "streams/framing/echo.binary.payload.length.125/source.accept",
+        "streams/framing/echo.binary.payload.length.125/destination.accept" })
     public void shouldEchoBinaryFrameWithPayloadLength125() throws Exception
     {
         k3po.finish();
