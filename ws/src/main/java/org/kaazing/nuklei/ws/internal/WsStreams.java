@@ -18,6 +18,8 @@ package org.kaazing.nuklei.ws.internal;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 
+import java.util.Map;
+
 import org.kaazing.nuklei.ws.internal.layouts.StreamsLayout;
 import org.kaazing.nuklei.ws.internal.types.stream.HttpBeginFW;
 import org.kaazing.nuklei.ws.internal.types.stream.HttpDataFW;
@@ -78,12 +80,21 @@ public final class WsStreams
 
     public boolean httpBegin(
         long streamId,
-        long referenceId)
+        long referenceId,
+        Map<String, String> headers)
     {
-        HttpBeginFW httpBegin = httpBeginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                           .streamId(streamId)
-                                           .referenceId(referenceId)
-                                           .build();
+        httpBeginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                   .streamId(streamId)
+                   .referenceId(referenceId);
+
+        for (Map.Entry<String, String> header : headers.entrySet())
+        {
+            String name = header.getKey();
+            String value = header.getValue();
+            httpBeginRW.header(name, value);
+        }
+
+        HttpBeginFW httpBegin = httpBeginRW.build();
 
         return captureBuffer.write(httpBegin.typeId(), httpBegin.buffer(), httpBegin.offset(), httpBegin.length());
     }
@@ -114,11 +125,13 @@ public final class WsStreams
 
     public boolean wsBegin(
         long streamId,
-        long referenceId)
+        long referenceId,
+        String protocol)
     {
         WsBeginFW wsBegin = wsBeginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                                      .streamId(streamId)
                                      .referenceId(referenceId)
+                                     .protocol(protocol)
                                      .build();
 
         return captureBuffer.write(wsBegin.typeId(), wsBegin.buffer(), wsBegin.offset(), wsBegin.length());

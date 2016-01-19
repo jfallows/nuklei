@@ -86,7 +86,11 @@ public final class WsFrameFW extends Flyweight
     {
         super.wrap(buffer, offset, maxLimit);
 
-        payloadRO.wrap(buffer, payloadOffset(), lengthValue());
+        int lengthValue = lengthValue();
+        if (lengthValue != 0)
+        {
+            payloadRO.wrap(buffer, payloadOffset(), lengthValue);
+        }
 
         checkLimit(limit(), maxLimit);
 

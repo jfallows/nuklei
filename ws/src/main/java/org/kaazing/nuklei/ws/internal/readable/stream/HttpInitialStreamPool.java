@@ -34,6 +34,7 @@ import org.kaazing.nuklei.ws.internal.types.stream.WsEndFW;
 import org.kaazing.nuklei.ws.internal.types.stream.WsFrameFW;
 import org.kaazing.nuklei.ws.internal.util.BufferUtil;
 
+import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
@@ -204,44 +205,52 @@ public final class HttpInitialStreamPool
 
             DirectBuffer payload = httpDataRO.payload();
 
-            wsFrameRO.wrap(payload, 0, payload.capacity());
-
-            if (!wsFrameRO.mask())
+            int nextPayloadOffset = 0;
+            int maxPayloadLimit = payload.capacity();
+            while (nextPayloadOffset < maxPayloadLimit)
             {
-                throw new IllegalStateException("client frame not masked");
-            }
+                wsFrameRO.wrap(payload, nextPayloadOffset, maxPayloadLimit);
+                nextPayloadOffset = wsFrameRO.limit();
 
-            switch (wsFrameRO.opcode())
-            {
-            case 1: // TEXT
-            case 2: // BINARY
-                // TODO: binary versus text in WsDataFW metadata
-                final WsDataFW wsData = wsDataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                                .streamId(destinationInitialStreamId)
-                                                .payload(wsFrameRO.payload())
-                                                .build();
-
-                BufferUtil.xor(atomicBuffer, wsData.payloadOffset(), wsData.payloadLength(), wsFrameRO.maskingKey());
-
-                if (!destinationRoute.write(wsData.typeId(), wsData.buffer(), wsData.offset(), wsData.length()))
+                if (!wsFrameRO.mask())
                 {
-                    throw new IllegalStateException("could not write to ring buffer");
+                    byte[] bytes = new byte[payload.capacity()];
+                    payload.getBytes(0, bytes);
+                    throw new IllegalStateException("client frame not masked: " + BitUtil.toHex(bytes));
                 }
-                break;
 
-            case 8: // CLOSE
-                final WsEndFW wsEnd = wsEndRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                             .streamId(destinationInitialStreamId)
-                                             .build();
-
-                if (!destinationRoute.write(wsEnd.typeId(), wsEnd.buffer(), wsEnd.offset(), wsEnd.length()))
+                switch (wsFrameRO.opcode())
                 {
-                    throw new IllegalStateException("could not write to ring buffer");
-                }
-                break;
+                case 1: // TEXT
+                case 2: // BINARY
+                    // TODO: binary versus text in WsDataFW metadata
+                    final WsDataFW wsData = wsDataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                                    .streamId(destinationInitialStreamId)
+                                                    .payload(wsFrameRO.payload())
+                                                    .build();
 
-            default:
-                throw new IllegalStateException("not yet implemented");
+                    BufferUtil.xor(atomicBuffer, wsData.payloadOffset(), wsData.payloadLength(), wsFrameRO.maskingKey());
+
+                    if (!destinationRoute.write(wsData.typeId(), wsData.buffer(), wsData.offset(), wsData.length()))
+                    {
+                        throw new IllegalStateException("could not write to ring buffer");
+                    }
+                    break;
+
+                case 8: // CLOSE
+                    final WsEndFW wsEnd = wsEndRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                                 .streamId(destinationInitialStreamId)
+                                                 .build();
+
+                    if (!destinationRoute.write(wsEnd.typeId(), wsEnd.buffer(), wsEnd.offset(), wsEnd.length()))
+                    {
+                        throw new IllegalStateException("could not write to ring buffer");
+                    }
+                    break;
+
+                default:
+                    throw new IllegalStateException("not yet implemented");
+                }
             }
         }
 

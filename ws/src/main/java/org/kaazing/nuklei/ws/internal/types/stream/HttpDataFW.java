@@ -45,7 +45,11 @@ public final class HttpDataFW extends Flyweight
     {
         super.wrap(buffer, offset, maxLimit);
 
-        this.payloadRO.wrap(buffer, offset + FIELD_OFFSET_PAYLOAD, maxLimit);
+        int length = maxLimit - (offset + FIELD_OFFSET_PAYLOAD);
+        if (length != 0)
+        {
+            this.payloadRO.wrap(buffer, offset + FIELD_OFFSET_PAYLOAD, length);
+        }
 
         this.limit = maxLimit;
 
