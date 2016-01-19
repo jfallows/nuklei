@@ -150,8 +150,15 @@ public final class BindFW extends Flyweight
 
         public Builder protocol(String protocol)
         {
-            protocol().set(protocol, StandardCharsets.UTF_8);
-            limit(protocol().build().limit());
+            if (protocol == null)
+            {
+                limit(source().build().limit());
+            }
+            else
+            {
+                protocol().set(protocol, StandardCharsets.UTF_8);
+                limit(protocol().build().limit());
+            }
             return this;
         }
 

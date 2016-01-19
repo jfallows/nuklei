@@ -133,6 +133,7 @@ public final class WsReplyStreamPool
                                                .header("upgrade", "websocket")
                                                .header("connection", "upgrade")
                                                .header("sec-websocket-accept", new String(handshakeHash, US_ASCII))
+                                               .header("sec-websocket-protocol", wsBeginRO.protocol().asString())
                                                .build();
 
             if (!sourceRoute.write(httpBegin.typeId(), httpBegin.buffer(), httpBegin.offset(), httpBegin.length()))

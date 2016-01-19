@@ -47,7 +47,7 @@ public final class InitialStreamPool
 
     private static enum DecoderState
     {
-        IDLE, HEADERS, BODY, TRAILERS, END
+        IDLE, HEADERS, UPGRADED, BODY, TRAILERS, END
     }
 
     private final BeginFW.Builder beginRW = new BeginFW.Builder();
@@ -178,6 +178,9 @@ public final class InitialStreamPool
                 case HEADERS:
                     // TODO: partial headers
                     break;
+                case UPGRADED:
+                    offset = decodeHttpDataAfterUpgrade(payload, offset, limit);
+                    break;
                 case BODY:
                     offset = decodeHttpData(payload, offset, limit);
                     break;
@@ -236,6 +239,7 @@ public final class InitialStreamPool
                            .header(":path", requestURI.getPath());
 
                 String host = null;
+                String upgrade = null;
                 Pattern headerPattern = Pattern.compile("([^\\s:]+)\\s*:\\s*(.*)");
                 for (int i = 1; i < lines.length; i++)
                 {
@@ -251,6 +255,10 @@ public final class InitialStreamPool
                     if ("host".equals(name))
                     {
                         host = value;
+                    }
+                    else if ("upgrade".equals(name))
+                    {
+                        upgrade = value;
                     }
 
                     httpBeginRW.header(name, value);
@@ -276,7 +284,15 @@ public final class InitialStreamPool
                         throw new IllegalStateException("could not write to ring buffer");
                     }
 
-                    decoderState = DecoderState.BODY;
+                    // TODO: wait for 101 first
+                    if (upgrade != null)
+                    {
+                        decoderState = DecoderState.UPGRADED;
+                    }
+                    else
+                    {
+                        decoderState = DecoderState.BODY;
+                    }
                 }
             }
 
@@ -294,6 +310,24 @@ public final class InitialStreamPool
                                                   .build();
 
             // TODO: http chunk flag and extension
+
+            if (!destinationRoute.write(httpData.typeId(), httpData.buffer(), httpData.offset(), httpData.length()))
+            {
+                throw new IllegalStateException("could not write to ring buffer");
+            }
+
+            return limit;
+        }
+
+        private int decodeHttpDataAfterUpgrade(
+            DirectBuffer payload,
+            int offset,
+            int limit)
+        {
+            final HttpDataFW httpData = httpDataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                                  .streamId(destinationInitialStreamId)
+                                                  .payload(payload, offset, limit - offset)
+                                                  .build();
 
             if (!destinationRoute.write(httpData.typeId(), httpData.buffer(), httpData.offset(), httpData.length()))
             {

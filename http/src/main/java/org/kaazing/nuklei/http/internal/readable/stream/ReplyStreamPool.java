@@ -15,9 +15,11 @@
  */
 package org.kaazing.nuklei.http.internal.readable.stream;
 
+import static java.lang.Character.toUpperCase;
 import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_BEGIN;
 import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_DATA;
 import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_END;
+
 
 
 
@@ -32,10 +34,12 @@ import java.util.function.Consumer;
 
 
 
+
 import org.kaazing.nuklei.http.internal.types.stream.DataFW;
 import org.kaazing.nuklei.http.internal.types.stream.HttpBeginFW;
 import org.kaazing.nuklei.http.internal.types.stream.HttpDataFW;
 import org.kaazing.nuklei.http.internal.types.stream.HttpEndFW;
+
 
 
 
@@ -128,10 +132,15 @@ public final class ReplyStreamPool
                 if (":status".equals(name))
                 {
                     status[0] = value;
+                    if ("101".equals(status[0]))
+                    {
+                        status[1] = "Switching Protocols";
+                    }
                 }
                 else
                 {
-                    headers.append(name).append(": ").append(value).append("\r\n");
+                    headers.append(toUpperCase(name.charAt(0))).append(name.substring(1))
+                           .append(": ").append(value).append("\r\n");
                 }
             });
 
@@ -157,7 +166,7 @@ public final class ReplyStreamPool
         {
             httpDataRO.wrap(buffer, index, index + length);
 
-            // TODO: unwrap chunk syntax (if necessary)
+            // TODO: unwrap chunk syntax (if necessary - not after 101 upgrade)
 
             final DataFW data = dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                                       .streamId(sourceReplyStreamId)

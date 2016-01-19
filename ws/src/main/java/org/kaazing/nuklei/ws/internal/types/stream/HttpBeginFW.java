@@ -112,8 +112,11 @@ public final class HttpBeginFW extends Flyweight
 
         public Builder header(String name, String value)
         {
-            headersRW.header(name, value);
-            limit(headersRW.limit());
+            if (value != null)
+            {
+                headersRW.header(name, value);
+                limit(headersRW.limit());
+            }
             return this;
         }
 

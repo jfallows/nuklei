@@ -213,6 +213,7 @@ public final class HttpInitialStreamPool
 
             switch (wsFrameRO.opcode())
             {
+            case 1: // TEXT
             case 2: // BINARY
                 // TODO: binary versus text in WsDataFW metadata
                 final WsDataFW wsData = wsDataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())

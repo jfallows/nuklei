@@ -173,13 +173,12 @@ public final class WsFrameFW extends Flyweight
             switch (highestOneBit(length))
             {
             case 0:
+            case 1:
+            case 2:
+            case 4:
             case 8:
             case 16:
-            case 24:
             case 32:
-            case 40:
-            case 48:
-            case 56:
                 buffer().putByte(offset() + FIELD_OFFSET_MASK_AND_LENGTH, (byte) length);
                 buffer().putBytes(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 1, buffer, offset, length);
                 limit(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 1 + length);
@@ -201,13 +200,6 @@ public final class WsFrameFW extends Flyweight
                     break;
                 }
                 break;
-            case 72:
-            case 80:
-            case 88:
-            case 96:
-            case 104:
-            case 112:
-            case 120:
             case 132:
                 buffer().putByte(offset() + FIELD_OFFSET_MASK_AND_LENGTH, (byte) 126);
                 buffer().putShort(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 1, (short) length);

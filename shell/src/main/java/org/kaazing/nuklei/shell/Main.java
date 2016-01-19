@@ -29,6 +29,7 @@ import org.kaazing.nuklei.NukleusFactory;
 import org.kaazing.nuklei.echo.internal.EchoController;
 import org.kaazing.nuklei.http.internal.HttpController;
 import org.kaazing.nuklei.tcp.internal.TcpController;
+import org.kaazing.nuklei.ws.internal.WsController;
 
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.concurrent.Agent;
@@ -59,37 +60,44 @@ public final class Main
         NukleusFactory factory = NukleusFactory.instantiate();
 
         Nukleus echo = factory.create("echo", config);
+        Nukleus ws = factory.create("ws", config);
         Nukleus http = factory.create("http", config);
         Nukleus tcp = factory.create("tcp", config);
 
-        Agent agent = new CompositeAgent(new NukleusAgent(tcp),
-                                         new CompositeAgent(new NukleusAgent(http), new NukleusAgent(echo)));
+        Agent agent = new CompositeAgent(new CompositeAgent(new NukleusAgent(tcp), new NukleusAgent(http)),
+                                         new CompositeAgent(new NukleusAgent(ws), new NukleusAgent(echo)));
         startOnThread(new AgentRunner(idleStrategy, errorHandler, errorCounter, agent));
 
         TcpController tcpctl = (TcpController) factory.create("tcp.controller", config);
+        WsController wsctl = (WsController) factory.create("ws.controller", config);
         HttpController httpctl = (HttpController) factory.create("http.controller", config);
         EchoController echoctl = (EchoController) factory.create("echo.controller", config);
 
-        Agent control = new CompositeAgent(new NukleusAgent(tcpctl),
-                                           new CompositeAgent(new NukleusAgent(httpctl), new NukleusAgent(echoctl)));
+        Agent control = new CompositeAgent(new CompositeAgent(new NukleusAgent(tcpctl), new NukleusAgent(httpctl)),
+                                           new CompositeAgent(new NukleusAgent(wsctl), new NukleusAgent(echoctl)));
         startOnThread(new AgentRunner(idleStrategy, errorHandler, errorCounter, control));
 
-        echoctl.capture("http").get();
-        httpctl.capture("echo").get();
+        echoctl.capture("ws").get();
+        wsctl.capture("echo").get();
+        wsctl.capture("http").get();
+        httpctl.capture("ws").get();
         httpctl.capture("tcp").get();
         tcpctl.capture("http").get();
 
-        echoctl.route("http").get();
-        httpctl.route("echo").get();
+        echoctl.route("ws").get();
+        wsctl.route("echo").get();
+        wsctl.route("http").get();
+        httpctl.route("ws").get();
         httpctl.route("tcp").get();
         tcpctl.route("http").get();
 
-        long echoRef = echoctl.bind("http").get();
-        long httpRef = httpctl.bind("echo", echoRef, "tcp", singletonMap(":path", "/")).get();
+        long echoRef = echoctl.bind("ws").get();
+        long wsRef = wsctl.bind("echo", echoRef, "http", null).get();
+        long httpRef = httpctl.bind("ws", wsRef, "tcp", singletonMap(":path", "/")).get();
         long tcpRef = tcpctl.bind("http", httpRef, new InetSocketAddress("localhost", 8080)).get();
 
         // TODO: resource cleanup via try-with-resources
-        System.out.println("echo listening on http://localhost:8080/");
+        System.out.println("echo listening on ws://localhost:8080/");
         new SigIntBarrier().await();
 
         tcpctl.unbind(tcpRef).get();

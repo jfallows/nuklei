@@ -58,7 +58,7 @@ public final class BufferUtil
             int index = offset;
             int remaining = length;
 
-            while (remaining > BitUtil.SIZE_OF_INT)
+            while (remaining >= BitUtil.SIZE_OF_INT)
             {
                 buffer.putInt(index, buffer.getInt(index) ^ bits);
                 index += BitUtil.SIZE_OF_INT;
