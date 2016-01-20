@@ -23,10 +23,9 @@ import static org.kaazing.nuklei.Configuration.COMMAND_BUFFER_CAPACITY_PROPERTY_
 import static org.kaazing.nuklei.Configuration.COUNTERS_BUFFER_CAPACITY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.RESPONSE_BUFFER_CAPACITY_PROPERTY_NAME;
-import static org.kaazing.nuklei.Configuration.STREAMS_BUFFER_CAPACITY_PROPERTY_NAME;
-import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
 
-import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,83 +34,63 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.kaazing.nuklei.Configuration;
-import org.kaazing.nuklei.Nukleus;
-import org.kaazing.nuklei.NukleusFactory;
+import org.kaazing.nuklei.Controller;
+import org.kaazing.nuklei.ControllerFactory;
 
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.SleepingIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
-public final class NukleusRule implements TestRule
+public final class ControllerRule implements TestRule
 {
-    private final String[] names;
-    private final Nukleus[] nuklei;
+    private final Class<? extends Controller>[] kinds;
+    private final Map<Class<? extends Controller>, Controller> controllers;
     private final Properties properties;
 
     private Configuration configuration;
 
-    public NukleusRule(String... names)
+    @SafeVarargs
+    public ControllerRule(Class<? extends Controller>... kinds)
     {
-        this.names = requireNonNull(names);
-        this.nuklei = new Nukleus[names.length];
+        this.kinds = requireNonNull(kinds);
+        this.controllers = new HashMap<>();
         this.properties = new Properties();
     }
 
-    public NukleusRule directory(String directory)
+    public ControllerRule directory(String directory)
     {
         properties.setProperty(DIRECTORY_PROPERTY_NAME, directory);
         return this;
     }
 
-    public NukleusRule commandBufferCapacity(int commandBufferCapacity)
+    public ControllerRule commandBufferCapacity(int commandBufferCapacity)
     {
         properties.setProperty(COMMAND_BUFFER_CAPACITY_PROPERTY_NAME, valueOf(commandBufferCapacity));
         return this;
     }
 
-    public NukleusRule responseBufferCapacity(int responseBufferCapacity)
+    public ControllerRule responseBufferCapacity(int responseBufferCapacity)
     {
         properties.setProperty(RESPONSE_BUFFER_CAPACITY_PROPERTY_NAME, valueOf(responseBufferCapacity));
         return this;
     }
 
-    public NukleusRule counterValuesBufferCapacity(int counterValuesBufferCapacity)
+    public ControllerRule counterValuesBufferCapacity(int counterValuesBufferCapacity)
     {
         properties.setProperty(COUNTERS_BUFFER_CAPACITY_PROPERTY_NAME, valueOf(counterValuesBufferCapacity));
         return this;
     }
 
-    public NukleusRule streamsBufferCapacity(int streamsBufferCapacity)
+    public <T extends Controller> T controller(Class<T> kind)
     {
-        properties.setProperty(STREAMS_BUFFER_CAPACITY_PROPERTY_NAME, valueOf(streamsBufferCapacity));
-        return this;
-    }
+        Controller controller = controllers.get(kind);
 
-    public NukleusRule initialize(
-        String reader,
-        String writer)
-    {
-        Configuration configuration = configuration();
-        int streamsBufferCapacity = configuration.streamsBufferCapacity();
-        File directory = configuration.directory();
-
-        File streams = new File(directory, String.format("%s/streams/%s", reader, writer));
-        createEmptyFile(streams.getAbsoluteFile(), streamsBufferCapacity + RingBufferDescriptor.TRAILER_LENGTH);
-
-        return this;
-    }
-
-    public <T extends Nukleus> T lookup(Class<T> clazz)
-    {
-        for (Nukleus nukleus : nuklei)
+        if (controller == null)
         {
-            if (clazz.isInstance(nukleus))
-            {
-                return clazz.cast(nukleus);
-            }
+            throw new IllegalStateException("controller not found: " + kind.getName());
         }
 
-        throw new IllegalStateException("nukleus not found: " + clazz.getName());
+        return kind.cast(controller);
+
     }
 
     private Configuration configuration()
@@ -131,15 +110,16 @@ public final class NukleusRule implements TestRule
             @Override
             public void evaluate() throws Throwable
             {
-                NukleusFactory factory = NukleusFactory.instantiate();
+                ControllerFactory factory = ControllerFactory.instantiate();
                 Configuration config = configuration();
                 final AtomicBoolean finished = new AtomicBoolean();
                 final AtomicInteger errorCount = new AtomicInteger();
                 final IdleStrategy idler = new SleepingIdleStrategy(MILLISECONDS.toNanos(50L));
-                for (int i=0; i < names.length; i++)
+                for (int i=0; i < kinds.length; i++)
                 {
-                    nuklei[i] = factory.create(names[i], config);
+                    controllers.put(kinds[i], factory.create(kinds[i], config));
                 }
+                final Controller[] workers = controllers.values().toArray(new Controller[0]);
                 Runnable runnable = () ->
                 {
                     while (!finished.get())
@@ -148,9 +128,9 @@ public final class NukleusRule implements TestRule
                         {
                             int workCount = 0;
 
-                            for (int i=0; i < nuklei.length; i++)
+                            for (int i=0; i < workers.length; i++)
                             {
-                                workCount += nuklei[i].process();
+                                workCount += workers[i].process();
                             }
 
                             idler.idle(workCount);
@@ -163,9 +143,9 @@ public final class NukleusRule implements TestRule
                     }
                     try
                     {
-                        for (int i=0; i < nuklei.length; i++)
+                        for (int i=0; i < workers.length; i++)
                         {
-                            nuklei[i].close();
+                            workers[i].close();
                         }
                     }
                     catch (Exception ex)

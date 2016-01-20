@@ -25,7 +25,7 @@ import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_UNBOU
 
 import java.util.concurrent.CompletableFuture;
 
-import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.Controller;
 import org.kaazing.nuklei.echo.internal.types.control.BindFW;
 import org.kaazing.nuklei.echo.internal.types.control.BoundFW;
 import org.kaazing.nuklei.echo.internal.types.control.CaptureFW;
@@ -45,7 +45,7 @@ import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-public final class EchoController implements Nukleus
+public final class EchoController implements Controller
 {
     private static final int MAX_SEND_LENGTH = 1024; // TODO: Configuration and Context
 
@@ -94,12 +94,6 @@ public final class EchoController implements Nukleus
     public void close() throws Exception
     {
         context.close();
-    }
-
-    @Override
-    public String name()
-    {
-        return "echo.controller";
     }
 
     public AtomicCounter messagesReflected()

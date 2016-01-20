@@ -29,6 +29,7 @@ import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
 import org.kaazing.nuklei.Configuration;
+import org.kaazing.nuklei.ControllerFactory;
 import org.kaazing.nuklei.NukleusFactory;
 import org.kaazing.nuklei.ws.internal.WsController;
 import org.kaazing.nuklei.ws.internal.WsNukleus;
@@ -80,10 +81,11 @@ public class WsServerBM
         properties.setProperty(STREAMS_BUFFER_CAPACITY_PROPERTY_NAME, Long.toString(streamsCapacity));
         final Configuration config = new Configuration(properties);
 
-        NukleusFactory factory = NukleusFactory.instantiate();
+        NukleusFactory nuklei = NukleusFactory.instantiate();
+        ControllerFactory controllers = ControllerFactory.instantiate();
 
-        this.nukleus = (WsNukleus) factory.create("ws", config);
-        this.controller = (WsController) factory.create("ws.controller", config);
+        this.nukleus = (WsNukleus) nuklei.create("ws", config);
+        this.controller = controllers.create(WsController.class, config);
 
         controller.capture("source");
         while (this.nukleus.process() != 0L || this.controller.process() != 0L)

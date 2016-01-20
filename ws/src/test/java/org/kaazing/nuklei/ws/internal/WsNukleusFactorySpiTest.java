@@ -28,7 +28,7 @@ import org.kaazing.nuklei.Configuration;
 public class WsNukleusFactorySpiTest
 {
     @Test
-    public void shouldCreateHttpNukleus()
+    public void shouldCreateWsNukleus()
     {
         NukleusFactory factory = NukleusFactory.instantiate();
         Properties properties = new Properties();

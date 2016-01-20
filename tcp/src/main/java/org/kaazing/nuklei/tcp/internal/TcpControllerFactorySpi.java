@@ -16,24 +16,28 @@
 package org.kaazing.nuklei.tcp.internal;
 
 import org.kaazing.nuklei.Configuration;
-import org.kaazing.nuklei.NukleusFactorySpi;
+import org.kaazing.nuklei.Controller;
+import org.kaazing.nuklei.ControllerFactorySpi;
 
-public final class TcpControllerFactorySpi implements NukleusFactorySpi
+public final class TcpControllerFactorySpi implements ControllerFactorySpi
 {
 
     @Override
-    public String name()
+    public Class<TcpController> kind()
     {
-        return "tcp.controller";
+        return TcpController.class;
     }
 
     @Override
-    public TcpController create(Configuration config)
+    public <T extends Controller> T create(
+        Class<T> kind,
+        Configuration config)
     {
         Context context = new Context();
         context.readonly(true)
                .conclude(config);
-        return new TcpController(context);
+
+        return kind.cast(new TcpController(context));
     }
 
 }

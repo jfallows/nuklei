@@ -35,7 +35,7 @@ public final class Reaktor implements AutoCloseable
 {
     private final AgentRunner runner;
 
-    private Reaktor(Configuration config)
+    private Reaktor(Configuration config, ToBooleanFunction<String> includes)
     {
         NukleusFactory factory = NukleusFactory.instantiate();
 
@@ -43,7 +43,7 @@ public final class Reaktor implements AutoCloseable
 
         for (String name : factory.names())
         {
-            if (!name.endsWith(".controller"))
+            if (includes.applyAsBoolean(name))
             {
                 Nukleus nukleus = factory.create(name, config);
                 nuklei = ArrayUtil.add(nuklei, nukleus);
@@ -97,16 +97,16 @@ public final class Reaktor implements AutoCloseable
         }
     }
 
-    public static Reaktor launch(final Configuration config)
+    public static Reaktor launch(final Configuration config, ToBooleanFunction<String> includes)
     {
-        Reaktor reaktor = new Reaktor(config);
+        Reaktor reaktor = new Reaktor(config, includes);
         reaktor.start();
         return reaktor;
     }
 
-    public static Reaktor launch()
+    public static Reaktor launch(ToBooleanFunction<String> includes)
     {
-        return launch(new Configuration());
+        return launch(new Configuration(), includes);
     }
 
     public static void main(final String[] args) throws Exception
@@ -115,11 +115,18 @@ public final class Reaktor implements AutoCloseable
         String directory = IoUtil.tmpDirName() + "org.kaazing.nuklei.reaktor";
         System.setProperty(Configuration.DIRECTORY_PROPERTY_NAME, directory);
 
-        try (final Reaktor reaktor = Reaktor.launch())
+        // TODO: command line parameter to filter nukleus name includes (defaults to all)
+        try (final Reaktor reaktor = Reaktor.launch(name -> true))
         {
             System.out.println("Started in " + directory);
 
             new SigIntBarrier().await();
         }
+    }
+
+    @FunctionalInterface
+    private interface ToBooleanFunction<T>
+    {
+        boolean applyAsBoolean(T value);
     }
 }

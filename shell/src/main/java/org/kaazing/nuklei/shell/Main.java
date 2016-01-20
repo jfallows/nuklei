@@ -24,6 +24,8 @@ import java.net.InetSocketAddress;
 import java.util.Properties;
 
 import org.kaazing.nuklei.Configuration;
+import org.kaazing.nuklei.Controller;
+import org.kaazing.nuklei.ControllerFactory;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.NukleusFactory;
 import org.kaazing.nuklei.echo.internal.EchoController;
@@ -55,26 +57,27 @@ public final class Main
         AtomicCounter errorCounter = counters.newCounter("errors");
 
         final Properties properties = new Properties();
-        properties.setProperty(DIRECTORY_PROPERTY_NAME, "target/nukleus-example");
+        properties.setProperty(DIRECTORY_PROPERTY_NAME, "target/controller-example");
         Configuration config = new Configuration(properties);
-        NukleusFactory factory = NukleusFactory.instantiate();
+        NukleusFactory nuklei = NukleusFactory.instantiate();
+        ControllerFactory controllers = ControllerFactory.instantiate();
 
-        Nukleus echo = factory.create("echo", config);
-        Nukleus ws = factory.create("ws", config);
-        Nukleus http = factory.create("http", config);
-        Nukleus tcp = factory.create("tcp", config);
+        Nukleus echo = nuklei.create("echo", config);
+        Nukleus ws = nuklei.create("ws", config);
+        Nukleus http = nuklei.create("http", config);
+        Nukleus tcp = nuklei.create("tcp", config);
 
         Agent agent = new CompositeAgent(new CompositeAgent(new NukleusAgent(tcp), new NukleusAgent(http)),
                                          new CompositeAgent(new NukleusAgent(ws), new NukleusAgent(echo)));
         startOnThread(new AgentRunner(idleStrategy, errorHandler, errorCounter, agent));
 
-        TcpController tcpctl = (TcpController) factory.create("tcp.controller", config);
-        WsController wsctl = (WsController) factory.create("ws.controller", config);
-        HttpController httpctl = (HttpController) factory.create("http.controller", config);
-        EchoController echoctl = (EchoController) factory.create("echo.controller", config);
+        TcpController tcpctl = controllers.create(TcpController.class, config);
+        WsController wsctl = controllers.create(WsController.class, config);
+        HttpController httpctl = controllers.create(HttpController.class, config);
+        EchoController echoctl = controllers.create(EchoController.class, config);
 
-        Agent control = new CompositeAgent(new CompositeAgent(new NukleusAgent(tcpctl), new NukleusAgent(httpctl)),
-                                           new CompositeAgent(new NukleusAgent(wsctl), new NukleusAgent(echoctl)));
+        Agent control = new CompositeAgent(new CompositeAgent(new ControllerAgent(tcpctl), new ControllerAgent(httpctl)),
+                                           new CompositeAgent(new ControllerAgent(wsctl), new ControllerAgent(echoctl)));
         startOnThread(new AgentRunner(idleStrategy, errorHandler, errorCounter, control));
 
         echoctl.capture("ws").get();
@@ -123,6 +126,27 @@ public final class Main
         public String roleName()
         {
             return nukleus.name();
+        }
+    }
+
+    private static class ControllerAgent implements Agent
+    {
+        private final Controller controller;
+
+        public ControllerAgent(Controller controller)
+        {
+            this.controller = controller;
+        }
+        @Override
+        public int doWork() throws Exception
+        {
+            return controller.process();
+        }
+
+        @Override
+        public String roleName()
+        {
+            return controller.kind().getSimpleName();
         }
     }
 }

@@ -13,29 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.echo.internal;
+package org.kaazing.nuklei;
 
-import org.kaazing.nuklei.Configuration;
-import org.kaazing.nuklei.Controller;
-import org.kaazing.nuklei.ControllerFactorySpi;
 
-public final class EchoControllerFactorySpi implements ControllerFactorySpi
+public interface ControllerFactorySpi
 {
-    @Override
-    public Class<EchoController> kind()
-    {
-        return EchoController.class;
-    }
+    Class<? extends Controller> kind();
 
-    @Override
-    public <T extends Controller> T create(
-        Class<T> kind,
-        Configuration config)
-    {
-        Context context = new Context();
-        context.readonly(true)
-               .conclude(config);
-
-        return kind.cast(new EchoController(context));
-    }
+    <T extends Controller> T create(Class<T> kind, Configuration config);
 }
