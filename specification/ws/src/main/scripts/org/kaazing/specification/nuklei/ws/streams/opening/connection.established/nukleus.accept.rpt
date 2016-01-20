@@ -1,0 +1,73 @@
+#
+# Copyright 2007-2015, Kaazing Corporation. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+property sourceInitial ${streams:map("target/nukleus-itests/ws/streams/source", 1024 * 1024)}
+property sourceReply ${streams:map("target/nukleus-itests/source/streams/ws", 1024 * 1024)}
+
+property destinationInitial ${streams:map("target/nukleus-itests/destination/streams/ws", 1024 * 1024)}
+property destinationReply ${streams:map("target/nukleus-itests/ws/streams/destination", 1024 * 1024)}
+
+property newInitialStreamId ${streams:newInitialStreamId()}
+property newReplyStreamId ${streams:newReplyStreamId()}
+property newReferenceId ${streams:newReferenceId()}
+
+connect await BOUND
+        agrona://stream/bidirectional
+        option reader ${agrona:manyToOneReader(sourceInitial.buffer)}
+        option writer ${agrona:manyToOneWriter(sourceReply.buffer)}
+connected
+
+read [0x00 0x00 0x00 0x01]
+read ([0..8]:sourceStreamId)
+read ([0..8]:sourceRef)
+read [0x00] [0x07] ":scheme" [0x04] "http"
+read [0x00] [0x07] ":method" [0x04] "GET"
+read [0x00] [0x05] ":path" [0x01] "/"
+read [0x00] [0x04] "host" [0x0e] "localhost:8080"
+read [0x00] [0x07] "upgrade" [0x09] "websocket"
+read [0x00] [0x0a] "connection" [0x07] "upgrade"
+read [0x00] [0x11] "sec-websocket-key" [0x18] "dGhlIHNhbXBsZSBub25jZQ=="
+read [0x00] [0x15] "sec-websocket-version" [0x02] "13"
+
+write [0x00 0x00 0x00 0x01]
+write ${newReplyStreamId}
+write ${sourceStreamId}
+write [0x00] [0x07] ":status" [0x03] "101"
+write [0x00] [0x07] "upgrade" [0x09] "websocket"
+write [0x00] [0x0a] "connection" [0x07] "upgrade"
+write [0x00] [0x14] "sec-websocket-accept" [0x1c] "s3pPLMBiTxaQ9kYGzzhZRbK+xOo="
+write flush
+
+close
+closed
+
+connect await BOUND
+        agrona://stream/bidirectional
+        option reader ${agrona:manyToOneReader(destinationReply.buffer)}
+        option writer ${agrona:manyToOneWriter(destinationInitial.buffer)}
+connected
+
+write [0x00 0x00 0x00 0x01]
+write ${newInitialStreamId}
+write ${newDestinationRef}
+write flush
+
+read [0x00 0x00 0x00 0x01]
+read ([0..8]:destinationStreamId)
+read ${newInitialStreamId}
+
+close
+closed

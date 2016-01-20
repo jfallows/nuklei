@@ -26,10 +26,10 @@ import java.util.function.LongFunction;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.http.internal.Context;
 import org.kaazing.nuklei.http.internal.conductor.ConductorProxy;
-import org.kaazing.nuklei.http.internal.readable.stream.InitialDecodingStreamPool;
-import org.kaazing.nuklei.http.internal.readable.stream.ReplyEncodingStreamPool;
-import org.kaazing.nuklei.http.internal.readable.stream.ReplyDecodingStreamPool;
-import org.kaazing.nuklei.http.internal.readable.stream.InitialEncodingStreamPool;
+import org.kaazing.nuklei.http.internal.readable.stream.InitialStreamPool;
+import org.kaazing.nuklei.http.internal.readable.stream.ReplyStreamPool;
+import org.kaazing.nuklei.http.internal.readable.stream.HttpReplyStreamPool;
+import org.kaazing.nuklei.http.internal.readable.stream.HttpInitialStreamPool;
 import org.kaazing.nuklei.http.internal.reader.ReaderProxy;
 import org.kaazing.nuklei.http.internal.types.stream.BeginFW;
 import org.kaazing.nuklei.http.internal.types.stream.FrameFW;
@@ -54,10 +54,10 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
     private final AtomicCounter streamsBound;
     private final AtomicCounter streamsPrepared;
 
-    private final InitialDecodingStreamPool acceptDecoderPool;
-    private final ReplyEncodingStreamPool acceptEncoderPool;
-    private final InitialEncodingStreamPool connectEncoderPool;
-    private final ReplyDecodingStreamPool connectDecoderPool;
+    private final InitialStreamPool initialStreamPool;
+    private final ReplyStreamPool replyStreamPool;
+    private final HttpInitialStreamPool httpInitialStreamPool;
+    private final HttpReplyStreamPool httpReplyStreamPool;
 
     private final String captureName;
     private final RingBuffer captureBuffer;
@@ -85,10 +85,10 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         AtomicCounter streamsAccepted = context.counters().streamsAccepted();
         AtomicBuffer atomicBuffer = new UnsafeBuffer(allocateDirect(captureBuffer.maxMsgLength()).order(nativeOrder()));
 
-        this.acceptDecoderPool = new InitialDecodingStreamPool(maximumStreamsCount, atomicBuffer, streamsAccepted);
-        this.acceptEncoderPool = new ReplyEncodingStreamPool(maximumStreamsCount, atomicBuffer);
-        this.connectEncoderPool = new InitialEncodingStreamPool(maximumStreamsCount, atomicBuffer, streamsConnected);
-        this.connectDecoderPool = new ReplyDecodingStreamPool(maximumStreamsCount, atomicBuffer);
+        this.initialStreamPool = new InitialStreamPool(maximumStreamsCount, atomicBuffer, streamsAccepted);
+        this.replyStreamPool = new ReplyStreamPool(maximumStreamsCount, atomicBuffer);
+        this.httpInitialStreamPool = new HttpInitialStreamPool(maximumStreamsCount, atomicBuffer, streamsConnected);
+        this.httpReplyStreamPool = new HttpReplyStreamPool(maximumStreamsCount, atomicBuffer);
 
         this.captureName = captureName;
         this.captureBuffer = captureBuffer;
@@ -256,7 +256,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
     {
         LongFunction<MessageHandler> handlerSupplier = (destinationReplyStreamId) ->
         {
-            return acceptEncoderPool.acquire(sourceReplyStreamId, sourceRoute,
+            return replyStreamPool.acquire(sourceReplyStreamId, sourceRoute,
                 (acceptEncoder) -> { handlersByStreamId.remove(destinationReplyStreamId); });
         };
 
@@ -270,7 +270,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
     {
         LongFunction<MessageHandler> handlerSupplier = (destinationReplyStreamId) ->
         {
-            return connectDecoderPool.acquire(sourceInitialStreamId, sourceRoute,
+            return httpReplyStreamPool.acquire(sourceInitialStreamId, sourceRoute,
                     (connectDecoder) -> { handlersByStreamId.remove(destinationReplyStreamId); });
         };
 
@@ -338,26 +338,26 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
 
             if (initiating(referenceId))
             {
-                MessageHandler newConnectEncoder =
-                        connectEncoderPool.acquire(destinationRef, sourceRoute, destinationRoute, destination,
+                MessageHandler httpInitialStream =
+                        httpInitialStreamPool.acquire(destinationRef, sourceRoute, destinationRoute, destination,
                                 (connectEncoder) -> { handlersByStreamId.remove(initialStreamId); });
 
-                handlersByStreamId.put(initialStreamId, newConnectEncoder);
+                handlersByStreamId.put(initialStreamId, httpInitialStream);
 
-                newConnectEncoder.onMessage(TYPE_ID_BEGIN, buffer, index, length);
+                httpInitialStream.onMessage(TYPE_ID_BEGIN, buffer, index, length);
             }
             else
             {
                 // positive, even, non-zero
                 final long sourceReplyStreamId = (initialStreamId & ~1L) << 1L;
 
-                MessageHandler newAcceptDecoder =
-                        acceptDecoderPool.acquire(destinationRef, sourceReplyStreamId, destination, sourceRoute,
+                MessageHandler initialStream =
+                        initialStreamPool.acquire(destinationRef, sourceReplyStreamId, destination, sourceRoute,
                                 destinationRoute, (acceptDecoder) -> { handlersByStreamId.remove(initialStreamId); });
 
-                handlersByStreamId.put(initialStreamId, newAcceptDecoder);
+                handlersByStreamId.put(initialStreamId, initialStream);
 
-                newAcceptDecoder.onMessage(TYPE_ID_BEGIN, buffer, index, length);
+                initialStream.onMessage(TYPE_ID_BEGIN, buffer, index, length);
             }
         }
     }

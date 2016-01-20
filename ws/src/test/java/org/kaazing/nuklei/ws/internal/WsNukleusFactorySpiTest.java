@@ -18,6 +18,8 @@ package org.kaazing.nuklei.ws.internal;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 
+import java.util.Properties;
+
 import org.junit.Test;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.NukleusFactory;
@@ -29,7 +31,10 @@ public class WsNukleusFactorySpiTest
     public void shouldCreateHttpNukleus()
     {
         NukleusFactory factory = NukleusFactory.instantiate();
-        Nukleus nukleus = factory.create("ws", new Configuration());
+        Properties properties = new Properties();
+        properties.setProperty(Configuration.DIRECTORY_PROPERTY_NAME, "target/nuklei-tests");
+        Configuration config = new Configuration(properties);
+        Nukleus nukleus = factory.create("ws", config);
         assertThat(nukleus, instanceOf(WsNukleus.class));
     }
 

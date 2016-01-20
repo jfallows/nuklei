@@ -16,13 +16,19 @@
 package org.kaazing.nuklei.ws.internal;
 
 import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.ws.internal.conductor.Conductor;
+import org.kaazing.nuklei.ws.internal.reader.Reader;
 
 public final class WsNukleus implements Nukleus
 {
     private final Context context;
+    private final Conductor conductor;
+    private final Reader reader;
 
     WsNukleus(Context context)
     {
+        this.conductor = new Conductor(context);
+        this.reader = new Reader(context);
         this.context = context;
     }
 
@@ -35,6 +41,8 @@ public final class WsNukleus implements Nukleus
     @Override
     public void close() throws Exception
     {
+        conductor.close();
+        reader.close();
         context.close();
     }
 
@@ -42,6 +50,9 @@ public final class WsNukleus implements Nukleus
     public int process()
     {
         int weight = 0;
+
+        weight += conductor.process();
+        weight += reader.process();
 
         return weight;
     }

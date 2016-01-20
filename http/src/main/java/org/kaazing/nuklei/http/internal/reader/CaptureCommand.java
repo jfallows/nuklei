@@ -30,8 +30,8 @@ public final class CaptureCommand implements ReaderCommand
     }
 
     @Override
-    public void execute(Reader reflector)
+    public void execute(Reader reader)
     {
-        reflector.doCapture(correlationId, source);
+        reader.doCapture(correlationId, source);
     }
 }

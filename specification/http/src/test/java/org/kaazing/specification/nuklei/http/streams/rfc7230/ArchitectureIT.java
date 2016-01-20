@@ -34,7 +34,7 @@ public class ArchitectureIT
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
     private final NukleusRule nukleus = new NukleusRule()
-        .setDirectory("target/nukleus-itests")
+        .directory("target/nukleus-itests")
         .initialize("http", "source")
         .initialize("source", "http")
         .initialize("http", "destination")

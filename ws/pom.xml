@@ -34,7 +34,7 @@
         </dependency>
         <dependency>
             <groupId>org.kaazing</groupId>
-            <artifactId>nuklei-specification-http</artifactId>
+            <artifactId>nuklei-specification-ws</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
