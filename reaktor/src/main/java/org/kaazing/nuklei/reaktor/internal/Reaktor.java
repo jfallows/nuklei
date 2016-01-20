@@ -15,15 +15,27 @@
  */
 package org.kaazing.nuklei.reaktor.internal;
 
+import static java.lang.String.format;
+import static java.util.Arrays.binarySearch;
+import static java.util.Arrays.sort;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.commons.cli.Option.builder;
+import static uk.co.real_logic.agrona.IoUtil.tmpDirName;
 import static uk.co.real_logic.agrona.LangUtil.rethrowUnchecked;
 
+import java.util.Comparator;
+import java.util.Properties;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.NukleusFactory;
 
 import uk.co.real_logic.agrona.ErrorHandler;
-import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.collections.ArrayUtil;
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.AgentRunner;
@@ -104,23 +116,46 @@ public final class Reaktor implements AutoCloseable
         return reaktor;
     }
 
-    public static Reaktor launch(ToBooleanFunction<String> includes)
-    {
-        return launch(new Configuration(), includes);
-    }
-
     public static void main(final String[] args) throws Exception
     {
-        // TODO: command line parameter for directory
-        String directory = IoUtil.tmpDirName() + "org.kaazing.nuklei.reaktor";
-        System.setProperty(Configuration.DIRECTORY_PROPERTY_NAME, directory);
+        CommandLineParser parser = new DefaultParser();
 
-        // TODO: command line parameter to filter nukleus name includes (defaults to all)
-        try (final Reaktor reaktor = Reaktor.launch(name -> true))
+        Options options = new Options();
+        options.addOption(builder("d").longOpt("directory").hasArg().desc("configuration directory").build());
+        options.addOption(builder("h").longOpt("help").desc("print this message").build());
+        options.addOption(builder("n").longOpt("nukleus").hasArgs().desc("nukleus name").build());
+
+        CommandLine cmdline = parser.parse(options, args);
+
+        if (cmdline.hasOption("help"))
         {
-            System.out.println("Started in " + directory);
+            HelpFormatter formatter = new HelpFormatter();
+            formatter.printHelp("reaktor", options);
+        }
+        else
+        {
+            String directory = cmdline.getOptionValue("directory", format("%s/org.kaazing.nuklei.reaktor", tmpDirName()));
+            String[] nuklei = cmdline.getOptionValues("nukleus");
 
-            new SigIntBarrier().await();
+            Properties properties = new Properties();
+            properties.setProperty(Configuration.DIRECTORY_PROPERTY_NAME, directory);
+
+            Configuration config = new Configuration(properties);
+
+            ToBooleanFunction<String> includes = name -> true;
+            if (nuklei != null)
+            {
+                Comparator<String> c = (o1, o2) -> o1.compareTo(o2);
+                sort(nuklei, c);
+                includes = name -> (binarySearch(nuklei, name, c) >= 0);
+            }
+
+            try (final Reaktor reaktor = Reaktor.launch(config, includes))
+            {
+                System.out.println("Started in " + directory);
+
+                new SigIntBarrier().await();
+            }
         }
     }
 
