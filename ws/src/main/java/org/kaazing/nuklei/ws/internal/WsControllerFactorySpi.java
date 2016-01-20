@@ -16,24 +16,28 @@
 package org.kaazing.nuklei.ws.internal;
 
 import org.kaazing.nuklei.Configuration;
-import org.kaazing.nuklei.NukleusFactorySpi;
+import org.kaazing.nuklei.Controller;
+import org.kaazing.nuklei.ControllerFactorySpi;
 
-public final class WsControllerFactorySpi implements NukleusFactorySpi
+public final class WsControllerFactorySpi implements ControllerFactorySpi
 {
 
     @Override
-    public String name()
+    public Class<WsController> kind()
     {
-        return "ws.controller";
+        return WsController.class;
     }
 
     @Override
-    public WsController create(Configuration config)
+    public <T extends Controller> T create(
+        Class<T> kind,
+        Configuration config)
     {
         Context context = new Context();
         context.readonly(true)
                .conclude(config);
-        return new WsController(context);
+
+        return kind.cast(new WsController(context));
     }
 
 }

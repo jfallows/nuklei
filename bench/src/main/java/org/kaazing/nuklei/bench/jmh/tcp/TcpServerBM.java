@@ -30,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 import org.kaazing.nuklei.Configuration;
+import org.kaazing.nuklei.ControllerFactory;
 import org.kaazing.nuklei.NukleusFactory;
 import org.kaazing.nuklei.tcp.internal.TcpController;
 import org.kaazing.nuklei.tcp.internal.TcpNukleus;
@@ -77,10 +78,11 @@ public class TcpServerBM
         properties.setProperty(STREAMS_BUFFER_CAPACITY_PROPERTY_NAME, Long.toString(streamsCapacity));
         final Configuration config = new Configuration(properties);
 
-        NukleusFactory factory = NukleusFactory.instantiate();
+        NukleusFactory nuklei = NukleusFactory.instantiate();
+        ControllerFactory controllers = ControllerFactory.instantiate();
 
-        this.nukleus = (TcpNukleus) factory.create("tcp", config);
-        this.controller = (TcpController) factory.create("tcp.controller", config);
+        this.nukleus = (TcpNukleus) nuklei.create("tcp", config);
+        this.controller = controllers.create(TcpController.class, config);
 
         controller.capture("destination");
         while (this.nukleus.process() != 0L || this.controller.process() != 0L)

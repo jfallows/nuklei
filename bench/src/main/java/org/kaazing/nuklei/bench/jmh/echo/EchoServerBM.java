@@ -27,6 +27,7 @@ import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
 import org.kaazing.nuklei.Configuration;
+import org.kaazing.nuklei.ControllerFactory;
 import org.kaazing.nuklei.NukleusFactory;
 import org.kaazing.nuklei.echo.internal.EchoController;
 import org.kaazing.nuklei.echo.internal.EchoNukleus;
@@ -77,10 +78,11 @@ public class EchoServerBM
         properties.setProperty(STREAMS_BUFFER_CAPACITY_PROPERTY_NAME, Long.toString(streamsCapacity));
         final Configuration config = new Configuration(properties);
 
-        NukleusFactory factory = NukleusFactory.instantiate();
+        NukleusFactory nuklei = NukleusFactory.instantiate();
+        ControllerFactory controllers = ControllerFactory.instantiate();
 
-        this.nukleus = (EchoNukleus) factory.create("echo", config);
-        this.controller = (EchoController) factory.create("echo.controller", config);
+        this.nukleus = (EchoNukleus) nuklei.create("echo", config);
+        this.controller = controllers.create(EchoController.class, config);
 
         controller.capture("source");
         while (this.nukleus.process() != 0L || this.controller.process() != 0L)

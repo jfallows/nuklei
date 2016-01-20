@@ -16,24 +16,27 @@
 package org.kaazing.nuklei.http.internal;
 
 import org.kaazing.nuklei.Configuration;
-import org.kaazing.nuklei.NukleusFactorySpi;
+import org.kaazing.nuklei.Controller;
+import org.kaazing.nuklei.ControllerFactorySpi;
 
-public final class HttpControllerFactorySpi implements NukleusFactorySpi
+public final class HttpControllerFactorySpi implements ControllerFactorySpi
 {
-
     @Override
-    public String name()
+    public Class<HttpController> kind()
     {
-        return "http.controller";
+        return HttpController.class;
     }
 
     @Override
-    public HttpController create(Configuration config)
+    public <T extends Controller> T create(
+        Class<T> kind,
+        Configuration config)
     {
         Context context = new Context();
         context.readonly(true)
                .conclude(config);
-        return new HttpController(context);
+
+        return kind.cast(new HttpController(context));
     }
 
 }

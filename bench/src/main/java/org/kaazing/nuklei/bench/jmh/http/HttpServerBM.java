@@ -28,6 +28,7 @@ import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
 import org.kaazing.nuklei.Configuration;
+import org.kaazing.nuklei.ControllerFactory;
 import org.kaazing.nuklei.NukleusFactory;
 import org.kaazing.nuklei.http.internal.HttpController;
 import org.kaazing.nuklei.http.internal.HttpNukleus;
@@ -79,10 +80,11 @@ public class HttpServerBM
         properties.setProperty(STREAMS_BUFFER_CAPACITY_PROPERTY_NAME, Long.toString(streamsCapacity));
         final Configuration config = new Configuration(properties);
 
-        NukleusFactory factory = NukleusFactory.instantiate();
+        NukleusFactory nuklei = NukleusFactory.instantiate();
+        ControllerFactory controllers = ControllerFactory.instantiate();
 
-        this.nukleus = (HttpNukleus) factory.create("http", config);
-        this.controller = (HttpController) factory.create("http.controller", config);
+        this.nukleus = (HttpNukleus) nuklei.create("http", config);
+        this.controller = controllers.create(HttpController.class, config);
 
         controller.capture("source");
         while (this.nukleus.process() != 0L || this.controller.process() != 0L)
