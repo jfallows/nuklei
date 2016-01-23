@@ -16,12 +16,14 @@
 package org.kaazing.nuklei.shell;
 
 import static java.util.Collections.singletonMap;
+import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
 import static uk.co.real_logic.agrona.concurrent.AgentRunner.startOnThread;
 
 import java.net.InetSocketAddress;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
 
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.Controller;
@@ -70,24 +72,25 @@ public final class Main
 
         startOnThread(runner);
 
-        echoctl.capture("ws").get();
-        wsctl.capture("echo").get();
-        wsctl.capture("http").get();
-        httpctl.capture("ws").get();
-        httpctl.capture("tcp").get();
-        tcpctl.capture("http").get();
-
-        echoctl.route("ws").get();
-        wsctl.route("echo").get();
-        wsctl.route("http").get();
-        httpctl.route("ws").get();
-        httpctl.route("tcp").get();
-        tcpctl.route("http").get();
-
-        long echoRef = echoctl.bind("ws").get();
-        long wsRef = wsctl.bind("echo", echoRef, "http", null).get();
-        long httpRef = httpctl.bind("ws", wsRef, "tcp", singletonMap(":path", "/")).get();
-        tcpctl.bind("http", httpRef, new InetSocketAddress("localhost", 8080)).get();
+        allOf(echoctl.capture("ws"),
+              wsctl.capture("echo"),
+              wsctl.capture("http"),
+              httpctl.capture("ws"),
+              httpctl.capture("tcp"),
+              tcpctl.capture("http"))
+        .thenCompose(v -> { return allOf(echoctl.route("ws"),
+                                         wsctl.route("echo"),
+                                         wsctl.route("http"),
+                                         httpctl.route("ws"),
+                                         httpctl.route("tcp"),
+                                         tcpctl.route("http"));
+                          })
+        .thenCompose(v -> echoctl.bind("ws"))
+        .whenComplete((value, ex) -> { /* exception handler */ })
+        .thenCompose(echoRef -> { return wsctl.bind("echo", echoRef, "http", null); })
+        .thenCompose(wsRef -> { return httpctl.bind("ws", wsRef, "tcp", singletonMap(":path", "/")); })
+        .thenCompose(httpRef -> { return tcpctl.bind("http", httpRef, new InetSocketAddress("localhost", 8080)); })
+        .join();
 
         // TODO: resource cleanup via try-with-resources
         System.out.println("echo bound to ws://localhost:8080/");
