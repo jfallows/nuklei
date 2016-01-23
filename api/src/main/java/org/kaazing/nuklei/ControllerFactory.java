@@ -35,6 +35,24 @@ public final class ControllerFactory
         return instantiate(load(ControllerFactorySpi.class, classLoader));
     }
 
+    public Iterable<? extends Class<? extends Controller>> kinds()
+    {
+        return factorySpisByName.keySet();
+    }
+
+    public <T extends Controller> String name(Class<T> kind)
+    {
+        requireNonNull(kind, "kind");
+
+        ControllerFactorySpi factorySpi = factorySpisByName.get(kind);
+        if (factorySpi == null)
+        {
+            throw new IllegalArgumentException("Unregonized controller kind: " + kind.getName());
+        }
+
+        return factorySpi.name();
+    }
+
     public <T extends Controller> T create(Class<T> kind, Configuration config)
     {
         requireNonNull(kind, "kind");
@@ -51,15 +69,15 @@ public final class ControllerFactory
 
     private static ControllerFactory instantiate(ServiceLoader<ControllerFactorySpi> factories)
     {
-        Map<Class<?>, ControllerFactorySpi> factorySpisByName = new HashMap<>();
+        Map<Class<? extends Controller>, ControllerFactorySpi> factorySpisByName = new HashMap<>();
         factories.forEach((factorySpi) -> { factorySpisByName.put(factorySpi.kind(), factorySpi); });
 
         return new ControllerFactory(unmodifiableMap(factorySpisByName));
     }
 
-    private final Map<Class<?>, ControllerFactorySpi> factorySpisByName;
+    private final Map<Class<? extends Controller>, ControllerFactorySpi> factorySpisByName;
 
-    private ControllerFactory(Map<Class<?>, ControllerFactorySpi> factorySpisByName)
+    private ControllerFactory(Map<Class<? extends Controller>, ControllerFactorySpi> factorySpisByName)
     {
         this.factorySpisByName = factorySpisByName;
     }

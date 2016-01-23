@@ -28,4 +28,9 @@ public interface Controller extends AutoCloseable
     {
         return getClass();
     }
+
+    default String name()
+    {
+        return null;
+    }
 }

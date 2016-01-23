@@ -18,6 +18,8 @@ package org.kaazing.nuklei;
 
 public interface ControllerFactorySpi
 {
+    String name();
+
     Class<? extends Controller> kind();
 
     <T extends Controller> T create(Class<T> kind, Configuration config);

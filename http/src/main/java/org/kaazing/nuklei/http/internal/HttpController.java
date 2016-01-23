@@ -93,6 +93,18 @@ public final class HttpController implements Controller
         context.close();
     }
 
+    @Override
+    public Class<HttpController> kind()
+    {
+        return HttpController.class;
+    }
+
+    @Override
+    public String name()
+    {
+        return "http";
+    }
+
     public CompletableFuture<Void> capture(
         String source)
     {

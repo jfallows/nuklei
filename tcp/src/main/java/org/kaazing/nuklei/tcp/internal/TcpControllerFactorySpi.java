@@ -21,6 +21,11 @@ import org.kaazing.nuklei.ControllerFactorySpi;
 
 public final class TcpControllerFactorySpi implements ControllerFactorySpi
 {
+    @Override
+    public String name()
+    {
+        return "tcp";
+    }
 
     @Override
     public Class<TcpController> kind()
