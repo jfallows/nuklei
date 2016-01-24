@@ -16,14 +16,12 @@
 package org.kaazing.nuklei.shell;
 
 import static java.util.Collections.singletonMap;
-import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
 import static uk.co.real_logic.agrona.concurrent.AgentRunner.startOnThread;
 
 import java.net.InetSocketAddress;
 import java.util.Properties;
-import java.util.concurrent.CompletableFuture;
 
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.Controller;
@@ -72,24 +70,22 @@ public final class Main
 
         startOnThread(runner);
 
-        allOf(echoctl.capture("ws"),
-              wsctl.capture("echo"),
-              wsctl.capture("http"),
-              httpctl.capture("ws"),
-              httpctl.capture("tcp"),
-              tcpctl.capture("http"))
-        .thenCompose(v -> { return allOf(echoctl.route("ws"),
-                                         wsctl.route("echo"),
-                                         wsctl.route("http"),
-                                         httpctl.route("ws"),
-                                         httpctl.route("tcp"),
-                                         tcpctl.route("http"));
-                          })
+        echoctl.capture("ws")
+        .thenCompose(v -> wsctl.capture("echo"))
+        .thenCompose(v -> wsctl.capture("http"))
+        .thenCompose(v -> httpctl.capture("ws"))
+        .thenCompose(v -> httpctl.capture("tcp"))
+        .thenCompose(v -> tcpctl.capture("http"))
+        .thenCompose(v -> echoctl.route("ws"))
+        .thenCompose(v -> wsctl.route("echo"))
+        .thenCompose(v -> wsctl.route("http"))
+        .thenCompose(v -> httpctl.route("ws"))
+        .thenCompose(v -> httpctl.route("tcp"))
+        .thenCompose(v -> tcpctl.route("http"))
         .thenCompose(v -> echoctl.bind("ws"))
-        .whenComplete((value, ex) -> { /* exception handler */ })
-        .thenCompose(echoRef -> { return wsctl.bind("echo", echoRef, "http", null); })
-        .thenCompose(wsRef -> { return httpctl.bind("ws", wsRef, "tcp", singletonMap(":path", "/")); })
-        .thenCompose(httpRef -> { return tcpctl.bind("http", httpRef, new InetSocketAddress("localhost", 8080)); })
+        .thenCompose(echoRef -> wsctl.bind("echo", echoRef, "http", null))
+        .thenCompose(wsRef -> httpctl.bind("ws", wsRef, "tcp", singletonMap(":path", "/")))
+        .thenCompose(httpRef -> tcpctl.bind("http", httpRef, new InetSocketAddress("localhost", 8080)))
         .join();
 
         // TODO: resource cleanup via try-with-resources

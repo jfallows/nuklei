@@ -14,25 +14,23 @@
  * limitations under the License.
  */
 
-nuklei.echo.capture("ws").get();
-nuklei.ws.capture("echo").get();
-nuklei.ws.capture("http").get();
-nuklei.http.capture("ws").get();
-nuklei.http.capture("tcp").get();
-nuklei.tcp.capture("http").get();
-
-nuklei.echo.route("ws").get();
-nuklei.ws.route("echo").get();
-nuklei.ws.route("http").get();
-nuklei.http.route("ws").get();
-nuklei.http.route("tcp").get();
-nuklei.tcp.route("http").get();
-
 var InetSocketAddress = Java.type('java.net.InetSocketAddress');
 
-var echoRef = nuklei.echo.bind("ws").get();
-var wsRef = nuklei.ws.bind("echo", echoRef, "http", null).get();
-var httpRef = nuklei.http.bind("ws", wsRef, "tcp", { ":path": "/" }).get();
-nuklei.tcp.bind("http", httpRef, new InetSocketAddress("localhost", 8080)).get();
-
-print('echo bound to ws://localhost:8080/')
+nuklei.echo.capture("ws")
+  .thenCompose(function(v) { return nuklei.ws.capture("echo"); })
+  .thenCompose(function(v) { return nuklei.ws.capture("http"); })
+  .thenCompose(function(v) { return nuklei.http.capture("ws"); })
+  .thenCompose(function(v) { return nuklei.http.capture("tcp"); })
+  .thenCompose(function(v) { return nuklei.tcp.capture("http"); })
+  .thenCompose(function(v) { return nuklei.echo.route("ws"); })
+  .thenCompose(function(v) { return nuklei.ws.route("echo"); })
+  .thenCompose(function(v) { return nuklei.ws.route("http"); })
+  .thenCompose(function(v) { return nuklei.http.route("ws"); })
+  .thenCompose(function(v) { return nuklei.http.route("tcp"); })
+  .thenCompose(function(v) { return nuklei.tcp.route("http"); })
+  .thenCompose(function(v) { return nuklei.echo.bind("ws"); })
+  .thenCompose(function(echoRef) { return nuklei.ws.bind("echo", echoRef, "http", null); })
+  .thenCompose(function(wsRef) { return nuklei.http.bind("ws", wsRef, "tcp", { ":path": "/" }); })
+  .thenCompose(function(httpRef) { return nuklei.tcp.bind("http", httpRef, new InetSocketAddress("localhost", 8080)); })
+  .thenAccept(function(tcpRef) { return print('echo bound to ws://localhost:8080/'); })
+  .join();
