@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import java.util.function.LongFunction;
 
 import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.ws.internal.Context;
 import org.kaazing.nuklei.ws.internal.conductor.ConductorProxy;
 import org.kaazing.nuklei.ws.internal.readable.stream.HttpInitialStreamPool;
@@ -135,6 +136,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         return proxy;
     }
 
+    @Reaktive
     public void doBind(
         long correlationId,
         long destinationRef,
@@ -163,6 +165,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         }
     }
 
+    @Reaktive
     public void doUnbind(
         long correlationId,
         long sourceRef)
@@ -192,6 +195,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         }
     }
 
+    @Reaktive
     public void doPrepare(
         long correlationId,
         long destinationRef,
@@ -219,6 +223,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         }
     }
 
+    @Reaktive
     public void doUnprepare(
         long correlationId,
         long sourceRef)
@@ -248,6 +253,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         }
     }
 
+    @Reaktive
     public void doRegisterEncoder(
         long destinationInitialStreamId,
         long sourceInitialStreamId,
@@ -264,6 +270,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         registrationsByStreamId.put(destinationInitialStreamId, handlerSupplier);
     }
 
+    @Reaktive
     public void doRegisterDecoder(
         long destinationInitialStreamId,
         long sourceInitialStreamId,

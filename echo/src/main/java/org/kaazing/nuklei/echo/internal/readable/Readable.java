@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import java.util.function.LongFunction;
 
 import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.echo.internal.Context;
 import org.kaazing.nuklei.echo.internal.conductor.ConductorProxy;
 import org.kaazing.nuklei.echo.internal.readable.stream.InitialStreamPool;
@@ -138,6 +139,7 @@ public final class Readable implements Nukleus, Consumer<ReadableCommand>
         return proxy;
     }
 
+    @Reaktive
     public void doBind(
         long correlationId,
         RingBuffer sourceRoute)
@@ -161,6 +163,7 @@ public final class Readable implements Nukleus, Consumer<ReadableCommand>
         }
     }
 
+    @Reaktive
     public void doUnbind(
         long correlationId,
         long sourceRef)
@@ -184,6 +187,7 @@ public final class Readable implements Nukleus, Consumer<ReadableCommand>
         }
     }
 
+    @Reaktive
     public void doPrepare(
         long correlationId,
         long destinationRef,
@@ -208,6 +212,7 @@ public final class Readable implements Nukleus, Consumer<ReadableCommand>
         }
     }
 
+    @Reaktive
     public void doUnprepare(
         long correlationId,
         long sourceRef)
@@ -234,6 +239,7 @@ public final class Readable implements Nukleus, Consumer<ReadableCommand>
         }
     }
 
+    @Reaktive
     public void doConnect(
         long correlationId,
         long sourceRef)

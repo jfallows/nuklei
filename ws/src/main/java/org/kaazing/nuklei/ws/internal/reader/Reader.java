@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.ws.internal.Context;
 import org.kaazing.nuklei.ws.internal.conductor.ConductorProxy;
 import org.kaazing.nuklei.ws.internal.layouts.StreamsLayout;
@@ -96,6 +97,7 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         command.execute(this);
     }
 
+    @Reaktive
     public void doCapture(
         long correlationId,
         String source)
@@ -132,6 +134,7 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         }
     }
 
+    @Reaktive
     public void doUncapture(
         long correlationId,
         String source)
@@ -161,6 +164,7 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         }
     }
 
+    @Reaktive
     public void doRoute(
         long correlationId,
         String destination)
@@ -191,6 +195,7 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         }
     }
 
+    @Reaktive
     public void doUnroute(
         long correlationId,
         String destination)
@@ -215,6 +220,7 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         }
     }
 
+    @Reaktive
     public void doBind(
         long correlationId,
         String destinationName,
@@ -244,6 +250,7 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         }
     }
 
+    @Reaktive
     public void doUnbind(
         long correlationId,
         long referenceId)
@@ -264,6 +271,7 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         }
     }
 
+    @Reaktive
     public void doPrepare(
         long correlationId,
         String destinationName,
@@ -294,6 +302,7 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         }
     }
 
+    @Reaktive
     public void doUnprepare(
         long correlationId,
         long referenceId)
@@ -314,6 +323,7 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         }
     }
 
+    @Reaktive
     public void onBoundResponse(
         String source,
         long correlationId,
@@ -324,6 +334,7 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         conductorProxy.onBoundResponse(correlationId, referenceId);
     }
 
+    @Reaktive
     public void onPreparedResponse(
         String source,
         long correlationId,

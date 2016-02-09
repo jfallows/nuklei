@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.tcp.internal.Context;
 import org.kaazing.nuklei.tcp.internal.conductor.ConductorProxy;
 import org.kaazing.nuklei.tcp.internal.connector.ConnectorProxy;
@@ -122,6 +123,7 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
         command.execute(this);
     }
 
+    @Reaktive
     public void doCapture(
         long correlationId,
         String source)
@@ -156,6 +158,7 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
         }
     }
 
+    @Reaktive
     public void doUncapture(
         long correlationId,
         String handler)
@@ -193,6 +196,7 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
         }
     }
 
+    @Reaktive
     public void doRegister(
         String handler,
         long handlerRef,

@@ -25,6 +25,7 @@ import java.nio.channels.SocketChannel;
 import java.util.function.Consumer;
 
 import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.tcp.internal.Context;
 import org.kaazing.nuklei.tcp.internal.conductor.ConductorProxy;
 import org.kaazing.nuklei.tcp.internal.reader.ReaderProxy;
@@ -99,6 +100,7 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
         command.execute(this);
     }
 
+    @Reaktive
     public void doBind(
         long correlationId,
         String destination,
@@ -130,6 +132,7 @@ public final class Acceptor extends TransportPoller implements Nukleus, Consumer
         }
     }
 
+    @Reaktive
     public void doUnbind(
         long correlationId,
         long referenceId)

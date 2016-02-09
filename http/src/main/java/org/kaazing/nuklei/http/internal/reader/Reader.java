@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.http.internal.Context;
 import org.kaazing.nuklei.http.internal.conductor.ConductorProxy;
 import org.kaazing.nuklei.http.internal.layouts.StreamsLayout;
@@ -215,6 +216,7 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         }
     }
 
+    @Reaktive
     public void doBind(
         long correlationId,
         String destinationName,
@@ -244,6 +246,7 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         }
     }
 
+    @Reaktive
     public void doUnbind(
         long correlationId,
         long referenceId)
@@ -264,6 +267,7 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         }
     }
 
+    @Reaktive
     public void doPrepare(
         long correlationId,
         String destinationName,
@@ -294,6 +298,7 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         }
     }
 
+    @Reaktive
     public void doUnprepare(
         long correlationId,
         long referenceId)
@@ -314,6 +319,7 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         }
     }
 
+    @Reaktive
     public void onBoundResponse(
         String source,
         long correlationId,
@@ -324,6 +330,7 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         conductorProxy.onBoundResponse(correlationId, referenceId);
     }
 
+    @Reaktive
     public void onPreparedResponse(
         String source,
         long correlationId,

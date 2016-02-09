@@ -30,6 +30,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.tcp.internal.Context;
 import org.kaazing.nuklei.tcp.internal.conductor.ConductorProxy;
 import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
@@ -129,6 +130,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         command.execute(this);
     }
 
+    @Reaktive
     public void doRoute(
         long correlationId,
         String destination)
@@ -158,6 +160,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         }
     }
 
+    @Reaktive
     public void doUnroute(
         long correlationId,
         String destination)
@@ -182,6 +185,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         }
     }
 
+    @Reaktive
     public void doRegister(
         String handler,
         long handlerRef,
@@ -234,6 +238,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         }
     }
 
+    @Reaktive
     public void doReset(
         long streamId,
         String handler,
