@@ -55,6 +55,7 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
+@Reaktive
 public final class Conductor implements Nukleus, Consumer<ConductorResponse>
 {
     private static final int SEND_BUFFER_CAPACITY = 1024; // TODO: Configuration and Context
@@ -163,7 +164,6 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         conductorResponses.transmit(unroutedRO.typeId(), unroutedRO.buffer(), unroutedRO.offset(), unroutedRO.length());
     }
 
-    @Reaktive
     public void onBoundResponse(
         long correlationId,
         long referenceId)
@@ -176,7 +176,6 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         conductorResponses.transmit(boundRO.typeId(), boundRO.buffer(), boundRO.offset(), boundRO.length());
     }
 
-    @Reaktive
     public void onUnboundResponse(
         long correlationId,
         String destination,
@@ -195,7 +194,6 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         conductorResponses.transmit(unboundRO.typeId(), unboundRO.buffer(), unboundRO.offset(), unboundRO.length());
     }
 
-    @Reaktive
     public void onPreparedResponse(
         long correlationId,
         long referenceId)
@@ -208,7 +206,6 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         conductorResponses.transmit(preparedRO.typeId(), preparedRO.buffer(), preparedRO.offset(), preparedRO.length());
     }
 
-    @Reaktive
     public void onUnpreparedResponse(
         long correlationId,
         String destination,

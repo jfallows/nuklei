@@ -27,10 +27,12 @@ import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_UNROU
 
 import java.util.function.Consumer;
 
+import javax.annotation.Resource;
+
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.echo.internal.Context;
-import org.kaazing.nuklei.echo.internal.reader.ReaderProxy;
+import org.kaazing.nuklei.echo.internal.reader.Reader;
 import org.kaazing.nuklei.echo.internal.types.control.BindFW;
 import org.kaazing.nuklei.echo.internal.types.control.BoundFW;
 import org.kaazing.nuklei.echo.internal.types.control.CaptureFW;
@@ -55,11 +57,11 @@ import org.kaazing.nuklei.echo.internal.types.control.UnroutedFW;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
+@Reaktive
 public final class Conductor implements Nukleus, Consumer<ConductorResponse>
 {
     private static final int SEND_BUFFER_CAPACITY = 1024; // TODO: Configuration and Context
@@ -85,20 +87,23 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
     private final UnpreparedFW.Builder unpreparedRW = new UnpreparedFW.Builder();
     private final ConnectedFW.Builder connectedRW = new ConnectedFW.Builder();
 
-    private final ReaderProxy readerProxy;
-    private final ManyToOneConcurrentArrayQueue<ConductorResponse> conductorResponseQueue;
-
     private final RingBuffer conductorCommands;
     private final BroadcastTransmitter conductorResponses;
     private final AtomicBuffer sendBuffer;
 
+    private Reader reader;
+
     public Conductor(Context context)
     {
-        this.readerProxy = new ReaderProxy(context);
-        this.conductorResponseQueue = context.conductorResponseQueue();
         this.conductorCommands = context.conductorCommands();
         this.conductorResponses = context.conductorResponses();
         this.sendBuffer = new UnsafeBuffer(new byte[SEND_BUFFER_CAPACITY]);
+    }
+
+    @Resource
+    public void setReader(Reader reader)
+    {
+        this.reader = reader;
     }
 
     @Override
@@ -107,7 +112,6 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         int weight = 0;
 
         weight += conductorCommands.read(this::handleCommand);
-        weight += conductorResponseQueue.drain(this);
 
         return weight;
     }
@@ -124,7 +128,6 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         response.execute(this);
     }
 
-    @Reaktive
     public void onErrorResponse(long correlationId)
     {
         ErrorFW errorRO = errorRW.wrap(sendBuffer, 0, sendBuffer.capacity())
@@ -134,7 +137,6 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         conductorResponses.transmit(errorRO.typeId(), errorRO.buffer(), errorRO.offset(), errorRO.length());
     }
 
-    @Reaktive
     public void onCapturedResponse(long correlationId)
     {
         CapturedFW capturedRO = capturedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
@@ -144,7 +146,6 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         conductorResponses.transmit(capturedRO.typeId(), capturedRO.buffer(), capturedRO.offset(), capturedRO.length());
     }
 
-    @Reaktive
     public void onUncapturedResponse(long correlationId)
     {
         UncapturedFW uncapturedRO = uncapturedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
@@ -155,7 +156,6 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
                 uncapturedRO.typeId(), uncapturedRO.buffer(), uncapturedRO.offset(), uncapturedRO.length());
     }
 
-    @Reaktive
     public void onRoutedResponse(long correlationId)
     {
         RoutedFW routedRO = routedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
@@ -165,7 +165,6 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         conductorResponses.transmit(routedRO.typeId(), routedRO.buffer(), routedRO.offset(), routedRO.length());
     }
 
-    @Reaktive
     public void onUnroutedResponse(long correlationId)
     {
         UnroutedFW unroutedRO = unroutedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
@@ -175,7 +174,6 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         conductorResponses.transmit(unroutedRO.typeId(), unroutedRO.buffer(), unroutedRO.offset(), unroutedRO.length());
     }
 
-    @Reaktive
     public void onBoundResponse(
         long correlationId,
         long referenceId)
@@ -188,7 +186,6 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         conductorResponses.transmit(boundRO.typeId(), boundRO.buffer(), boundRO.offset(), boundRO.length());
     }
 
-    @Reaktive
     public void onUnboundResponse(
         long correlationId,
         String source)
@@ -201,7 +198,6 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         conductorResponses.transmit(unboundRO.typeId(), unboundRO.buffer(), unboundRO.offset(), unboundRO.length());
     }
 
-    @Reaktive
     public void onPreparedResponse(
         long correlationId,
         long referenceId)
@@ -214,7 +210,6 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         conductorResponses.transmit(preparedRO.typeId(), preparedRO.buffer(), preparedRO.offset(), preparedRO.length());
     }
 
-    @Reaktive
     public void onUnpreparedResponse(
         long correlationId,
         String destination,
@@ -231,7 +226,6 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
             unpreparedRO.typeId(), unpreparedRO.buffer(), unpreparedRO.offset(), unpreparedRO.length());
     }
 
-    @Reaktive
     public void onConnectedResponse(
         long correlationId,
         long connectionId)
@@ -288,7 +282,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long correlationId = captureRO.correlationId();
         String source = captureRO.source().asString();
 
-        readerProxy.doCapture(correlationId, source);
+        reader.doCapture(correlationId, source);
     }
 
     private void handleUncaptureCommand(DirectBuffer buffer, int index, int length)
@@ -298,7 +292,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long correlationId = uncaptureRO.correlationId();
         String source = uncaptureRO.source().asString();
 
-        readerProxy.doUncapture(correlationId, source);
+        reader.doUncapture(correlationId, source);
     }
 
     private void handleRouteCommand(DirectBuffer buffer, int index, int length)
@@ -308,7 +302,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long correlationId = routeRO.correlationId();
         String destination = routeRO.destination().asString();
 
-        readerProxy.doRoute(correlationId, destination);
+        reader.doRoute(correlationId, destination);
     }
 
     private void handleUnrouteCommand(DirectBuffer buffer, int index, int length)
@@ -318,7 +312,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long correlationId = unrouteRO.correlationId();
         String destination = unrouteRO.destination().asString();
 
-        readerProxy.doUnroute(correlationId, destination);
+        reader.doUnroute(correlationId, destination);
     }
 
     private void handleBindCommand(DirectBuffer buffer, int index, int length)
@@ -328,7 +322,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long correlationId = bindRO.correlationId();
         String source = bindRO.source().asString();
 
-        readerProxy.doBind(correlationId, source);
+        reader.doBind(correlationId, source);
     }
 
     private void handleUnbindCommand(DirectBuffer buffer, int index, int length)
@@ -338,7 +332,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long correlationId = unbindRO.correlationId();
         long referenceId = unbindRO.referenceId();
 
-        readerProxy.doUnbind(correlationId, referenceId);
+        reader.doUnbind(correlationId, referenceId);
     }
 
     private void handlePrepareCommand(DirectBuffer buffer, int index, int length)
@@ -351,7 +345,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         String destination = preparation.destination().asString();
         long destinationRef = preparation.destinationRef();
 
-        readerProxy.doPrepare(correlationId, destination, destinationRef);
+        reader.doPrepare(correlationId, destination, destinationRef);
     }
 
     private void handleUnprepareCommand(DirectBuffer buffer, int index, int length)
@@ -361,7 +355,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long correlationId = unprepareRO.correlationId();
         long referenceId = unprepareRO.referenceId();
 
-        readerProxy.doUnprepare(correlationId, referenceId);
+        reader.doUnprepare(correlationId, referenceId);
     }
 
     private void handleConnectCommand(DirectBuffer buffer, int index, int length)
@@ -371,6 +365,10 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long correlationId = connectRO.correlationId();
         long referenceId = connectRO.referenceId();
 
-        readerProxy.doConnect(correlationId, referenceId);
+        reader.doConnect(correlationId, referenceId);
+    }
+
+    public static void method()
+    {
     }
 }

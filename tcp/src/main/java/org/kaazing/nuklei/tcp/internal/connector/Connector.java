@@ -36,6 +36,7 @@ import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.nio.TransportPoller;
 
+@Reaktive
 public final class Connector extends TransportPoller implements Nukleus, Consumer<ConnectorCommand>
 {
     private final ConductorProxy.FromConnector conductorProxy;
@@ -85,7 +86,6 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
         command.execute(this);
     }
 
-    @Reaktive
     public void doPrepare(
         long correlationId,
         String source,
@@ -108,7 +108,6 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
         }
     }
 
-    @Reaktive
     public void doUnprepare(
         long correlationId,
         long referenceId)
@@ -136,7 +135,6 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
         }
     }
 
-    @Reaktive
     public void doConnect(
         String source,
         long sourceRef,

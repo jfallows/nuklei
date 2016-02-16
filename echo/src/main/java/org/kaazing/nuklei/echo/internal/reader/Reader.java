@@ -21,25 +21,24 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import javax.annotation.Resource;
+
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.echo.internal.Context;
-import org.kaazing.nuklei.echo.internal.conductor.ConductorProxy;
+import org.kaazing.nuklei.echo.internal.conductor.Conductor;
 import org.kaazing.nuklei.echo.internal.layouts.StreamsLayout;
 import org.kaazing.nuklei.echo.internal.readable.Readable;
-import org.kaazing.nuklei.echo.internal.readable.ReadableProxy;
 
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.collections.ArrayUtil;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
+@Reaktive
 public final class Reader implements Nukleus, Consumer<ReaderCommand>
 {
-    private Context context;
-    private final ConductorProxy conductorProxy;
-    private final OneToOneConcurrentArrayQueue<ReaderCommand> commandQueue;
+    private final Context context;
 
     private final Long2ObjectHashMap<String> boundSources;
     private final Long2ObjectHashMap<String> preparedDestinations;
@@ -50,13 +49,12 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
     private final Function<String, File> routeStreamsFile;
     private final int streamsCapacity;
 
+    private Conductor conductor;
     private Readable[] readables;
 
     public Reader(Context context)
     {
         this.context = context;
-        this.conductorProxy = new ConductorProxy(context);
-        this.commandQueue = context.readerCommandQueue();
         this.boundSources = new Long2ObjectHashMap<>();
         this.preparedDestinations = new Long2ObjectHashMap<>();
         this.captureStreamsFile = context.captureStreamsFile();
@@ -68,12 +66,16 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         this.readables = new Readable[0];
     }
 
+    @Resource
+    public void setConductor(Conductor conductor)
+    {
+        this.conductor = conductor;
+    }
+
     @Override
     public int process()
     {
         int weight = 0;
-
-        weight += commandQueue.drain(this);
 
         int length = readables.length;
         for (int i = 0; i < length; i++)
@@ -103,7 +105,7 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         StreamsLayout capture = capturedStreams.get(source);
         if (capture != null)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
         }
         else
         {
@@ -114,7 +116,7 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
                                                                       .createFile(true)
                                                                       .build();
 
-                Readable newReadable = new Readable(context, source, newCapture.buffer());
+                Readable newReadable = new Readable(context, conductor, this, source, newCapture.buffer());
 
                 readables = ArrayUtil.add(readables, newReadable);
 
@@ -122,11 +124,11 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
 
                 capturedStreams.put(source, newCapture);
 
-                conductorProxy.onCapturedResponse(correlationId);
+                conductor.onCapturedResponse(correlationId);
             }
             catch (Exception ex)
             {
-                conductorProxy.onErrorResponse(correlationId);
+                conductor.onErrorResponse(correlationId);
                 LangUtil.rethrowUnchecked(ex);
             }
         }
@@ -139,7 +141,7 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         StreamsLayout oldCapture = capturedStreams.remove(source);
         if (oldCapture == null)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
         }
         else
         {
@@ -151,11 +153,11 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
 
                 oldCapture.close();
 
-                conductorProxy.onUncapturedResponse(correlationId);
+                conductor.onUncapturedResponse(correlationId);
             }
             catch (Exception ex)
             {
-                conductorProxy.onErrorResponse(correlationId);
+                conductor.onErrorResponse(correlationId);
                 LangUtil.rethrowUnchecked(ex);
             }
         }
@@ -168,7 +170,7 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         StreamsLayout route = routedStreams.get(destination);
         if (route != null)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
         }
         else
         {
@@ -181,11 +183,11 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
 
                 routedStreams.put(destination, newRoute);
 
-                conductorProxy.onRoutedResponse(correlationId);
+                conductor.onRoutedResponse(correlationId);
             }
             catch (Exception ex)
             {
-                conductorProxy.onErrorResponse(correlationId);
+                conductor.onErrorResponse(correlationId);
                 LangUtil.rethrowUnchecked(ex);
             }
         }
@@ -198,24 +200,23 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
         StreamsLayout oldRoute = routedStreams.remove(destination);
         if (oldRoute == null)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
         }
         else
         {
             try
             {
                 oldRoute.close();
-                conductorProxy.onUnroutedResponse(correlationId);
+                conductor.onUnroutedResponse(correlationId);
             }
             catch (Exception ex)
             {
-                conductorProxy.onErrorResponse(correlationId);
+                conductor.onErrorResponse(correlationId);
                 LangUtil.rethrowUnchecked(ex);
             }
         }
     }
 
-    @Reaktive
     public void doBind(
         long correlationId,
         String sourceName)
@@ -225,19 +226,17 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
 
         if (sourceCapture == null || sourceRoute == null)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
         }
         else
         {
             Readable source = (Readable) sourceCapture.attachment();
             RingBuffer routeBuffer = sourceRoute.buffer();
-            ReadableProxy sourceProxy = source.proxy();
 
-            sourceProxy.doBind(correlationId, routeBuffer);
+            source.doBind(correlationId, routeBuffer);
         }
     }
 
-    @Reaktive
     public void doUnbind(
         long correlationId,
         long referenceId)
@@ -246,19 +245,17 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
 
         if (source == null)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
         }
         else
         {
             StreamsLayout capture = capturedStreams.get(source);
             Readable sourceReadable = (Readable) capture.attachment();
 
-            ReadableProxy sourceProxy = sourceReadable.proxy();
-            sourceProxy.doUnbind(correlationId, referenceId);
+            sourceReadable.doUnbind(correlationId, referenceId);
         }
     }
 
-    @Reaktive
     public void doPrepare(
         long correlationId,
         String destinationName,
@@ -269,19 +266,17 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
 
         if (destinationCapture == null || destinationRoute == null)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
         }
         else
         {
             Readable destination = (Readable) destinationCapture.attachment();
             RingBuffer destinationBuffer = destinationRoute.buffer();
-            ReadableProxy destinationProxy = destination.proxy();
 
-            destinationProxy.doPrepare(correlationId, destinationRef, destinationBuffer);
+            destination.doPrepare(correlationId, destinationRef, destinationBuffer);
         }
     }
 
-    @Reaktive
     public void doUnprepare(
         long correlationId,
         long referenceId)
@@ -290,19 +285,17 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
 
         if (destination == null)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
         }
         else
         {
             StreamsLayout capture = capturedStreams.get(destination);
             Readable destinationReadable = (Readable) capture.attachment();
 
-            ReadableProxy destinationProxy = destinationReadable.proxy();
-            destinationProxy.doUnprepare(correlationId, referenceId);
+            destinationReadable.doUnprepare(correlationId, referenceId);
         }
     }
 
-    @Reaktive
     public void doConnect(
         long correlationId,
         long referenceId)
@@ -311,19 +304,17 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
 
         if (destination == null)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
         }
         else
         {
             StreamsLayout capture = capturedStreams.get(destination);
             Readable destinationReadable = (Readable) capture.attachment();
 
-            ReadableProxy destinationProxy = destinationReadable.proxy();
-            destinationProxy.doConnect(correlationId, referenceId);
+            destinationReadable.doConnect(correlationId, referenceId);
         }
     }
 
-    @Reaktive
     public void onBoundResponse(
         String source,
         long correlationId,
@@ -331,10 +322,9 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
     {
         boundSources.put(referenceId, source);
 
-        conductorProxy.onBoundResponse(correlationId, referenceId);
+        conductor.onBoundResponse(correlationId, referenceId);
     }
 
-    @Reaktive
     public void onPreparedResponse(
         String destination,
         long correlationId,
@@ -342,6 +332,6 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
     {
         preparedDestinations.put(referenceId, destination);
 
-        conductorProxy.onPreparedResponse(correlationId, referenceId);
+        conductor.onPreparedResponse(correlationId, referenceId);
     }
 }

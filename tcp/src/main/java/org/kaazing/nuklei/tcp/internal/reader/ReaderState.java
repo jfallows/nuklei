@@ -142,7 +142,7 @@ public class ReaderState implements AutoCloseable
                 ConnectingState connectingState = connectingStateByStreamId.remove(clientStreamId);
                 if (connectingState == null)
                 {
-                    throw new IllegalStateException("stream not found: " + streamId);
+                    throw new ReaderException("stream not found: " + streamId);
                 }
 
                 StreamState newState = new StreamState(streamId, connectingState.buffer(), connectingState.channel());

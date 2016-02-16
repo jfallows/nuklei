@@ -46,6 +46,7 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.nio.TransportPoller;
 
+@Reaktive
 public final class Writer extends TransportPoller implements Nukleus, Consumer<WriterCommand>
 {
     private static final int MAX_RECEIVE_LENGTH = 1024; // TODO: Configuration and Context
@@ -130,7 +131,6 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         command.execute(this);
     }
 
-    @Reaktive
     public void doRoute(
         long correlationId,
         String destination)
@@ -160,7 +160,6 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         }
     }
 
-    @Reaktive
     public void doUnroute(
         long correlationId,
         String destination)
@@ -185,7 +184,6 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         }
     }
 
-    @Reaktive
     public void doRegister(
         String handler,
         long handlerRef,
@@ -238,7 +236,6 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         }
     }
 
-    @Reaktive
     public void doReset(
         long streamId,
         String handler,

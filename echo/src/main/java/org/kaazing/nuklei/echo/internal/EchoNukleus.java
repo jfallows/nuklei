@@ -26,8 +26,14 @@ public final class EchoNukleus implements Nukleus
 
     public EchoNukleus(Context context)
     {
-        this.conductor = new Conductor(context);
-        this.reader = new Reader(context);
+        final Conductor conductor = new Conductor(context);
+        final Reader reader = new Reader(context);
+
+        conductor.setReader(reader);
+        reader.setConductor(conductor);
+
+        this.conductor = conductor;
+        this.reader = reader;
     }
 
     @Override

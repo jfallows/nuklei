@@ -44,6 +44,7 @@ import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
+@Reaktive
 public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseable
 {
     private final FrameFW frameRO = new FrameFW();
@@ -136,7 +137,6 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         return proxy;
     }
 
-    @Reaktive
     public void doBind(
         long correlationId,
         long destinationRef,
@@ -165,7 +165,6 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         }
     }
 
-    @Reaktive
     public void doUnbind(
         long correlationId,
         long sourceRef)
@@ -195,7 +194,6 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         }
     }
 
-    @Reaktive
     public void doPrepare(
         long correlationId,
         long destinationRef,
@@ -223,7 +221,6 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         }
     }
 
-    @Reaktive
     public void doUnprepare(
         long correlationId,
         long sourceRef)
@@ -253,7 +250,6 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         }
     }
 
-    @Reaktive
     public void doRegisterEncoder(
         long destinationInitialStreamId,
         long sourceInitialStreamId,
@@ -270,7 +266,6 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         registrationsByStreamId.put(destinationInitialStreamId, handlerSupplier);
     }
 
-    @Reaktive
     public void doRegisterDecoder(
         long destinationInitialStreamId,
         long sourceInitialStreamId,
@@ -383,8 +378,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         LongFunction<MessageHandler> handlerSupplier = registrationsByStreamId.remove(initialStreamId);
         if (handlerSupplier == null)
         {
-            // TODO: resolve race condition versus register command
-            throw new IllegalStateException("stream not found: " + replyStreamId);
+            throw new ReadableException("stream not found: " + replyStreamId);
         }
 
         MessageHandler handler = handlerSupplier.apply(replyStreamId);
