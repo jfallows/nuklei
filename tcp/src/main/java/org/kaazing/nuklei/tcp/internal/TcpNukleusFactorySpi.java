@@ -19,14 +19,18 @@ import java.io.File;
 
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.NukleusFactorySpi;
+import org.kaazing.nuklei.tcp.internal.acceptor.Acceptor;
+import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
+import org.kaazing.nuklei.tcp.internal.connector.Connector;
+import org.kaazing.nuklei.tcp.internal.reader.Reader;
+import org.kaazing.nuklei.tcp.internal.writer.Writer;
 
 public final class TcpNukleusFactorySpi implements NukleusFactorySpi
 {
-
     @Override
     public String name()
     {
-        return "tcp";
+        return TcpNukleus.NAME;
     }
 
     @Override
@@ -35,7 +39,31 @@ public final class TcpNukleusFactorySpi implements NukleusFactorySpi
         Context context = new Context();
         context.controlFile(new File(config.directory(), "tcp/control"))
                .conclude(config);
-        return new TcpNukleus(context);
-    }
 
+        Conductor conductor = new Conductor(context);
+        Acceptor acceptor = new Acceptor(context);
+        Connector connector = new Connector(context);
+        Reader reader = new Reader(context);
+        Writer writer = new Writer(context);
+
+        conductor.setAcceptor(acceptor);
+        conductor.setConnector(connector);
+        conductor.setReader(reader);
+        conductor.setWriter(writer);
+
+        acceptor.setConductor(conductor);
+        acceptor.setReader(reader);
+        acceptor.setWriter(writer);
+
+        connector.setConductor(conductor);
+        connector.setReader(reader);
+        connector.setWriter(writer);
+
+        reader.setConductor(conductor);
+        reader.setConnector(connector);
+
+        writer.setConductor(conductor);
+
+        return new TcpNukleus(conductor, acceptor, connector, reader, writer, context);
+    }
 }

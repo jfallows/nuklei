@@ -17,13 +17,15 @@ package org.kaazing.nuklei.ws.internal;
 
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.NukleusFactorySpi;
+import org.kaazing.nuklei.ws.internal.conductor.Conductor;
+import org.kaazing.nuklei.ws.internal.reader.Reader;
 
 public final class WsNukleusFactorySpi implements NukleusFactorySpi
 {
     @Override
     public String name()
     {
-        return "ws";
+        return WsNukleus.NAME;
     }
 
     @Override
@@ -31,6 +33,13 @@ public final class WsNukleusFactorySpi implements NukleusFactorySpi
     {
         Context context = new Context();
         context.conclude(config);
-        return new WsNukleus(context);
+
+        Conductor conductor = new Conductor(context);
+        Reader reader = new Reader(context);
+
+        conductor.setReader(reader);
+        reader.setConductor(conductor);
+
+        return new WsNukleus(conductor, reader, context);
     }
 }

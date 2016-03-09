@@ -18,7 +18,6 @@ package org.kaazing.nuklei.echo.internal.reader;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.annotation.Resource;
@@ -36,7 +35,7 @@ import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 @Reaktive
-public final class Reader implements Nukleus, Consumer<ReaderCommand>
+public final class Reader implements Nukleus
 {
     private final Context context;
 
@@ -90,12 +89,6 @@ public final class Reader implements Nukleus, Consumer<ReaderCommand>
     public String name()
     {
         return "reader";
-    }
-
-    @Override
-    public void accept(ReaderCommand command)
-    {
-        command.execute(this);
     }
 
     public void doCapture(

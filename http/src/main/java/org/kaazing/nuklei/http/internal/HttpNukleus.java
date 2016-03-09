@@ -15,45 +15,37 @@
  */
 package org.kaazing.nuklei.http.internal;
 
+import java.io.Closeable;
+
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.http.internal.conductor.Conductor;
 import org.kaazing.nuklei.http.internal.reader.Reader;
 
-public final class HttpNukleus implements Nukleus
+public final class HttpNukleus extends Nukleus.Composite
 {
-    private final Context context;
-    private final Conductor conductor;
-    private final Reader reader;
+    static final String NAME = "http";
 
-    HttpNukleus(Context context)
+    private final Closeable cleanup;
+
+    HttpNukleus(
+        Conductor conductor,
+        Reader reader,
+        Closeable cleanup)
     {
-        this.conductor = new Conductor(context);
-        this.reader = new Reader(context);
-        this.context = context;
+        super(conductor, reader);
+        this.cleanup = cleanup;
     }
 
     @Override
     public String name()
     {
-        return "http";
+        return HttpNukleus.NAME;
     }
 
     @Override
     public void close() throws Exception
     {
-        conductor.close();
-        reader.close();
-        context.close();
-    }
-
-    @Override
-    public int process()
-    {
-        int weight = 0;
-
-        weight += conductor.process();
-        weight += reader.process();
-
-        return weight;
+        super.close();
+        cleanup.close();
     }
 }

@@ -24,7 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.kaazing.nuklei.ws.internal.readable.ReadableProxy;
+import org.kaazing.nuklei.ws.internal.readable.Readable;
 import org.kaazing.nuklei.ws.internal.types.stream.HttpBeginFW;
 import org.kaazing.nuklei.ws.internal.types.stream.HttpDataFW;
 import org.kaazing.nuklei.ws.internal.types.stream.HttpEndFW;
@@ -72,7 +72,7 @@ public final class HttpInitialStreamPool
     public MessageHandler acquire(
         long destinationRef,
         long sourceReplyStreamId,
-        ReadableProxy destination,
+        Readable destination,
         RingBuffer sourceRoute,
         RingBuffer destinationRoute,
         Consumer<MessageHandler> released)
@@ -86,7 +86,7 @@ public final class HttpInitialStreamPool
         private final Consumer<MessageHandler> cleanup;
         private final long destinationRef;
         private final long sourceReplyStreamId;
-        private final ReadableProxy destination;
+        private final Readable destination;
         private final RingBuffer sourceRoute;
         private final RingBuffer destinationRoute;
 
@@ -96,7 +96,7 @@ public final class HttpInitialStreamPool
             Consumer<MessageHandler> cleanup,
             long destinationRef,
             long sourceReplyStreamId,
-            ReadableProxy destination,
+            Readable destination,
             RingBuffer sourceRoute,
             RingBuffer destinationRoute)
         {

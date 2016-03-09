@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.kaazing.nuklei.http.internal.readable.ReadableProxy;
+import org.kaazing.nuklei.http.internal.readable.Readable;
 import org.kaazing.nuklei.http.internal.types.stream.BeginFW;
 import org.kaazing.nuklei.http.internal.types.stream.DataFW;
 import org.kaazing.nuklei.http.internal.types.stream.EndFW;
@@ -78,7 +78,7 @@ public final class InitialStreamPool
     public MessageHandler acquire(
         long destinationRef,
         long sourceReplyStreamId,
-        ReadableProxy destination,
+        Readable destination,
         RingBuffer sourceRoute,
         RingBuffer destinationRoute,
         Consumer<MessageHandler> released)
@@ -92,7 +92,7 @@ public final class InitialStreamPool
         private final Consumer<MessageHandler> cleanup;
         private final long destinationRef;
         private final long sourceReplyStreamId;
-        private final ReadableProxy destination;
+        private final Readable destination;
         private final RingBuffer sourceRoute;
         private final RingBuffer destinationRoute;
 
@@ -103,7 +103,7 @@ public final class InitialStreamPool
             Consumer<MessageHandler> cleanup,
             long destinationRef,
             long sourceReplyStreamId,
-            ReadableProxy destination,
+            Readable destination,
             RingBuffer sourceRoute,
             RingBuffer destinationRoute)
         {

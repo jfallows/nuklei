@@ -19,7 +19,6 @@ import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 import static org.kaazing.nuklei.echo.internal.types.stream.Types.TYPE_ID_BEGIN;
 
-import java.util.function.Consumer;
 import java.util.function.LongFunction;
 
 import org.kaazing.nuklei.Nukleus;
@@ -42,7 +41,7 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 @Reaktive
-public final class Readable implements Nukleus, Consumer<ReadableCommand>
+public final class Readable implements Nukleus
 {
     private final FrameFW frameRO = new FrameFW();
 
@@ -120,12 +119,6 @@ public final class Readable implements Nukleus, Consumer<ReadableCommand>
     public String toString()
     {
         return String.format("[name=%d]", captureName);
-    }
-
-    @Override
-    public void accept(ReadableCommand command)
-    {
-        command.execute(this);
     }
 
     public void doBind(

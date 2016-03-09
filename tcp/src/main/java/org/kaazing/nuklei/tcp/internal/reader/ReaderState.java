@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-import org.kaazing.nuklei.tcp.internal.connector.ConnectorProxy;
+import org.kaazing.nuklei.tcp.internal.connector.Connector;
 import org.kaazing.nuklei.tcp.internal.types.stream.BeginFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.DataFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.EndFW;
@@ -39,7 +39,7 @@ public class ReaderState implements AutoCloseable
     private final EndFW endRO = new EndFW();
     private final DataFW dataRO = new DataFW();
 
-    private final ConnectorProxy.FromReader connectorProxy;
+    private final Connector connector;
     private final Long2ObjectHashMap<ConnectingState> connectingStateByStreamId;
     private final Long2ObjectHashMap<StreamState> stateByStreamId;
 
@@ -47,11 +47,11 @@ public class ReaderState implements AutoCloseable
     private final RingBuffer buffer;
 
     public ReaderState(
-        ConnectorProxy.FromReader connectorProxy,
+        Connector connector,
         String source,
         RingBuffer buffer)
     {
-        this.connectorProxy = connectorProxy;
+        this.connector = connector;
         this.connectingStateByStreamId = new Long2ObjectHashMap<>();
         this.stateByStreamId = new Long2ObjectHashMap<>();
 
@@ -133,7 +133,7 @@ public class ReaderState implements AutoCloseable
                 final String source = this.source;
                 final long sourceRef = referenceId;
 
-                connectorProxy.doConnect(source, sourceRef, streamId);
+                connector.doConnect(source, sourceRef, streamId);
             }
             else
             {

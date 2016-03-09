@@ -20,43 +20,50 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
+
+import javax.annotation.Resource;
 
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.tcp.internal.Context;
-import org.kaazing.nuklei.tcp.internal.conductor.ConductorProxy;
-import org.kaazing.nuklei.tcp.internal.connector.ConnectorProxy;
-import org.kaazing.nuklei.tcp.internal.connector.ConnectorProxy.FromReader;
+import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
+import org.kaazing.nuklei.tcp.internal.connector.Connector;
 import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
 
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.collections.ArrayUtil;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.nio.TransportPoller;
 
 @Reaktive
-public final class Reader extends TransportPoller implements Nukleus, Consumer<ReaderCommand>
+public final class Reader extends TransportPoller implements Nukleus
 {
-    private final ConductorProxy.FromReader conductorProxy;
-    private final FromReader connectorProxy;
-    private final OneToOneConcurrentArrayQueue<ReaderCommand> commandQueue;
     private final Function<String, File> streamsFile;
     private final int streamsCapacity;
     private final Map<String, StreamsLayout> layoutsByHandler;
 
+    private Conductor conductor;
+    private Connector connector;
     private ReaderState[] readerStates;
 
     public Reader(Context context)
     {
-        this.conductorProxy = new ConductorProxy.FromReader(context);
-        this.connectorProxy = new ConnectorProxy.FromReader(context);
-        this.commandQueue = context.readerCommandQueue();
         this.readerStates = new ReaderState[0];
         this.streamsFile = context.captureStreamsFile();
         this.streamsCapacity = context.streamsBufferCapacity();
         this.layoutsByHandler = new HashMap<>();
+    }
+
+    @Resource
+    public void setConductor(Conductor conductor)
+    {
+        this.conductor = conductor;
+    }
+
+    @Resource
+    public void setConnector(Connector connector)
+    {
+        this.connector = connector;
     }
 
     @Override
@@ -68,7 +75,6 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
         {
             selector.selectNow();
             weight += selectedKeySet.forEach(this::processWrite);
-            weight += commandQueue.drain(this);
 
             for (int i=0; i < readerStates.length; i++)
             {
@@ -118,12 +124,6 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
         super.close();
     }
 
-    @Override
-    public void accept(ReaderCommand command)
-    {
-        command.execute(this);
-    }
-
     public void doCapture(
         long correlationId,
         String source)
@@ -131,7 +131,7 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
         StreamsLayout layout = layoutsByHandler.get(source);
         if (layout != null)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
         }
         else
         {
@@ -144,15 +144,15 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
 
                 layoutsByHandler.put(source, newLayout);
 
-                ReaderState newCaptureState = new ReaderState(connectorProxy, source, newLayout.buffer());
+                ReaderState newCaptureState = new ReaderState(connector, source, newLayout.buffer());
 
                 readerStates = ArrayUtil.add(readerStates, newCaptureState);
 
-                conductorProxy.onCapturedResponse(correlationId);
+                conductor.onCapturedResponse(correlationId);
             }
             catch (Exception ex)
             {
-                conductorProxy.onErrorResponse(correlationId);
+                conductor.onErrorResponse(correlationId);
                 LangUtil.rethrowUnchecked(ex);
             }
         }
@@ -165,7 +165,7 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
         StreamsLayout oldLayout = layoutsByHandler.remove(handler);
         if (oldLayout == null)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
         }
         else
         {
@@ -185,11 +185,11 @@ public final class Reader extends TransportPoller implements Nukleus, Consumer<R
                 }
 
                 oldLayout.close();
-                conductorProxy.onUncapturedResponse(correlationId);
+                conductor.onUncapturedResponse(correlationId);
             }
             catch (Exception ex)
             {
-                conductorProxy.onErrorResponse(correlationId);
+                conductor.onErrorResponse(correlationId);
                 LangUtil.rethrowUnchecked(ex);
             }
         }

@@ -21,44 +21,56 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.function.Consumer;
+
+import javax.annotation.Resource;
 
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.tcp.internal.Context;
-import org.kaazing.nuklei.tcp.internal.conductor.ConductorProxy;
-import org.kaazing.nuklei.tcp.internal.reader.ReaderProxy;
-import org.kaazing.nuklei.tcp.internal.writer.WriterProxy;
+import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
+import org.kaazing.nuklei.tcp.internal.reader.Reader;
+import org.kaazing.nuklei.tcp.internal.writer.Writer;
 
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.nio.TransportPoller;
 
 @Reaktive
-public final class Connector extends TransportPoller implements Nukleus, Consumer<ConnectorCommand>
+public final class Connector extends TransportPoller implements Nukleus
 {
-    private final ConductorProxy.FromConnector conductorProxy;
-    private final ReaderProxy readerProxy;
-    private final WriterProxy writerProxy;
-    private final OneToOneConcurrentArrayQueue<ConnectorCommand> commandQueueFromConductor;
-    private final OneToOneConcurrentArrayQueue<ConnectorCommand> commandQueueFromReader;
     private final Long2ObjectHashMap<ConnectorState> stateByRef;
 
     private final AtomicCounter streamsPrepared;
     private final AtomicCounter streamsConnected;
 
+    private Conductor conductor;
+    private Reader reader;
+    private Writer writer;
+
     public Connector(Context context)
     {
-        this.conductorProxy = new ConductorProxy.FromConnector(context);
-        this.readerProxy = new ReaderProxy(context);
-        this.writerProxy = new WriterProxy(context);
-        this.commandQueueFromConductor = context.connectorCommandQueueFromConductor();
-        this.commandQueueFromReader = context.connectorCommandQueueFromReader();
         this.stateByRef = new Long2ObjectHashMap<>();
         this.streamsPrepared = context.counters().streamsPrepared();
         this.streamsConnected = context.counters().streamsConnected();
+    }
+
+    @Resource
+    public void setConductor(Conductor conductor)
+    {
+        this.conductor = conductor;
+    }
+
+    @Resource
+    public void setReader(Reader reader)
+    {
+        this.reader = reader;
+    }
+
+    @Resource
+    public void setWriter(Writer writer)
+    {
+        this.writer = writer;
     }
 
     @Override
@@ -68,8 +80,6 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
 
         selectNow();
         weight += selectedKeySet.forEach(this::processConnect);
-        weight += commandQueueFromConductor.drain(this);
-        weight += commandQueueFromReader.drain(this);
 
         return weight;
     }
@@ -78,12 +88,6 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
     public String name()
     {
         return "connector";
-    }
-
-    @Override
-    public void accept(ConnectorCommand command)
-    {
-        command.execute(this);
     }
 
     public void doPrepare(
@@ -99,11 +103,11 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
 
             stateByRef.put(newState.sourceRef(), newState);
 
-            conductorProxy.onPreparedResponse(correlationId, newState.sourceRef());
+            conductor.onPreparedResponse(correlationId, newState.sourceRef());
         }
         catch (Exception ex)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
             LangUtil.rethrowUnchecked(ex);
         }
     }
@@ -116,7 +120,7 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
 
         if (state == null)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
         }
         else
         {
@@ -125,11 +129,11 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
                 String source = state.source();
                 InetSocketAddress remoteAddress = state.remoteAddress();
 
-                conductorProxy.onUnpreparedResponse(correlationId, source, remoteAddress);
+                conductor.onUnpreparedResponse(correlationId, source, remoteAddress);
             }
             catch (Exception ex)
             {
-                conductorProxy.onErrorResponse(correlationId);
+                conductor.onErrorResponse(correlationId);
                 LangUtil.rethrowUnchecked(ex);
             }
         }
@@ -145,7 +149,7 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
 
         if (state == null)
         {
-            writerProxy.doReset(source, sourceRef, streamId);
+            writer.doReset(streamId, source, sourceRef);
         }
         else
         {
@@ -160,8 +164,8 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
                     // even, positive, non-zero
                     final long newServerStreamId = streamsConnected.increment() << 1L;
 
-                    readerProxy.doRegister(source, sourceRef, streamId, newServerStreamId, channel);
-                    writerProxy.doRegister(source, sourceRef, streamId, newServerStreamId, channel);
+                    reader.doRegister(source, sourceRef, streamId, newServerStreamId, channel);
+                    writer.doRegister(source, sourceRef, streamId, newServerStreamId, channel);
                 }
                 else
                 {
@@ -171,7 +175,7 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
             }
             catch (Exception ex)
             {
-                writerProxy.doReset(source, sourceRef, streamId);
+                writer.doReset(streamId, source, sourceRef);
                 LangUtil.rethrowUnchecked(ex);
             }
         }
@@ -207,14 +211,14 @@ public final class Connector extends TransportPoller implements Nukleus, Consume
             streamsConnected.increment();
             final long newServerStreamId = streamsConnected.get() << 1L;
 
-            readerProxy.doRegister(handler, handlerRef, streamId, newServerStreamId, channel);
-            writerProxy.doRegister(handler, handlerRef, streamId, newServerStreamId, channel);
+            reader.doRegister(handler, handlerRef, streamId, newServerStreamId, channel);
+            writer.doRegister(handler, handlerRef, streamId, newServerStreamId, channel);
 
             selectionKey.cancel();
         }
         catch (Exception ex)
         {
-            writerProxy.doReset(handler, handlerRef, streamId);
+            writer.doReset(streamId, handler, handlerRef);
             LangUtil.rethrowUnchecked(ex);
         }
 

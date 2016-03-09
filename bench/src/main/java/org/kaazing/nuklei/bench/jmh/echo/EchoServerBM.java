@@ -28,9 +28,9 @@ import java.util.concurrent.CompletableFuture;
 
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.ControllerFactory;
+import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.NukleusFactory;
 import org.kaazing.nuklei.echo.internal.EchoController;
-import org.kaazing.nuklei.echo.internal.EchoNukleus;
 import org.kaazing.nuklei.echo.internal.EchoStreams;
 import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -61,7 +61,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 @OutputTimeUnit(SECONDS)
 public class EchoServerBM
 {
-    private EchoNukleus nukleus;
+    private Nukleus nukleus;
     private EchoController controller;
     private EchoStreams streams;
 
@@ -81,7 +81,7 @@ public class EchoServerBM
         NukleusFactory nuklei = NukleusFactory.instantiate();
         ControllerFactory controllers = ControllerFactory.instantiate();
 
-        this.nukleus = (EchoNukleus) nuklei.create("echo", config);
+        this.nukleus = nuklei.create("echo", config);
         this.controller = controllers.create(EchoController.class, config);
 
         controller.capture("source");

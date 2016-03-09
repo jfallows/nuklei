@@ -26,12 +26,13 @@ import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_UNROU
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.Consumer;
+
+import javax.annotation.Resource;
 
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.http.internal.Context;
-import org.kaazing.nuklei.http.internal.reader.ReaderProxy;
+import org.kaazing.nuklei.http.internal.reader.Reader;
 import org.kaazing.nuklei.http.internal.types.control.BindFW;
 import org.kaazing.nuklei.http.internal.types.control.BoundFW;
 import org.kaazing.nuklei.http.internal.types.control.CaptureFW;
@@ -52,13 +53,12 @@ import org.kaazing.nuklei.http.internal.types.control.UnroutedFW;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 @Reaktive
-public final class Conductor implements Nukleus, Consumer<ConductorResponse>
+public final class Conductor implements Nukleus
 {
     private static final int SEND_BUFFER_CAPACITY = 1024; // TODO: Configuration and Context
 
@@ -81,17 +81,14 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
     private final PreparedFW.Builder preparedRW = new PreparedFW.Builder();
     private final UnpreparedFW.Builder unpreparedRW = new UnpreparedFW.Builder();
 
-    private final ReaderProxy readerProxy;
-    private final ManyToOneConcurrentArrayQueue<ConductorResponse> conductorResponseQueue;
-
     private final RingBuffer conductorCommands;
     private final BroadcastTransmitter conductorResponses;
     private final AtomicBuffer sendBuffer;
 
+    private Reader reader;
+
     public Conductor(Context context)
     {
-        this.readerProxy = new ReaderProxy(context);
-        this.conductorResponseQueue = context.conductorResponseQueue();
         this.conductorCommands = context.conductorCommands();
         this.conductorResponses = context.conductorResponses();
         this.sendBuffer = new UnsafeBuffer(new byte[SEND_BUFFER_CAPACITY]);
@@ -103,21 +100,20 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         int weight = 0;
 
         weight += conductorCommands.read(this::handleCommand);
-        weight += conductorResponseQueue.drain(this);
 
         return weight;
+    }
+
+    @Resource
+    public void setReader(Reader reader)
+    {
+        this.reader = reader;
     }
 
     @Override
     public String name()
     {
         return "conductor";
-    }
-
-    @Override
-    public void accept(ConductorResponse response)
-    {
-        response.execute(this);
     }
 
     public void onErrorResponse(long correlationId)
@@ -279,7 +275,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long correlationId = captureRO.correlationId();
         String source = captureRO.source().asString();
 
-        readerProxy.doCapture(correlationId, source);
+        reader.doCapture(correlationId, source);
     }
 
     private void handleUncaptureCommand(DirectBuffer buffer, int index, int length)
@@ -289,7 +285,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long correlationId = uncaptureRO.correlationId();
         String source = uncaptureRO.source().asString();
 
-        readerProxy.doUncapture(correlationId, source);
+        reader.doUncapture(correlationId, source);
     }
 
     private void handleRouteCommand(DirectBuffer buffer, int index, int length)
@@ -299,7 +295,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long correlationId = routeRO.correlationId();
         String destination = routeRO.destination().asString();
 
-        readerProxy.doRoute(correlationId, destination);
+        reader.doRoute(correlationId, destination);
     }
 
     private void handleUnrouteCommand(DirectBuffer buffer, int index, int length)
@@ -309,7 +305,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long correlationId = unrouteRO.correlationId();
         String destination = unrouteRO.destination().asString();
 
-        readerProxy.doUnroute(correlationId, destination);
+        reader.doUnroute(correlationId, destination);
     }
 
     private void handleBindCommand(DirectBuffer buffer, int index, int length)
@@ -327,7 +323,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
             headers.put(header.name().asString(), header.value().asString());
         });
 
-        readerProxy.doBind(correlationId, destination, destinationRef, source, headers);
+        reader.doBind(correlationId, destination, destinationRef, source, headers);
     }
 
     private void handleUnbindCommand(DirectBuffer buffer, int index, int length)
@@ -337,7 +333,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long correlationId = unbindRO.correlationId();
         long referenceId = unbindRO.referenceId();
 
-        readerProxy.doUnbind(correlationId, referenceId);
+        reader.doUnbind(correlationId, referenceId);
     }
 
     private void handlePrepareCommand(DirectBuffer buffer, int index, int length)
@@ -355,7 +351,7 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
             headers.put(header.name().asString(), header.value().asString());
         });
 
-        readerProxy.doPrepare(correlationId, destination, destinationRef, source, headers);
+        reader.doPrepare(correlationId, destination, destinationRef, source, headers);
     }
 
     private void handleUnprepareCommand(DirectBuffer buffer, int index, int length)
@@ -365,6 +361,6 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long correlationId = unprepareRO.correlationId();
         long referenceId = unprepareRO.referenceId();
 
-        readerProxy.doUnprepare(correlationId, referenceId);
+        reader.doUnprepare(correlationId, referenceId);
     }
 }

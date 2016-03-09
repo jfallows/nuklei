@@ -25,8 +25,6 @@ import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_UNCAP
 import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_UNPREPARE_COMMAND;
 import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_UNROUTE_COMMAND;
 
-import java.util.function.Consumer;
-
 import javax.annotation.Resource;
 
 import org.kaazing.nuklei.Nukleus;
@@ -62,7 +60,7 @@ import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 @Reaktive
-public final class Conductor implements Nukleus, Consumer<ConductorResponse>
+public final class Conductor implements Nukleus
 {
     private static final int SEND_BUFFER_CAPACITY = 1024; // TODO: Configuration and Context
 
@@ -120,12 +118,6 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
     public String name()
     {
         return "conductor";
-    }
-
-    @Override
-    public void accept(ConductorResponse response)
-    {
-        response.execute(this);
     }
 
     public void onErrorResponse(long correlationId)
@@ -366,9 +358,5 @@ public final class Conductor implements Nukleus, Consumer<ConductorResponse>
         long referenceId = connectRO.referenceId();
 
         reader.doConnect(correlationId, referenceId);
-    }
-
-    public static void method()
-    {
     }
 }

@@ -25,15 +25,12 @@ import java.util.function.Function;
 import java.util.logging.Logger;
 
 import org.kaazing.nuklei.Configuration;
-import org.kaazing.nuklei.ws.internal.conductor.ConductorResponse;
 import org.kaazing.nuklei.ws.internal.layouts.ControlLayout;
-import org.kaazing.nuklei.ws.internal.reader.ReaderCommand;
 
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.CountersManager;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
@@ -56,9 +53,6 @@ public final class Context implements Closeable
     private RingBuffer toConductorCommands;
     private AtomicBuffer fromConductorResponseBuffer;
     private BroadcastTransmitter fromConductorResponses;
-
-    private ManyToOneConcurrentArrayQueue<ReaderCommand> readerCommandQueue;
-    private ManyToOneConcurrentArrayQueue<ConductorResponse> conductorResponseQueue;
 
     public Context readonly(
         boolean readonly)
@@ -191,30 +185,6 @@ public final class Context implements Closeable
         return Logger.getLogger("nuklei.ws");
     }
 
-    public Context readerCommandQueue(
-        ManyToOneConcurrentArrayQueue<ReaderCommand> readerCommandQueue)
-    {
-        this.readerCommandQueue = readerCommandQueue;
-        return this;
-    }
-
-    public ManyToOneConcurrentArrayQueue<ReaderCommand> readerCommandQueue()
-    {
-        return readerCommandQueue;
-    }
-
-    public Context conductorResponseQueue(
-        ManyToOneConcurrentArrayQueue<ConductorResponse> conductorResponseQueue)
-    {
-        this.conductorResponseQueue = conductorResponseQueue;
-        return this;
-    }
-
-    public ManyToOneConcurrentArrayQueue<ConductorResponse> conductorResponseQueue()
-    {
-        return conductorResponseQueue;
-    }
-
     public Context countersManager(
         CountersManager countersManager)
     {
@@ -266,10 +236,6 @@ public final class Context implements Closeable
             conductorResponseBuffer(controlRO.responseBuffer());
 
             conductorResponses(new BroadcastTransmitter(conductorResponseBuffer()));
-
-            readerCommandQueue(new ManyToOneConcurrentArrayQueue<ReaderCommand>(1024));
-
-            conductorResponseQueue(new ManyToOneConcurrentArrayQueue<ConductorResponse>(1024));
 
             concludeCounters();
         }

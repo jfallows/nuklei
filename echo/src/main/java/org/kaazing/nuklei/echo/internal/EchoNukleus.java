@@ -15,41 +15,37 @@
  */
 package org.kaazing.nuklei.echo.internal;
 
+import java.io.Closeable;
+
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.echo.internal.conductor.Conductor;
 import org.kaazing.nuklei.echo.internal.reader.Reader;
 
-public final class EchoNukleus implements Nukleus
+public final class EchoNukleus extends Nukleus.Composite
 {
-    private final Conductor conductor;
-    private final Reader reader;
+    static final String NAME = "echo";
 
-    public EchoNukleus(Context context)
+    private final Closeable cleanup;
+
+    EchoNukleus(
+        Conductor conductor,
+        Reader reader,
+        Closeable cleanup)
     {
-        final Conductor conductor = new Conductor(context);
-        final Reader reader = new Reader(context);
-
-        conductor.setReader(reader);
-        reader.setConductor(conductor);
-
-        this.conductor = conductor;
-        this.reader = reader;
+        super(conductor, reader);
+        this.cleanup = cleanup;
     }
 
     @Override
     public String name()
     {
-        return "echo";
+        return EchoNukleus.NAME;
     }
 
     @Override
-    public int process()
+    public void close() throws Exception
     {
-        int weight = 0;
-
-        weight += conductor.process();
-        weight += reader.process();
-
-        return weight;
+        super.close();
+        cleanup.close();
     }
 }

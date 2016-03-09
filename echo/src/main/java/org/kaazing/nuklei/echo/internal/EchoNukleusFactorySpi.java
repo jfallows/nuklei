@@ -16,22 +16,32 @@
 package org.kaazing.nuklei.echo.internal;
 
 import org.kaazing.nuklei.Configuration;
+import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.NukleusFactorySpi;
+import org.kaazing.nuklei.echo.internal.conductor.Conductor;
+import org.kaazing.nuklei.echo.internal.reader.Reader;
 
 public final class EchoNukleusFactorySpi implements NukleusFactorySpi
 {
     @Override
     public String name()
     {
-        return "echo";
+        return EchoNukleus.NAME;
     }
 
     @Override
-    public EchoNukleus create(Configuration config)
+    public Nukleus create(Configuration config)
     {
         Context context = new Context();
         context.conclude(config);
-        return new EchoNukleus(context);
+
+        final Conductor conductor = new Conductor(context);
+        final Reader reader = new Reader(context);
+
+        conductor.setReader(reader);
+        reader.setConductor(conductor);
+
+        return new EchoNukleus(conductor, reader, context);
     }
 
 }
