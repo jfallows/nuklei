@@ -15,8 +15,6 @@
  */
 package org.kaazing.nuklei;
 
-import java.io.Closeable;
-
 @FunctionalInterface
 public interface Nukleus extends AutoCloseable
 {
@@ -29,39 +27,6 @@ public interface Nukleus extends AutoCloseable
     default String name()
     {
         return null;
-    }
-
-    public static final class Noop implements Nukleus
-    {
-        private final Closeable closer;
-
-        @Override
-        public int process()
-        {
-            return 0;
-        }
-
-        @Override
-        public String name()
-        {
-            return "noop";
-        }
-
-        @Override
-        public void close() throws Exception
-        {
-            closer.close();
-        }
-
-        public static Nukleus of(Closeable closer)
-        {
-            return new Noop(closer);
-        }
-
-        private Noop(Closeable close)
-        {
-            this.closer = close;
-        }
     }
 
     public static class Composite implements Nukleus
