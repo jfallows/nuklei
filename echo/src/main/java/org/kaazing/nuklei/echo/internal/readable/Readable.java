@@ -108,11 +108,7 @@ public final class Readable implements Nukleus
     @Override
     public int process()
     {
-        int weight = 0;
-
-        weight += captureBuffer.read(this::handleRead);
-
-        return weight;
+        return captureBuffer.read(this::handleRead);
     }
 
     @Override
@@ -263,7 +259,11 @@ public final class Readable implements Nukleus
         }
     }
 
-    private void handleRead(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
+    private void handleRead(
+        int msgTypeId,
+        MutableDirectBuffer buffer,
+        int index,
+        int length)
     {
         frameRO.wrap(buffer, index, index + length);
 

@@ -76,12 +76,8 @@ public final class Acceptor extends TransportPoller implements Nukleus
     @Override
     public int process()
     {
-        int weight = 0;
-
         selectNow();
-        weight += selectedKeySet.forEach(this::processAccept);
-
-        return weight;
+        return selectedKeySet.forEach(this::processAccept);
     }
 
     @Override

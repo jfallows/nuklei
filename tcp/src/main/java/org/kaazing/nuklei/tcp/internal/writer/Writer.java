@@ -85,12 +85,8 @@ public final class Writer extends TransportPoller implements Nukleus
     @Override
     public int process()
     {
-        int weight = 0;
-
         selectNow();
-        weight += selectedKeySet.forEach(this::processRead);
-
-        return weight;
+        return selectedKeySet.forEach(this::processRead);
     }
 
     @Override

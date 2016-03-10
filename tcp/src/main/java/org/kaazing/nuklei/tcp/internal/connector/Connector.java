@@ -76,12 +76,8 @@ public final class Connector extends TransportPoller implements Nukleus
     @Override
     public int process()
     {
-        int weight = 0;
-
         selectNow();
-        weight += selectedKeySet.forEach(this::processConnect);
-
-        return weight;
+        return selectedKeySet.forEach(this::processConnect);
     }
 
     @Override

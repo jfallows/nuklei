@@ -107,11 +107,7 @@ public final class Conductor implements Nukleus
     @Override
     public int process()
     {
-        int weight = 0;
-
-        weight += conductorCommands.read(this::handleCommand);
-
-        return weight;
+        return conductorCommands.read(this::handleCommand);
     }
 
     @Override

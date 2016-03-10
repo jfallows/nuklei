@@ -104,11 +104,7 @@ public class Readable implements Nukleus
 
     public int process()
     {
-        int weight = 0;
-
-        weight += captureBuffer.read(this::handleRead);
-
-        return weight;
+        return captureBuffer.read(this::handleRead);
     }
 
     @Override

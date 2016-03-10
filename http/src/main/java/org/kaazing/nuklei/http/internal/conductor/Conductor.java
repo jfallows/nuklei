@@ -94,16 +94,6 @@ public final class Conductor implements Nukleus
         this.sendBuffer = new UnsafeBuffer(new byte[SEND_BUFFER_CAPACITY]);
     }
 
-    @Override
-    public int process()
-    {
-        int weight = 0;
-
-        weight += conductorCommands.read(this::handleCommand);
-
-        return weight;
-    }
-
     @Resource
     public void setReader(Reader reader)
     {
@@ -114,6 +104,12 @@ public final class Conductor implements Nukleus
     public String name()
     {
         return "conductor";
+    }
+
+    @Override
+    public int process()
+    {
+        return conductorCommands.read(this::handleCommand);
     }
 
     public void onErrorResponse(long correlationId)
