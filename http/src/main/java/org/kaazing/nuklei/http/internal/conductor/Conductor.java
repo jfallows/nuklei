@@ -27,8 +27,6 @@ import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_UNROU
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import javax.annotation.Resource;
-
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.http.internal.Context;
@@ -94,7 +92,6 @@ public final class Conductor implements Nukleus
         this.sendBuffer = new UnsafeBuffer(new byte[SEND_BUFFER_CAPACITY]);
     }
 
-    @Resource
     public void setReader(Reader reader)
     {
         this.reader = reader;

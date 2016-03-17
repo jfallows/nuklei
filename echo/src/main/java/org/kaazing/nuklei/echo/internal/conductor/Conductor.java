@@ -25,8 +25,6 @@ import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_UNCAP
 import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_UNPREPARE_COMMAND;
 import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_UNROUTE_COMMAND;
 
-import javax.annotation.Resource;
-
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.echo.internal.Context;
@@ -98,7 +96,6 @@ public final class Conductor implements Nukleus
         this.sendBuffer = new UnsafeBuffer(new byte[SEND_BUFFER_CAPACITY]);
     }
 
-    @Resource
     public void setReader(Reader reader)
     {
         this.reader = reader;

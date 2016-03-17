@@ -22,8 +22,6 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
-import javax.annotation.Resource;
-
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.tcp.internal.Context;
@@ -55,19 +53,16 @@ public final class Connector extends TransportPoller implements Nukleus
         this.streamsConnected = context.counters().streamsConnected();
     }
 
-    @Resource
     public void setConductor(Conductor conductor)
     {
         this.conductor = conductor;
     }
 
-    @Resource
     public void setReader(Reader reader)
     {
         this.reader = reader;
     }
 
-    @Resource
     public void setWriter(Writer writer)
     {
         this.writer = writer;

@@ -22,8 +22,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import javax.annotation.Resource;
-
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.tcp.internal.Context;
@@ -54,13 +52,11 @@ public final class Reader extends TransportPoller implements Nukleus
         this.layoutsByHandler = new HashMap<>();
     }
 
-    @Resource
     public void setConductor(Conductor conductor)
     {
         this.conductor = conductor;
     }
 
-    @Resource
     public void setConnector(Connector connector)
     {
         this.connector = connector;

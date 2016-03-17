@@ -26,8 +26,6 @@ import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_UNROUT
 
 import java.net.InetSocketAddress;
 
-import javax.annotation.Resource;
-
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.tcp.internal.Context;
@@ -103,25 +101,21 @@ public final class Conductor implements Nukleus
         this.sendBuffer = new UnsafeBuffer(new byte[SEND_BUFFER_CAPACITY]);
     }
 
-    @Resource
     public void setAcceptor(Acceptor acceptor)
     {
         this.acceptor = acceptor;
     }
 
-    @Resource
     public void setConnector(Connector connector)
     {
         this.connector = connector;
     }
 
-    @Resource
     public void setReader(Reader reader)
     {
         this.reader = reader;
     }
 
-    @Resource
     public void setWriter(Writer writer)
     {
         this.writer = writer;

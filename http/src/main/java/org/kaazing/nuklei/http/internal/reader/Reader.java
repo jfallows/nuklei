@@ -20,8 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import javax.annotation.Resource;
-
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.http.internal.Context;
@@ -79,7 +77,6 @@ public final class Reader implements Nukleus
         return weight;
     }
 
-    @Resource
     public void setConductor(Conductor conductor)
     {
         this.conductor = conductor;
