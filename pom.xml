@@ -112,7 +112,7 @@
                         <dependency>
                             <groupId>org.kaazing</groupId>
                             <artifactId>code.quality</artifactId>
-                            <version>1.4</version>
+                            <version>${code.quality.version}</version>
                         </dependency>
                     </dependencies>
                 </plugin>

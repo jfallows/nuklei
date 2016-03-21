@@ -20,4 +20,5 @@ hs_err_pid*.log
 dependency-reduced-pom.xml
 .factoryPath
 .apt_generated
+.checkstyle
 
