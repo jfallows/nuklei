@@ -16,21 +16,31 @@
 package org.kaazing.nuklei.http.internal;
 
 import org.kaazing.nuklei.Configuration;
+import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.NukleusFactorySpi;
+import org.kaazing.nuklei.http.internal.conductor.Conductor;
+import org.kaazing.nuklei.http.internal.reader.Reader;
 
 public final class HttpNukleusFactorySpi implements NukleusFactorySpi
 {
     @Override
     public String name()
     {
-        return "http";
+        return HttpNukleus.NAME;
     }
 
     @Override
-    public HttpNukleus create(Configuration config)
+    public Nukleus create(Configuration config)
     {
         Context context = new Context();
         context.conclude(config);
-        return new HttpNukleus(context);
+
+        Conductor conductor = new Conductor(context);
+        Reader reader = new Reader(context);
+
+        conductor.setReader(reader);
+        reader.setConductor(conductor);
+
+        return new HttpNukleus(conductor, reader, context);
     }
 }

@@ -19,15 +19,15 @@ import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 import static org.kaazing.nuklei.echo.internal.types.stream.Types.TYPE_ID_BEGIN;
 
-import java.util.function.Consumer;
 import java.util.function.LongFunction;
 
 import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.echo.internal.Context;
-import org.kaazing.nuklei.echo.internal.conductor.ConductorProxy;
+import org.kaazing.nuklei.echo.internal.conductor.Conductor;
 import org.kaazing.nuklei.echo.internal.readable.stream.InitialStreamPool;
 import org.kaazing.nuklei.echo.internal.readable.stream.ReplyStreamPool;
-import org.kaazing.nuklei.echo.internal.reader.ReaderProxy;
+import org.kaazing.nuklei.echo.internal.reader.Reader;
 import org.kaazing.nuklei.echo.internal.types.stream.BeginFW;
 import org.kaazing.nuklei.echo.internal.types.stream.FrameFW;
 
@@ -37,11 +37,11 @@ import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.MessageHandler;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-public final class Readable implements Nukleus, Consumer<ReadableCommand>
+@Reaktive
+public final class Readable implements Nukleus
 {
     private final FrameFW frameRO = new FrameFW();
 
@@ -49,8 +49,8 @@ public final class Readable implements Nukleus, Consumer<ReadableCommand>
 
     private final BeginFW beginRO = new BeginFW();
 
-    private final ConductorProxy conductorProxy;
-    private final ReaderProxy readerProxy;
+    private final Conductor conductor;
+    private final Reader reader;
 
     private final AtomicCounter streamsBound;
     private final AtomicCounter streamsPrepared;
@@ -70,16 +70,15 @@ public final class Readable implements Nukleus, Consumer<ReadableCommand>
     private final InitialStreamPool initialStreamPool;
     private final ReplyStreamPool replyStreamPool;
 
-    private final OneToOneConcurrentArrayQueue<ReadableCommand> commandQueue;
-    private final ReadableProxy proxy;
-
     public Readable(
         Context context,
+        Conductor conductor,
+        Reader reader,
         String captureName,
         RingBuffer captureBuffer)
     {
-        this.conductorProxy = new ConductorProxy(context);
-        this.readerProxy = new ReaderProxy(context);
+        this.conductor = conductor;
+        this.reader = reader;
 
         this.streamsBound = context.counters().streamsBound();
         this.streamsPrepared = context.counters().streamsPrepared();
@@ -98,10 +97,6 @@ public final class Readable implements Nukleus, Consumer<ReadableCommand>
 
         this.captureName = captureName;
         this.captureBuffer = captureBuffer;
-
-        OneToOneConcurrentArrayQueue<ReadableCommand> commandQueue = new OneToOneConcurrentArrayQueue<>(1024);
-        this.commandQueue = commandQueue;
-        this.proxy = new ReadableProxy(captureName, commandQueue);
     }
 
     @Override
@@ -113,29 +108,13 @@ public final class Readable implements Nukleus, Consumer<ReadableCommand>
     @Override
     public int process()
     {
-        int weight = 0;
-
-        weight += commandQueue.drain(this);
-        weight += captureBuffer.read(this::handleRead);
-
-        return weight;
+        return captureBuffer.read(this::handleRead);
     }
 
     @Override
     public String toString()
     {
         return String.format("[name=%d]", captureName);
-    }
-
-    @Override
-    public void accept(ReadableCommand command)
-    {
-        command.execute(this);
-    }
-
-    public ReadableProxy proxy()
-    {
-        return proxy;
     }
 
     public void doBind(
@@ -152,11 +131,11 @@ public final class Readable implements Nukleus, Consumer<ReadableCommand>
 
             stateByRef.put(newState.sourceRef(), newState);
 
-            readerProxy.onBoundResponse(captureName, correlationId, sourceRef);
+            reader.onBoundResponse(captureName, correlationId, sourceRef);
         }
         catch (Exception e)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
             throw new RuntimeException(e);
         }
     }
@@ -175,12 +154,12 @@ public final class Readable implements Nukleus, Consumer<ReadableCommand>
             }
             else
             {
-                conductorProxy.onUnboundResponse(correlationId, captureName);
+                conductor.onUnboundResponse(correlationId, captureName);
             }
         }
         catch (Exception e)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
         }
     }
 
@@ -199,11 +178,11 @@ public final class Readable implements Nukleus, Consumer<ReadableCommand>
 
             stateByRef.put(newState.sourceRef(), newState);
 
-            readerProxy.onPreparedResponse(captureName, correlationId, sourceRef);
+            reader.onPreparedResponse(captureName, correlationId, sourceRef);
         }
         catch (Exception ex)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
             LangUtil.rethrowUnchecked(ex);
         }
     }
@@ -224,12 +203,12 @@ public final class Readable implements Nukleus, Consumer<ReadableCommand>
             {
                 long destinationRef = oldState.destinationRef();
 
-                conductorProxy.onUnpreparedResponse(correlationId, captureName, destinationRef);
+                conductor.onUnpreparedResponse(correlationId, captureName, destinationRef);
             }
         }
         catch (Exception ex)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
             LangUtil.rethrowUnchecked(ex);
         }
     }
@@ -270,17 +249,21 @@ public final class Readable implements Nukleus, Consumer<ReadableCommand>
                     throw new IllegalStateException("could not write to ring buffer");
                 }
 
-                conductorProxy.onConnectedResponse(correlationId, newInitialStreamId);
+                conductor.onConnectedResponse(correlationId, newInitialStreamId);
             }
         }
         catch (Exception ex)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
             LangUtil.rethrowUnchecked(ex);
         }
     }
 
-    private void handleRead(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
+    private void handleRead(
+        int msgTypeId,
+        MutableDirectBuffer buffer,
+        int index,
+        int length)
     {
         frameRO.wrap(buffer, index, index + length);
 

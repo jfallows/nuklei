@@ -15,6 +15,8 @@
  */
 package org.kaazing.nuklei.tcp.internal;
 
+import java.io.Closeable;
+
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.acceptor.Acceptor;
 import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
@@ -22,53 +24,34 @@ import org.kaazing.nuklei.tcp.internal.connector.Connector;
 import org.kaazing.nuklei.tcp.internal.reader.Reader;
 import org.kaazing.nuklei.tcp.internal.writer.Writer;
 
-public final class TcpNukleus implements Nukleus
+public final class TcpNukleus extends Nukleus.Composite
 {
-    private final Context context;
-    private final Conductor conductor;
-    private final Acceptor acceptor;
-    private final Connector connector;
-    private final Writer writer;
-    private final Reader reader;
+    static final String NAME = "tcp";
 
-    TcpNukleus(Context context)
+    private final Closeable cleaner;
+
+    TcpNukleus(
+        Conductor conductor,
+        Acceptor acceptor,
+        Connector connector,
+        Reader reader,
+        Writer writer,
+        Closeable cleanup)
     {
-        this.context = context;
-        this.conductor = new Conductor(context);
-        this.acceptor = new Acceptor(context);
-        this.connector = new Connector(context);
-        this.reader = new Reader(context);
-        this.writer = new Writer(context);
+        super(conductor, acceptor, connector, reader, writer);
+        this.cleaner = cleanup;
     }
 
     @Override
     public String name()
     {
-        return "tcp";
+        return NAME;
     }
 
     @Override
     public void close() throws Exception
     {
-        conductor.close();
-        acceptor.close();
-        connector.close();
-        reader.close();
-        writer.close();
-        context.close();
-    }
-
-    @Override
-    public int process()
-    {
-        int weight = 0;
-
-        weight += conductor.process();
-        weight += acceptor.process();
-        weight += connector.process();
-        weight += reader.process();
-        weight += writer.process();
-
-        return weight;
+        super.close();
+        cleaner.close();
     }
 }

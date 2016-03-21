@@ -25,18 +25,12 @@ import java.util.function.Function;
 import java.util.logging.Logger;
 
 import org.kaazing.nuklei.Configuration;
-import org.kaazing.nuklei.tcp.internal.acceptor.AcceptorCommand;
-import org.kaazing.nuklei.tcp.internal.conductor.ConductorResponse;
-import org.kaazing.nuklei.tcp.internal.connector.ConnectorCommand;
 import org.kaazing.nuklei.tcp.internal.layouts.ControlLayout;
-import org.kaazing.nuklei.tcp.internal.reader.ReaderCommand;
-import org.kaazing.nuklei.tcp.internal.writer.WriterCommand;
 
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.CountersManager;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
@@ -57,19 +51,7 @@ public final class Context implements Closeable
     private Counters counters;
     private RingBuffer toConductorCommands;
     private BroadcastTransmitter fromConductorResponses;
-
-    private OneToOneConcurrentArrayQueue<AcceptorCommand> toAcceptorFromConductorCommands;
-    private OneToOneConcurrentArrayQueue<ConductorResponse> fromAcceptorToConductorResponses;
-    private OneToOneConcurrentArrayQueue<ReaderCommand> toReaderFromAcceptorCommands;
-    private OneToOneConcurrentArrayQueue<ConductorResponse> fromReaderToConductorResponses;
-    private OneToOneConcurrentArrayQueue<WriterCommand> toWriterFromAcceptorCommands;
-    private OneToOneConcurrentArrayQueue<ConductorResponse> fromWriterToConductorResponses;
-    private OneToOneConcurrentArrayQueue<ConnectorCommand> toConnectorFromConductorCommands;
-    private OneToOneConcurrentArrayQueue<ConductorResponse> fromConnectorToConductorResponses;
-    private OneToOneConcurrentArrayQueue<ConnectorCommand> toConnectorFromReaderCommands;
-
     private AtomicBuffer conductorResponseBuffer;
-
 
     public Context readonly(boolean readonly)
     {
@@ -186,111 +168,6 @@ public final class Context implements Closeable
         return Logger.getLogger("nuklei.tcp.acceptor");
     }
 
-    public void acceptorCommandQueue(
-            OneToOneConcurrentArrayQueue<AcceptorCommand> acceptorCommandQueue)
-    {
-        this.toAcceptorFromConductorCommands = acceptorCommandQueue;
-    }
-
-    public OneToOneConcurrentArrayQueue<AcceptorCommand> acceptorCommandQueue()
-    {
-        return toAcceptorFromConductorCommands;
-    }
-
-    public Context acceptorResponseQueue(
-            OneToOneConcurrentArrayQueue<ConductorResponse> acceptorResponseQueue)
-    {
-        this.fromAcceptorToConductorResponses = acceptorResponseQueue;
-        return this;
-    }
-
-    public OneToOneConcurrentArrayQueue<ConductorResponse> acceptorResponseQueue()
-    {
-        return fromAcceptorToConductorResponses;
-    }
-
-    public void connectorCommandQueueFromConductor(
-            OneToOneConcurrentArrayQueue<ConnectorCommand> connectorCommandQueue)
-    {
-        this.toConnectorFromConductorCommands = connectorCommandQueue;
-    }
-
-    public OneToOneConcurrentArrayQueue<ConnectorCommand> connectorCommandQueueFromConductor()
-    {
-        return toConnectorFromConductorCommands;
-    }
-
-    public void connectorCommandQueueFromReader(
-            OneToOneConcurrentArrayQueue<ConnectorCommand> connectorCommandQueue)
-    {
-        this.toConnectorFromReaderCommands = connectorCommandQueue;
-    }
-
-    public OneToOneConcurrentArrayQueue<ConnectorCommand> connectorCommandQueueFromReader()
-    {
-        return toConnectorFromReaderCommands;
-    }
-
-    public Context connectorResponseQueue(
-            OneToOneConcurrentArrayQueue<ConductorResponse> connectorResponseQueue)
-    {
-        this.fromConnectorToConductorResponses = connectorResponseQueue;
-        return this;
-    }
-
-    public OneToOneConcurrentArrayQueue<ConductorResponse> connectorResponseQueue()
-    {
-        return fromConnectorToConductorResponses;
-    }
-
-    public Context readerCommandQueue(
-            OneToOneConcurrentArrayQueue<ReaderCommand> readerCommandQueue)
-    {
-        this.toReaderFromAcceptorCommands = readerCommandQueue;
-        return this;
-    }
-
-    public OneToOneConcurrentArrayQueue<ReaderCommand> readerCommandQueue()
-    {
-        return toReaderFromAcceptorCommands;
-    }
-
-    public Context readerResponseQueue(
-            OneToOneConcurrentArrayQueue<ConductorResponse> readerResponseQueue)
-    {
-        this.fromReaderToConductorResponses = readerResponseQueue;
-        return this;
-    }
-
-    public OneToOneConcurrentArrayQueue<ConductorResponse> readerResponseQueue()
-    {
-        return fromReaderToConductorResponses;
-    }
-
-    public Context writerCommandQueue(
-            OneToOneConcurrentArrayQueue<WriterCommand> writerCommandQueue)
-    {
-        this.toWriterFromAcceptorCommands = writerCommandQueue;
-        return this;
-    }
-
-    public OneToOneConcurrentArrayQueue<WriterCommand> writerCommandQueue()
-    {
-        return toWriterFromAcceptorCommands;
-    }
-
-    public Context writerResponseQueue(
-            OneToOneConcurrentArrayQueue<ConductorResponse> writerResponseQueue)
-    {
-        this.fromWriterToConductorResponses = writerResponseQueue;
-        return this;
-    }
-
-    public OneToOneConcurrentArrayQueue<ConductorResponse> writerResponseQueue()
-    {
-        return fromWriterToConductorResponses;
-    }
-
     public Context countersManager(CountersManager countersManager)
     {
         this.countersManager = countersManager;
@@ -338,33 +215,6 @@ public final class Context implements Closeable
 
             conductorResponses(
                     new BroadcastTransmitter(conductorResponseBuffer()));
-
-            acceptorCommandQueue(
-                    new OneToOneConcurrentArrayQueue<AcceptorCommand>(1024));
-
-            acceptorResponseQueue(
-                    new OneToOneConcurrentArrayQueue<ConductorResponse>(1024));
-
-            connectorCommandQueueFromConductor(
-                    new OneToOneConcurrentArrayQueue<ConnectorCommand>(1024));
-
-            connectorCommandQueueFromReader(
-                    new OneToOneConcurrentArrayQueue<ConnectorCommand>(1024));
-
-            connectorResponseQueue(
-                    new OneToOneConcurrentArrayQueue<ConductorResponse>(1024));
-
-            readerCommandQueue(
-                    new OneToOneConcurrentArrayQueue<ReaderCommand>(1024));
-
-            readerResponseQueue(
-                    new OneToOneConcurrentArrayQueue<ConductorResponse>(1024));
-
-            writerCommandQueue(
-                    new OneToOneConcurrentArrayQueue<WriterCommand>(1024));
-
-            writerResponseQueue(
-                    new OneToOneConcurrentArrayQueue<ConductorResponse>(1024));
 
             concludeCounters();
         }

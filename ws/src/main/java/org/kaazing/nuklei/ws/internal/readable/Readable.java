@@ -19,17 +19,17 @@ import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 import static org.kaazing.nuklei.ws.internal.types.stream.Types.TYPE_ID_BEGIN;
 
-import java.util.function.Consumer;
 import java.util.function.LongFunction;
 
 import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.ws.internal.Context;
-import org.kaazing.nuklei.ws.internal.conductor.ConductorProxy;
+import org.kaazing.nuklei.ws.internal.conductor.Conductor;
 import org.kaazing.nuklei.ws.internal.readable.stream.HttpInitialStreamPool;
-import org.kaazing.nuklei.ws.internal.readable.stream.WsInitialStreamPool;
 import org.kaazing.nuklei.ws.internal.readable.stream.HttpReplyStreamPool;
+import org.kaazing.nuklei.ws.internal.readable.stream.WsInitialStreamPool;
 import org.kaazing.nuklei.ws.internal.readable.stream.WsReplyStreamPool;
-import org.kaazing.nuklei.ws.internal.reader.ReaderProxy;
+import org.kaazing.nuklei.ws.internal.reader.Reader;
 import org.kaazing.nuklei.ws.internal.types.stream.BeginFW;
 import org.kaazing.nuklei.ws.internal.types.stream.FrameFW;
 
@@ -38,18 +38,18 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseable
+@Reaktive
+public class Readable implements Nukleus
 {
     private final FrameFW frameRO = new FrameFW();
     private final BeginFW beginRO = new BeginFW();
 
-    private final ConductorProxy conductorProxy;
-    private final ReaderProxy readerProxy;
+    private final Conductor conductor;
+    private final Reader reader;
     private final AtomicCounter streamsBound;
     private final AtomicCounter streamsPrepared;
 
@@ -66,16 +66,15 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
     private final Long2ObjectHashMap<MessageHandler> handlersByStreamId;
     private final Long2ObjectHashMap<LongFunction<MessageHandler>> registrationsByStreamId;
 
-    private final ManyToOneConcurrentArrayQueue<ReadableCommand> commandQueue;
-    private final ReadableProxy proxy;
-
     public Readable(
         Context context,
+        Conductor conductor,
+        Reader reader,
         String captureName,
         RingBuffer captureBuffer)
     {
-        this.conductorProxy = new ConductorProxy(context);
-        this.readerProxy = new ReaderProxy(context);
+        this.conductor = conductor;
+        this.reader = reader;
         this.streamsBound = context.counters().streamsBound();
         this.streamsPrepared = context.counters().streamsPrepared();
 
@@ -92,10 +91,6 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         this.captureName = captureName;
         this.captureBuffer = captureBuffer;
 
-        ManyToOneConcurrentArrayQueue<ReadableCommand> commandQueue = new ManyToOneConcurrentArrayQueue<>(1024);
-        this.commandQueue = commandQueue;
-        this.proxy = new ReadableProxy(captureName, commandQueue);
-
         this.stateByRef = new Long2ObjectHashMap<>();
         this.handlersByStreamId = new Long2ObjectHashMap<>();
         this.registrationsByStreamId = new Long2ObjectHashMap<>();
@@ -109,12 +104,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
 
     public int process()
     {
-        int weight = 0;
-
-        weight += commandQueue.drain(this);
-        weight += captureBuffer.read(this::handleRead);
-
-        return weight;
+        return captureBuffer.read(this::handleRead);
     }
 
     @Override
@@ -123,23 +113,11 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         return String.format("[name=%d]", captureName);
     }
 
-    @Override
-    public void accept(
-        ReadableCommand command)
-    {
-        command.execute(this);
-    }
-
-    public ReadableProxy proxy()
-    {
-        return proxy;
-    }
-
     public void doBind(
         long correlationId,
         long destinationRef,
         String protocol,
-        ReadableProxy destination,
+        Readable destination,
         RingBuffer sourceRoute,
         RingBuffer destinationRoute)
     {
@@ -154,11 +132,11 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
 
             stateByRef.put(newState.sourceRef(), newState);
 
-            readerProxy.onBoundResponse(captureName, correlationId, sourceRef);
+            reader.onBoundResponse(captureName, correlationId, sourceRef);
         }
         catch (Exception ex)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
             LangUtil.rethrowUnchecked(ex);
         }
     }
@@ -178,16 +156,16 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
             else
             {
                 String protocol = oldState.protocol();
-                ReadableProxy destination = oldState.destination();
+                Readable destination = oldState.destination();
                 long destinationRef = oldState.destinationRef();
                 String destinationName = destination.name();
 
-                conductorProxy.onUnboundResponse(correlationId, destinationName, destinationRef, captureName, protocol);
+                conductor.onUnboundResponse(correlationId, destinationName, destinationRef, captureName, protocol);
             }
         }
         catch (Exception ex)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
             LangUtil.rethrowUnchecked(ex);
         }
     }
@@ -196,7 +174,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         long correlationId,
         long destinationRef,
         String protocol,
-        ReadableProxy destination,
+        Readable destination,
         RingBuffer sourceRoute,
         RingBuffer destinationRoute)
     {
@@ -210,11 +188,11 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
 
             stateByRef.put(newState.sourceRef(), newState);
 
-            readerProxy.onPreparedResponse(captureName, correlationId, sourceRef);
+            reader.onPreparedResponse(captureName, correlationId, sourceRef);
         }
         catch (Exception ex)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
             LangUtil.rethrowUnchecked(ex);
         }
     }
@@ -234,16 +212,16 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
             else
             {
                 String protocol = oldState.protocol();
-                ReadableProxy destination = oldState.destination();
+                Readable destination = oldState.destination();
                 long destinationRef = oldState.destinationRef();
                 String destinationName = destination.name();
 
-                conductorProxy.onUnpreparedResponse(correlationId, destinationName, destinationRef, captureName, protocol);
+                conductor.onUnpreparedResponse(correlationId, destinationName, destinationRef, captureName, protocol);
             }
         }
         catch (Exception ex)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
             LangUtil.rethrowUnchecked(ex);
         }
     }
@@ -335,7 +313,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
             final RingBuffer sourceRoute = readableState.sourceRoute();
             final long destinationRef = readableState.destinationRef();
             final RingBuffer destinationRoute = readableState.destinationRoute();
-            final ReadableProxy destination = readableState.destination();
+            final Readable destination = readableState.destination();
 
             if (initiating(referenceId))
             {
@@ -376,8 +354,7 @@ public class Readable implements Consumer<ReadableCommand>, Nukleus, AutoCloseab
         LongFunction<MessageHandler> handlerSupplier = registrationsByStreamId.remove(initialStreamId);
         if (handlerSupplier == null)
         {
-            // TODO: resolve race condition versus register command
-            throw new IllegalStateException("stream not found: " + replyStreamId);
+            throw new ReadableException("stream not found: " + replyStreamId);
         }
 
         MessageHandler handler = handlerSupplier.apply(replyStreamId);

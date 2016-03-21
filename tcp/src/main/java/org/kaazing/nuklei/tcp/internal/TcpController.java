@@ -93,6 +93,18 @@ public final class TcpController implements Controller
         context.close();
     }
 
+    @Override
+    public Class<TcpController> kind()
+    {
+        return TcpController.class;
+    }
+
+    @Override
+    public String name()
+    {
+        return "tcp";
+    }
+
     public TcpStreams streams(String handler)
     {
         return new TcpStreams(context, handler);

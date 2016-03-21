@@ -29,9 +29,9 @@ import java.util.concurrent.CompletableFuture;
 
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.ControllerFactory;
+import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.NukleusFactory;
 import org.kaazing.nuklei.http.internal.HttpController;
-import org.kaazing.nuklei.http.internal.HttpNukleus;
 import org.kaazing.nuklei.http.internal.HttpStreams;
 import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -62,7 +62,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 @OutputTimeUnit(SECONDS)
 public class HttpServerBM
 {
-    private HttpNukleus nukleus;
+    private Nukleus nukleus;
     private HttpController controller;
     private HttpStreams requestStreams;
     private HttpStreams responseStreams;
@@ -83,7 +83,7 @@ public class HttpServerBM
         NukleusFactory nuklei = NukleusFactory.instantiate();
         ControllerFactory controllers = ControllerFactory.instantiate();
 
-        this.nukleus = (HttpNukleus) nuklei.create("http", config);
+        this.nukleus = nuklei.create("http", config);
         this.controller = controllers.create(HttpController.class, config);
 
         controller.capture("source");

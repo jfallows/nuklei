@@ -21,6 +21,11 @@ import org.kaazing.nuklei.ControllerFactorySpi;
 
 public final class WsControllerFactorySpi implements ControllerFactorySpi
 {
+    @Override
+    public String name()
+    {
+        return "ws";
+    }
 
     @Override
     public Class<WsController> kind()

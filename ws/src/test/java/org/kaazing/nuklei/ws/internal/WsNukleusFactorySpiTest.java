@@ -21,9 +21,9 @@ import static org.junit.Assert.assertThat;
 import java.util.Properties;
 
 import org.junit.Test;
+import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.NukleusFactory;
-import org.kaazing.nuklei.Configuration;
 
 public class WsNukleusFactorySpiTest
 {

@@ -92,6 +92,18 @@ public final class WsController implements Controller
         context.close();
     }
 
+    @Override
+    public Class<WsController> kind()
+    {
+        return WsController.class;
+    }
+
+    @Override
+    public String name()
+    {
+        return "ws";
+    }
+
     public CompletableFuture<Void> capture(
         String source)
     {

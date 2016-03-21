@@ -21,9 +21,9 @@ import static org.junit.Assert.assertThat;
 import java.util.Properties;
 
 import org.junit.Test;
+import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.NukleusFactory;
-import org.kaazing.nuklei.Configuration;
 
 public class HttpNukleusFactorySpiTest
 {
@@ -35,7 +35,7 @@ public class HttpNukleusFactorySpiTest
         properties.setProperty(Configuration.DIRECTORY_PROPERTY_NAME, "target/nuklei-tests");
         Configuration config = new Configuration(properties);
         Nukleus nukleus = factory.create("http", config);
-        assertThat(nukleus, instanceOf(HttpNukleus.class));
+        assertThat(nukleus, instanceOf(Nukleus.class));
     }
 
 }

@@ -15,30 +15,42 @@
  */
 package org.kaazing.nuklei.http.internal.readable;
 
-import static java.lang.String.format;
+import org.kaazing.nuklei.Reaktive;
 
-public final class UnprepareCommand implements ReadableCommand
+@Reaktive
+@SuppressWarnings("serial")
+public final class ReadableException extends RuntimeException
 {
-    private final long correlationId;
-    private final long referenceId;
-
-    public UnprepareCommand(
-        long correlationId,
-        long referenceId)
+    public ReadableException()
     {
-        this.correlationId = correlationId;
-        this.referenceId = referenceId;
+        super();
     }
 
-    @Override
-    public void execute(Readable source)
+    public ReadableException(
+        String message,
+        Throwable cause,
+        boolean enableSuppression,
+        boolean writableStackTrace)
     {
-        source.doUnprepare(correlationId, referenceId);
+        super(message, cause, enableSuppression, writableStackTrace);
     }
 
-    @Override
-    public String toString()
+    public ReadableException(
+        String message,
+        Throwable cause)
     {
-        return format("UNPREPARE [correlationId=%d, referenceId=%d]", correlationId, referenceId);
+        super(message, cause);
+    }
+
+    public ReadableException(
+        String message)
+    {
+        super(message);
+    }
+
+    public ReadableException(
+        Throwable cause)
+    {
+        super(cause);
     }
 }

@@ -22,6 +22,12 @@ import org.kaazing.nuklei.ControllerFactorySpi;
 public final class EchoControllerFactorySpi implements ControllerFactorySpi
 {
     @Override
+    public String name()
+    {
+        return "echo";
+    }
+
+    @Override
     public Class<EchoController> kind()
     {
         return EchoController.class;

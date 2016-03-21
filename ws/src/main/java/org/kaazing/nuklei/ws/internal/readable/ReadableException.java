@@ -15,30 +15,42 @@
  */
 package org.kaazing.nuklei.ws.internal.readable;
 
-import static java.lang.String.format;
+import org.kaazing.nuklei.Reaktive;
 
-public final class UnbindCommand implements ReadableCommand
+@Reaktive
+@SuppressWarnings("serial")
+public final class ReadableException extends RuntimeException
 {
-    private final long correlationId;
-    private final long referenceId;
-
-    public UnbindCommand(
-        long correlationId,
-        long referenceId)
+    public ReadableException()
     {
-        this.correlationId = correlationId;
-        this.referenceId = referenceId;
+        super();
     }
 
-    @Override
-    public void execute(Readable source)
+    public ReadableException(
+        String message,
+        Throwable cause,
+        boolean enableSuppression,
+        boolean writableStackTrace)
     {
-        source.doUnbind(correlationId, referenceId);
+        super(message, cause, enableSuppression, writableStackTrace);
     }
 
-    @Override
-    public String toString()
+    public ReadableException(
+        String message,
+        Throwable cause)
     {
-        return format("UNBIND [correlationId=%d, referenceId=%d]", correlationId, referenceId);
+        super(message, cause);
+    }
+
+    public ReadableException(
+        String message)
+    {
+        super(message);
+    }
+
+    public ReadableException(
+        Throwable cause)
+    {
+        super(cause);
     }
 }

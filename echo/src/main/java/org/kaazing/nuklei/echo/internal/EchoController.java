@@ -96,6 +96,18 @@ public final class EchoController implements Controller
         context.close();
     }
 
+    @Override
+    public Class<EchoController> kind()
+    {
+        return EchoController.class;
+    }
+
+    @Override
+    public String name()
+    {
+        return "echo";
+    }
+
     public AtomicCounter messagesReflected()
     {
         return messagesReflected;

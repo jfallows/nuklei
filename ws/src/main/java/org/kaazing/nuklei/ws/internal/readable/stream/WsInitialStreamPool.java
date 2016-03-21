@@ -21,7 +21,7 @@ import static org.kaazing.nuklei.ws.internal.types.stream.Types.TYPE_ID_END;
 
 import java.util.function.Consumer;
 
-import org.kaazing.nuklei.ws.internal.readable.ReadableProxy;
+import org.kaazing.nuklei.ws.internal.readable.Readable;
 import org.kaazing.nuklei.ws.internal.types.stream.HttpBeginFW;
 import org.kaazing.nuklei.ws.internal.types.stream.HttpDataFW;
 import org.kaazing.nuklei.ws.internal.types.stream.HttpEndFW;
@@ -61,7 +61,7 @@ public final class WsInitialStreamPool
         long destinationRef,
         RingBuffer sourceRoute,
         RingBuffer destinationRoute,
-        ReadableProxy destination,
+        Readable destination,
         Consumer<MessageHandler> released)
     {
         return new WsInitialStream(released, destinationRef, sourceRoute, destinationRoute, destination);
@@ -73,7 +73,7 @@ public final class WsInitialStreamPool
         private final long destinationRef;
         private final RingBuffer sourceRoute;
         private final RingBuffer destinationRoute;
-        private final ReadableProxy destination;
+        private final Readable destination;
 
         private long destinationInitialStreamId;
 
@@ -82,7 +82,7 @@ public final class WsInitialStreamPool
             long destinationRef,
             RingBuffer sourceRoute,
             RingBuffer destinationRoute,
-            ReadableProxy destination)
+            Readable destination)
         {
             this.cleanup = cleanup;
             this.destinationRef = destinationRef;

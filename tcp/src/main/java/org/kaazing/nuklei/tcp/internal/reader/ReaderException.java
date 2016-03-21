@@ -15,23 +15,42 @@
  */
 package org.kaazing.nuklei.tcp.internal.reader;
 
+import org.kaazing.nuklei.Reaktive;
 
-public final class CaptureCommand implements ReaderCommand
+@Reaktive
+@SuppressWarnings("serial")
+public final class ReaderException extends RuntimeException
 {
-    private final long correlationId;
-    private final String source;
-
-    public CaptureCommand(
-        long correlationId,
-        String source)
+    public ReaderException()
     {
-        this.correlationId = correlationId;
-        this.source = source;
+        super();
     }
 
-    @Override
-    public void execute(Reader reader)
+    public ReaderException(
+        String message,
+        Throwable cause,
+        boolean enableSuppression,
+        boolean writableStackTrace)
     {
-        reader.doCapture(correlationId, source);
+        super(message, cause, enableSuppression, writableStackTrace);
+    }
+
+    public ReaderException(
+        String message,
+        Throwable cause)
+    {
+        super(message, cause);
+    }
+
+    public ReaderException(
+        String message)
+    {
+        super(message);
+    }
+
+    public ReaderException(
+        Throwable cause)
+    {
+        super(cause);
     }
 }

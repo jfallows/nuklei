@@ -28,4 +28,58 @@ public interface Nukleus extends AutoCloseable
     {
         return null;
     }
+
+    public static class Composite implements Nukleus
+    {
+        private final Nukleus[] nuklei;
+
+        protected Composite(
+            Nukleus... nuklei)
+        {
+            this.nuklei = nuklei;
+        }
+
+        @Override
+        public int process()
+        {
+            int weight = 0;
+
+            for (int i=0; i < nuklei.length; i++)
+            {
+                weight += nuklei[i].process();
+            }
+
+            return weight;
+        }
+
+        @Override
+        public void close() throws Exception
+        {
+            Exception deferred = null;
+
+            for (int i=0; i < nuklei.length; i++)
+            {
+                try
+                {
+                    nuklei[i].close();
+                }
+                catch (Exception ex)
+                {
+                    if (deferred == null)
+                    {
+                        deferred = ex;
+                    }
+                    else
+                    {
+                        deferred.addSuppressed(ex);
+                    }
+                }
+            }
+
+            if (deferred != null)
+            {
+                throw deferred;
+            }
+        }
+    }
 }

@@ -20,31 +20,13 @@ import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_BEGIN;
 import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_DATA;
 import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_END;
 
-
-
-
-
-
-
 import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
-
-
-
-
-
-
 
 import org.kaazing.nuklei.http.internal.types.stream.DataFW;
 import org.kaazing.nuklei.http.internal.types.stream.HttpBeginFW;
 import org.kaazing.nuklei.http.internal.types.stream.HttpDataFW;
 import org.kaazing.nuklei.http.internal.types.stream.HttpEndFW;
-
-
-
-
-
-
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;

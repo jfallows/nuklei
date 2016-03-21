@@ -22,6 +22,12 @@ import org.kaazing.nuklei.ControllerFactorySpi;
 public final class HttpControllerFactorySpi implements ControllerFactorySpi
 {
     @Override
+    public String name()
+    {
+        return "http";
+    }
+
+    @Override
     public Class<HttpController> kind()
     {
         return HttpController.class;

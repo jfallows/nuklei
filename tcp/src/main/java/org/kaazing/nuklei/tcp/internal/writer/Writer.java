@@ -26,12 +26,12 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.tcp.internal.Context;
-import org.kaazing.nuklei.tcp.internal.conductor.ConductorProxy;
+import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
 import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
 import org.kaazing.nuklei.tcp.internal.types.stream.BeginFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.DataFW;
@@ -40,12 +40,12 @@ import org.kaazing.nuklei.tcp.internal.types.stream.ResetFW;
 
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.nio.TransportPoller;
 
-public final class Writer extends TransportPoller implements Nukleus, Consumer<WriterCommand>
+@Reaktive
+public final class Writer extends TransportPoller implements Nukleus
 {
     private static final int MAX_RECEIVE_LENGTH = 1024; // TODO: Configuration and Context
 
@@ -54,8 +54,6 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
     private final DataFW.Builder dataRW = new DataFW.Builder();
     private final EndFW.Builder endRW = new EndFW.Builder();
 
-    private final ConductorProxy.FromWriter conductorProxy;
-    private final OneToOneConcurrentArrayQueue<WriterCommand> commandQueue;
     private final ByteBuffer byteBuffer;
     private final AtomicBuffer atomicBuffer;
 
@@ -65,10 +63,10 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
 
     private HashMap<String, StreamsLayout> layoutsByHandler;
 
+    private Conductor conductor;
+
     public Writer(Context context)
     {
-        this.conductorProxy = new ConductorProxy.FromWriter(context);
-        this.commandQueue = context.writerCommandQueue();
         this.byteBuffer = allocateDirect(MAX_RECEIVE_LENGTH).order(nativeOrder());
         this.atomicBuffer = new UnsafeBuffer(byteBuffer.duplicate());
         this.streamsFile = context.routeStreamsFile();
@@ -76,16 +74,16 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         this.layoutsByHandler = new HashMap<>();
     }
 
+    public void setConductor(Conductor conductor)
+    {
+        this.conductor = conductor;
+    }
+
     @Override
     public int process()
     {
-        int weight = 0;
-
         selectNow();
-        weight += selectedKeySet.forEach(this::processRead);
-        weight += commandQueue.drain(this);
-
-        return weight;
+        return selectedKeySet.forEach(this::processRead);
     }
 
     @Override
@@ -123,12 +121,6 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         super.close();
     }
 
-    @Override
-    public void accept(WriterCommand command)
-    {
-        command.execute(this);
-    }
-
     public void doRoute(
         long correlationId,
         String destination)
@@ -136,7 +128,7 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         StreamsLayout layout = layoutsByHandler.get(destination);
         if (layout != null)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
         }
         else
         {
@@ -148,11 +140,11 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
                                                                      .build();
 
                 layoutsByHandler.put(destination, newLayout);
-                conductorProxy.onRoutedResponse(correlationId);
+                conductor.onRoutedResponse(correlationId);
             }
             catch (Exception ex)
             {
-                conductorProxy.onErrorResponse(correlationId);
+                conductor.onErrorResponse(correlationId);
                 LangUtil.rethrowUnchecked(ex);
             }
         }
@@ -165,18 +157,18 @@ public final class Writer extends TransportPoller implements Nukleus, Consumer<W
         StreamsLayout oldLayout = layoutsByHandler.remove(destination);
         if (oldLayout == null)
         {
-            conductorProxy.onErrorResponse(correlationId);
+            conductor.onErrorResponse(correlationId);
         }
         else
         {
             try
             {
                 oldLayout.close();
-                conductorProxy.onUnroutedResponse(correlationId);
+                conductor.onUnroutedResponse(correlationId);
             }
             catch (Exception ex)
             {
-                conductorProxy.onErrorResponse(correlationId);
+                conductor.onErrorResponse(correlationId);
                 LangUtil.rethrowUnchecked(ex);
             }
         }

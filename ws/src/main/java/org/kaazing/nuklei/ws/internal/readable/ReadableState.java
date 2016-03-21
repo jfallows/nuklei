@@ -20,7 +20,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 public class ReadableState
 {
     private final long sourceRef;
-    private final ReadableProxy destination;
+    private final Readable destination;
     private final long destinationRef;
     private final String protocol;
     private final RingBuffer destinationRoute;
@@ -28,7 +28,7 @@ public class ReadableState
 
     public ReadableState(
         long sourceRef,
-        ReadableProxy destination,
+        Readable destination,
         long destinationRef,
         String protocol,
         RingBuffer sourceRoute,
@@ -47,7 +47,7 @@ public class ReadableState
         return this.sourceRef;
     }
 
-    public ReadableProxy destination()
+    public Readable destination()
     {
         return destination;
     }
