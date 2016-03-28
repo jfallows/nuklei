@@ -192,13 +192,9 @@ public final class Context implements Closeable
 
             this.streamsBufferCapacity = config.streamsBufferCapacity();
 
-            captureStreamsFile((source) -> {
-                return new File(configDirectory, format("tcp/streams/%s", source));
-            });
+            captureStreamsFile(source -> new File(configDirectory, format("tcp/streams/%s", source)));
 
-            routeStreamsFile((destination) -> {
-                return new File(configDirectory, format("%s/streams/tcp", destination));
-            });
+            routeStreamsFile(destination -> new File(configDirectory, format("%s/streams/tcp", destination)));
 
             this.controlRO = controlRW.controlFile(new File(configDirectory, "tcp/control"))
                                       .commandBufferCapacity(config.commandBufferCapacity())

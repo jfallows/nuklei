@@ -235,7 +235,7 @@ public class Readable implements Nukleus
         LongFunction<MessageHandler> handlerSupplier = (destinationReplyStreamId) ->
         {
             return replyStreamPool.acquire(sourceReplyStreamId, sourceRoute,
-                (acceptEncoder) -> { handlersByStreamId.remove(destinationReplyStreamId); });
+                acceptEncoder -> handlersByStreamId.remove(destinationReplyStreamId));
         };
 
         registrationsByStreamId.put(destinationInitialStreamId, handlerSupplier);
@@ -249,7 +249,7 @@ public class Readable implements Nukleus
         LongFunction<MessageHandler> handlerSupplier = (destinationReplyStreamId) ->
         {
             return httpReplyStreamPool.acquire(sourceInitialStreamId, sourceRoute,
-                    (connectDecoder) -> { handlersByStreamId.remove(destinationReplyStreamId); });
+                    connectDecoder -> handlersByStreamId.remove(destinationReplyStreamId));
         };
 
         registrationsByStreamId.put(destinationInitialStreamId, handlerSupplier);
@@ -318,7 +318,7 @@ public class Readable implements Nukleus
             {
                 MessageHandler httpInitialStream =
                         httpInitialStreamPool.acquire(destinationRef, sourceRoute, destinationRoute, destination,
-                                (connectEncoder) -> { handlersByStreamId.remove(initialStreamId); });
+                                connectEncoder -> handlersByStreamId.remove(initialStreamId));
 
                 handlersByStreamId.put(initialStreamId, httpInitialStream);
 
@@ -331,7 +331,7 @@ public class Readable implements Nukleus
 
                 MessageHandler initialStream =
                         initialStreamPool.acquire(destinationRef, sourceReplyStreamId, destination, sourceRoute,
-                                destinationRoute, (acceptDecoder) -> { handlersByStreamId.remove(initialStreamId); });
+                                destinationRoute, acceptDecoder -> handlersByStreamId.remove(initialStreamId));
 
                 handlersByStreamId.put(initialStreamId, initialStream);
 

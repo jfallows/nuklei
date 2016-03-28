@@ -68,7 +68,7 @@ public final class HttpReplyStreamPool
 
         private long sourceReplyStreamId;
 
-        public HttpReplyStream(
+        private HttpReplyStream(
             Consumer<MessageHandler> cleanup,
             long sourceInitialStreamId,
             RingBuffer sourceRoute)

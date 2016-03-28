@@ -47,7 +47,7 @@ public final class Main
     public static void main(final String[] args) throws Exception
     {
         IdleStrategy idleStrategy = new SleepingIdleStrategy(MILLISECONDS.toNanos(100));
-        ErrorHandler errorHandler = (throwable) -> { throwable.printStackTrace(System.err); };
+        ErrorHandler errorHandler = throwable -> throwable.printStackTrace(System.err);
         AtomicBuffer labelsBuffer = new UnsafeBuffer(new byte[CountersManager.LABEL_LENGTH]);
         AtomicBuffer countersBuffer = new UnsafeBuffer(new byte[CountersManager.COUNTER_LENGTH]);
         CountersManager counters = new CountersManager(labelsBuffer, countersBuffer);
@@ -94,11 +94,11 @@ public final class Main
         runner.close();
     }
 
-    private static class ControllerAgent implements Agent
+    private static final class ControllerAgent implements Agent
     {
         private final Controller controller;
 
-        public ControllerAgent(Controller controller)
+        private ControllerAgent(Controller controller)
         {
             this.controller = controller;
         }

@@ -133,11 +133,11 @@ public final class AddressFW extends Flyweight
         switch (kind())
         {
         case KIND_DEVICE_NAME:
-            return String.format("[kind=DEVICE_NAME, deviceNameRW=%s]", deviceName());
+            return String.format("[kind=DEVICE_NAME, deviceName=%s]", deviceName());
         case KIND_IPV4_ADDRESS:
-            return String.format("[kind=IPV4_ADDRESS, ipv4AddressRW=%s]", ipv4Address());
+            return String.format("[kind=IPV4_ADDRESS, ipv4Address=%s]", ipv4Address());
         case KIND_IPV6_ADDRESS:
-            return String.format("[kind=IPV6_ADDRESS, ipv6AddressRW=%s]", ipv6Address());
+            return String.format("[kind=IPV6_ADDRESS, ipv6Address=%s]", ipv6Address());
         default:
             return String.format("[kind=UNKNOWN]");
         }

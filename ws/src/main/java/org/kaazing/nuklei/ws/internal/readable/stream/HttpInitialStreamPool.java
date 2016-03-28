@@ -92,7 +92,7 @@ public final class HttpInitialStreamPool
 
         private long destinationInitialStreamId;
 
-        public HttpInitialStream(
+        private HttpInitialStream(
             Consumer<MessageHandler> cleanup,
             long destinationRef,
             long sourceReplyStreamId,
