@@ -95,7 +95,8 @@ public final class Writer extends TransportPoller implements Nukleus
     @Override
     public void close()
     {
-        selector.keys().forEach((key) -> {
+        selector.keys().forEach(key ->
+        {
             try
             {
                 WriterState state = (WriterState) key.attachment();
@@ -107,7 +108,8 @@ public final class Writer extends TransportPoller implements Nukleus
             }
         });
 
-        layoutsByHandler.values().forEach((layout) -> {
+        layoutsByHandler.values().forEach(layout ->
+        {
             try
             {
                 layout.close();

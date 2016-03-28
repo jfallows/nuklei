@@ -106,7 +106,8 @@ public final class Reader extends TransportPoller implements Nukleus
             }
         }
 
-        layoutsByHandler.values().forEach((layout) -> {
+        layoutsByHandler.values().forEach((layout) ->
+        {
             try
             {
                 layout.close();

@@ -84,7 +84,8 @@ public final class Acceptor extends TransportPoller implements Nukleus
     @Override
     public void close()
     {
-        stateByRef.values().forEach((state) -> {
+        stateByRef.values().forEach((state) ->
+        {
             try
             {
                 state.channel().close();

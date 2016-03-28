@@ -79,7 +79,7 @@ public final class WsReplyStreamPool
         private final RingBuffer sourceRoute;
         private final byte[] handshakeKey;
 
-        public WsReplyStream(
+        private WsReplyStream(
             Consumer<MessageHandler> cleanup,
             long sourceInitialStreamId,
             long sourceReplyStreamId,

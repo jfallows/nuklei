@@ -29,7 +29,7 @@ public interface Nukleus extends AutoCloseable
         return null;
     }
 
-    public static class Composite implements Nukleus
+    class Composite implements Nukleus
     {
         private final Nukleus[] nuklei;
 

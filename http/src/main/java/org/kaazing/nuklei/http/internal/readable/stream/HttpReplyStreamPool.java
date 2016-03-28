@@ -42,7 +42,7 @@ public final class HttpReplyStreamPool
 {
     private static final byte[] CRLFCRLF_BYTES = "\r\n\r\n".getBytes(StandardCharsets.US_ASCII);
 
-    private static enum DecoderState
+    private enum DecoderState
     {
         IDLE, HEADERS, BODY, TRAILERS, END
     }
@@ -81,7 +81,7 @@ public final class HttpReplyStreamPool
         private DecoderState decoderState;
         private long sourceReplyStreamId;
 
-        public HttpReplyStream(
+        private HttpReplyStream(
             Consumer<MessageHandler> cleanup,
             long sourceInitialStreamId,
             RingBuffer sourceRoute)

@@ -70,7 +70,7 @@ public final class ControllerFactory
     private static ControllerFactory instantiate(ServiceLoader<ControllerFactorySpi> factories)
     {
         Map<Class<? extends Controller>, ControllerFactorySpi> factorySpisByName = new HashMap<>();
-        factories.forEach((factorySpi) -> { factorySpisByName.put(factorySpi.kind(), factorySpi); });
+        factories.forEach((factorySpi) -> factorySpisByName.put(factorySpi.kind(), factorySpi));
 
         return new ControllerFactory(unmodifiableMap(factorySpisByName));
     }

@@ -152,11 +152,11 @@ public final class Shell
         }
     }
 
-    private static class ControllerAgent implements Agent
+    private static final class ControllerAgent implements Agent
     {
         private final Controller controller;
 
-        public ControllerAgent(Controller controller)
+        private ControllerAgent(Controller controller)
         {
             this.controller = controller;
         }

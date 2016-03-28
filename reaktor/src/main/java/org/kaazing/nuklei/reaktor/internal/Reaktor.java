@@ -64,7 +64,7 @@ public final class Reaktor implements AutoCloseable
 
         final Nukleus[] workers = nuklei;
         IdleStrategy idleStrategy = new SleepingIdleStrategy(MILLISECONDS.toNanos(50L));
-        ErrorHandler errorHandler = (throwable) -> { throwable.printStackTrace(System.err); };
+        ErrorHandler errorHandler = throwable -> throwable.printStackTrace(System.err);
         Agent agent = new Agent()
         {
             @Override

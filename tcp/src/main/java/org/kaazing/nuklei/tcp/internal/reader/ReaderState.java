@@ -81,7 +81,8 @@ public class ReaderState implements AutoCloseable
     @Override
     public void close()
     {
-        stateByStreamId.values().forEach((state) -> {
+        stateByStreamId.values().forEach((state) ->
+        {
             try
             {
                 state.channel().shutdownOutput();

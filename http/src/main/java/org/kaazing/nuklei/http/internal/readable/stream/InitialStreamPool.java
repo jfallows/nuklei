@@ -45,7 +45,7 @@ public final class InitialStreamPool
 {
     private static final byte[] CRLFCRLF_BYTES = "\r\n\r\n".getBytes(StandardCharsets.US_ASCII);
 
-    private static enum DecoderState
+    private enum DecoderState
     {
         IDLE, HEADERS, UPGRADED, BODY, TRAILERS, END
     }
@@ -99,7 +99,7 @@ public final class InitialStreamPool
         private long destinationInitialStreamId;
         private DecoderState decoderState;
 
-        public InitialStream(
+        private InitialStream(
             Consumer<MessageHandler> cleanup,
             long destinationRef,
             long sourceReplyStreamId,

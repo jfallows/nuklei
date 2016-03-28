@@ -320,7 +320,7 @@ public final class Readable implements Nukleus
             final long sourceReplyStreamId = streamsAccepted.get() << 1L;
 
             MessageHandler initialStream = initialStreamPool.acquire(initialStreamId, sourceReplyStreamId, routeBuffer,
-                                                    (initialDecoder) -> { handlersByStreamId.remove(initialStreamId); });
+                                                    initialDecoder -> handlersByStreamId.remove(initialStreamId));
 
             handlersByStreamId.put(initialStreamId, initialStream);
 
