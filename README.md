@@ -1,21 +1,15 @@
 # Nuklei
 
 [![Build Status][build-status-image]][build-status]
-[![Issue Stats][pull-requests-image]][pull-requests]
-[![Issue Stats][issues-closed-image]][issues-closed]
 
 [build-status-image]: https://travis-ci.org/kaazing/nuklei.svg?branch=develop
 [build-status]: https://travis-ci.org/kaazing/nuklei
-[pull-requests-image]: http://www.issuestats.com/github/kaazing/nuklei/badge/pr
-[pull-requests]: http://www.issuestats.com/github/kaazing/nuklei
-[issues-closed-image]: http://www.issuestats.com/github/kaazing/nuklei/badge/issue
-[issues-closed]: http://www.issuestats.com/github/kaazing/nuklei
 
 An experiment in connecting services in various languages via composable standard protocols.
 
 ## License (See LICENSE file for full license)
 
-Copyright 2014-2015 Kaazing Corporation, All rights reserved.
+Copyright 2014-2016 Kaazing Corporation, All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
