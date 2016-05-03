@@ -1,0 +1,139 @@
+/*
+ * Copyright 2007-2015, Kaazing Corporation. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+scope common
+{
+    scope control
+    {
+        struct Frame
+        {
+            int64 correlationId;
+        }
+
+        struct Error extends common::control::Frame [0x40000000]
+        {
+        }
+
+
+        struct Capture extends common::control::Frame [0x00000001]
+        {
+            string source;
+        }
+
+        struct Captured extends common::control::Frame [0x40000001]
+        {
+        }
+
+        struct Uncapture extends common::control::Frame [0x00000002]
+        {
+            string source;
+        }
+
+        struct Uncaptured extends common::control::Frame [0x40000002]
+        {
+        }
+
+        struct Route extends common::control::Frame [0x00000003]
+        {
+            string destination;
+        }
+
+        struct Routed extends common::control::Frame [0x40000003]
+        {
+        }
+
+        struct Unroute extends common::control::Frame [0x00000004]
+        {
+            string destination;
+        }
+
+        struct Unrouted extends common::control::Frame [0x40000004]
+        {
+        }
+
+
+        struct Bind extends common::control::Frame [0x00000011]
+        {
+        }
+
+        struct Bound extends common::control::Frame [0x40000011]
+        {
+            int64 referenceId;
+        }
+
+        struct Unbind extends common::control::Frame [0x00000012]
+        {
+            int64 referenceId;
+        }
+
+        struct Unbound extends common::control::Frame [0x40000012]
+        {
+        }
+
+        struct Prepare extends common::control::Frame [0x00000013]
+        {
+        }
+
+        struct Prepared extends common::control::Frame [0x40000013]
+        {
+            int64 referenceId;
+        }
+
+        struct Unprepare extends common::control::Frame [0x00000014]
+        {
+            int64 referenceId;
+        }
+
+        struct Unprepared extends common::control::Frame [0x40000014]
+        {
+        }
+
+        struct Connect extends common::control::Frame [0x00000021]
+        {
+            int64 referenceId;
+        }
+
+        struct Connected extends common::control::Frame [0x40000021]
+        {
+            int64 connectionId;
+        }
+    }
+
+    scope stream
+    {
+        struct Frame
+        {
+            int64 streamId;
+        }
+
+        struct Begin extends common::stream::Frame [0x00000001]
+        {
+            int64 referenceId;
+        }
+
+        struct Data extends common::stream::Frame [0x00000002]
+        {
+            octets payload;
+        }
+
+        struct End extends common::stream::Frame [0x00000003]
+        {
+        }
+
+        struct Reset extends common::stream::Frame [0x00000004]
+        {
+        }
+    }
+}

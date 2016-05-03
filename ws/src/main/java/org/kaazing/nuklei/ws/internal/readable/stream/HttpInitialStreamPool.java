@@ -16,9 +16,6 @@
 package org.kaazing.nuklei.ws.internal.readable.stream;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static org.kaazing.nuklei.ws.internal.types.stream.Types.TYPE_ID_BEGIN;
-import static org.kaazing.nuklei.ws.internal.types.stream.Types.TYPE_ID_DATA;
-import static org.kaazing.nuklei.ws.internal.types.stream.Types.TYPE_ID_END;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -117,13 +114,13 @@ public final class HttpInitialStreamPool
         {
             switch (msgTypeId)
             {
-            case TYPE_ID_BEGIN:
+            case HttpBeginFW.TYPE_ID:
                 onHttpBegin(buffer, index, length);
                 break;
-            case TYPE_ID_DATA:
+            case HttpDataFW.TYPE_ID:
                 onHttpData(buffer, index, length);
                 break;
-            case TYPE_ID_END:
+            case HttpEndFW.TYPE_ID:
                 onHttpEnd(buffer, index, length);
                 break;
             }
@@ -155,7 +152,7 @@ public final class HttpInitialStreamPool
                 HttpBeginFW httpBegin = httpBeginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                                                    .streamId(sourceReplyStreamId)
                                                    .referenceId(sourceInitialStreamId)
-                                                   .header(":status", "500")
+                                                   .headers(h -> h.name(":status").value("500"))
                                                    .build();
 
                 if (!sourceRoute.write(httpBegin.typeId(), httpBegin.buffer(), httpBegin.offset(), httpBegin.length()))
@@ -229,7 +226,11 @@ public final class HttpInitialStreamPool
                                                     .payload(wsFrameRO.payload())
                                                     .build();
 
-                    BufferUtil.xor(atomicBuffer, wsData.payloadOffset(), wsData.payloadLength(), wsFrameRO.maskingKey());
+                    wsData.payload((payloadOffset, payloadLength) ->
+                    {
+                        BufferUtil.xor(atomicBuffer, payloadOffset, payloadLength, wsFrameRO.maskingKey());
+                        return 0;
+                    });
 
                     if (!destinationRoute.write(wsData.typeId(), wsData.buffer(), wsData.offset(), wsData.length()))
                     {

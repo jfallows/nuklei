@@ -15,9 +15,6 @@
  */
 package org.kaazing.nuklei.http.internal.readable.stream;
 
-import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_BEGIN;
-import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_DATA;
-import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_END;
 import static org.kaazing.nuklei.http.internal.util.BufferUtil.limitOfBytes;
 
 import java.net.URI;
@@ -125,13 +122,13 @@ public final class InitialStreamPool
         {
             switch (msgTypeId)
             {
-            case TYPE_ID_BEGIN:
+            case BeginFW.TYPE_ID:
                 onBegin(buffer, index, length);
                 break;
-            case TYPE_ID_DATA:
+            case DataFW.TYPE_ID:
                 onData(buffer, index, length);
                 break;
-            case TYPE_ID_END:
+            case EndFW.TYPE_ID:
                 onEnd(buffer, index, length);
                 break;
             }
@@ -234,9 +231,9 @@ public final class InitialStreamPool
 
                 httpBeginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                            .referenceId(destinationRef)
-                           .header(":scheme", "http") // TODO: detect https
-                           .header(":method", start[0])
-                           .header(":path", requestURI.getPath());
+                           .headers(h -> h.name(":scheme").value("http")) // TODO: detect https
+                           .headers(h -> h.name(":method").value(start[0]))
+                           .headers(h -> h.name(":path").value(requestURI.getPath()));
 
                 String host = null;
                 String upgrade = null;
@@ -261,7 +258,7 @@ public final class InitialStreamPool
                         upgrade = value;
                     }
 
-                    httpBeginRW.header(name, value);
+                    httpBeginRW.headers(h -> h.name(name).value(value));
                 }
                 // TODO: replace with lightweight approach (end)
 
@@ -360,13 +357,9 @@ public final class InitialStreamPool
         private void errorResponse(
             String payloadChars)
         {
-            dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                  .streamId(sourceReplyStreamId);
-
-            int payloadOffset = dataRW.payloadOffset();
-            int payloadLength = atomicBuffer.putStringWithoutLengthUtf8(payloadOffset, payloadChars);
-
-            final DataFW data = dataRW.payloadLength(payloadLength)
+            final DataFW data = dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                      .streamId(sourceReplyStreamId)
+                                      .payload(payloadChars)
                                       .build();
 
             if (!sourceRoute.write(data.typeId(), data.buffer(), data.offset(), data.length()))

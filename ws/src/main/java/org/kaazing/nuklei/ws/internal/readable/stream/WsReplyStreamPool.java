@@ -17,9 +17,6 @@ package org.kaazing.nuklei.ws.internal.readable.stream;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.kaazing.nuklei.ws.internal.types.stream.Types.TYPE_ID_BEGIN;
-import static org.kaazing.nuklei.ws.internal.types.stream.Types.TYPE_ID_DATA;
-import static org.kaazing.nuklei.ws.internal.types.stream.Types.TYPE_ID_END;
 
 import java.security.MessageDigest;
 import java.util.Base64;
@@ -102,13 +99,13 @@ public final class WsReplyStreamPool
         {
             switch (msgTypeId)
             {
-            case TYPE_ID_BEGIN:
+            case WsBeginFW.TYPE_ID:
                 onBegin(buffer, index, length);
                 break;
-            case TYPE_ID_DATA:
+            case WsDataFW.TYPE_ID:
                 onData(buffer, index, length);
                 break;
-            case TYPE_ID_END:
+            case WsEndFW.TYPE_ID:
                 onEnd(buffer, index, length);
                 break;
             }
@@ -126,15 +123,22 @@ public final class WsReplyStreamPool
             byte[] digest = sha1.digest(HANDSHAKE_GUID);
             byte[] handshakeHash = Base64.getEncoder().encode(digest);
 
-            HttpBeginFW httpBegin = httpBeginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                               .streamId(sourceReplyStreamId)
-                                               .referenceId(sourceInitialStreamId)
-                                               .header(":status", "101")
-                                               .header("upgrade", "websocket")
-                                               .header("connection", "upgrade")
-                                               .header("sec-websocket-accept", new String(handshakeHash, US_ASCII))
-                                               .header("sec-websocket-protocol", wsBeginRO.protocol().asString())
-                                               .build();
+            httpBeginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                .streamId(sourceReplyStreamId)
+                .referenceId(sourceInitialStreamId)
+                .headers(h -> h.name(":status").value("101"))
+                .headers(h -> h.name("upgrade").value("websocket"))
+                .headers(h -> h.name("connection").value("upgrade"))
+                .headers(h -> h.name("sec-websocket-accept").value(new String(handshakeHash, US_ASCII)));
+
+            // TODO: auto-exclude header if value is null
+            String protocol = wsBeginRO.protocol().asString();
+            if (protocol != null)
+            {
+                httpBeginRW.headers(h -> h.name("sec-websocket-protocol").value(protocol));
+            }
+
+            HttpBeginFW httpBegin = httpBeginRW.build();
 
             if (!sourceRoute.write(httpBegin.typeId(), httpBegin.buffer(), httpBegin.offset(), httpBegin.length()))
             {
@@ -150,16 +154,17 @@ public final class WsReplyStreamPool
             wsDataRO.wrap(buffer, index, index + length);
 
             // TODO: combine httpDataRW with wsFrameRW
-            httpDataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                      .streamId(sourceReplyStreamId);
-
-            WsFrameFW wsFrame = wsFrameRW.wrap(atomicBuffer, httpDataRW.payloadOffset(), atomicBuffer.capacity())
-                                         .flagsAndOpcode(0x82) // TODO: via WsData metadata
-                                         .payload(wsDataRO.buffer(), wsDataRO.payloadOffset(), wsDataRO.payloadLength())
-                                         .build();
-
-            HttpDataFW httpData = httpDataRW.payload(wsFrame.buffer(), wsFrame.offset(), wsFrame.length())
-                                            .build();
+            HttpDataFW httpData = httpDataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                      .streamId(sourceReplyStreamId)
+                      .payload(payloadOffset ->
+                      {
+                          return wsFrameRW.wrap(atomicBuffer, payloadOffset, atomicBuffer.capacity())
+                                  .flagsAndOpcode(0x82) // TODO: via WsData metadata
+                                  .payload(wsDataRO.payload())
+                                  .build()
+                                  .length();
+                      })
+                      .build();
 
             if (!sourceRoute.write(httpData.typeId(), httpData.buffer(), httpData.offset(), httpData.length()))
             {

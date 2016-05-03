@@ -17,11 +17,7 @@ package org.kaazing.nuklei.tcp.internal;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
-import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_BOUND_RESPONSE;
-import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_CAPTURED_RESPONSE;
-import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_ERROR_RESPONSE;
-import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_ROUTED_RESPONSE;
-import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_UNBOUND_RESPONSE;
+import static org.kaazing.nuklei.tcp.internal.util.IpUtil.ipAddress;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
@@ -170,8 +166,8 @@ public final class TcpController implements Controller
                               .correlationId(correlationId)
                               .destination(destination)
                               .destinationRef(destinationRef)
-                              .address(localAddress.getAddress())
-                              .port(localAddress.getPort())
+                              .address(a -> ipAddress(localAddress, a::ipv4Address, a::ipv6Address))
+                              .port((short)localAddress.getPort())
                               .build();
 
         if (!conductorCommands.write(bindRO.typeId(), bindRO.buffer(), bindRO.offset(), bindRO.length()))
@@ -218,19 +214,19 @@ public final class TcpController implements Controller
     {
         switch (msgTypeId)
         {
-        case TYPE_ID_ERROR_RESPONSE:
+        case ErrorFW.TYPE_ID:
             handleErrorResponse(buffer, index, length);
             break;
-        case TYPE_ID_CAPTURED_RESPONSE:
+        case CapturedFW.TYPE_ID:
             handleCapturedResponse(buffer, index, length);
             break;
-        case TYPE_ID_ROUTED_RESPONSE:
+        case RoutedFW.TYPE_ID:
             handleRoutedResponse(buffer, index, length);
             break;
-        case TYPE_ID_BOUND_RESPONSE:
+        case BoundFW.TYPE_ID:
             handleBoundResponse(buffer, index, length);
             break;
-        case TYPE_ID_UNBOUND_RESPONSE:
+        case UnboundFW.TYPE_ID:
             handleUnboundResponse(buffer, index, length);
             break;
         default:

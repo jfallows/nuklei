@@ -15,10 +15,6 @@
  */
 package org.kaazing.nuklei.http.internal.readable.stream;
 
-import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_BEGIN;
-import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_DATA;
-import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_END;
-
 import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -104,13 +100,13 @@ public final class HttpInitialStreamPool
         {
             switch (msgTypeId)
             {
-            case TYPE_ID_BEGIN:
+            case HttpBeginFW.TYPE_ID:
                 onBegin(buffer, index, length);
                 break;
-            case TYPE_ID_DATA:
+            case HttpDataFW.TYPE_ID:
                 onData(buffer, index, length);
                 break;
-            case TYPE_ID_END:
+            case HttpEndFW.TYPE_ID:
                 onEnd(buffer, index, length);
                 break;
             }
@@ -208,7 +204,7 @@ public final class HttpInitialStreamPool
 
             final DataFW data = dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                                       .streamId(destinationInitialStreamId)
-                                      .payload(buffer, httpDataRO.payloadOffset(), httpDataRO.payloadLength())
+                                      .payload(httpDataRO.payload())
                                       .build();
 
             if (!destinationRoute.write(data.typeId(), data.buffer(), data.offset(), data.length()))

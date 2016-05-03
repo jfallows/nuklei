@@ -15,14 +15,8 @@
  */
 package org.kaazing.nuklei.tcp.internal.conductor;
 
-import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_BIND_COMMAND;
-import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_CAPTURE_COMMAND;
-import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_PREPARE_COMMAND;
-import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_ROUTE_COMMAND;
-import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_UNBIND_COMMAND;
-import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_UNCAPTURE_COMMAND;
-import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_UNPREPARE_COMMAND;
-import static org.kaazing.nuklei.tcp.internal.types.control.Types.TYPE_ID_UNROUTE_COMMAND;
+import static org.kaazing.nuklei.tcp.internal.util.IpUtil.inetAddress;
+import static org.kaazing.nuklei.tcp.internal.util.IpUtil.ipAddress;
 
 import java.net.InetSocketAddress;
 
@@ -32,7 +26,7 @@ import org.kaazing.nuklei.tcp.internal.Context;
 import org.kaazing.nuklei.tcp.internal.acceptor.Acceptor;
 import org.kaazing.nuklei.tcp.internal.connector.Connector;
 import org.kaazing.nuklei.tcp.internal.reader.Reader;
-import org.kaazing.nuklei.tcp.internal.types.control.AddressFW;
+import org.kaazing.nuklei.tcp.internal.types.AddressFW;
 import org.kaazing.nuklei.tcp.internal.types.control.BindFW;
 import org.kaazing.nuklei.tcp.internal.types.control.BoundFW;
 import org.kaazing.nuklei.tcp.internal.types.control.CaptureFW;
@@ -201,7 +195,7 @@ public final class Conductor implements Nukleus
                                        .correlationId(correlationId)
                                        .destination(destination)
                                        .destinationRef(destinationRef)
-                                       .address(localAddress.getAddress())
+                                       .address(a -> ipAddress(localAddress, a::ipv4Address, a::ipv6Address))
                                        .port(localAddress.getPort())
                                        .build();
 
@@ -228,7 +222,7 @@ public final class Conductor implements Nukleus
         UnpreparedFW unpreparedRO = unpreparedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
                                                 .correlationId(correlationId)
                                                 .source(source)
-                                                .address(remoteAddress.getAddress())
+                                                .address(a -> ipAddress(remoteAddress, a::ipv4Address, a::ipv6Address))
                                                 .port(remoteAddress.getPort())
                                                 .build();
 
@@ -240,28 +234,28 @@ public final class Conductor implements Nukleus
     {
         switch (msgTypeId)
         {
-        case TYPE_ID_CAPTURE_COMMAND:
+        case CaptureFW.TYPE_ID:
             handleCaptureCommand(buffer, index, length);
             break;
-        case TYPE_ID_UNCAPTURE_COMMAND:
+        case UncaptureFW.TYPE_ID:
             handleUncaptureCommand(buffer, index, length);
             break;
-        case TYPE_ID_ROUTE_COMMAND:
+        case RouteFW.TYPE_ID:
             handleRouteCommand(buffer, index, length);
             break;
-        case TYPE_ID_UNROUTE_COMMAND:
+        case UnrouteFW.TYPE_ID:
             handleUnrouteCommand(buffer, index, length);
             break;
-        case TYPE_ID_BIND_COMMAND:
+        case BindFW.TYPE_ID:
             handleBindCommand(buffer, index, length);
             break;
-        case TYPE_ID_UNBIND_COMMAND:
+        case UnbindFW.TYPE_ID:
             handleUnbindCommand(buffer, index, length);
             break;
-        case TYPE_ID_PREPARE_COMMAND:
+        case PrepareFW.TYPE_ID:
             handlePrepareCommand(buffer, index, length);
             break;
-        case TYPE_ID_UNPREPARE_COMMAND:
+        case UnprepareFW.TYPE_ID:
             handleUnprepareCommand(buffer, index, length);
             break;
         default:
@@ -320,7 +314,7 @@ public final class Conductor implements Nukleus
         AddressFW address = bindRO.address();
         int port = bindRO.port();
 
-        InetSocketAddress localAddress = new InetSocketAddress(address.asInetAddress(), port);
+        InetSocketAddress localAddress = new InetSocketAddress(inetAddress(address), port);
 
         acceptor.doBind(correlationId, destination, destinationRef, localAddress);
     }
@@ -344,7 +338,7 @@ public final class Conductor implements Nukleus
         AddressFW address = prepareRO.address();
         int port = prepareRO.port();
 
-        InetSocketAddress remoteAddress = new InetSocketAddress(address.asInetAddress(), port);
+        InetSocketAddress remoteAddress = new InetSocketAddress(inetAddress(address), port);
 
         connector.doPrepare(correlationId, source, remoteAddress);
     }

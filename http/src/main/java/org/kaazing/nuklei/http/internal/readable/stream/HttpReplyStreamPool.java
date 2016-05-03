@@ -15,9 +15,6 @@
  */
 package org.kaazing.nuklei.http.internal.readable.stream;
 
-import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_BEGIN;
-import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_DATA;
-import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_END;
 import static org.kaazing.nuklei.http.internal.util.BufferUtil.limitOfBytes;
 
 import java.nio.charset.StandardCharsets;
@@ -101,13 +98,13 @@ public final class HttpReplyStreamPool
         {
             switch (msgTypeId)
             {
-            case TYPE_ID_BEGIN:
+            case BeginFW.TYPE_ID:
                 onBegin(buffer, index, length);
                 break;
-            case TYPE_ID_DATA:
+            case DataFW.TYPE_ID:
                 onData(buffer, index, length);
                 break;
-            case TYPE_ID_END:
+            case EndFW.TYPE_ID:
                 onEnd(buffer, index, length);
                 break;
             }
@@ -191,7 +188,7 @@ public final class HttpReplyStreamPool
             httpBeginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                        .streamId(sourceReplyStreamId)
                        .referenceId(sourceInitialStreamId)
-                       .header(":status", start[1]);
+                       .headers(h -> h.name(":status").value(start[1]));
 
             Pattern headerPattern = Pattern.compile("([^\\s:]+)\\s*:\\s*(.*)");
             for (int i = 1; i < lines.length; i++)
@@ -204,7 +201,7 @@ public final class HttpReplyStreamPool
 
                 String name = headerMatcher.group(1).toLowerCase();
                 String value = headerMatcher.group(2);
-                httpBeginRW.header(name, value);
+                httpBeginRW.headers(h -> h.name(name).value(value));
             }
             // TODO: replace with lightweight approach (end)
 

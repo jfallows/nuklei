@@ -15,16 +15,6 @@
  */
 package org.kaazing.nuklei.echo.internal.conductor;
 
-import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_BIND_COMMAND;
-import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_CAPTURE_COMMAND;
-import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_CONNECT_COMMAND;
-import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_PREPARE_COMMAND;
-import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_ROUTE_COMMAND;
-import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_UNBIND_COMMAND;
-import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_UNCAPTURE_COMMAND;
-import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_UNPREPARE_COMMAND;
-import static org.kaazing.nuklei.echo.internal.types.control.Types.TYPE_ID_UNROUTE_COMMAND;
-
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.echo.internal.Context;
@@ -36,7 +26,6 @@ import org.kaazing.nuklei.echo.internal.types.control.CapturedFW;
 import org.kaazing.nuklei.echo.internal.types.control.ConnectFW;
 import org.kaazing.nuklei.echo.internal.types.control.ConnectedFW;
 import org.kaazing.nuklei.echo.internal.types.control.ErrorFW;
-import org.kaazing.nuklei.echo.internal.types.control.PreparationFW;
 import org.kaazing.nuklei.echo.internal.types.control.PrepareFW;
 import org.kaazing.nuklei.echo.internal.types.control.PreparedFW;
 import org.kaazing.nuklei.echo.internal.types.control.RouteFW;
@@ -202,9 +191,8 @@ public final class Conductor implements Nukleus
     {
         unpreparedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
                     .correlationId(correlationId)
-                    .preparation()
-                        .destination(destination)
-                        .destinationRef(destinationRef);
+                    .destination(destination)
+                    .destinationRef(destinationRef);
         UnpreparedFW unpreparedRO = unpreparedRW.build();
 
         conductorResponses.transmit(
@@ -227,31 +215,31 @@ public final class Conductor implements Nukleus
     {
         switch (msgTypeId)
         {
-        case TYPE_ID_CAPTURE_COMMAND:
+        case CaptureFW.TYPE_ID:
             handleCaptureCommand(buffer, index, length);
             break;
-        case TYPE_ID_UNCAPTURE_COMMAND:
+        case UncaptureFW.TYPE_ID:
             handleUncaptureCommand(buffer, index, length);
             break;
-        case TYPE_ID_ROUTE_COMMAND:
+        case RouteFW.TYPE_ID:
             handleRouteCommand(buffer, index, length);
             break;
-        case TYPE_ID_UNROUTE_COMMAND:
+        case UnrouteFW.TYPE_ID:
             handleUnrouteCommand(buffer, index, length);
             break;
-        case TYPE_ID_BIND_COMMAND:
+        case BindFW.TYPE_ID:
             handleBindCommand(buffer, index, length);
             break;
-        case TYPE_ID_UNBIND_COMMAND:
+        case UnbindFW.TYPE_ID:
             handleUnbindCommand(buffer, index, length);
             break;
-        case TYPE_ID_PREPARE_COMMAND:
+        case PrepareFW.TYPE_ID:
             handlePrepareCommand(buffer, index, length);
             break;
-        case TYPE_ID_UNPREPARE_COMMAND:
+        case UnprepareFW.TYPE_ID:
             handleUnprepareCommand(buffer, index, length);
             break;
-        case TYPE_ID_CONNECT_COMMAND:
+        case ConnectFW.TYPE_ID:
             handleConnectCommand(buffer, index, length);
             break;
         default:
@@ -325,10 +313,8 @@ public final class Conductor implements Nukleus
         prepareRO.wrap(buffer, index, index + length);
 
         long correlationId = prepareRO.correlationId();
-        PreparationFW preparation = prepareRO.preparation();
-
-        String destination = preparation.destination().asString();
-        long destinationRef = preparation.destinationRef();
+        String destination = prepareRO.destination().asString();
+        long destinationRef = prepareRO.destinationRef();
 
         reader.doPrepare(correlationId, destination, destinationRef);
     }

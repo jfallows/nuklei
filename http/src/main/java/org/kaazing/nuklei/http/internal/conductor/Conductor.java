@@ -15,15 +15,6 @@
  */
 package org.kaazing.nuklei.http.internal.conductor;
 
-import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_BIND_COMMAND;
-import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_CAPTURE_COMMAND;
-import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_PREPARE_COMMAND;
-import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_ROUTE_COMMAND;
-import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_UNBIND_COMMAND;
-import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_UNCAPTURE_COMMAND;
-import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_UNPREPARE_COMMAND;
-import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_UNROUTE_COMMAND;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -174,18 +165,19 @@ public final class Conductor implements Nukleus
         String source,
         Map<String, String> headers)
     {
-        unboundRW.wrap(sendBuffer, 0, sendBuffer.capacity())
-                 .correlationId(correlationId)
-                 .destination(destination)
-                 .destinationRef(destinationRef)
-                 .source(source);
-
-        headers.forEach((name, value) ->
-        {
-            unboundRW.header(name, value);
-        });
-
-        UnboundFW unboundRO = unboundRW.build();
+        UnboundFW unboundRO =
+            unboundRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                     .correlationId(correlationId)
+                     .destination(destination)
+                     .destinationRef(destinationRef)
+                     .source(source)
+                     .iterate(headers.entrySet(), entry ->
+                     {
+                         String name = entry.getKey();
+                         String value = entry.getValue();
+                         unboundRW.headers(item -> item.representation((byte)0).name(name).value(value));
+                     })
+                     .build();
 
         conductorResponses.transmit(unboundRO.typeId(), unboundRO.buffer(), unboundRO.offset(), unboundRO.length());
     }
@@ -209,19 +201,19 @@ public final class Conductor implements Nukleus
         String source,
         Map<String, String> headers)
     {
-        unpreparedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
-                    .correlationId(correlationId)
-                    .source(source)
-                    .destination(destination)
-                    .destinationRef(destinationRef);
-
-        headers.forEach((name, value) ->
-        {
-            unpreparedRW.header(name, value);
-        });
-
-
-        UnpreparedFW unpreparedRO = unpreparedRW.build();
+        UnpreparedFW unpreparedRO =
+            unpreparedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                        .correlationId(correlationId)
+                        .source(source)
+                        .destination(destination)
+                        .destinationRef(destinationRef)
+                        .iterate(headers.entrySet(), entry ->
+                        {
+                            String name = entry.getKey();
+                            String value = entry.getValue();
+                            unpreparedRW.headers(item -> item.representation((byte)0).name(name).value(value));
+                        })
+                        .build();
 
         conductorResponses.transmit(
             unpreparedRO.typeId(), unpreparedRO.buffer(), unpreparedRO.offset(), unpreparedRO.length());
@@ -231,28 +223,28 @@ public final class Conductor implements Nukleus
     {
         switch (msgTypeId)
         {
-        case TYPE_ID_CAPTURE_COMMAND:
+        case CaptureFW.TYPE_ID:
             handleCaptureCommand(buffer, index, length);
             break;
-        case TYPE_ID_UNCAPTURE_COMMAND:
+        case UncaptureFW.TYPE_ID:
             handleUncaptureCommand(buffer, index, length);
             break;
-        case TYPE_ID_ROUTE_COMMAND:
+        case RouteFW.TYPE_ID:
             handleRouteCommand(buffer, index, length);
             break;
-        case TYPE_ID_UNROUTE_COMMAND:
+        case UnrouteFW.TYPE_ID:
             handleUnrouteCommand(buffer, index, length);
             break;
-        case TYPE_ID_BIND_COMMAND:
+        case BindFW.TYPE_ID:
             handleBindCommand(buffer, index, length);
             break;
-        case TYPE_ID_UNBIND_COMMAND:
+        case UnbindFW.TYPE_ID:
             handleUnbindCommand(buffer, index, length);
             break;
-        case TYPE_ID_PREPARE_COMMAND:
+        case PrepareFW.TYPE_ID:
             handlePrepareCommand(buffer, index, length);
             break;
-        case TYPE_ID_UNPREPARE_COMMAND:
+        case UnprepareFW.TYPE_ID:
             handleUnprepareCommand(buffer, index, length);
             break;
         default:
@@ -311,7 +303,7 @@ public final class Conductor implements Nukleus
         String source = bindRO.source().asString();
 
         Map<String, String> headers = new LinkedHashMap<>();
-        bindRO.headers().forEach((header) ->
+        bindRO.headers().forEach(header ->
         {
             headers.put(header.name().asString(), header.value().asString());
         });

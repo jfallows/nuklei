@@ -1,0 +1,125 @@
+/*
+ * Copyright 2007-2015, Kaazing Corporation. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+scope ws
+{
+    scope control
+    {
+        struct Error extends common::control::Error
+        {
+        }
+
+
+        struct Capture extends common::control::Capture
+        {
+        }
+
+        struct Captured extends common::control::Captured
+        {
+        }
+
+        struct Uncapture extends common::control::Uncapture
+        {
+        }
+
+        struct Uncaptured extends common::control::Uncaptured
+        {
+        }
+
+        struct Route extends common::control::Route
+        {
+        }
+
+        struct Routed extends common::control::Routed
+        {
+        }
+
+        struct Unroute extends common::control::Unroute
+        {
+        }
+
+        struct Unrouted extends common::control::Unrouted
+        {
+        }
+
+        struct Bind extends common::control::Bind
+        {
+            string destination;
+            int64 destinationRef;
+            string source;
+            string protocol;
+        }
+
+        struct Bound extends common::control::Bound
+        {
+        }
+
+        struct Unbind extends common::control::Unbind
+        {
+        }
+
+        struct Unbound extends common::control::Unbound
+        {
+            string destination;
+            int64 destinationRef;
+            string source;
+            string protocol;
+        }
+
+        struct Prepare extends common::control::Prepare
+        {
+            string source;
+            string destination;
+            int64 destinationRef;
+            string protocol;
+        }
+
+        struct Prepared extends common::control::Prepared
+        {
+        }
+
+        struct Unprepare extends common::control::Unprepare
+        {
+        }
+
+        struct Unprepared extends common::control::Unprepared
+        {
+            string source;
+            string destination;
+            int64 destinationRef;
+            string protocol;
+        }
+    }
+
+    scope stream
+    {
+        struct WsBegin extends common::stream::Begin
+        {
+          string protocol;
+        }
+
+        struct WsData extends common::stream::Data
+        {
+        }
+
+        struct WsEnd extends common::stream::End
+        {
+        }
+
+        struct Reset extends common::stream::Reset
+        {
+        }
+    }
+}

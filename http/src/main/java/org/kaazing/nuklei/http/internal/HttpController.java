@@ -18,11 +18,6 @@ package org.kaazing.nuklei.http.internal;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
-import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_BOUND_RESPONSE;
-import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_CAPTURED_RESPONSE;
-import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_ERROR_RESPONSE;
-import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_ROUTED_RESPONSE;
-import static org.kaazing.nuklei.http.internal.types.control.Types.TYPE_ID_UNBOUND_RESPONSE;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -167,9 +162,14 @@ public final class HttpController implements Controller
                               .destination(destination)
                               .destinationRef(destinationRef)
                               .source(source)
-                              .iterate(headers.entrySet(), (entry) ->
+                              .iterate(headers.entrySet(), entry ->
                               {
-                                  bindRW.header(entry.getKey(), entry.getValue());
+                                  bindRW.headers(item ->
+                                  {
+                                    String name = entry.getKey();
+                                    String value = entry.getValue();
+                                    item.representation((byte)0).name(name).value(value);
+                                  });
                               })
                               .build();
 
@@ -224,19 +224,19 @@ public final class HttpController implements Controller
     {
         switch (msgTypeId)
         {
-        case TYPE_ID_ERROR_RESPONSE:
+        case ErrorFW.TYPE_ID:
             handleErrorResponse(buffer, index, length);
             break;
-        case TYPE_ID_CAPTURED_RESPONSE:
+        case CapturedFW.TYPE_ID:
             handleCapturedResponse(buffer, index, length);
             break;
-        case TYPE_ID_ROUTED_RESPONSE:
+        case RoutedFW.TYPE_ID:
             handleRoutedResponse(buffer, index, length);
             break;
-        case TYPE_ID_BOUND_RESPONSE:
+        case BoundFW.TYPE_ID:
             handleBoundResponse(buffer, index, length);
             break;
-        case TYPE_ID_UNBOUND_RESPONSE:
+        case UnboundFW.TYPE_ID:
             handleUnboundResponse(buffer, index, length);
             break;
         default:

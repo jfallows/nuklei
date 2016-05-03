@@ -15,15 +15,6 @@
  */
 package org.kaazing.nuklei.ws.internal.conductor;
 
-import static org.kaazing.nuklei.ws.internal.types.control.Types.TYPE_ID_BIND_COMMAND;
-import static org.kaazing.nuklei.ws.internal.types.control.Types.TYPE_ID_CAPTURE_COMMAND;
-import static org.kaazing.nuklei.ws.internal.types.control.Types.TYPE_ID_PREPARE_COMMAND;
-import static org.kaazing.nuklei.ws.internal.types.control.Types.TYPE_ID_ROUTE_COMMAND;
-import static org.kaazing.nuklei.ws.internal.types.control.Types.TYPE_ID_UNBIND_COMMAND;
-import static org.kaazing.nuklei.ws.internal.types.control.Types.TYPE_ID_UNCAPTURE_COMMAND;
-import static org.kaazing.nuklei.ws.internal.types.control.Types.TYPE_ID_UNPREPARE_COMMAND;
-import static org.kaazing.nuklei.ws.internal.types.control.Types.TYPE_ID_UNROUTE_COMMAND;
-
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.ws.internal.Context;
@@ -217,28 +208,28 @@ public final class Conductor implements Nukleus
     {
         switch (msgTypeId)
         {
-        case TYPE_ID_CAPTURE_COMMAND:
+        case CaptureFW.TYPE_ID:
             handleCaptureCommand(buffer, index, length);
             break;
-        case TYPE_ID_UNCAPTURE_COMMAND:
+        case UncaptureFW.TYPE_ID:
             handleUncaptureCommand(buffer, index, length);
             break;
-        case TYPE_ID_ROUTE_COMMAND:
+        case RouteFW.TYPE_ID:
             handleRouteCommand(buffer, index, length);
             break;
-        case TYPE_ID_UNROUTE_COMMAND:
+        case UnrouteFW.TYPE_ID:
             handleUnrouteCommand(buffer, index, length);
             break;
-        case TYPE_ID_BIND_COMMAND:
+        case BindFW.TYPE_ID:
             handleBindCommand(buffer, index, length);
             break;
-        case TYPE_ID_UNBIND_COMMAND:
+        case UnbindFW.TYPE_ID:
             handleUnbindCommand(buffer, index, length);
             break;
-        case TYPE_ID_PREPARE_COMMAND:
+        case PrepareFW.TYPE_ID:
             handlePrepareCommand(buffer, index, length);
             break;
-        case TYPE_ID_UNPREPARE_COMMAND:
+        case UnprepareFW.TYPE_ID:
             handleUnprepareCommand(buffer, index, length);
             break;
         default:

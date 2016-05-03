@@ -17,7 +17,6 @@ package org.kaazing.nuklei.http.internal.readable;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
-import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_BEGIN;
 
 import java.util.Map;
 import java.util.function.LongFunction;
@@ -275,7 +274,7 @@ public class Readable implements Nukleus
         {
             switch (msgTypeId)
             {
-            case TYPE_ID_BEGIN:
+            case BeginFW.TYPE_ID:
                 if (initiating(streamId))
                 {
                     handleBeginInitial(buffer, index, length);
@@ -322,7 +321,7 @@ public class Readable implements Nukleus
 
                 handlersByStreamId.put(initialStreamId, httpInitialStream);
 
-                httpInitialStream.onMessage(TYPE_ID_BEGIN, buffer, index, length);
+                httpInitialStream.onMessage(BeginFW.TYPE_ID, buffer, index, length);
             }
             else
             {
@@ -335,7 +334,7 @@ public class Readable implements Nukleus
 
                 handlersByStreamId.put(initialStreamId, initialStream);
 
-                initialStream.onMessage(TYPE_ID_BEGIN, buffer, index, length);
+                initialStream.onMessage(BeginFW.TYPE_ID, buffer, index, length);
             }
         }
     }
@@ -359,7 +358,7 @@ public class Readable implements Nukleus
         MessageHandler handler = handlerSupplier.apply(replyStreamId);
         handlersByStreamId.put(replyStreamId, handler);
 
-        handler.onMessage(TYPE_ID_BEGIN, buffer, index, length);
+        handler.onMessage(BeginFW.TYPE_ID, buffer, index, length);
     }
 
     private static boolean initiating(

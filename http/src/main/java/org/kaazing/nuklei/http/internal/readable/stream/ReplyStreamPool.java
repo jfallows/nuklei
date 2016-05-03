@@ -16,9 +16,6 @@
 package org.kaazing.nuklei.http.internal.readable.stream;
 
 import static java.lang.Character.toUpperCase;
-import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_BEGIN;
-import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_DATA;
-import static org.kaazing.nuklei.http.internal.types.stream.Types.TYPE_ID_END;
 
 import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
@@ -83,13 +80,13 @@ public final class ReplyStreamPool
         {
             switch (msgTypeId)
             {
-            case TYPE_ID_BEGIN:
+            case HttpBeginFW.TYPE_ID:
                 onBegin(buffer, index, length);
                 break;
-            case TYPE_ID_DATA:
+            case HttpDataFW.TYPE_ID:
                 onData(buffer, index, length);
                 break;
-            case TYPE_ID_END:
+            case HttpEndFW.TYPE_ID:
                 onEnd(buffer, index, length);
                 break;
             }
@@ -106,7 +103,7 @@ public final class ReplyStreamPool
             String[] status = new String[] { "200", "OK" };
 
             StringBuilder headers = new StringBuilder();
-            httpBeginRO.headers().forEach((header) ->
+            httpBeginRO.headers().forEach(header ->
             {
                 String name = header.name().asString();
                 String value = header.value().asString();
@@ -152,7 +149,7 @@ public final class ReplyStreamPool
 
             final DataFW data = dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                                       .streamId(sourceReplyStreamId)
-                                      .payload(buffer, httpDataRO.payloadOffset(), httpDataRO.payloadLength())
+                                      .payload(httpDataRO.payload())
                                       .build();
 
             if (!sourceRoute.write(data.typeId(), data.buffer(), data.offset(), data.length()))

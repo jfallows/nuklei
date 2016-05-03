@@ -264,48 +264,48 @@ public final class Writer extends TransportPoller implements Nukleus
 
     private int processRead(SelectionKey selectionKey)
     {
-        try
+        final WriterState state = (WriterState) selectionKey.attachment();
+        final SocketChannel channel = state.channel();
+        final long streamId = state.streamId();
+        final RingBuffer writeBuffer = state.streamBuffer();
+
+        // TODO: limit maximum bytes read
+        DataFW dataRO = dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+              .streamId(streamId)
+              .payload(payloadOffset ->
+              {
+                  try
+                  {
+                      byteBuffer.position(payloadOffset);
+                      return channel.read(byteBuffer);
+                  }
+                  catch (IOException ex)
+                  {
+                      LangUtil.rethrowUnchecked(ex);
+                      return 0;
+                  }
+              },
+              bytesRead ->
+              {
+                  EndFW endRO = endRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                          .streamId(state.streamId())
+                          .build();
+
+                   if (!writeBuffer.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.length()))
+                   {
+                       throw new IllegalStateException("could not write to ring buffer");
+                   }
+
+                   selectionKey.cancel();
+              })
+              .build();
+
+        if (dataRO.payload().capacity() != 0)
         {
-            final WriterState state = (WriterState) selectionKey.attachment();
-            final SocketChannel channel = state.channel();
-            final long streamId = state.streamId();
-            final RingBuffer writeBuffer = state.streamBuffer();
-
-            dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                  .streamId(streamId);
-
-            // TODO: limit maximum bytes read
-            byteBuffer.position(dataRW.payloadOffset());
-            int bytesRead = channel.read(byteBuffer);
-
-            if (bytesRead == -1)
+            if (!writeBuffer.write(dataRO.typeId(), dataRO.buffer(), dataRO.offset(), dataRO.length()))
             {
-                EndFW endRO = endRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                   .streamId(state.streamId())
-                                   .build();
-
-                if (!writeBuffer.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.length()))
-                {
-                    throw new IllegalStateException("could not write to ring buffer");
-                }
-
-                selectionKey.cancel();
+                throw new IllegalStateException("could not write to ring buffer");
             }
-            else if (bytesRead != 0)
-            {
-                DataFW dataRO = dataRW.payloadLength(bytesRead).build();
-
-                if (!writeBuffer.write(dataRO.typeId(), dataRO.buffer(), dataRO.offset(), dataRO.length()))
-                {
-                    throw new IllegalStateException("could not write to ring buffer");
-                }
-            }
-
-            return 1;
-        }
-        catch (IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
         }
 
         return 1;

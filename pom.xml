@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.kaazing</groupId>
         <artifactId>community</artifactId>
-        <version>2.18</version>
+        <version>2.19</version>
     </parent>
 
     <artifactId>nuklei</artifactId>
@@ -33,7 +33,7 @@
 
         <!-- animal sniffer does not yet support Java8, see MANIMALSNIFFER-45 -->
         <animal.sniffer.skip>true</animal.sniffer.skip>
-        <k3po.version>3.0.0-alpha-12</k3po.version>
+        <k3po.version>3.0.0-alpha-34</k3po.version>
     </properties>
 
     <modules>
@@ -51,6 +51,7 @@
         <module>shell</module>
         <module>reaktor</module>
         <module>bench</module>
+        <module>maven-plugin</module>
     </modules>
 
     <dependencyManagement>
@@ -65,6 +66,32 @@
                 <artifactId>junit</artifactId>
                 <version>4.12</version>
             </dependency>
+            <dependency>
+                <groupId>org.apache.maven</groupId>
+                <artifactId>maven-project</artifactId>
+                <version>2.2.1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.maven</groupId>
+                <artifactId>maven-plugin-api</artifactId>
+                <version>3.3.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.maven.plugin-tools</groupId>
+                <artifactId>maven-plugin-annotations</artifactId>
+                <version>3.4</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr4-runtime</artifactId>
+                <version>4.2.2</version>
+            </dependency>
+            <dependency>
+                <groupId>org.kaazing</groupId>
+                <artifactId>k3po.lang</artifactId>
+                <version>${k3po.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -72,9 +99,42 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>com.mycila</groupId>
+                    <artifactId>license-maven-plugin</artifactId>
+                    <configuration>
+                        <mapping>
+                            <idl>SLASHSTAR_STYLE</idl>
+                            <g4>SLASHSTAR_STYLE</g4>
+                        </mapping>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-plugin-plugin</artifactId>
+                    <version>3.4</version>
+                    <executions>
+                        <execution>
+                            <id>default-descriptor</id>
+                            <phase>process-classes</phase>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-shade-plugin</artifactId>
                     <version>2.4.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.kaazing</groupId>
+                    <artifactId>nuklei-maven-plugin</artifactId>
+                    <version>${project.version}</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>generate</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
                 <plugin>
                     <groupId>org.kaazing</groupId>
@@ -93,8 +153,24 @@
                     </executions>
                 </plugin>
                 <plugin>
+                    <groupId>org.antlr</groupId>
+                    <artifactId>antlr4-maven-plugin</artifactId>
+                    <version>4.2.2</version>
+                    <configuration>
+                        <visitor>true</visitor>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>antlr4</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.1</version>
                     <configuration>
                         <fork>true</fork>
                         <compilerArgument>-XDignore.symbol.file</compilerArgument>
@@ -107,7 +183,7 @@
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>5.9</version>
+                            <version>6.17</version>
                         </dependency>
                         <dependency>
                             <groupId>org.kaazing</groupId>
@@ -157,6 +233,23 @@
                                         </versionRange>
                                         <goals>
                                             <goal>java</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore></ignore>
+                                    </action>
+                                </pluginExecution>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>org.kaazing</groupId>
+                                        <artifactId>
+                                            nuklei-maven-plugin
+                                        </artifactId>
+                                        <versionRange>
+                                            [develop-SNAPSHOT,)
+                                        </versionRange>
+                                        <goals>
+                                            <goal>generate</goal>
                                         </goals>
                                     </pluginExecutionFilter>
                                     <action>

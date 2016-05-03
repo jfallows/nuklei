@@ -91,7 +91,7 @@ public final class WsStreams
         {
             String name = header.getKey();
             String value = header.getValue();
-            httpBeginRW.header(name, value);
+            httpBeginRW.headers(itemRW -> itemRW.name(name).value(value));
         }
 
         HttpBeginFW httpBegin = httpBeginRW.build();

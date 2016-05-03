@@ -172,6 +172,11 @@ public final class WsFrameFW extends Flyweight
             return this;
         }
 
+        public Builder payload(DirectBuffer buffer)
+        {
+            return payload(buffer, 0, buffer.capacity());
+        }
+
         public Builder payload(DirectBuffer buffer, int offset, int length)
         {
             switch (highestOneBit(length))

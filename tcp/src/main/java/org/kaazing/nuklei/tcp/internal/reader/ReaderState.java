@@ -15,10 +15,6 @@
  */
 package org.kaazing.nuklei.tcp.internal.reader;
 
-import static org.kaazing.nuklei.tcp.internal.types.stream.Types.TYPE_ID_BEGIN;
-import static org.kaazing.nuklei.tcp.internal.types.stream.Types.TYPE_ID_DATA;
-import static org.kaazing.nuklei.tcp.internal.types.stream.Types.TYPE_ID_END;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -123,7 +119,7 @@ public class ReaderState implements AutoCloseable
     {
         switch (msgTypeId)
         {
-        case TYPE_ID_BEGIN:
+        case BeginFW.TYPE_ID:
             beginRO.wrap(buffer, index, index + length);
 
             final long streamId = beginRO.streamId();
@@ -151,7 +147,7 @@ public class ReaderState implements AutoCloseable
             }
             break;
 
-        case TYPE_ID_DATA:
+        case DataFW.TYPE_ID:
             dataRO.wrap(buffer, index, index + length);
 
             StreamState state = stateByStreamId.get(dataRO.streamId());
@@ -164,10 +160,14 @@ public class ReaderState implements AutoCloseable
             {
                 SocketChannel channel = state.channel();
                 ByteBuffer writeBuffer = state.writeBuffer();
-                writeBuffer.limit(dataRO.limit());
-                writeBuffer.position(dataRO.payloadOffset());
+                dataRO.payload((payloadOffset, payloadLength) ->
+                {
+                    writeBuffer.limit(dataRO.limit());
+                    writeBuffer.position(payloadOffset);
+                    return 0;
+                });
 
-                // send buffer underlying buffer for read buffer
+                // send buffer uses same underlying buffer for read buffer
                 final int totalBytes = writeBuffer.remaining();
                 final int bytesWritten = channel.write(writeBuffer);
 
@@ -183,7 +183,7 @@ public class ReaderState implements AutoCloseable
             }
             break;
 
-        case TYPE_ID_END:
+        case EndFW.TYPE_ID:
             endRO.wrap(buffer, index, index + length);
 
             StreamState oldState = stateByStreamId.remove(endRO.streamId());

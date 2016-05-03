@@ -20,7 +20,6 @@ import java.util.function.Consumer;
 import org.kaazing.nuklei.echo.internal.types.stream.BeginFW;
 import org.kaazing.nuklei.echo.internal.types.stream.DataFW;
 import org.kaazing.nuklei.echo.internal.types.stream.EndFW;
-import org.kaazing.nuklei.echo.internal.types.stream.Types;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
@@ -83,7 +82,7 @@ public final class InitialStreamPool
         {
             switch (msgTypeId)
             {
-            case Types.TYPE_ID_BEGIN:
+            case BeginFW.TYPE_ID:
                 beginRO.wrap(buffer, index, index + length);
 
                 // distinct begin
@@ -98,14 +97,14 @@ public final class InitialStreamPool
                 }
                 break;
 
-            case Types.TYPE_ID_DATA:
+            case DataFW.TYPE_ID:
                 dataRO.wrap(buffer, index, index + length);
 
                 // reflect data with updated stream id
                 atomicBuffer.putBytes(0, buffer, index, length);
                 DataFW data = dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                         .streamId(replyStreamId)
-                        .payloadLength(dataRO.payloadLength())
+                        .payload(dataRO.payload())
                         .build();
 
                 if (!routeBuffer.write(data.typeId(), data.buffer(), data.offset(), data.length()))
@@ -114,7 +113,7 @@ public final class InitialStreamPool
                 }
                 break;
 
-            case Types.TYPE_ID_END:
+            case EndFW.TYPE_ID:
                 endRO.wrap(buffer, index, index + length);
 
                 // reflect end with updated stream id

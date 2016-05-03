@@ -15,10 +15,6 @@
  */
 package org.kaazing.nuklei.ws.internal.readable.stream;
 
-import static org.kaazing.nuklei.ws.internal.types.stream.Types.TYPE_ID_BEGIN;
-import static org.kaazing.nuklei.ws.internal.types.stream.Types.TYPE_ID_DATA;
-import static org.kaazing.nuklei.ws.internal.types.stream.Types.TYPE_ID_END;
-
 import java.util.function.Consumer;
 
 import org.kaazing.nuklei.ws.internal.readable.Readable;
@@ -100,13 +96,13 @@ public final class WsInitialStreamPool
         {
             switch (msgTypeId)
             {
-            case TYPE_ID_BEGIN:
+            case WsBeginFW.TYPE_ID:
                 onBegin(buffer, index, length);
                 break;
-            case TYPE_ID_DATA:
+            case WsDataFW.TYPE_ID:
                 onData(buffer, index, length);
                 break;
-            case TYPE_ID_END:
+            case WsEndFW.TYPE_ID:
                 onEnd(buffer, index, length);
                 break;
             }

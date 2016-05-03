@@ -39,6 +39,11 @@
         </dependency>
         <dependency>
             <groupId>org.kaazing</groupId>
+            <artifactId>nuklei-specification-http</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kaazing</groupId>
             <artifactId>k3po.junit</artifactId>
             <version>${k3po.version}</version>
             <scope>test</scope>
@@ -59,7 +64,6 @@
             <!-- Needed for EL only, not AST -->
             <groupId>org.kaazing</groupId>
             <artifactId>k3po.lang</artifactId>
-            <version>[1.99.99.99,2.1.0.0)</version>
         </dependency>
     </dependencies>
 
@@ -68,6 +72,14 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.kaazing</groupId>
+                <artifactId>nuklei-maven-plugin</artifactId>
+                <configuration>
+                    <scopeNames>common::stream::Frame common::stream::Begin http::stream http::Header ws</scopeNames>
+                    <packageName>org.kaazing.nuklei.ws.internal.types</packageName>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

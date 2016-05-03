@@ -15,10 +15,6 @@
  */
 package org.kaazing.nuklei.ws.internal.readable.stream;
 
-import static org.kaazing.nuklei.ws.internal.types.stream.Types.TYPE_ID_BEGIN;
-import static org.kaazing.nuklei.ws.internal.types.stream.Types.TYPE_ID_DATA;
-import static org.kaazing.nuklei.ws.internal.types.stream.Types.TYPE_ID_END;
-
 import java.util.function.Consumer;
 
 import org.kaazing.nuklei.ws.internal.types.stream.HttpBeginFW;
@@ -87,13 +83,13 @@ public final class HttpReplyStreamPool
         {
             switch (msgTypeId)
             {
-            case TYPE_ID_BEGIN:
+            case HttpBeginFW.TYPE_ID:
                 onBegin(buffer, index, length);
                 break;
-            case TYPE_ID_DATA:
+            case HttpDataFW.TYPE_ID:
                 onData(buffer, index, length);
                 break;
-            case TYPE_ID_END:
+            case HttpEndFW.TYPE_ID:
                 onEnd(buffer, index, length);
                 break;
             }
