@@ -27,78 +27,81 @@ scope common
         }
 
 
-        struct Capture extends common::control::Frame [0x00000001]
+        struct Bind extends common::control::Frame [0x00000001]
+        {
+        }
+
+        struct Bound extends common::control::Frame [0x40000001]
+        {
+            int64 referenceId;
+        }
+
+        struct Unbind extends common::control::Frame [0x00000002]
+        {
+            int64 referenceId;
+        }
+
+        struct Unbound extends common::control::Frame [0x40000002]
+        {
+            int64 referenceId;
+        }
+
+        struct Prepare extends common::control::Frame [0x00000003]
+        {
+        }
+
+        struct Prepared extends common::control::Frame [0x40000003]
+        {
+            int64 referenceId;
+        }
+
+        struct Unprepare extends common::control::Frame [0x00000004]
+        {
+            int64 referenceId;
+        }
+
+        struct Unprepared extends common::control::Frame [0x40000004]
+        {
+            int64 referenceId;
+        }
+
+
+        struct Route extends common::control::Frame [0x00000011]
         {
             string source;
+            int64 sourceRef;
+            string target;
+            int64 targetRef;
+            string reply;
         }
 
-        struct Captured extends common::control::Frame [0x40000001]
-        {
-        }
-
-        struct Uncapture extends common::control::Frame [0x00000002]
+        struct Routed extends common::control::Frame [0x40000011]
         {
             string source;
+            int64 sourceRef;
+            string target;
+            int64 targetRef;
+            string reply;
         }
 
-        struct Uncaptured extends common::control::Frame [0x40000002]
+        struct Unroute extends common::control::Frame [0x00000012]
         {
+            string source;
+            int64 sourceRef;
+            string target;
+            int64 targetRef;
+            string reply;
         }
 
-        struct Route extends common::control::Frame [0x00000003]
+        struct Unrouted extends common::control::Frame [0x40000012]
         {
-            string destination;
+            string source;
+            int64 sourceRef;
+            string target;
+            int64 targetRef;
+            string reply;
         }
 
-        struct Routed extends common::control::Frame [0x40000003]
-        {
-        }
-
-        struct Unroute extends common::control::Frame [0x00000004]
-        {
-            string destination;
-        }
-
-        struct Unrouted extends common::control::Frame [0x40000004]
-        {
-        }
-
-
-        struct Bind extends common::control::Frame [0x00000011]
-        {
-        }
-
-        struct Bound extends common::control::Frame [0x40000011]
-        {
-            int64 referenceId;
-        }
-
-        struct Unbind extends common::control::Frame [0x00000012]
-        {
-            int64 referenceId;
-        }
-
-        struct Unbound extends common::control::Frame [0x40000012]
-        {
-        }
-
-        struct Prepare extends common::control::Frame [0x00000013]
-        {
-        }
-
-        struct Prepared extends common::control::Frame [0x40000013]
-        {
-            int64 referenceId;
-        }
-
-        struct Unprepare extends common::control::Frame [0x00000014]
-        {
-            int64 referenceId;
-        }
-
-        struct Unprepared extends common::control::Frame [0x40000014]
-        {
-        }
 
         struct Connect extends common::control::Frame [0x00000021]
         {
@@ -107,7 +110,7 @@ scope common
 
         struct Connected extends common::control::Frame [0x40000021]
         {
-            int64 connectionId;
+            int64 streamId;
         }
     }
 
@@ -120,7 +123,9 @@ scope common
 
         struct Begin extends common::stream::Frame [0x00000001]
         {
-            int64 referenceId;
+            int64 routableRef;
+            int64 replyId;
+            int64 replyRef;
         }
 
         struct Data extends common::stream::Frame [0x00000002]
@@ -132,8 +137,13 @@ scope common
         {
         }
 
-        struct Reset extends common::stream::Frame [0x00000004]
+        struct Reset extends common::stream::Frame [0x40000001]
         {
+        }
+
+        struct Window extends common::stream::Frame [0x40000002]
+        {
+            int32 update;
         }
     }
 }

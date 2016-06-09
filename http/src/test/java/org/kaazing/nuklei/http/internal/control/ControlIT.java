@@ -39,8 +39,8 @@ public class ControlIT
         .commandBufferCapacity(1024)
         .responseBufferCapacity(1024)
         .counterValuesBufferCapacity(1024)
-        .initialize("source", "http")
-        .initialize("destination", "http");
+        .streams("source", "http")
+        .streams("destination", "http");
 
     @Rule
     public final TestRule chain = outerRule(k3po).around(timeout).around(nukleus);

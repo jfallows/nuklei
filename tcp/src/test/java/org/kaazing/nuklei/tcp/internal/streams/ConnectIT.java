@@ -39,7 +39,7 @@ public class ConnectIT
             .commandBufferCapacity(1024)
             .responseBufferCapacity(1024)
             .counterValuesBufferCapacity(1024)
-            .initialize("source", "tcp");
+            .streams("source", "tcp");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);

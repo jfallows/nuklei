@@ -15,11 +15,14 @@
  */
 package org.kaazing.nuklei;
 
+import uk.co.real_logic.agrona.collections.ArrayUtil;
+
 @FunctionalInterface
 public interface Nukleus extends AutoCloseable
 {
     int process();
 
+    @Override
     default void close() throws Exception
     {
     }
@@ -31,7 +34,7 @@ public interface Nukleus extends AutoCloseable
 
     class Composite implements Nukleus
     {
-        private final Nukleus[] nuklei;
+        private Nukleus[] nuklei;
 
         protected Composite(
             Nukleus... nuklei)
@@ -80,6 +83,26 @@ public interface Nukleus extends AutoCloseable
             {
                 throw deferred;
             }
+        }
+
+        @Override
+        public String toString()
+        {
+            return name();
+        }
+
+        protected final <T extends Nukleus> T include(
+            T nukleus)
+        {
+            nuklei = ArrayUtil.add(nuklei, nukleus);
+            return nukleus;
+        }
+
+        protected final <T extends Nukleus> T exclude(
+            T nukleus)
+        {
+            nuklei = ArrayUtil.remove(nuklei, nukleus);
+            return nukleus;
         }
     }
 }

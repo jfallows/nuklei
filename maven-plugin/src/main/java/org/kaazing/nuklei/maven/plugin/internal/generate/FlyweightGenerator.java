@@ -168,11 +168,11 @@ public final class FlyweightGenerator extends ClassSpecGenerator
     {
         return methodBuilder("checkLimit")
                   .addModifiers(PROTECTED, STATIC, FINAL)
+                  .addParameter(int.class, "limit")
                   .addParameter(int.class, "maxLimit")
-                  .addParameter(int.class, "actingLimit")
-                  .beginControlFlow("if (maxLimit > actingLimit)")
-                  .addStatement("final String msg = String.format(\"maxLimit=%d is beyond actingLimit=%d\", " +
-                          "maxLimit, actingLimit)")
+                  .beginControlFlow("if (limit > maxLimit)")
+                  .addStatement("final String msg = String.format(\"limit=%d is beyond maxLimit=%d\", " +
+                          "limit, maxLimit)")
                   .addStatement("throw new IndexOutOfBoundsException(msg)")
                   .endControlFlow()
                   .build();
@@ -181,18 +181,19 @@ public final class FlyweightGenerator extends ClassSpecGenerator
     private static final class BuilderClassBuilder
     {
         private final TypeSpec.Builder classBuilder;
-        private final ParameterizedTypeName classType;
+        private final ClassName thisRawName;
+        private final ParameterizedTypeName thisName;
         private final TypeVariableName typeVarT;
 
         private BuilderClassBuilder(
             ClassName flyweightType)
         {
-            ClassName classRawType = flyweightType.nestedClass("Builder");
+            this.thisRawName = flyweightType.nestedClass("Builder");
 
             this.typeVarT = TypeVariableName.get("T");
-            this.classType = ParameterizedTypeName.get(classRawType, typeVarT);
+            this.thisName = ParameterizedTypeName.get(thisRawName, typeVarT);
 
-            this.classBuilder = classBuilder(classRawType.simpleName())
+            this.classBuilder = classBuilder(thisRawName.simpleName())
                     .addTypeVariable(typeVarT.withBounds(flyweightType))
                     .addModifiers(PUBLIC, ABSTRACT, STATIC);
         }
@@ -214,6 +215,21 @@ public final class FlyweightGenerator extends ClassSpecGenerator
                     .addMethod(limitMutator())
                     .addMethod(wrapMethod())
                     .addMethod(iterateMethod())
+                    .addType(visitorInterface())
+                    .build();
+        }
+
+        private TypeSpec visitorInterface()
+        {
+            return TypeSpec.interfaceBuilder(thisRawName.nestedClass("Visitor"))
+                    .addModifiers(PUBLIC)
+                    .addAnnotation(FunctionalInterface.class)
+                    .addMethod(MethodSpec.methodBuilder("visit")
+                            .addModifiers(PUBLIC, ABSTRACT)
+                            .addParameter(MUTABLE_DIRECT_BUFFER_TYPE, "buffer")
+                            .addParameter(int.class, "offset")
+                            .addParameter(int.class, "length")
+                            .build())
                     .build();
         }
 
@@ -319,7 +335,7 @@ public final class FlyweightGenerator extends ClassSpecGenerator
         {
             return methodBuilder("wrap")
                       .addModifiers(PROTECTED)
-                      .returns(classType)
+                      .returns(thisName)
                       .addParameter(MUTABLE_DIRECT_BUFFER_TYPE, "buffer")
                       .addParameter(int.class, "offset")
                       .addParameter(int.class, "maxLimit")
@@ -340,7 +356,7 @@ public final class FlyweightGenerator extends ClassSpecGenerator
             return methodBuilder("iterate")
                     .addModifiers(PUBLIC)
                     .addTypeVariable(typeVarE)
-                    .returns(classType)
+                    .returns(thisName)
                     .addParameter(ParameterizedTypeName.get(iterableType, typeVarE), "iterable")
                     .addParameter(ParameterizedTypeName.get(consumerType, typeVarE), "action")
                     .addStatement("iterable.forEach(action)")

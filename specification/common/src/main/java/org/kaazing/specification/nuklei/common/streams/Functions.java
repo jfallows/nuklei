@@ -30,6 +30,7 @@ import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
+@Deprecated
 public final class Functions
 {
     private static final Random RANDOM = new Random();
@@ -173,13 +174,13 @@ public final class Functions
                     (byte) (value >> 24),
                     (byte) (value >> 16),
                     (byte) (value >> 8),
-                    (byte) (value >> 0)
+                    (byte) value
             };
         }
         else
         {
             return new byte[] {
-                    (byte) (value >> 0),
+                    (byte) value,
                     (byte) (value >> 8),
                     (byte) (value >> 16),
                     (byte) (value >> 24),

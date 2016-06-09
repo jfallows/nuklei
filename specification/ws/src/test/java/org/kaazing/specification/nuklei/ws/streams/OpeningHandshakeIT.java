@@ -40,10 +40,10 @@ public class OpeningHandshakeIT
 
     private final NukleusRule nukleus = new NukleusRule()
         .directory("target/nukleus-itests")
-        .initialize("ws", "source")
-        .initialize("source", "ws")
-        .initialize("ws", "destination")
-        .initialize("destination", "ws");
+        .streams("ws", "source")
+        .streams("target", "ws#source")
+        .streams("ws", "target")
+        .streams("source", "ws#target");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);
@@ -55,15 +55,13 @@ public class OpeningHandshakeIT
 
     @Test
     @Specification({
-        "control/capture.source.destination/controller",
-        "control/capture.source.destination/nukleus",
-        "control/route.source.destination/controller",
-        "control/route.source.destination/nukleus",
-        "control/bind.source.destination/controller",
-        "control/bind.source.destination/nukleus",
-        "streams/opening/connection.established/source.accept",
-        "streams/opening/connection.established/nukleus.accept",
-        "streams/opening/connection.established/destination.accept" })
+        "control/route/controller",
+        "control/route/nukleus",
+        "control/bind/controller",
+        "control/bind/nukleus",
+        "streams/opening/connection.established/bind.source",
+        "streams/opening/connection.established/bind.nukleus",
+        "streams/opening/connection.established/bind.target" })
     public void shouldEstablishConnection() throws Exception
     {
         k3po.finish();

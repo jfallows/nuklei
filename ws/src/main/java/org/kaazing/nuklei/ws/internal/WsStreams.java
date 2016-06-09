@@ -36,8 +36,6 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 public final class WsStreams
 {
-    private static final int MAX_SEND_LENGTH = 1024; // TODO: Configuration and Context
-
     private final HttpBeginFW.Builder httpBeginRW = new HttpBeginFW.Builder();
     private final HttpDataFW.Builder httpDataRW = new HttpDataFW.Builder();
     private final HttpEndFW.Builder httpEndRW = new HttpEndFW.Builder();
@@ -54,22 +52,22 @@ public final class WsStreams
 
     WsStreams(
         Context context,
-        String capture,
-        String route)
+        String source,
+        String target)
     {
         this.captureStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsBufferCapacity())
-                                                         .streamsFile(context.captureStreamsFile().apply(capture))
-                                                         .createFile(false)
+                                                         .path(context.captureStreamsFile().apply(source))
+                                                         .readonly(true)
                                                          .build();
-        this.captureBuffer = this.captureStreams.buffer();
+        this.captureBuffer = this.captureStreams.streamsBuffer();
 
         this.routeStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsBufferCapacity())
-                                                       .streamsFile(context.routeStreamsFile().apply(route))
-                                                       .createFile(false)
+                                                       .path(context.routeStreamsPath().apply(target, source))
+                                                       .readonly(false)
                                                        .build();
-        this.routeBuffer = this.routeStreams.buffer();
+        this.routeBuffer = this.routeStreams.streamsBuffer();
 
-        this.atomicBuffer = new UnsafeBuffer(allocateDirect(MAX_SEND_LENGTH).order(nativeOrder()));
+        this.atomicBuffer = new UnsafeBuffer(allocateDirect(context.maxMessageLength()).order(nativeOrder()));
     }
 
     public void close()
@@ -80,18 +78,18 @@ public final class WsStreams
 
     public boolean httpBegin(
         long streamId,
-        long referenceId,
+        long routableRef,
         Map<String, String> headers)
     {
         httpBeginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                    .streamId(streamId)
-                   .referenceId(referenceId);
+                   .routableRef(routableRef);
 
         for (Map.Entry<String, String> header : headers.entrySet())
         {
             String name = header.getKey();
             String value = header.getValue();
-            httpBeginRW.headers(itemRW -> itemRW.name(name).value(value));
+            httpBeginRW.headers(headersRW -> headersRW.item(itemRW -> itemRW.name(name).value(value)));
         }
 
         HttpBeginFW httpBegin = httpBeginRW.build();
@@ -107,7 +105,7 @@ public final class WsStreams
     {
         HttpDataFW httpData = httpDataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                                         .streamId(streamId)
-                                        .payload(buffer, offset, length)
+                                        .payload(b-> b.set(buffer, offset, length))
                                         .build();
 
         return captureBuffer.write(httpData.typeId(), httpData.buffer(), httpData.offset(), httpData.length());
@@ -125,12 +123,12 @@ public final class WsStreams
 
     public boolean wsBegin(
         long streamId,
-        long referenceId,
+        long routableRef,
         String protocol)
     {
         WsBeginFW wsBegin = wsBeginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                                      .streamId(streamId)
-                                     .referenceId(referenceId)
+                                     .routableRef(routableRef)
                                      .protocol(protocol)
                                      .build();
 
@@ -145,7 +143,7 @@ public final class WsStreams
     {
         WsDataFW wsData = wsDataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                                   .streamId(streamId)
-                                  .payload(buffer, offset, length)
+                                  .payload(b-> b.set(buffer, offset, length))
                                   .build();
 
         return captureBuffer.write(wsData.typeId(), wsData.buffer(), wsData.offset(), wsData.length());

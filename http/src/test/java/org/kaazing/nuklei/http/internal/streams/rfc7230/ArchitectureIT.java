@@ -38,7 +38,7 @@ public class ArchitectureIT
             .commandBufferCapacity(1024)
             .responseBufferCapacity(1024)
             .counterValuesBufferCapacity(1024)
-            .initialize("destination", "http");;
+            .streams("destination", "http");;
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);

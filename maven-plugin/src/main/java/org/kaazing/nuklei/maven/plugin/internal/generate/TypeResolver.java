@@ -89,7 +89,7 @@ public final class TypeResolver
         namesByType.put(AstType.STRUCT, ClassName.get(packageName, "Flyweight"));
         namesByType.put(AstType.STRING, ClassName.get(packageName, "StringFW"));
         namesByType.put(AstType.LIST, ClassName.get(packageName, "ListFW"));
-        namesByType.put(AstType.OCTETS, TypeNames.DIRECT_BUFFER_TYPE);
+        namesByType.put(AstType.OCTETS, ClassName.get(packageName, "OctetsFW"));
         namesByType.put(AstType.INT8, TypeName.BYTE);
         namesByType.put(AstType.UINT8, TypeName.BYTE);
         namesByType.put(AstType.INT16, TypeName.SHORT);

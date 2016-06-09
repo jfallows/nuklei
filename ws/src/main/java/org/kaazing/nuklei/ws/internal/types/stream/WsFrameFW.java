@@ -27,6 +27,16 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public final class WsFrameFW extends Flyweight
 {
+    public static final short STATUS_NORMAL_CLOSURE = (short) 1000;
+    public static final short STATUS_GOING_AWAY = (short) 1001;
+    public static final short STATUS_PROTOCOL_ERROR = (short) 1002;
+    public static final short STATUS_UNSUPPORTED_DATA = (short) 1003;
+    public static final short STATUS_INVALID_UTF8 = (short) 1007;
+    public static final short STATUS_POLICY_VIOLATION = (short) 1008;
+    public static final short STATUS_MESSAGE_TOO_LARGE = (short) 1009;
+    public static final short STATUS_EXTENSIONS_MISSING = (short) 1010;
+    public static final short STATUS_UNEXPECTED_CONDITION = (short) 1011;
+
     private static final int FIELD_OFFSET_FLAGS_AND_OPCODE = 0;
     private static final int FIELD_SIZE_FLAGS_AND_OPCODE = BitUtil.SIZE_OF_BYTE;
 
@@ -82,15 +92,12 @@ public final class WsFrameFW extends Flyweight
         return payloadOffset() + lengthValue();
     }
 
+    @Override
     public WsFrameFW wrap(DirectBuffer buffer, int offset, int maxLimit)
     {
         super.wrap(buffer, offset, maxLimit);
 
-        int lengthValue = lengthValue();
-        if (lengthValue != 0)
-        {
-            payloadRO.wrap(buffer, payloadOffset(), lengthValue);
-        }
+        payloadRO.wrap(buffer, payloadOffset(), lengthValue());
 
         checkLimit(limit(), maxLimit);
 
@@ -141,14 +148,20 @@ public final class WsFrameFW extends Flyweight
 
         case 0x7f:
             long length8bytes = buffer().getLong(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 1);
-            if (length8bytes >> 17L != 0L)
-            {
-                throw new IllegalStateException("frame payload too long");
-            }
+            validateLength(length8bytes);
             return (int) length8bytes & 0xffffffff;
 
         default:
             return length;
+        }
+    }
+
+    private void validateLength(
+        long length8bytes)
+    {
+        if (length8bytes >> 17L != 0L)
+        {
+            throw new IllegalStateException("frame payload too long");
         }
     }
 
@@ -190,7 +203,7 @@ public final class WsFrameFW extends Flyweight
             case 32:
                 buffer().putByte(offset() + FIELD_OFFSET_MASK_AND_LENGTH, (byte) length);
                 buffer().putBytes(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 1, buffer, offset, length);
-                limit(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 1 + length);
+                super.limit(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 1 + length);
                 break;
             case 64:
                 switch (length)
@@ -200,12 +213,12 @@ public final class WsFrameFW extends Flyweight
                     buffer().putByte(offset() + FIELD_OFFSET_MASK_AND_LENGTH, (byte) 126);
                     buffer().putShort(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 1, (short) length);
                     buffer().putBytes(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 3, buffer, offset, length);
-                    limit(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 3 + length);
+                    super.limit(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 3 + length);
                     break;
                 default:
                     buffer().putByte(offset() + FIELD_OFFSET_MASK_AND_LENGTH, (byte) length);
                     buffer().putBytes(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 1, buffer, offset, length);
-                    limit(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 1 + length);
+                    super.limit(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 1 + length);
                     break;
                 }
                 break;
@@ -213,13 +226,13 @@ public final class WsFrameFW extends Flyweight
                 buffer().putByte(offset() + FIELD_OFFSET_MASK_AND_LENGTH, (byte) 126);
                 buffer().putShort(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 1, (short) length);
                 buffer().putBytes(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 3, buffer, offset, length);
-                limit(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 3 + length);
+                super.limit(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 3 + length);
                 break;
             default:
                 buffer().putByte(offset() + FIELD_OFFSET_MASK_AND_LENGTH, (byte) 127);
                 buffer().putLong(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 1, length);
                 buffer().putBytes(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 9, buffer, offset, length);
-                limit(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 9 + length);
+                super.limit(offset() + FIELD_OFFSET_MASK_AND_LENGTH + 9 + length);
                 break;
             }
 

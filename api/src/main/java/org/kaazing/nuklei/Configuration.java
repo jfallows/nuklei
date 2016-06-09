@@ -17,7 +17,8 @@ package org.kaazing.nuklei;
 
 import static java.util.Objects.requireNonNull;
 
-import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 public class Configuration
@@ -27,6 +28,8 @@ public class Configuration
     public static final String MAXIMUM_STREAMS_COUNT_PROPERTY_NAME = "nuklei.maximum.streams.count";
 
     public static final String STREAMS_BUFFER_CAPACITY_PROPERTY_NAME = "nuklei.streams.buffer.capacity";
+
+    public static final String THROTTLE_BUFFER_CAPACITY_PROPERTY_NAME = "nuklei.throttle.buffer.capacity";
 
     public static final String COMMAND_BUFFER_CAPACITY_PROPERTY_NAME = "nuklei.command.buffer.capacity";
 
@@ -38,11 +41,13 @@ public class Configuration
 
     public static final int STREAMS_BUFFER_CAPACITY_DEFAULT = 1024 * 1024;
 
-    public static final int COMMAND_BUFFER_CAPACITY_DEFAULT = 1024 * 1024;
+    public static final int THROTTLE_BUFFER_CAPACITY_DEFAULT = 64 * 1024;
 
-    public static final int RESPONSE_BUFFER_CAPACITY_DEFAULT = 1024 * 1024;
+    public static final int CONTROL_COMMAND_BUFFER_CAPACITY_DEFAULT = 1024 * 1024;
 
-    public static final int COUNTERS_BUFFER_CAPACITY_DEFAULT = 1024 * 1024;
+    public static final int CONTROL_RESPONSE_BUFFER_CAPACITY_DEFAULT = 1024 * 1024;
+
+    public static final int CONTROL_COUNTERS_BUFFER_CAPACITY_DEFAULT = 1024 * 1024;
 
     private final Properties properties;
 
@@ -58,9 +63,9 @@ public class Configuration
         this.properties = properties;
     }
 
-    public File directory()
+    public Path directory()
     {
-        return new File(getProperty(DIRECTORY_PROPERTY_NAME, "./"));
+        return Paths.get(getProperty(DIRECTORY_PROPERTY_NAME, "./"));
     }
 
     public int maximumStreamsCount()
@@ -73,24 +78,29 @@ public class Configuration
         return getInteger(STREAMS_BUFFER_CAPACITY_PROPERTY_NAME, STREAMS_BUFFER_CAPACITY_DEFAULT);
     }
 
+    public int throttleBufferCapacity()
+    {
+        return getInteger(THROTTLE_BUFFER_CAPACITY_PROPERTY_NAME, THROTTLE_BUFFER_CAPACITY_DEFAULT);
+    }
+
     public int commandBufferCapacity()
     {
-        return getInteger(COMMAND_BUFFER_CAPACITY_PROPERTY_NAME, COMMAND_BUFFER_CAPACITY_DEFAULT);
+        return getInteger(COMMAND_BUFFER_CAPACITY_PROPERTY_NAME, CONTROL_COMMAND_BUFFER_CAPACITY_DEFAULT);
     }
 
     public int responseBufferCapacity()
     {
-        return getInteger(RESPONSE_BUFFER_CAPACITY_PROPERTY_NAME, RESPONSE_BUFFER_CAPACITY_DEFAULT);
+        return getInteger(RESPONSE_BUFFER_CAPACITY_PROPERTY_NAME, CONTROL_RESPONSE_BUFFER_CAPACITY_DEFAULT);
     }
 
     public int counterValuesBufferCapacity()
     {
-        return getInteger(COUNTERS_BUFFER_CAPACITY_PROPERTY_NAME, COUNTERS_BUFFER_CAPACITY_DEFAULT);
+        return getInteger(COUNTERS_BUFFER_CAPACITY_PROPERTY_NAME, CONTROL_COUNTERS_BUFFER_CAPACITY_DEFAULT);
     }
 
     public int counterLabelsBufferCapacity()
     {
-        return getInteger(COUNTERS_BUFFER_CAPACITY_PROPERTY_NAME, COUNTERS_BUFFER_CAPACITY_DEFAULT);
+        return getInteger(COUNTERS_BUFFER_CAPACITY_PROPERTY_NAME, CONTROL_COUNTERS_BUFFER_CAPACITY_DEFAULT);
     }
 
     private String getProperty(String key, String defaultValue)

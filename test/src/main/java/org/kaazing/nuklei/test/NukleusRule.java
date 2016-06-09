@@ -24,9 +24,11 @@ import static org.kaazing.nuklei.Configuration.COUNTERS_BUFFER_CAPACITY_PROPERTY
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.RESPONSE_BUFFER_CAPACITY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.STREAMS_BUFFER_CAPACITY_PROPERTY_NAME;
+import static org.kaazing.nuklei.Configuration.THROTTLE_BUFFER_CAPACITY_PROPERTY_NAME;
 import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -87,16 +89,26 @@ public final class NukleusRule implements TestRule
         return this;
     }
 
-    public NukleusRule initialize(
-        String reader,
-        String writer)
+    public NukleusRule throttleBufferCapacity(int throttleBufferCapacity)
+    {
+        properties.setProperty(THROTTLE_BUFFER_CAPACITY_PROPERTY_NAME, valueOf(throttleBufferCapacity));
+        return this;
+    }
+
+    public NukleusRule streams(
+        String nukleus,
+        String source)
     {
         Configuration configuration = configuration();
         int streamsBufferCapacity = configuration.streamsBufferCapacity();
-        File directory = configuration.directory();
+        int throttleBufferCapacity = configuration.throttleBufferCapacity();
+        Path directory = configuration.directory();
 
-        File streams = new File(directory, String.format("%s/streams/%s", reader, writer));
-        createEmptyFile(streams.getAbsoluteFile(), streamsBufferCapacity + RingBufferDescriptor.TRAILER_LENGTH);
+        final File streams = directory.resolve(String.format("%s/streams/%s", nukleus, source)).toFile();
+        final int length = streamsBufferCapacity + RingBufferDescriptor.TRAILER_LENGTH +
+                throttleBufferCapacity + RingBufferDescriptor.TRAILER_LENGTH;
+
+        createEmptyFile(streams.getAbsoluteFile(), length);
 
         return this;
     }

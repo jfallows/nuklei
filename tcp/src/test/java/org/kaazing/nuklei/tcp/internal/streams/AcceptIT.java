@@ -39,8 +39,8 @@ public class AcceptIT
             .commandBufferCapacity(1024)
             .responseBufferCapacity(1024)
             .counterValuesBufferCapacity(1024)
-            .initialize("source", "tcp")
-            .initialize("destination", "tcp");
+            .streams("source", "tcp")
+            .streams("destination", "tcp");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);

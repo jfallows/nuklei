@@ -21,45 +21,8 @@ scope ws
         {
         }
 
-
-        struct Capture extends common::control::Capture
-        {
-        }
-
-        struct Captured extends common::control::Captured
-        {
-        }
-
-        struct Uncapture extends common::control::Uncapture
-        {
-        }
-
-        struct Uncaptured extends common::control::Uncaptured
-        {
-        }
-
-        struct Route extends common::control::Route
-        {
-        }
-
-        struct Routed extends common::control::Routed
-        {
-        }
-
-        struct Unroute extends common::control::Unroute
-        {
-        }
-
-        struct Unrouted extends common::control::Unrouted
-        {
-        }
-
         struct Bind extends common::control::Bind
         {
-            string destination;
-            int64 destinationRef;
-            string source;
-            string protocol;
         }
 
         struct Bound extends common::control::Bound
@@ -72,18 +35,10 @@ scope ws
 
         struct Unbound extends common::control::Unbound
         {
-            string destination;
-            int64 destinationRef;
-            string source;
-            string protocol;
         }
 
         struct Prepare extends common::control::Prepare
         {
-            string source;
-            string destination;
-            int64 destinationRef;
-            string protocol;
         }
 
         struct Prepared extends common::control::Prepared
@@ -96,29 +51,53 @@ scope ws
 
         struct Unprepared extends common::control::Unprepared
         {
-            string source;
-            string destination;
-            int64 destinationRef;
+        }
+
+        struct Route extends common::control::Route
+        {
             string protocol;
         }
+
+        struct Routed extends common::control::Routed
+        {
+            string protocol;
+        }
+
+        struct Unroute extends common::control::Unroute
+        {
+            string protocol;
+        }
+
+        struct Unrouted extends common::control::Unrouted
+        {
+            string protocol;
+        }
+
     }
 
     scope stream
     {
         struct WsBegin extends common::stream::Begin
         {
-          string protocol;
+            string protocol;
         }
 
         struct WsData extends common::stream::Data
         {
+            uint8 flags;
         }
 
         struct WsEnd extends common::stream::End
         {
+            int16 code;
+            string reason;
         }
 
-        struct Reset extends common::stream::Reset
+        struct WsReset extends common::stream::Reset
+        {
+        }
+
+        struct WsWindow extends common::stream::Window
         {
         }
     }

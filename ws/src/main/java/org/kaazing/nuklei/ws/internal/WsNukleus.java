@@ -19,7 +19,8 @@ import java.io.Closeable;
 
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.ws.internal.conductor.Conductor;
-import org.kaazing.nuklei.ws.internal.reader.Reader;
+import org.kaazing.nuklei.ws.internal.router.Router;
+import org.kaazing.nuklei.ws.internal.watcher.Watcher;
 
 public final class WsNukleus extends Nukleus.Composite
 {
@@ -29,10 +30,11 @@ public final class WsNukleus extends Nukleus.Composite
 
     WsNukleus(
         Conductor conductor,
-        Reader reader,
+        Watcher watcher,
+        Router router,
         Closeable cleanup)
     {
-        super(conductor, reader);
+        super(conductor, watcher, router);
         this.cleanup = cleanup;
     }
 

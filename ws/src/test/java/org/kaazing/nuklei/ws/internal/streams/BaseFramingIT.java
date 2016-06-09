@@ -42,19 +42,18 @@ public class BaseFramingIT
         .commandBufferCapacity(1024)
         .responseBufferCapacity(1024)
         .counterValuesBufferCapacity(1024)
-        .initialize("source", "ws")
-        .initialize("destination", "ws");
+        .streams("ws", "source")
+        .streams("ws", "target");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);
 
     @Test
     @Specification({
-        "control/capture.source.destination/controller",
-        "control/route.source.destination/controller",
-        "control/bind.source.destination/controller",
-        "streams/framing/echo.binary.payload.length.0/source.accept",
-        "streams/framing/echo.binary.payload.length.0/destination.accept" })
+        "control/bind/controller",
+        "control/route/controller",
+        "streams/framing/echo.binary.payload.length.0/bind.source",
+        "streams/framing/echo.binary.payload.length.0/bind.target" })
     public void shouldEchoBinaryFrameWithPayloadLength0() throws Exception
     {
         k3po.finish();
@@ -62,11 +61,10 @@ public class BaseFramingIT
 
     @Test
     @Specification({
-        "control/capture.source.destination/controller",
-        "control/route.source.destination/controller",
-        "control/bind.source.destination/controller",
-        "streams/framing/echo.binary.payload.length.125/source.accept",
-        "streams/framing/echo.binary.payload.length.125/destination.accept" })
+        "control/bind/controller",
+        "control/route/controller",
+        "streams/framing/echo.binary.payload.length.125/bind.source",
+        "streams/framing/echo.binary.payload.length.125/bind.target" })
     public void shouldEchoBinaryFrameWithPayloadLength125() throws Exception
     {
         k3po.finish();

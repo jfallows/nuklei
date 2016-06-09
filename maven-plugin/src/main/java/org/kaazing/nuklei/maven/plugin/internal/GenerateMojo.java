@@ -56,6 +56,7 @@ import org.kaazing.nuklei.maven.plugin.internal.ast.parse.AstParser;
 import org.kaazing.nuklei.maven.plugin.internal.ast.visit.ScopeVisitor;
 import org.kaazing.nuklei.maven.plugin.internal.generate.FlyweightGenerator;
 import org.kaazing.nuklei.maven.plugin.internal.generate.ListFlyweightGenerator;
+import org.kaazing.nuklei.maven.plugin.internal.generate.OctetsFlyweightGenerator;
 import org.kaazing.nuklei.maven.plugin.internal.generate.StringFlyweightGenerator;
 import org.kaazing.nuklei.maven.plugin.internal.generate.TypeResolver;
 import org.kaazing.nuklei.maven.plugin.internal.generate.TypeSpecGenerator;
@@ -155,6 +156,7 @@ public final class GenerateMojo extends org.apache.maven.plugin.AbstractMojo
         }
 
         typeSpecs.add(new FlyweightGenerator(resolver.resolveClass(AstType.STRUCT)));
+        typeSpecs.add(new OctetsFlyweightGenerator(resolver.resolveClass(AstType.STRUCT)));
         typeSpecs.add(new StringFlyweightGenerator(resolver.resolveClass(AstType.STRUCT)));
         typeSpecs.add(new ListFlyweightGenerator(resolver.resolveClass(AstType.STRUCT)));
 

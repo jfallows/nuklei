@@ -28,13 +28,16 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 public final class NukleusRule implements TestRule
 {
     private static final int STREAMS_BUFFER_CAPACITY_DEFAULT = 1024 * 1024;
+    private static final int THROTTLE_BUFFER_CAPACITY_DEFAULT = 64 * 1024;
 
     private File directory;
-    private int streamsBufferCapacity;
+    private long streamsBufferCapacity;
+    private long throttleBufferCapacity;
 
     public NukleusRule()
     {
         this.streamsBufferCapacity = STREAMS_BUFFER_CAPACITY_DEFAULT;
+        this.throttleBufferCapacity = THROTTLE_BUFFER_CAPACITY_DEFAULT;
     }
 
     public NukleusRule directory(String directory)
@@ -49,12 +52,20 @@ public final class NukleusRule implements TestRule
         return this;
     }
 
-    public NukleusRule initialize(
-        String reader,
-        String writer)
+    public NukleusRule throttleBufferCapacity(int throttleBufferCapacity)
     {
-        File streams = new File(directory, String.format("%s/streams/%s", reader, writer));
-        createEmptyFile(streams.getAbsoluteFile(), streamsBufferCapacity + RingBufferDescriptor.TRAILER_LENGTH);
+        this.throttleBufferCapacity = throttleBufferCapacity;
+        return this;
+    }
+
+    public NukleusRule streams(
+        String nukleus,
+        String source)
+    {
+        File streams = new File(directory, String.format("%s/streams/%s", nukleus, source));
+        long streamsBufferSize = streamsBufferCapacity + RingBufferDescriptor.TRAILER_LENGTH;
+        long throttleBufferSize = throttleBufferCapacity + RingBufferDescriptor.TRAILER_LENGTH;
+        createEmptyFile(streams.getAbsoluteFile(), streamsBufferSize + throttleBufferSize);
         return this;
     }
 

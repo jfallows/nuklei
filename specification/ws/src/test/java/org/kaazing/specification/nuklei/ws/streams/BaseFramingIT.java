@@ -39,25 +39,24 @@ public class BaseFramingIT
 
     private final NukleusRule nukleus = new NukleusRule()
         .directory("target/nukleus-itests")
-        .initialize("ws", "source")
-        .initialize("source", "ws")
-        .initialize("ws", "destination")
-        .initialize("destination", "ws");
+        .streams("ws", "source")
+        .streams("target", "ws#source")
+        .streams("ws", "target")
+        .streams("source", "ws#target") // TODO: remove
+        .streams("reply", "ws#target");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);
 
     @Test
     @Specification({
-        "control/capture.source.destination/controller",
-        "control/capture.source.destination/nukleus",
-        "control/route.source.destination/controller",
-        "control/route.source.destination/nukleus",
-        "control/bind.source.destination/controller",
-        "control/bind.source.destination/nukleus",
-        "streams/framing/echo.binary.payload.length.0/source.accept",
-        "streams/framing/echo.binary.payload.length.0/nukleus.accept",
-        "streams/framing/echo.binary.payload.length.0/destination.accept" })
+        "control/bind/controller",
+        "control/bind/nukleus",
+        "control/route/controller",
+        "control/route/nukleus",
+        "streams/framing/echo.binary.payload.length.0/bind.source",
+        "streams/framing/echo.binary.payload.length.0/bind.nukleus",
+        "streams/framing/echo.binary.payload.length.0/bind.target" })
     public void shouldEchoBinaryFrameWithPayloadLength0() throws Exception
     {
         k3po.finish();
@@ -65,15 +64,13 @@ public class BaseFramingIT
 
     @Test
     @Specification({
-        "control/capture.source.destination/controller",
-        "control/capture.source.destination/nukleus",
-        "control/route.source.destination/controller",
-        "control/route.source.destination/nukleus",
-        "control/bind.source.destination/controller",
-        "control/bind.source.destination/nukleus",
-        "streams/framing/echo.binary.payload.length.125/source.accept",
-        "streams/framing/echo.binary.payload.length.125/nukleus.accept",
-        "streams/framing/echo.binary.payload.length.125/destination.accept" })
+        "control/bind/controller",
+        "control/bind/nukleus",
+        "control/route/controller",
+        "control/route/nukleus",
+        "streams/framing/echo.binary.payload.length.125/bind.source",
+        "streams/framing/echo.binary.payload.length.125/bind.nukleus",
+        "streams/framing/echo.binary.payload.length.125/bind.target" })
     public void shouldEchoBinaryFrameWithPayloadLength125() throws Exception
     {
         k3po.finish();

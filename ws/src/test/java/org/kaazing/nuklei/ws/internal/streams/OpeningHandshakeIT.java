@@ -43,19 +43,18 @@ public class OpeningHandshakeIT
         .commandBufferCapacity(1024)
         .responseBufferCapacity(1024)
         .counterValuesBufferCapacity(1024)
-        .initialize("source", "ws")
-        .initialize("destination", "ws");
+        .streams("source", "ws")
+        .streams("destination", "ws");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);
 
     @Test
     @Specification({
-        "control/capture.source.destination/controller",
-        "control/route.source.destination/controller",
-        "control/bind.source.destination/controller",
-        "streams/opening/connection.established/source.accept",
-        "streams/opening/connection.established/destination.accept" })
+        "control/bind/controller",
+        "control/route/controller",
+        "streams/opening/connection.established/bind.source",
+        "streams/opening/connection.established/bind.target" })
     public void shouldEstablishConnection() throws Exception
     {
         k3po.finish();

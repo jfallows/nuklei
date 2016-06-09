@@ -35,10 +35,10 @@ public class MessageFormatIT
 
     private final NukleusRule nukleus = new NukleusRule()
         .directory("target/nukleus-itests")
-        .initialize("http", "source")
-        .initialize("source", "http")
-        .initialize("http", "destination")
-        .initialize("destination", "http");
+        .streams("http", "source")
+        .streams("source", "http")
+        .streams("http", "destination")
+        .streams("destination", "http");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);

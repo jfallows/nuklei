@@ -16,11 +16,15 @@
 package org.kaazing.nuklei.ws.internal;
 
 import static java.lang.String.format;
+import static uk.co.real_logic.agrona.CloseHelper.quietClose;
 import static uk.co.real_logic.agrona.LangUtil.rethrowUnchecked;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.nio.file.WatchService;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.logging.Logger;
 
@@ -40,12 +44,13 @@ public final class Context implements Closeable
     private final ControlLayout.Builder controlRW = new ControlLayout.Builder();
 
     private boolean readonly;
-    private File configDirectory;
+    private Path configDirectory;
     private ControlLayout controlRO;
     private int maximumStreamsCount;
     private int streamsBufferCapacity;
-    private Function<String, File> captureStreamsFile;
-    private Function<String, File> routeStreamsFile;
+    private int throttleBufferCapacity;
+    private Function<String, Path> captureStreamsFile;
+    private BiFunction<String, String, Path> routeStreamsPath;
     private IdleStrategy idleStrategy;
     private ErrorHandler errorHandler;
     private CountersManager countersManager;
@@ -53,6 +58,12 @@ public final class Context implements Closeable
     private RingBuffer toConductorCommands;
     private AtomicBuffer fromConductorResponseBuffer;
     private BroadcastTransmitter fromConductorResponses;
+
+    private WatchService watchService;
+
+    private Path streamsPath;
+
+    private int maximumControlResponseLength;
 
     public Context readonly(
         boolean readonly)
@@ -76,34 +87,68 @@ public final class Context implements Closeable
         return streamsBufferCapacity;
     }
 
+    public int throttleBufferCapacity()
+    {
+        return throttleBufferCapacity;
+    }
+
     public int maxMessageLength()
     {
         // see RingBuffer.maxMessageLength()
         return streamsBufferCapacity / 8;
     }
 
+    public int maxControlResponseLength()
+    {
+        return maximumControlResponseLength;
+    }
+
+    public Context watchService(
+        WatchService watchService)
+    {
+        this.watchService = watchService;
+        return this;
+    }
+
+    public WatchService watchService()
+    {
+        return watchService;
+    }
+
+    public Context streamsPath(
+        Path streamsPath)
+    {
+        this.streamsPath = streamsPath;
+        return this;
+    }
+
+    public Path streamsPath()
+    {
+        return streamsPath;
+    }
+
     public Context captureStreamsFile(
-        Function<String, File> captureStreamsFile)
+        Function<String, Path> captureStreamsFile)
     {
         this.captureStreamsFile = captureStreamsFile;
         return this;
     }
 
-    public Function<String, File> captureStreamsFile()
+    public Function<String, Path> captureStreamsFile()
     {
         return captureStreamsFile;
     }
 
     public Context routeStreamsFile(
-        Function<String, File> routeStreamsFile)
+        BiFunction<String, String, Path> routeStreamsPath)
     {
-        this.routeStreamsFile = routeStreamsFile;
+        this.routeStreamsPath = routeStreamsPath;
         return this;
     }
 
-    public Function<String, File> routeStreamsFile()
+    public BiFunction<String, String, Path> routeStreamsPath()
     {
-        return routeStreamsFile;
+        return routeStreamsPath;
     }
 
     public Context idleStrategy(
@@ -213,17 +258,19 @@ public final class Context implements Closeable
 
             this.streamsBufferCapacity = config.streamsBufferCapacity();
 
-            captureStreamsFile(source ->
-            {
-                return new File(configDirectory, format("ws/streams/%s", source));
-            });
+            this.throttleBufferCapacity = config.throttleBufferCapacity();
 
-            routeStreamsFile(destination ->
-            {
-                return new File(configDirectory, format("%s/streams/ws", destination));
-            });
+            this.maximumControlResponseLength = config.responseBufferCapacity() / 8;
 
-            this.controlRO = controlRW.controlFile(new File(config.directory(), "ws/control"))
+            // default FileSystem cannot be closed
+            watchService(FileSystems.getDefault().newWatchService());
+            streamsPath(configDirectory.resolve("ws/streams"));
+
+            captureStreamsFile(source -> configDirectory.resolve(format("ws/streams/%s", source)));
+
+            routeStreamsFile((source, target) -> configDirectory.resolve(format("%s/streams/ws#%s", target, source)));
+
+            this.controlRO = controlRW.controlPath(config.directory().resolve("ws/control"))
                                       .commandBufferCapacity(config.commandBufferCapacity())
                                       .responseBufferCapacity(config.responseBufferCapacity())
                                       .counterLabelsBufferCapacity(config.counterLabelsBufferCapacity())
@@ -250,10 +297,8 @@ public final class Context implements Closeable
     @Override
     public void close() throws IOException
     {
-        if (controlRO != null)
-        {
-            controlRO.close();
-        }
+        quietClose(watchService);
+        quietClose(controlRO);
     }
 
     private void concludeCounters()
