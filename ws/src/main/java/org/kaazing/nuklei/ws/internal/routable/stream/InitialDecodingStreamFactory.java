@@ -15,6 +15,7 @@
  */
 package org.kaazing.nuklei.ws.internal.routable.stream;
 
+import static java.lang.Integer.highestOneBit;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.kaazing.nuklei.ws.internal.types.stream.WsFrameFW.STATUS_NORMAL_CLOSURE;
@@ -48,7 +49,10 @@ import uk.co.real_logic.agrona.concurrent.MessageHandler;
 public final class InitialDecodingStreamFactory
 {
     private static final byte[] HANDSHAKE_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11".getBytes(UTF_8);
-    private static final int DECODE_OVERHEAD_MINIMUM = 6;
+
+    private static final int HEADER_SIZE_PAYLOAD_8_WITH_MASKING_KEY = 1 + 1 + 4;
+    private static final int HEADER_SIZE_EXTENDED_PAYLOAD_16_WITH_MASKING_KEY = HEADER_SIZE_PAYLOAD_8_WITH_MASKING_KEY + 2;
+    private static final int HEADER_SIZE_EXTENDED_PAYLOAD_64_WITH_MASKING_KEY = HEADER_SIZE_PAYLOAD_8_WITH_MASKING_KEY + 8;
 
     private final MessageDigest sha1 = initSHA1();
 
@@ -313,10 +317,9 @@ public final class InitialDecodingStreamFactory
         {
             windowRO.wrap(buffer, index, length);
 
-            final int wsUpdate = windowRO.update();
-            final int httpUpdate = wsUpdate + DECODE_OVERHEAD_MINIMUM;
+            final int update = windowRO.update();
 
-            source.doWindow(httpSourceId, httpUpdate);
+            source.doWindow(httpSourceId, update + headerSize(update));
         }
 
         private void processReset(
@@ -327,6 +330,41 @@ public final class InitialDecodingStreamFactory
             resetRO.wrap(buffer, index, length);
 
             source.doReset(httpSourceId);
+        }
+    }
+
+    private static int headerSize(
+        int payloadSize)
+    {
+        switch (highestOneBit(payloadSize))
+        {
+        case 0:
+        case 1:
+        case 2:
+        case 4:
+        case 8:
+        case 16:
+        case 32:
+            return HEADER_SIZE_PAYLOAD_8_WITH_MASKING_KEY;
+        case 64:
+            return headerSize64to127(payloadSize);
+        case 128:
+            return HEADER_SIZE_EXTENDED_PAYLOAD_16_WITH_MASKING_KEY;
+        default:
+            return HEADER_SIZE_EXTENDED_PAYLOAD_64_WITH_MASKING_KEY;
+        }
+    }
+
+    private static int headerSize64to127(
+        int payloadSize)
+    {
+        switch (payloadSize)
+        {
+        case 126:
+        case 127:
+            return HEADER_SIZE_EXTENDED_PAYLOAD_16_WITH_MASKING_KEY;
+        default:
+            return HEADER_SIZE_PAYLOAD_8_WITH_MASKING_KEY;
         }
     }
 
