@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-property nukleiC11N ${nuklei:directory("target/nukleus-itests").controlCapacity(1024, 1024)};
+property nukleiC11N ${nuklei:directory("target/nukleus-itests").controlCapacity(1024, 1024)}
 
 property controlC11N ${nukleiC11N.controlNew("ws")}
 

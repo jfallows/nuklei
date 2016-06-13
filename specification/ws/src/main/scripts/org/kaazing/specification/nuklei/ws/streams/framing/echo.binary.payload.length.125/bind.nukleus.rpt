@@ -16,7 +16,7 @@
 
 property newTargetRef ${nuklei:newInitialRef()} # external scope
 
-property nuklei = ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)};
+property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)}
 
 property sourceInitial ${nuklei.streams("ws", "source")}
 property sourceReply ${nuklei.streams("reply", "ws#target")}

@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-property nuklei = ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)};
+property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)}
 
 property targetInitial ${nuklei.streams("target", "ws#source")}
 property targetReply ${nuklei.streams("ws", "target")}

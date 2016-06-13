@@ -16,7 +16,7 @@
 
 property newSourceRef ${nuklei:newInitialRef()} # external scope
 
-property nukleiC11C = ${nuklei:directory("target/nukleus-itests").controlCapacity(1024, 1024)};
+property nukleiC11C ${nuklei:directory("target/nukleus-itests").controlCapacity(1024, 1024)}
 
 property controlC11C ${nukleiC11C.control("ws")}
 
