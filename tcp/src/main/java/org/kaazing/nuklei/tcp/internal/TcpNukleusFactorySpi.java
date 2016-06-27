@@ -15,15 +15,13 @@
  */
 package org.kaazing.nuklei.tcp.internal;
 
-import java.io.File;
-
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.NukleusFactorySpi;
 import org.kaazing.nuklei.tcp.internal.acceptor.Acceptor;
 import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
 import org.kaazing.nuklei.tcp.internal.connector.Connector;
-import org.kaazing.nuklei.tcp.internal.reader.Reader;
-import org.kaazing.nuklei.tcp.internal.writer.Writer;
+import org.kaazing.nuklei.tcp.internal.router.Router;
+import org.kaazing.nuklei.tcp.internal.watcher.Watcher;
 
 public final class TcpNukleusFactorySpi implements NukleusFactorySpi
 {
@@ -37,33 +35,25 @@ public final class TcpNukleusFactorySpi implements NukleusFactorySpi
     public TcpNukleus create(Configuration config)
     {
         Context context = new Context();
-        context.controlFile(new File(config.directory(), "tcp/control"))
-               .conclude(config);
+        context.conclude(config);
 
         Conductor conductor = new Conductor(context);
-        Acceptor acceptor = new Acceptor(context);
-        Connector connector = new Connector(context);
-        Reader reader = new Reader(context);
-        Writer writer = new Writer(context);
+        Router router = new Router(context);
+        Watcher watcher = new Watcher(context);
+        Acceptor acceptor = new Acceptor();
+        Connector connector = new Connector();
 
-        conductor.setAcceptor(acceptor);
-        conductor.setConnector(connector);
-        conductor.setReader(reader);
-        conductor.setWriter(writer);
-
+        router.setConductor(conductor);
         acceptor.setConductor(conductor);
-        acceptor.setReader(reader);
-        acceptor.setWriter(writer);
 
-        connector.setConductor(conductor);
-        connector.setReader(reader);
-        connector.setWriter(writer);
+        router.setAcceptor(acceptor);
+        router.setConnector(connector);
 
-        reader.setConductor(conductor);
-        reader.setConnector(connector);
+        watcher.setRouter(router);
+        conductor.setRouter(router);
+        acceptor.setRouter(router);
+        connector.setRouter(router);
 
-        writer.setConductor(conductor);
-
-        return new TcpNukleus(conductor, acceptor, connector, reader, writer, context);
+        return new TcpNukleus(conductor, router, watcher, acceptor, connector, context);
     }
 }

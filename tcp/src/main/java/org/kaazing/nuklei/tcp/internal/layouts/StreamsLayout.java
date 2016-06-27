@@ -21,6 +21,7 @@ import static uk.co.real_logic.agrona.IoUtil.unmap;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
+import java.nio.file.Path;
 
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -30,63 +31,89 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 public final class StreamsLayout extends Layout
 {
-    private final RingBuffer buffer;
+    private final RingBuffer streamsBuffer;
+    private final RingBuffer throttleBuffer;
 
     private StreamsLayout(
-        RingBuffer buffer)
+        RingBuffer streamsBuffer,
+        RingBuffer throttleBuffer)
     {
-        this.buffer = buffer;
+        this.streamsBuffer = streamsBuffer;
+        this.throttleBuffer = throttleBuffer;
     }
 
-    public RingBuffer buffer()
+    public RingBuffer streamsBuffer()
     {
-        return buffer;
+        return streamsBuffer;
+    }
+
+    public RingBuffer throttleBuffer()
+    {
+        return throttleBuffer;
     }
 
     @Override
     public void close()
     {
-        unmap(buffer.buffer().byteBuffer());
+        unmap(streamsBuffer.buffer().byteBuffer());
+        unmap(throttleBuffer.buffer().byteBuffer());
     }
 
     public static final class Builder extends Layout.Builder<StreamsLayout>
     {
-        private int streamsCapacity;
-        private File streamsFile;
-        private boolean createFile;
+        private long streamsCapacity;
+        private long throttleCapacity;
+        private Path path;
+        private boolean readonly;
 
-        public Builder streamsCapacity(int streamsCapacity)
+        public Builder streamsCapacity(
+            long streamsCapacity)
         {
             this.streamsCapacity = streamsCapacity;
             return this;
         }
 
-        public Builder streamsFile(File streamsFile)
+        public Builder throttleCapacity(
+            long throttleCapacity)
         {
-            this.streamsFile = streamsFile;
+            this.throttleCapacity = throttleCapacity;
             return this;
         }
 
-        public Builder createFile(boolean createFile)
+        public Builder path(
+            Path path)
         {
-            this.createFile = createFile;
+            this.path = path;
+            return this;
+        }
+
+        public Builder readonly(
+            boolean readonly)
+        {
+            this.readonly = readonly;
             return this;
         }
 
         @Override
         public StreamsLayout build()
         {
-            int streamsFileLength = streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH;
+            final File streams = path.toFile();
+            final long streamsSize = streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH;
+            final long throttleSize = throttleCapacity + RingBufferDescriptor.TRAILER_LENGTH;
 
-            if (createFile)
+            if (!readonly)
             {
-                createEmptyFile(streamsFile, streamsFileLength);
+                createEmptyFile(streams, streamsSize + throttleSize);
             }
 
-            MappedByteBuffer byteBuffer = mapExistingFile(streamsFile, "streams");
-            AtomicBuffer atomicBuffer= new UnsafeBuffer(byteBuffer);
+            final MappedByteBuffer mappedStreams = mapExistingFile(streams, "streams", 0, streamsSize);
+            final MappedByteBuffer mappedThrottle = mapExistingFile(streams, "throttle", streamsSize, throttleSize);
 
-            return new StreamsLayout(new ManyToOneRingBuffer(atomicBuffer));
+            final AtomicBuffer atomicStreams = new UnsafeBuffer(mappedStreams);
+            final AtomicBuffer atomicThrottle = new UnsafeBuffer(mappedThrottle);
+
+            // TODO: use OneToOneRingBuffer instead (now single writer / single reader)
+            return new StreamsLayout(new ManyToOneRingBuffer(atomicStreams), new ManyToOneRingBuffer(atomicThrottle));
         }
     }
 }

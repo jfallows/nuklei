@@ -25,8 +25,6 @@ import java.util.concurrent.CompletableFuture;
 import org.kaazing.nuklei.Controller;
 import org.kaazing.nuklei.tcp.internal.types.control.BindFW;
 import org.kaazing.nuklei.tcp.internal.types.control.BoundFW;
-import org.kaazing.nuklei.tcp.internal.types.control.CaptureFW;
-import org.kaazing.nuklei.tcp.internal.types.control.CapturedFW;
 import org.kaazing.nuklei.tcp.internal.types.control.ErrorFW;
 import org.kaazing.nuklei.tcp.internal.types.control.RouteFW;
 import org.kaazing.nuklei.tcp.internal.types.control.RoutedFW;
@@ -47,13 +45,11 @@ public final class TcpController implements Controller
     private static final int MAX_SEND_LENGTH = 1024; // TODO: Configuration and Context
 
     // TODO: thread-safe flyweights or command queue from public methods
-    private final CaptureFW.Builder captureRW = new CaptureFW.Builder();
     private final RouteFW.Builder routeRW = new RouteFW.Builder();
     private final BindFW.Builder bindRW = new BindFW.Builder();
     private final UnbindFW.Builder unbindRW = new UnbindFW.Builder();
 
     private final ErrorFW errorRO = new ErrorFW();
-    private final CapturedFW capturedRO = new CapturedFW();
     private final RoutedFW routedRO = new RoutedFW();
     private final BoundFW boundRO = new BoundFW();
     private final UnboundFW unboundRO = new UnboundFW();
@@ -101,82 +97,23 @@ public final class TcpController implements Controller
         return "tcp";
     }
 
-    public TcpStreams streams(String handler)
+    public CompletableFuture<Long> bind()
     {
-        return new TcpStreams(context, handler);
-    }
-
-    public CompletableFuture<Void> capture(
-        String source)
-    {
-        final CompletableFuture<Void> promise = new CompletableFuture<Void>();
-
-        long correlationId = conductorCommands.nextCorrelationId();
-
-        CaptureFW captureRO = captureRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                       .correlationId(correlationId)
-                                       .source(source)
-                                       .build();
-
-        if (!conductorCommands.write(captureRO.typeId(), captureRO.buffer(), captureRO.offset(), captureRO.length()))
-        {
-            promise.completeExceptionally(new IllegalStateException("unable to offer command"));
-        }
-        else
-        {
-            promisesByCorrelationId.put(correlationId, promise);
-        }
-
-        return promise;
-    }
-
-    public CompletableFuture<Void> route(String destination)
-    {
-        final CompletableFuture<Void> promise = new CompletableFuture<Void>();
-
-        long correlationId = conductorCommands.nextCorrelationId();
-
-        RouteFW routeRO = routeRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                 .correlationId(correlationId)
-                                 .destination(destination)
-                                 .build();
-
-        if (!conductorCommands.write(routeRO.typeId(), routeRO.buffer(), routeRO.offset(), routeRO.length()))
-        {
-            promise.completeExceptionally(new IllegalStateException("unable to offer command"));
-        }
-        else
-        {
-            promisesByCorrelationId.put(correlationId, promise);
-        }
-
-        return promise;
-    }
-
-    public CompletableFuture<Long> bind(
-        String destination,
-        long destinationRef,
-        InetSocketAddress localAddress)
-    {
-        final CompletableFuture<Long> promise = new CompletableFuture<Long>();
+        final CompletableFuture<Long> promise = new CompletableFuture<>();
 
         long correlationId = conductorCommands.nextCorrelationId();
 
         BindFW bindRO = bindRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                               .correlationId(correlationId)
-                              .destination(destination)
-                              .destinationRef(destinationRef)
-                              .address(a -> ipAddress(localAddress, a::ipv4Address, a::ipv6Address))
-                              .port((short)localAddress.getPort())
                               .build();
 
         if (!conductorCommands.write(bindRO.typeId(), bindRO.buffer(), bindRO.offset(), bindRO.length()))
         {
-            promise.completeExceptionally(new IllegalStateException("unable to offer command"));
+            commandSendFailed(promise);
         }
         else
         {
-            promisesByCorrelationId.put(correlationId, promise);
+            commandSent(correlationId, promise);
         }
 
         return promise;
@@ -196,14 +133,54 @@ public final class TcpController implements Controller
 
         if (!conductorCommands.write(unbindRO.typeId(), unbindRO.buffer(), unbindRO.offset(), unbindRO.length()))
         {
-            promise.completeExceptionally(new IllegalStateException("unable to offer command"));
+            commandSendFailed(promise);
         }
         else
         {
-            promisesByCorrelationId.put(correlationId, promise);
+            commandSent(correlationId, promise);
         }
 
         return promise;
+    }
+
+    public CompletableFuture<Long> route(
+        String source,
+        long sourceRef,
+        String target,
+        long targetRef,
+        InetSocketAddress address)
+    {
+        final CompletableFuture<Long> promise = new CompletableFuture<>();
+
+        long correlationId = conductorCommands.nextCorrelationId();
+
+        RouteFW routeRO = routeRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                 .correlationId(correlationId)
+                                 .source(source)
+                                 .sourceRef(sourceRef)
+                                 .target(target)
+                                 .targetRef(targetRef)
+                                 .address(a -> ipAddress(address, a::ipv4Address, a::ipv6Address))
+                                 .port(address.getPort())
+                                 .build();
+
+        if (!conductorCommands.write(routeRO.typeId(), routeRO.buffer(), routeRO.offset(), routeRO.length()))
+        {
+            commandSendFailed(promise);
+        }
+        else
+        {
+            commandSent(correlationId, promise);
+        }
+
+        return promise;
+    }
+
+    public TcpStreams streams(
+        String source,
+        String target)
+    {
+        return new TcpStreams(context, source, target);
     }
 
     private int handleResponse(
@@ -217,17 +194,14 @@ public final class TcpController implements Controller
         case ErrorFW.TYPE_ID:
             handleErrorResponse(buffer, index, length);
             break;
-        case CapturedFW.TYPE_ID:
-            handleCapturedResponse(buffer, index, length);
-            break;
-        case RoutedFW.TYPE_ID:
-            handleRoutedResponse(buffer, index, length);
-            break;
         case BoundFW.TYPE_ID:
             handleBoundResponse(buffer, index, length);
             break;
         case UnboundFW.TYPE_ID:
             handleUnboundResponse(buffer, index, length);
+            break;
+        case RoutedFW.TYPE_ID:
+            handleRoutedResponse(buffer, index, length);
             break;
         default:
             break;
@@ -247,22 +221,7 @@ public final class TcpController implements Controller
         CompletableFuture<?> promise = promisesByCorrelationId.remove(correlationId);
         if (promise != null)
         {
-            promise.completeExceptionally(new IllegalStateException().fillInStackTrace());
-        }
-    }
-
-    private void handleCapturedResponse(
-        DirectBuffer buffer,
-        int index,
-        int length)
-    {
-        capturedRO.wrap(buffer, index, length);
-        long correlationId = capturedRO.correlationId();
-
-        CompletableFuture<?> promise = promisesByCorrelationId.remove(correlationId);
-        if (promise != null)
-        {
-            promise.complete(null);
+            commandFailed(promise, "command failed");
         }
     }
 
@@ -277,7 +236,7 @@ public final class TcpController implements Controller
         CompletableFuture<?> promise = promisesByCorrelationId.remove(correlationId);
         if (promise != null)
         {
-            promise.complete(null);
+            commandSucceeded(promise);
         }
     }
 
@@ -293,7 +252,7 @@ public final class TcpController implements Controller
         CompletableFuture<Long> promise = (CompletableFuture<Long>)promisesByCorrelationId.remove(correlationId);
         if (promise != null)
         {
-            promise.complete(boundRO.referenceId());
+            commandSucceeded(promise, boundRO.referenceId());
         }
     }
 
@@ -309,7 +268,40 @@ public final class TcpController implements Controller
         CompletableFuture<Void> promise = (CompletableFuture<Void>)promisesByCorrelationId.remove(correlationId);
         if (promise != null)
         {
-            promise.complete(null);
+            commandSucceeded(promise);
         }
+    }
+
+    private void commandSent(
+        final long correlationId,
+        final CompletableFuture<?> promise)
+    {
+        promisesByCorrelationId.put(correlationId, promise);
+    }
+
+    private <T> boolean commandSucceeded(
+        final CompletableFuture<T> promise)
+    {
+        return commandSucceeded(promise, null);
+    }
+
+    private <T> boolean commandSucceeded(
+        final CompletableFuture<T> promise,
+        final T value)
+    {
+        return promise.complete(value);
+    }
+
+    private boolean commandSendFailed(
+        final CompletableFuture<?> promise)
+    {
+        return commandFailed(promise, "unable to offer command");
+    }
+
+    private boolean commandFailed(
+        final CompletableFuture<?> promise,
+        final String message)
+    {
+        return promise.completeExceptionally(new IllegalStateException(message).fillInStackTrace());
     }
 }

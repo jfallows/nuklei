@@ -22,6 +22,7 @@ import static uk.co.real_logic.agrona.IoUtil.unmap;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
+import java.nio.file.Path;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
@@ -93,8 +94,7 @@ public final class ControlLayout extends Layout
     {
         private final ControlLayout layout;
 
-        private boolean readonly;
-        private File controlFile;
+        private Path controlPath;
         private int commandBufferCapacity;
         private int responseBufferCapacity;
         private int counterLabelsBufferCapacity;
@@ -103,20 +103,22 @@ public final class ControlLayout extends Layout
         private AtomicBuffer counterLabelsBuffer;
         private AtomicBuffer counterValuesBuffer;
 
+        private boolean readonly;
+
         public Builder()
         {
             this.layout = new ControlLayout();
         }
 
-        public Builder controlFile(File controlFile)
+        public Builder controlPath(Path controlPath)
         {
-            this.controlFile = controlFile;
+            this.controlPath = controlPath;
             return this;
         }
 
-        public File controlFile()
+        public Path controlPath()
         {
-            return controlFile;
+            return controlPath;
         }
 
         public Builder commandBufferCapacity(int commandBufferCapacity)
@@ -143,14 +145,16 @@ public final class ControlLayout extends Layout
             return this;
         }
 
-        public void counterLabelsBuffer(AtomicBuffer counterLabelsBuffer)
+        public Builder counterLabelsBuffer(AtomicBuffer counterLabelsBuffer)
         {
             this.counterLabelsBuffer = counterLabelsBuffer;
+            return this;
         }
 
-        public void counterValuesBuffer(AtomicBuffer counterValuesBuffer)
+        public Builder counterValuesBuffer(AtomicBuffer counterValuesBuffer)
         {
             this.counterValuesBuffer = counterValuesBuffer;
+            return this;
         }
 
         public Builder readonly(boolean readonly)
@@ -162,6 +166,7 @@ public final class ControlLayout extends Layout
         @Override
         public ControlLayout build()
         {
+            File controlFile = controlPath.toFile();
             int commandBufferLength = commandBufferCapacity + RingBufferDescriptor.TRAILER_LENGTH;
             int responseBufferLength = responseBufferCapacity + BroadcastBufferDescriptor.TRAILER_LENGTH;
             int counterLabelsBufferLength = counterLabelsBufferCapacity;

@@ -19,9 +19,9 @@ import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 
 import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
-import org.kaazing.nuklei.tcp.internal.types.stream.BeginFW;
-import org.kaazing.nuklei.tcp.internal.types.stream.DataFW;
-import org.kaazing.nuklei.tcp.internal.types.stream.EndFW;
+import org.kaazing.nuklei.tcp.internal.types.stream.TcpBeginFW;
+import org.kaazing.nuklei.tcp.internal.types.stream.TcpDataFW;
+import org.kaazing.nuklei.tcp.internal.types.stream.TcpEndFW;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
@@ -33,9 +33,9 @@ public final class TcpStreams
 {
     private static final int MAX_SEND_LENGTH = 1024; // TODO: Configuration and Context
 
-    private final BeginFW.Builder beginRW = new BeginFW.Builder();
-    private final DataFW.Builder dataRW = new DataFW.Builder();
-    private final EndFW.Builder endRW = new EndFW.Builder();
+    private final TcpBeginFW.Builder beginRW = new TcpBeginFW.Builder();
+    private final TcpDataFW.Builder dataRW = new TcpDataFW.Builder();
+    private final TcpEndFW.Builder endRW = new TcpEndFW.Builder();
 
     private final StreamsLayout captureStreams;
     private final StreamsLayout routeStreams;
@@ -45,19 +45,20 @@ public final class TcpStreams
 
     TcpStreams(
         Context context,
-        String handler)
+        String source,
+        String target)
     {
         this.captureStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsBufferCapacity())
-                                                         .streamsFile(context.captureStreamsFile().apply(handler))
-                                                         .createFile(false)
+                                                         .path(context.captureStreamsPath().apply(source))
+                                                         .readonly(true)
                                                          .build();
-        this.captureBuffer = this.captureStreams.buffer();
+        this.captureBuffer = this.captureStreams.streamsBuffer();
 
         this.routeStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsBufferCapacity())
-                                                       .streamsFile(context.routeStreamsFile().apply(handler))
-                                                       .createFile(false)
+                                                       .path(context.routeStreamsPath().apply(target, source))
+                                                       .readonly(true)
                                                        .build();
-        this.routeBuffer = this.routeStreams.buffer();
+        this.routeBuffer = this.routeStreams.streamsBuffer();
 
         this.atomicBuffer = new UnsafeBuffer(allocateDirect(MAX_SEND_LENGTH).order(nativeOrder()));
     }
@@ -70,12 +71,12 @@ public final class TcpStreams
 
     public void begin(
         long streamId,
-        long referenceId)
+        long routableRef)
     {
-        BeginFW beginRO = beginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                 .streamId(streamId)
-                                 .referenceId(referenceId)
-                                 .build();
+        TcpBeginFW beginRO = beginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                    .streamId(streamId)
+                                    .routableRef(routableRef)
+                                    .build();
 
         if (!captureBuffer.write(beginRO.typeId(), beginRO.buffer(), beginRO.offset(), beginRO.length()))
         {
@@ -89,10 +90,10 @@ public final class TcpStreams
         int offset,
         int length)
     {
-        DataFW dataRO = dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                              .streamId(streamId)
-                              .payload(buffer, offset, length)
-                              .build();
+        TcpDataFW dataRO = dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                 .streamId(streamId)
+                                 .payload(o -> o.set(buffer, offset, length))
+                                 .build();
 
         if (!captureBuffer.write(dataRO.typeId(), dataRO.buffer(), dataRO.offset(), dataRO.length()))
         {
@@ -103,9 +104,9 @@ public final class TcpStreams
     public void end(
         long streamId)
     {
-        EndFW endRO = endRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                           .streamId(streamId)
-                           .build();
+        TcpEndFW endRO = endRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                              .streamId(streamId)
+                              .build();
 
         if (!captureBuffer.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.length()))
         {
@@ -113,7 +114,8 @@ public final class TcpStreams
         }
     }
 
-    public int read(MessageHandler handler)
+    public int read(
+        MessageHandler handler)
     {
         return routeBuffer.read(handler);
     }

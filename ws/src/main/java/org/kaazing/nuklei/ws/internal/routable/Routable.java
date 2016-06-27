@@ -161,12 +161,6 @@ public final class Routable extends Nukleus.Composite
                 targetReplyRef, targetReplyId, protocol, handshakeHash));
     }
 
-    @Override
-    public String toString()
-    {
-        return name();
-    }
-
     private Target supplyTarget(
         String targetName)
     {

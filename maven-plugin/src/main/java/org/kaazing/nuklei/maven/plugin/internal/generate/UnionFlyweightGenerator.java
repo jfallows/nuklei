@@ -32,8 +32,6 @@ import static org.kaazing.nuklei.maven.plugin.internal.generate.TypeNames.UNSAFE
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -485,47 +483,45 @@ public final class UnionFlyweightGenerator extends ClassSpecGenerator
 
     private final class ToStringMethodGenerator extends MethodSpecGenerator
     {
-        private final List<String> formats = new LinkedList<>();
-        private final List<String> args = new LinkedList<>();
-
         private ToStringMethodGenerator()
         {
             super(methodBuilder("toString")
                     .addAnnotation(Override.class)
                     .addModifiers(PUBLIC)
-                    .returns(String.class));
+                    .returns(String.class)
+                    .beginControlFlow("switch (kind())"));
         }
 
         public ToStringMethodGenerator addMember(
             String name,
             TypeName type)
         {
-            formats.add(String.format("%s=%%%s", name, type.isPrimitive() ? "d" : "s"));
+            builder.beginControlFlow("case $L:", kind(name));
             if (type instanceof ClassName && "StringFW".equals(((ClassName) type).simpleName()))
             {
-                args.add(String.format("%sRO.asString()", name));
+                builder.addStatement("return String.format(\"$L [$L=%s]\", $LRO.asString())", baseName.toUpperCase(), name, name);
+            }
+            else if (type.isPrimitive())
+            {
+                builder.addStatement("return String.format(\"$L [$L=%d]\", $L())", baseName.toUpperCase(), name, name);
             }
             else
             {
-                args.add(String.format("%s((Visitor<String>)(b, o, l) -> \"TODO\")", name));
+                builder.addStatement("return String.format(\"$L [$L=%s]\", $L())", baseName.toUpperCase(), name, name);
             }
+            builder.endControlFlow();
             return this;
         }
 
         @Override
         public MethodSpec generate()
         {
-            String typeName = constant(baseName);
-            if (formats.isEmpty())
-            {
-                builder.addStatement("return $S", typeName);
-            }
-            else
-            {
-                String format = String.format("%s [%s]", typeName, String.join(", ", formats));
-                builder.addStatement("return String.format($S, $L)", format, String.join(", ", args));
-            }
-            return builder.build();
+            builder.beginControlFlow("default:")
+                .addStatement("return String.format(\"$L [unknown]\")", baseName.toUpperCase())
+                .endControlFlow();
+
+            return builder.endControlFlow()
+                .build();
         }
 
     }

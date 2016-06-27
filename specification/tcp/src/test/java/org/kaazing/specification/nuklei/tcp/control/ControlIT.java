@@ -37,93 +37,69 @@ public class ControlIT
 
     @Test
     @Specification({
-        "capture.source/nukleus",
-        "capture.source/controller"
+        "bind/nukleus",
+        "bind/controller"
     })
-    public void shouldCaptureSource() throws Exception
+    public void shouldBind() throws Exception
     {
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "capture.destination/nukleus",
-        "capture.destination/controller"
+        "unbind/nukleus",
+        "unbind/controller"
     })
-    public void shouldCaptureDestination() throws Exception
-    {
-        k3po.finish();
-    }
-
-    @Test
-    @Specification({
-        "route.source/nukleus",
-        "route.source/controller"
-    })
-    public void shouldRouteSource() throws Exception
+    public void shouldUnbind() throws Exception
     {
         k3po.start();
-        k3po.notifyBarrier("CAPTURED");
+        k3po.notifyBarrier("ROUTABLE");
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "route.destination/nukleus",
-        "route.destination/controller"
+        "prepare/nukleus",
+        "prepare/controller"
     })
-    public void shouldRouteDestination() throws Exception
+    public void shouldPrepare() throws Exception
+    {
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "unprepare/nukleus",
+        "unprepare/controller"
+    })
+    public void shouldUnprepare() throws Exception
     {
         k3po.start();
-        k3po.notifyBarrier("CAPTURED");
+        k3po.notifyBarrier("ROUTABLE");
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "bind.socket.destination/nukleus",
-        "bind.socket.destination/controller"
+        "route/nukleus",
+        "route/controller"
     })
-    public void shouldBindSocketDestination() throws Exception
+    public void shouldRoute() throws Exception
     {
         k3po.start();
-        k3po.notifyBarrier("ROUTED");
+        k3po.notifyBarrier("ROUTABLE");
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "unbind.socket.destination/nukleus",
-        "unbind.socket.destination/controller"
+        "unroute/nukleus",
+        "unroute/controller"
     })
-    public void shouldUnbindSocketDestination() throws Exception
-    {
-        k3po.start();
-        k3po.notifyBarrier("BOUND");
-        k3po.finish();
-    }
-
-    @Test
-    @Specification({
-        "prepare.source.socket/controller",
-        "prepare.source.socket/nukleus"
-    })
-    public void shouldPrepareSourceSocket() throws Exception
+    public void shouldUnroute() throws Exception
     {
         k3po.start();
         k3po.notifyBarrier("ROUTED");
-        k3po.finish();
-    }
-
-    @Test
-    @Specification({
-        "unprepare.source.socket/controller",
-        "unprepare.source.socket/nukleus"
-    })
-    public void shouldUnprepareSourceSocket() throws Exception
-    {
-        k3po.start();
-        k3po.notifyBarrier("PREPARED");
         k3po.finish();
     }
 }

@@ -15,205 +15,78 @@
  */
 package org.kaazing.nuklei.tcp.internal.reader;
 
-import java.io.File;
-import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.TreeMap;
 
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.tcp.internal.Context;
-import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
-import org.kaazing.nuklei.tcp.internal.connector.Connector;
 import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
+import org.kaazing.nuklei.tcp.internal.router.Router;
 
-import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.collections.ArrayUtil;
-import uk.co.real_logic.agrona.nio.TransportPoller;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
+/**
+ * The {@code Readable} nukleus reads network traffic via a {@code Source} nukleus and control flow commands
+ * from multiple {@code Target} nuklei.
+ */
 @Reaktive
-public final class Reader extends TransportPoller implements Nukleus
+public final class Reader extends Nukleus.Composite
 {
-    private final Function<String, File> streamsFile;
-    private final int streamsCapacity;
-    private final Map<String, StreamsLayout> layoutsByHandler;
+    private final Context context;
+    private final String sourceName;
+    private final Source source;
+    private final Map<String, Target> targetsByName;
+    private final AtomicBuffer writeBuffer;
 
-    private Conductor conductor;
-    private Connector connector;
-    private ReaderState[] readerStates;
-
-    public Reader(Context context)
+    public Reader(
+        Context context,
+        Router router,
+        String sourceName)
     {
-        this.readerStates = new ReaderState[0];
-        this.streamsFile = context.captureStreamsFile();
-        this.streamsCapacity = context.streamsBufferCapacity();
-        this.layoutsByHandler = new HashMap<>();
-    }
-
-    public void setConductor(Conductor conductor)
-    {
-        this.conductor = conductor;
-    }
-
-    public void setConnector(Connector connector)
-    {
-        this.connector = connector;
-    }
-
-    @Override
-    public int process()
-    {
-        int weight = 0;
-
-        try
-        {
-            selector.selectNow();
-            weight += selectedKeySet.forEach(this::processWrite);
-
-            for (int i=0; i < readerStates.length; i++)
-            {
-                weight += readerStates[i].process();
-            }
-        }
-        catch (Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
-
-        return weight;
+        this.context = context;
+        this.sourceName = sourceName;
+        this.source = include(new Source(router, context.maxMessageLength()));
+        this.writeBuffer = new UnsafeBuffer(new byte[context.maxMessageLength()]);
+        this.targetsByName = new TreeMap<>();
     }
 
     @Override
     public String name()
     {
-        return "writer";
+        return String.format("reader[%s]", sourceName);
     }
 
-    @Override
-    public void close()
-    {
-        for (int i=0; i < readerStates.length; i++)
-        {
-            try
-            {
-                readerStates[i].close();
-            }
-            catch (final Exception ex)
-            {
-                LangUtil.rethrowUnchecked(ex);
-            }
-        }
-
-        layoutsByHandler.values().forEach((layout) ->
-        {
-            try
-            {
-                layout.close();
-            }
-            catch (final Exception ex)
-            {
-                LangUtil.rethrowUnchecked(ex);
-            }
-        });
-
-        super.close();
-    }
-
-    public void doCapture(
-        long correlationId,
-        String source)
-    {
-        StreamsLayout layout = layoutsByHandler.get(source);
-        if (layout != null)
-        {
-            conductor.onErrorResponse(correlationId);
-        }
-        else
-        {
-            try
-            {
-                StreamsLayout newLayout = new StreamsLayout.Builder().streamsFile(streamsFile.apply(source))
-                                                                     .streamsCapacity(streamsCapacity)
-                                                                     .createFile(true)
-                                                                     .build();
-
-                layoutsByHandler.put(source, newLayout);
-
-                ReaderState newCaptureState = new ReaderState(connector, source, newLayout.buffer());
-
-                readerStates = ArrayUtil.add(readerStates, newCaptureState);
-
-                conductor.onCapturedResponse(correlationId);
-            }
-            catch (Exception ex)
-            {
-                conductor.onErrorResponse(correlationId);
-                LangUtil.rethrowUnchecked(ex);
-            }
-        }
-    }
-
-    public void doUncapture(
-        long correlationId,
-        String handler)
-    {
-        StreamsLayout oldLayout = layoutsByHandler.remove(handler);
-        if (oldLayout == null)
-        {
-            conductor.onErrorResponse(correlationId);
-        }
-        else
-        {
-            try
-            {
-                ReaderState[] readerStates = this.readerStates;
-                for (int i=0; i < readerStates.length; i++)
-                {
-                    if (handler.equals(readerStates[i].source()))
-                    {
-                        ReaderState oldCaptureState = readerStates[i];
-                        oldCaptureState.close();
-
-                        this.readerStates = ArrayUtil.remove(this.readerStates, oldCaptureState);
-                        break;
-                    }
-                }
-
-                oldLayout.close();
-                conductor.onUncapturedResponse(correlationId);
-            }
-            catch (Exception ex)
-            {
-                conductor.onErrorResponse(correlationId);
-                LangUtil.rethrowUnchecked(ex);
-            }
-        }
-    }
-
-    public void doRegister(
-        String handler,
-        long handlerRef,
-        long clientStreamId,
-        long serverStreamId,
+    public void doBegin(
+        String targetName,
+        long targetRef,
+        long targetId,
+        long replyRef,
+        long replyId,
         SocketChannel channel)
     {
-        ReaderState[] readerStates = this.readerStates;
-        for (int i=0; i < readerStates.length; i++)
-        {
-            if (handler.equals(readerStates[i].source()))
-            {
-                ReaderState readerState = readerStates[i];
-                readerState.doRegister(handler, handlerRef, clientStreamId, serverStreamId, channel);
-                break;
-            }
-        }
+        Target target = targetsByName.computeIfAbsent(targetName, this::supplyTarget);
+        source.doBegin(target, targetRef, targetId, replyRef, replyId, channel);
     }
 
-    private int processWrite(SelectionKey selectionKey)
+    public void doRoute(
+        String targetName)
     {
-        // fulfill partial writes (flow control?)
-        return 1;
+        targetsByName.computeIfAbsent(targetName, this::supplyTarget);
+    }
+
+    private Target supplyTarget(
+        String targetName)
+    {
+        StreamsLayout layout = new StreamsLayout.Builder()
+                .path(context.routeStreamsPath().apply(sourceName, targetName))
+                .streamsCapacity(context.streamsBufferCapacity())
+                .throttleCapacity(context.throttleBufferCapacity())
+                .readonly(false)
+                .build();
+
+        return include(new Target(targetName, layout, writeBuffer));
     }
 }

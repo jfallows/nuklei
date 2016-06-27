@@ -17,7 +17,6 @@ scope tcp
 {
     union Address switch (uint8)
     {
-        case 0: string deviceName;
         case 1: octets[4] ipv4Address;
         case 2: octets[16] ipv6Address;
     }
@@ -28,45 +27,8 @@ scope tcp
         {
         }
 
-
-        struct Capture extends common::control::Capture
-        {
-        }
-
-        struct Captured extends common::control::Captured
-        {
-        }
-
-        struct Uncapture extends common::control::Uncapture
-        {
-        }
-
-        struct Uncaptured extends common::control::Uncaptured
-        {
-        }
-
-        struct Route extends common::control::Route
-        {
-        }
-
-        struct Routed extends common::control::Routed
-        {
-        }
-
-        struct Unroute extends common::control::Unroute
-        {
-        }
-
-        struct Unrouted extends common::control::Unrouted
-        {
-        }
-
         struct Bind extends common::control::Bind
         {
-            string destination;
-            int64 destinationRef;
-            tcp::Address address;
-            uint16 port;
         }
 
         struct Bound extends common::control::Bound
@@ -79,17 +41,10 @@ scope tcp
 
         struct Unbound extends common::control::Unbound
         {
-            string destination;
-            int64 destinationRef;
-            tcp::Address address;
-            uint16 port;
         }
 
         struct Prepare extends common::control::Prepare
         {
-            string source;
-            tcp::Address address;
-            uint16 port;
         }
 
         struct Prepared extends common::control::Prepared
@@ -102,7 +57,29 @@ scope tcp
 
         struct Unprepared extends common::control::Unprepared
         {
-            string source;
+        }
+
+
+        struct Route extends common::control::Route
+        {
+            tcp::Address address;
+            uint16 port;
+        }
+
+        struct Routed extends common::control::Routed
+        {
+            tcp::Address address;
+            uint16 port;
+        }
+
+        struct Unroute extends common::control::Unroute
+        {
+            tcp::Address address;
+            uint16 port;
+        }
+
+        struct Unrouted extends common::control::Unrouted
+        {
             tcp::Address address;
             uint16 port;
         }
@@ -110,19 +87,27 @@ scope tcp
 
     scope stream
     {
-        struct Begin extends common::stream::Begin
+        struct TcpBegin extends common::stream::Begin
+        {
+            tcp::Address localAddress;
+            uint16 localPort;
+            tcp::Address remoteAddress;
+            uint16 remotePort;
+        }
+
+        struct TcpData extends common::stream::Data
         {
         }
 
-        struct Data extends common::stream::Data
+        struct TcpEnd extends common::stream::End
         {
         }
 
-        struct End extends common::stream::End
+        struct TcpReset extends common::stream::Reset
         {
         }
 
-        struct Reset extends common::stream::Reset
+        struct TcpWindow extends common::stream::Window
         {
         }
     }

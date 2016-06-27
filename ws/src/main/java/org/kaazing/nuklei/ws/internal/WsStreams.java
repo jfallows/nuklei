@@ -56,7 +56,7 @@ public final class WsStreams
         String target)
     {
         this.captureStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsBufferCapacity())
-                                                         .path(context.captureStreamsFile().apply(source))
+                                                         .path(context.captureStreamsPath().apply(source))
                                                          .readonly(true)
                                                          .build();
         this.captureBuffer = this.captureStreams.streamsBuffer();

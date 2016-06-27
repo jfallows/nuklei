@@ -35,8 +35,8 @@ public class ConnectIT
 
     private final NukleusRule nukleus = new NukleusRule()
         .directory("target/nukleus-itests")
-        .initialize("echo", "destination")
-        .initialize("destination", "echo");
+        .streams("echo", "destination")
+        .streams("destination", "echo");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);

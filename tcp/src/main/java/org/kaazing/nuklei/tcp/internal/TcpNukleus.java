@@ -21,8 +21,8 @@ import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.acceptor.Acceptor;
 import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
 import org.kaazing.nuklei.tcp.internal.connector.Connector;
-import org.kaazing.nuklei.tcp.internal.reader.Reader;
-import org.kaazing.nuklei.tcp.internal.writer.Writer;
+import org.kaazing.nuklei.tcp.internal.router.Router;
+import org.kaazing.nuklei.tcp.internal.watcher.Watcher;
 
 public final class TcpNukleus extends Nukleus.Composite
 {
@@ -32,13 +32,13 @@ public final class TcpNukleus extends Nukleus.Composite
 
     TcpNukleus(
         Conductor conductor,
+        Router router,
+        Watcher watcher,
         Acceptor acceptor,
         Connector connector,
-        Reader reader,
-        Writer writer,
         Closeable cleanup)
     {
-        super(conductor, acceptor, connector, reader, writer);
+        super(conductor, watcher, router, acceptor, connector);
         this.cleaner = cleanup;
     }
 

@@ -15,299 +15,176 @@
  */
 package org.kaazing.nuklei.tcp.internal.writer;
 
-import static java.nio.ByteBuffer.allocateDirect;
-import static java.nio.ByteOrder.nativeOrder;
-import static java.nio.channels.SelectionKey.OP_READ;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.SelectionKey;
+import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
+import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.function.Function;
+import java.util.Map;
 
 import org.kaazing.nuklei.Nukleus;
-import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.tcp.internal.Context;
 import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
+import org.kaazing.nuklei.tcp.internal.connector.Connector;
 import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
-import org.kaazing.nuklei.tcp.internal.types.stream.BeginFW;
-import org.kaazing.nuklei.tcp.internal.types.stream.DataFW;
-import org.kaazing.nuklei.tcp.internal.types.stream.EndFW;
-import org.kaazing.nuklei.tcp.internal.types.stream.ResetFW;
 
 import uk.co.real_logic.agrona.LangUtil;
+import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.agrona.nio.TransportPoller;
 
-@Reaktive
-public final class Writer extends TransportPoller implements Nukleus
+/**
+ * The {@code Writable} nukleus reads streams data from multiple {@code Source} nuklei and monitors completion of
+ * partial socket writes via a {@code Target} nukleus.
+ */
+public final class Writer extends Nukleus.Composite
 {
-    private static final int MAX_RECEIVE_LENGTH = 1024; // TODO: Configuration and Context
+    private final Context context;
+    private final Conductor conductor;
+    private final Connector connector;
+    private final String name;
+    private final String sourceName;
+    private final AtomicBuffer writeBuffer;
+    private final Map<String, Target> targetsByName;
+    private final Long2ObjectHashMap<Route> routesByRef;
+    private final Long2ObjectHashMap<Reply> repliesByRef;
 
-    private final ResetFW.Builder resetRW = new ResetFW.Builder();
-    private final BeginFW.Builder beginRW = new BeginFW.Builder();
-    private final DataFW.Builder dataRW = new DataFW.Builder();
-    private final EndFW.Builder endRW = new EndFW.Builder();
-
-    private final ByteBuffer byteBuffer;
-    private final AtomicBuffer atomicBuffer;
-
-    private Function<String, File> streamsFile;
-
-    private int streamsCapacity;
-
-    private HashMap<String, StreamsLayout> layoutsByHandler;
-
-    private Conductor conductor;
-
-    public Writer(Context context)
+    public Writer(
+        Context context,
+        Conductor conductor,
+        Connector connector,
+        String sourceName)
     {
-        this.byteBuffer = allocateDirect(MAX_RECEIVE_LENGTH).order(nativeOrder());
-        this.atomicBuffer = new UnsafeBuffer(byteBuffer.duplicate());
-        this.streamsFile = context.routeStreamsFile();
-        this.streamsCapacity = context.streamsBufferCapacity();
-        this.layoutsByHandler = new HashMap<>();
-    }
-
-    public void setConductor(Conductor conductor)
-    {
+        this.context = context;
         this.conductor = conductor;
-    }
-
-    @Override
-    public int process()
-    {
-        selectNow();
-        return selectedKeySet.forEach(this::processRead);
+        this.connector = connector;
+        this.sourceName = sourceName;
+        this.name = String.format("writer[%s]", sourceName);
+        this.writeBuffer = new UnsafeBuffer(new byte[context.maxMessageLength()]);
+        this.targetsByName = new HashMap<>();
+        this.routesByRef = new Long2ObjectHashMap<>();
+        this.repliesByRef = new Long2ObjectHashMap<>();
     }
 
     @Override
     public String name()
     {
-        return "reader";
+        return name;
     }
 
-    @Override
-    public void close()
+    public void onReadable(
+        Path sourcePath)
     {
-        selector.keys().forEach(key ->
-        {
-            try
-            {
-                WriterState state = (WriterState) key.attachment();
-                state.channel().shutdownInput();
-            }
-            catch (final Exception ex)
-            {
-                LangUtil.rethrowUnchecked(ex);
-            }
-        });
+        StreamsLayout layout = new StreamsLayout.Builder()
+            .path(sourcePath)
+            .streamsCapacity(context.streamsBufferCapacity())
+            .throttleCapacity(context.throttleBufferCapacity())
+            .readonly(true)
+            .build();
 
-        layoutsByHandler.values().forEach(layout ->
-        {
-            try
-            {
-                layout.close();
-            }
-            catch (final Exception ex)
-            {
-                LangUtil.rethrowUnchecked(ex);
-            }
-        });
-
-        super.close();
+        final String partitionName = sourcePath.getFileName().toString();
+        include(new Source(partitionName, this, routesByRef::get, repliesByRef::get, layout, writeBuffer));
     }
 
     public void doRoute(
         long correlationId,
-        String destination)
+        long sourceRef,
+        String targetName,
+        long targetRef,
+        String replyName,
+        InetSocketAddress address)
     {
-        StreamsLayout layout = layoutsByHandler.get(destination);
-        if (layout != null)
+        try
+        {
+            final Target target = targetsByName.computeIfAbsent(targetName, this::supplyTarget);
+            final Route newRoute = new Route(sourceName, sourceRef, target, targetRef, replyName, address);
+
+            routesByRef.put(sourceRef, newRoute);
+
+            conductor.onRoutedResponse(correlationId, sourceName, sourceRef, targetName, targetRef, replyName, address);
+        }
+        catch (Exception ex)
         {
             conductor.onErrorResponse(correlationId);
-        }
-        else
-        {
-            try
-            {
-                StreamsLayout newLayout = new StreamsLayout.Builder().streamsFile(streamsFile.apply(destination))
-                                                                     .streamsCapacity(streamsCapacity)
-                                                                     .createFile(false)
-                                                                     .build();
-
-                layoutsByHandler.put(destination, newLayout);
-                conductor.onRoutedResponse(correlationId);
-            }
-            catch (Exception ex)
-            {
-                conductor.onErrorResponse(correlationId);
-                LangUtil.rethrowUnchecked(ex);
-            }
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 
     public void doUnroute(
         long correlationId,
-        String destination)
+        long sourceRef,
+        String targetName,
+        long targetRef,
+        String replyName,
+        InetSocketAddress address)
     {
-        StreamsLayout oldLayout = layoutsByHandler.remove(destination);
-        if (oldLayout == null)
+        Route route = routesByRef.get(sourceRef);
+
+        if (route != null &&
+                route.sourceRef() == sourceRef &&
+                route.target().name().equals(targetName) &&
+                route.targetRef() == targetRef &&
+                route.reply().equals(replyName) &&
+                route.address().equals(address))
         {
-            conductor.onErrorResponse(correlationId);
+            routesByRef.remove(sourceRef);
+            conductor.onUnroutedResponse(correlationId, sourceName, sourceRef, targetName, targetRef, replyName, address);
         }
         else
         {
-            try
-            {
-                oldLayout.close();
-                conductor.onUnroutedResponse(correlationId);
-            }
-            catch (Exception ex)
-            {
-                conductor.onErrorResponse(correlationId);
-                LangUtil.rethrowUnchecked(ex);
-            }
+            conductor.onErrorResponse(correlationId);
         }
     }
 
-    public void doRegister(
-        String handler,
-        long handlerRef,
-        long clientStreamId,
-        long serverStreamId,
+    public void doRouteReply(
+        String replyName,
+        long replyRef,
+        long replyId,
         SocketChannel channel)
     {
-        StreamsLayout layout = layoutsByHandler.get(handler);
+        final Target target = targetsByName.computeIfAbsent(replyName, this::supplyTarget);
+        final Reply reply = repliesByRef.computeIfAbsent(replyRef, v -> new Reply());
 
-        // TODO
-        assert layout != null;
-
-        RingBuffer writeBuffer = layout.buffer();
-
-        final long streamId = serverStreamId != 0L ? serverStreamId : clientStreamId;
-        final long referenceId = serverStreamId != 0L ? clientStreamId : handlerRef;
-
-        WriterState state = new WriterState(writeBuffer, streamId, channel);
-
-        BeginFW beginRO = beginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                 .streamId(state.streamId())
-                                 .referenceId(referenceId)
-                                 .build();
-
-        if (!writeBuffer.write(beginRO.typeId(), beginRO.buffer(), beginRO.offset(), beginRO.length()))
-        {
-            throw new IllegalStateException("could not write to ring buffer");
-        }
-
-        try
-        {
-            channel.configureBlocking(false);
-            channel.register(selector, OP_READ, state);
-        }
-        catch (ClosedChannelException ex)
-        {
-            // channel already closed (deterministic stream begin & end)
-            EndFW endRO = endRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                               .streamId(state.streamId())
-                               .build();
-
-            if (!writeBuffer.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.length()))
-            {
-                throw new IllegalStateException("could not write to ring buffer");
-            }
-        }
-        catch (IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
+        reply.register(replyId, target, channel);
     }
 
-    public void doReset(
-        long streamId,
-        String handler,
-        long handlerRef)
+    public void doConnect(
+        Source source,
+        long sourceRef,
+        long sourceId,
+        String targetName,
+        long targetRef,
+        String replyName,
+        long replyRef,
+        long replyId,
+        SocketChannel channel,
+        InetSocketAddress address)
     {
-        StreamsLayout layout = layoutsByHandler.get(handler);
-
-        // TODO
-        assert layout != null;
-
-        RingBuffer writeBuffer = layout.buffer();
-
-        ResetFW resetRO = resetRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                 .streamId(streamId)
-                                 .build();
-
-        if (!writeBuffer.write(resetRO.typeId(), resetRO.buffer(), resetRO.offset(), resetRO.length()))
-        {
-            throw new IllegalStateException("could not write to ring buffer");
-        }
+        final Runnable onfailure = () -> onConnectFailed(source, sourceId);
+        final Runnable onsuccess = () -> onConnectSucceeded(source, sourceId, sourceRef, replyId, replyRef);
+        connector.doConnect(sourceName, sourceRef, sourceId, targetName, targetRef, replyName, replyRef, replyId,
+                channel, address, onsuccess, onfailure);
     }
 
-    private void selectNow()
+    public void onConnectSucceeded(
+        Source source,
+        long sourceId,
+        long sourceRef,
+        long replyId,
+        long replyRef)
     {
-        try
-        {
-            selector.selectNow();
-        }
-        catch (IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
+        source.doBegin(sourceId, sourceRef, replyId, replyRef);
     }
 
-    private int processRead(SelectionKey selectionKey)
+    public void onConnectFailed(
+        Source source,
+        long sourceId)
     {
-        final WriterState state = (WriterState) selectionKey.attachment();
-        final SocketChannel channel = state.channel();
-        final long streamId = state.streamId();
-        final RingBuffer writeBuffer = state.streamBuffer();
+        source.doReset(sourceId);
+    }
 
-        // TODO: limit maximum bytes read
-        DataFW dataRO = dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-              .streamId(streamId)
-              .payload(payloadOffset ->
-              {
-                  try
-                  {
-                      byteBuffer.position(payloadOffset);
-                      return channel.read(byteBuffer);
-                  }
-                  catch (IOException ex)
-                  {
-                      LangUtil.rethrowUnchecked(ex);
-                      return 0;
-                  }
-              },
-              bytesRead ->
-              {
-                  EndFW endRO = endRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                          .streamId(state.streamId())
-                          .build();
-
-                   if (!writeBuffer.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.length()))
-                   {
-                       throw new IllegalStateException("could not write to ring buffer");
-                   }
-
-                   selectionKey.cancel();
-              })
-              .build();
-
-        if (dataRO.payload().capacity() != 0)
-        {
-            if (!writeBuffer.write(dataRO.typeId(), dataRO.buffer(), dataRO.offset(), dataRO.length()))
-            {
-                throw new IllegalStateException("could not write to ring buffer");
-            }
-        }
-
-        return 1;
+    private Target supplyTarget(
+        String targetName)
+    {
+        return include(new Target(targetName));
     }
 }

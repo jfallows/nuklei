@@ -86,9 +86,41 @@ public interface Nukleus extends AutoCloseable
         }
 
         @Override
-        public String toString()
+        public final String toString()
         {
-            return name();
+            StringBuilder builder = new StringBuilder();
+            deepToString(0, builder);
+            return builder.toString();
+        }
+
+        protected final void deepToString(
+            int level,
+            StringBuilder builder)
+        {
+            builder.append(name());
+
+            if (nuklei.length != 0)
+            {
+                final int nextLevel = level + 1;
+                for (int i=0; i < nuklei.length; i++)
+                {
+                    builder.append('\n');
+                    for (int j=0; j < nextLevel; j++)
+                    {
+                        builder.append("  ");
+                    }
+
+                    final Nukleus nukleus = nuklei[i];
+                    if (nukleus instanceof Nukleus.Composite)
+                    {
+                        ((Nukleus.Composite) nukleus).deepToString(nextLevel, builder);
+                    }
+                    else
+                    {
+                        builder.append(nukleus.name());
+                    }
+                }
+            }
         }
 
         protected final <T extends Nukleus> T include(

@@ -15,16 +15,15 @@
  */
 package org.kaazing.nuklei.tcp.internal.util;
 
-import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
 import java.net.UnknownHostException;
 import java.util.function.Consumer;
 
 import org.kaazing.nuklei.tcp.internal.types.AddressFW;
+import org.kaazing.nuklei.tcp.internal.types.OctetsFW;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.LangUtil;
@@ -34,6 +33,7 @@ public final class IpUtil
     private static final int FIELD_SIZE_IPV4_ADDRESS = 4;
     private static final int FIELD_SIZE_IPV6_ADDRESS = 16;
 
+    // TODO: thread safety
     private static final byte[] IPV4_ADDRESS_BYTES = new byte[FIELD_SIZE_IPV4_ADDRESS];
     private static final byte[] IPV6_ADDRESS_BYTES = new byte[FIELD_SIZE_IPV6_ADDRESS];
 
@@ -47,41 +47,30 @@ public final class IpUtil
     public static InetAddress inetAddress(
         AddressFW address)
     {
-        try
+        switch (address.kind())
         {
-            switch (address.kind())
-            {
-            case AddressFW.KIND_DEVICE_NAME:
-                NetworkInterface iface = NetworkInterface.getByName(address.deviceName().asString());
-                return iface.getInetAddresses().nextElement();
-            case AddressFW.KIND_IPV4_ADDRESS:
-                return address.ipv4Address(IpUtil::ipv4Address);
-            case AddressFW.KIND_IPV6_ADDRESS:
-                return address.ipv6Address(IpUtil::ipv6Address);
-            default:
-                throw new IllegalStateException("Unrecognized kind: " + address.kind());
-            }
-        }
-        catch (IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-            return null;
+        case AddressFW.KIND_IPV4_ADDRESS:
+            return address.ipv4Address().get(IpUtil::ipv4Address);
+        case AddressFW.KIND_IPV6_ADDRESS:
+            return address.ipv6Address().get(IpUtil::ipv6Address);
+        default:
+            throw new IllegalStateException("Unrecognized kind: " + address.kind());
         }
     }
 
     public static void ipAddress(
         InetSocketAddress ipAddress,
-        Consumer<byte[]> ipv4Address,
-        Consumer<byte[]> ipv6Address)
+        Consumer<Consumer<OctetsFW.Builder>> ipv4Address,
+        Consumer<Consumer<OctetsFW.Builder>> ipv6Address)
     {
         InetAddress inetAddress = ipAddress.getAddress();
         if (inetAddress instanceof Inet4Address)
         {
-            ipv4Address.accept(inetAddress.getAddress());
+            ipv4Address.accept(o -> o.set(inetAddress.getAddress()));
         }
         else if (inetAddress instanceof Inet6Address)
         {
-            ipv6Address.accept(inetAddress.getAddress());
+            ipv6Address.accept(o -> o.set(inetAddress.getAddress()));
         }
     }
 
@@ -92,6 +81,7 @@ public final class IpUtil
     {
         try
         {
+            assert length == IPV4_ADDRESS_BYTES.length;
             buffer.getBytes(offset, IPV4_ADDRESS_BYTES, 0, IPV4_ADDRESS_BYTES.length);
             return InetAddress.getByAddress(IPV4_ADDRESS_BYTES);
         }
@@ -109,6 +99,7 @@ public final class IpUtil
     {
         try
         {
+            assert length == IPV6_ADDRESS_BYTES.length;
             buffer.getBytes(offset, IPV6_ADDRESS_BYTES, 0, IPV6_ADDRESS_BYTES.length);
             return InetAddress.getByAddress(IPV6_ADDRESS_BYTES);
         }

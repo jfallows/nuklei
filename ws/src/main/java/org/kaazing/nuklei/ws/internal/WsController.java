@@ -94,38 +94,6 @@ public final class WsController implements Controller
         return "ws";
     }
 
-    public CompletableFuture<Long> route(
-        String source,
-        long sourceRef,
-        String target,
-        long targetRef,
-        String protocol)
-    {
-        final CompletableFuture<Long> promise = new CompletableFuture<>();
-
-        long correlationId = conductorCommands.nextCorrelationId();
-
-        RouteFW routeRO = routeRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                 .correlationId(correlationId)
-                                 .source(source)
-                                 .sourceRef(sourceRef)
-                                 .target(target)
-                                 .targetRef(targetRef)
-                                 .protocol(protocol)
-                                 .build();
-
-        if (!conductorCommands.write(routeRO.typeId(), routeRO.buffer(), routeRO.offset(), routeRO.length()))
-        {
-            commandSendFailed(promise);
-        }
-        else
-        {
-            commandSent(correlationId, promise);
-        }
-
-        return promise;
-    }
-
     public CompletableFuture<Long> bind()
     {
         final CompletableFuture<Long> promise = new CompletableFuture<>();
@@ -161,6 +129,38 @@ public final class WsController implements Controller
                                     .build();
 
         if (!conductorCommands.write(unbindRO.typeId(), unbindRO.buffer(), unbindRO.offset(), unbindRO.length()))
+        {
+            commandSendFailed(promise);
+        }
+        else
+        {
+            commandSent(correlationId, promise);
+        }
+
+        return promise;
+    }
+
+    public CompletableFuture<Long> route(
+        String source,
+        long sourceRef,
+        String target,
+        long targetRef,
+        String protocol)
+    {
+        final CompletableFuture<Long> promise = new CompletableFuture<>();
+
+        long correlationId = conductorCommands.nextCorrelationId();
+
+        RouteFW routeRO = routeRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                 .correlationId(correlationId)
+                                 .source(source)
+                                 .sourceRef(sourceRef)
+                                 .target(target)
+                                 .targetRef(targetRef)
+                                 .protocol(protocol)
+                                 .build();
+
+        if (!conductorCommands.write(routeRO.typeId(), routeRO.buffer(), routeRO.offset(), routeRO.length()))
         {
             commandSendFailed(promise);
         }

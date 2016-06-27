@@ -35,10 +35,12 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
+import com.squareup.javapoet.TypeVariableName;
 
 @SuppressWarnings("squid:S1192")
 public final class OctetsFlyweightGenerator extends ClassSpecGenerator
 {
+    private final ClassName visitorRawType;
     private final TypeSpec.Builder classBuilder;
     private final BuilderClassBuilder builderClassBuilder;
 
@@ -47,6 +49,7 @@ public final class OctetsFlyweightGenerator extends ClassSpecGenerator
     {
         super(flyweightType.peerClass("OctetsFW"));
 
+        this.visitorRawType = flyweightType.nestedClass("Visitor");
         this.classBuilder = classBuilder(thisName).superclass(flyweightType).addModifiers(PUBLIC, FINAL)
                 .addAnnotation(AnnotationSpec.builder(Generated.class).addMember("value", "$S", "nuklei").build());
         this.builderClassBuilder = new BuilderClassBuilder(thisName, flyweightType);
@@ -57,6 +60,7 @@ public final class OctetsFlyweightGenerator extends ClassSpecGenerator
     {
         return classBuilder.addField(fieldOffsetLengthConstant())
                             .addField(fieldSizeLengthConstant())
+                            .addMethod(getMethod())
                             .addMethod(limitMethod())
                             .addMethod(wrapMethod())
                             .addMethod(toStringMethod())
@@ -77,6 +81,21 @@ public final class OctetsFlyweightGenerator extends ClassSpecGenerator
     {
         return FieldSpec.builder(int.class, "FIELD_SIZE_LENGTH", PRIVATE, STATIC, FINAL)
                 .initializer("$T.SIZE_OF_BYTE", BIT_UTIL_TYPE)
+                .build();
+    }
+
+    private MethodSpec getMethod()
+    {
+        TypeVariableName typeVarT = TypeVariableName.get("T");
+        TypeName visitorType = ParameterizedTypeName.get(visitorRawType, typeVarT);
+
+        return methodBuilder("get")
+                .addModifiers(PUBLIC)
+                .addTypeVariable(typeVarT)
+                .addParameter(visitorType, "visitor")
+                .returns(typeVarT)
+                .addStatement("int length = buffer().getByte(offset() + FIELD_OFFSET_LENGTH) & 0xFF")
+                .addStatement("return visitor.visit(buffer(), offset() + FIELD_SIZE_LENGTH, length)")
                 .build();
     }
 
@@ -152,6 +171,7 @@ public final class OctetsFlyweightGenerator extends ClassSpecGenerator
                     .addMethod(wrapMethod())
                     .addMethod(setMethod())
                     .addMethod(setMethodViaBuffer())
+                    .addMethod(setMethodViaByteArray())
                     .addMethod(setMethodViaMutator())
                     .build();
         }
@@ -198,6 +218,18 @@ public final class OctetsFlyweightGenerator extends ClassSpecGenerator
                     .addParameter(int.class, "length")
                     .addStatement("buffer().putByte(offset(), (byte) length)")
                     .addStatement("buffer().putBytes(offset() + FIELD_SIZE_LENGTH, value, offset, length)")
+                    .addStatement("return this")
+                    .build();
+        }
+
+        private MethodSpec setMethodViaByteArray()
+        {
+            return methodBuilder("set")
+                    .addModifiers(PUBLIC)
+                    .returns(octetsType.nestedClass("Builder"))
+                    .addParameter(byte[].class, "value")
+                    .addStatement("buffer().putByte(offset(), (byte) value.length)")
+                    .addStatement("buffer().putBytes(offset() + FIELD_SIZE_LENGTH, value)")
                     .addStatement("return this")
                     .build();
         }

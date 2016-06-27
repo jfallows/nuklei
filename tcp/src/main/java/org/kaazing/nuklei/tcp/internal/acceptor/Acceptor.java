@@ -22,50 +22,43 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
-import org.kaazing.nuklei.tcp.internal.Context;
 import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
-import org.kaazing.nuklei.tcp.internal.reader.Reader;
-import org.kaazing.nuklei.tcp.internal.writer.Writer;
+import org.kaazing.nuklei.tcp.internal.router.Router;
 
 import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.nio.TransportPoller;
 
+/**
+ * The {@code Acceptor} nukleus accepts new socket connections and informs the {@code Router} nukleus.
+ */
 @Reaktive
 public final class Acceptor extends TransportPoller implements Nukleus
 {
-    private final Long2ObjectHashMap<AcceptorState> stateByRef;
-    private final AtomicCounter streamsBound;
-    private final AtomicCounter streamsAccepted;
+    private final Map<InetSocketAddress, Route> routesByAddress;
 
     private Conductor conductor;
-    private Reader reader;
-    private Writer writer;
+    private Router router;
 
-    public Acceptor(Context context)
+    public Acceptor()
     {
-        this.stateByRef = new Long2ObjectHashMap<>();
-        this.streamsBound = context.counters().streamsBound();
-        this.streamsAccepted = context.counters().streamsAccepted();
+        this.routesByAddress = new HashMap<>();
     }
 
-    public void setConductor(Conductor conductor)
+    public void setConductor(
+        Conductor conductor)
     {
         this.conductor = conductor;
     }
 
-    public void setReader(Reader reader)
+    public void setRouter(
+        Router router)
     {
-        this.reader = reader;
-    }
-
-    public void setWriter(Writer writer)
-    {
-        this.writer = writer;
+        this.router = router;
     }
 
     @Override
@@ -84,81 +77,61 @@ public final class Acceptor extends TransportPoller implements Nukleus
     @Override
     public void close()
     {
-        stateByRef.values().forEach((state) ->
-        {
-            try
-            {
-                state.channel().close();
-                selectNowWithoutProcessing();
-            }
-            catch (final Exception ex)
-            {
-                LangUtil.rethrowUnchecked(ex);
-            }
-        });
-
+        routesByAddress.values().forEach(this::unroute);
         super.close();
     }
 
-    public void doBind(
+    public void doRoute(
         long correlationId,
-        String destination,
-        long destinationRef,
-        InetSocketAddress localAddress)
+        String sourceName,
+        long sourceRef,
+        String targetName,
+        long targetRef,
+        String replyName,
+        InetSocketAddress address)
     {
-
         try
         {
-            final long newReferenceId = streamsBound.increment();
-
             final ServerSocketChannel serverChannel = ServerSocketChannel.open();
-            serverChannel.bind(localAddress);
+            serverChannel.bind(address);
             serverChannel.configureBlocking(false);
 
-            AcceptorState newState = new AcceptorState(destination, destinationRef, localAddress);
+            Route newRoute = new Route(sourceName, sourceRef, targetName, targetRef, replyName, address);
+            serverChannel.register(selector, OP_ACCEPT, newRoute);
+            newRoute.attach(serverChannel);
 
-            serverChannel.register(selector, OP_ACCEPT, newState);
-            newState.attach(serverChannel);
+            routesByAddress.put(address, newRoute);
 
-            stateByRef.put(newReferenceId, newState);
-
-            conductor.onBoundResponse(correlationId, newReferenceId);
+            conductor.onRoutedResponse(correlationId, sourceName, sourceRef, targetName, targetRef, replyName, address);
         }
-        catch (IOException e)
+        catch (IOException ex)
         {
+            LangUtil.rethrowUnchecked(ex);
             conductor.onErrorResponse(correlationId);
-            throw new RuntimeException(e);
         }
     }
 
-    public void doUnbind(
+    public void doUnroute(
         long correlationId,
-        long referenceId)
+        String sourceName,
+        long sourceRef,
+        String targetName,
+        long targetRef,
+        String replyName,
+        InetSocketAddress address)
     {
-        final AcceptorState state = stateByRef.remove(referenceId);
+        final Route route = routesByAddress.get(address);
 
-        if (state == null)
+        Route candidate = new Route(sourceName, sourceRef, targetName, targetRef, replyName, address);
+        if (route != null && route.equals(candidate))
         {
-            conductor.onErrorResponse(correlationId);
+            routesByAddress.remove(address);
+            unroute(route);
+            conductor.onUnroutedResponse(correlationId, sourceName, sourceRef, targetName, targetRef, replyName, address);
         }
         else
         {
-            try
-            {
-                ServerSocketChannel serverChannel = state.channel();
-                serverChannel.close();
-                selector.selectNow();
-
-                String destination = state.destination();
-                long destinationRef = state.destinationRef();
-                InetSocketAddress localAddress = state.localAddress();
-
-                conductor.onUnboundResponse(correlationId, destination, destinationRef, localAddress);
-            }
-            catch (IOException e)
-            {
-                conductor.onErrorResponse(correlationId);
-            }
+            conductor.onErrorResponse(correlationId);
         }
     }
 
@@ -174,22 +147,42 @@ public final class Acceptor extends TransportPoller implements Nukleus
         }
     }
 
-    private int processAccept(SelectionKey selectionKey)
+    private void unroute(
+        Route route)
     {
         try
         {
-            AcceptorState state = (AcceptorState) selectionKey.attachment();
-            String destination = state.destination();
-            long destinationRef = state.destinationRef();
-            ServerSocketChannel serverChannel = state.channel();
+            route.channel().close();
+            selectNowWithoutProcessing();
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+    }
 
-            // odd, positive, non-zero
-            streamsAccepted.increment();
-            final long newInitialStreamId = (streamsAccepted.get() << 1L) | 0x0000000000000001L;
+    private int processAccept(
+        SelectionKey selectionKey)
+    {
+        try
+        {
+            final Route route = (Route) selectionKey.attachment();
+            final String sourceName = route.source();
+            final long sourceRef = route.sourceRef();
+            final String targetName = route.target();
+            final long targetRef = route.targetRef();
+            final String replyName = route.reply();
+            final ServerSocketChannel serverChannel = route.channel();
+
             final SocketChannel channel = serverChannel.accept();
+            channel.configureBlocking(false);
 
-            writer.doRegister(destination, destinationRef, newInitialStreamId, 0L, channel);
-            reader.doRegister(destination, destinationRef, newInitialStreamId, 0L, channel);
+            final long targetId = System.identityHashCode(channel);
+
+            final long replyRef = -sourceRef;
+            final long replyId = System.identityHashCode(channel);
+
+            router.onAccepted(sourceName, targetName, targetRef, targetId, replyName, replyRef, replyId, channel);
         }
         catch (Exception ex)
         {

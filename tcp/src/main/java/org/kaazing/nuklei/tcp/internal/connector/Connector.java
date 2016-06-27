@@ -15,8 +15,6 @@
  */
 package org.kaazing.nuklei.tcp.internal.connector;
 
-import static java.nio.channels.SelectionKey.OP_CONNECT;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
@@ -24,48 +22,23 @@ import java.nio.channels.SocketChannel;
 
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
-import org.kaazing.nuklei.tcp.internal.Context;
-import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
-import org.kaazing.nuklei.tcp.internal.reader.Reader;
-import org.kaazing.nuklei.tcp.internal.writer.Writer;
+import org.kaazing.nuklei.tcp.internal.router.Router;
 
 import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.nio.TransportPoller;
 
+/**
+ * The {@code Connector} nukleus accepts new socket connections and informs the {@code Router} nukleus.
+ */
 @Reaktive
 public final class Connector extends TransportPoller implements Nukleus
 {
-    private final Long2ObjectHashMap<ConnectorState> stateByRef;
+    private Router router;
 
-    private final AtomicCounter streamsPrepared;
-    private final AtomicCounter streamsConnected;
-
-    private Conductor conductor;
-    private Reader reader;
-    private Writer writer;
-
-    public Connector(Context context)
+    public void setRouter(
+        Router router)
     {
-        this.stateByRef = new Long2ObjectHashMap<>();
-        this.streamsPrepared = context.counters().streamsPrepared();
-        this.streamsConnected = context.counters().streamsConnected();
-    }
-
-    public void setConductor(Conductor conductor)
-    {
-        this.conductor = conductor;
-    }
-
-    public void setReader(Reader reader)
-    {
-        this.reader = reader;
-    }
-
-    public void setWriter(Writer writer)
-    {
-        this.writer = writer;
+        this.router = router;
     }
 
     @Override
@@ -81,94 +54,42 @@ public final class Connector extends TransportPoller implements Nukleus
         return "connector";
     }
 
-    public void doPrepare(
-        long correlationId,
-        String source,
-        InetSocketAddress remoteAddress)
+    public void doConnect(
+        String sourceName,
+        long sourceRef,
+        long sourceId,
+        String targetName,
+        long targetRef,
+        String replyName,
+        long replyRef,
+        long replyId,
+        SocketChannel channel,
+        InetSocketAddress address,
+        Runnable onsuccess,
+        Runnable onfailure)
     {
         try
         {
-            final long sourceRef = streamsPrepared.increment();
+            final long targetId = System.identityHashCode(channel);
 
-            final ConnectorState newState = new ConnectorState(source, sourceRef, remoteAddress);
+            final Request request = new Request(sourceName, sourceRef, sourceId,
+                    targetName, targetRef, targetId,
+                    replyName, replyRef, replyId,
+                    channel, onsuccess, onfailure);
 
-            stateByRef.put(newState.sourceRef(), newState);
-
-            conductor.onPreparedResponse(correlationId, newState.sourceRef());
+            if (channel.connect(address))
+            {
+                processConnectFinished(request);
+            }
+            else
+            {
+                channel.register(selector, SelectionKey.OP_CONNECT, request);
+            }
         }
-        catch (Exception ex)
+        catch (IOException ex)
         {
-            conductor.onErrorResponse(correlationId);
+            onfailure.run();
             LangUtil.rethrowUnchecked(ex);
-        }
-    }
-
-    public void doUnprepare(
-        long correlationId,
-        long referenceId)
-    {
-        final ConnectorState state = stateByRef.remove(referenceId);
-
-        if (state == null)
-        {
-            conductor.onErrorResponse(correlationId);
-        }
-        else
-        {
-            try
-            {
-                String source = state.source();
-                InetSocketAddress remoteAddress = state.remoteAddress();
-
-                conductor.onUnpreparedResponse(correlationId, source, remoteAddress);
-            }
-            catch (Exception ex)
-            {
-                conductor.onErrorResponse(correlationId);
-                LangUtil.rethrowUnchecked(ex);
-            }
-        }
-    }
-
-    public void doConnect(
-        String source,
-        long sourceRef,
-        long streamId)
-    {
-        // TODO: reference uniqueness, scope by handler too
-        final ConnectorState state = stateByRef.get(sourceRef);
-
-        if (state == null)
-        {
-            writer.doReset(streamId, source, sourceRef);
-        }
-        else
-        {
-            try
-            {
-                InetSocketAddress remoteAddress = state.remoteAddress();
-
-                SocketChannel channel = SocketChannel.open();
-                channel.configureBlocking(false);
-                if (channel.connect(remoteAddress))
-                {
-                    // even, positive, non-zero
-                    final long newServerStreamId = streamsConnected.increment() << 1L;
-
-                    reader.doRegister(source, sourceRef, streamId, newServerStreamId, channel);
-                    writer.doRegister(source, sourceRef, streamId, newServerStreamId, channel);
-                }
-                else
-                {
-                    ConnectRequestState attachment = new ConnectRequestState(state, streamId, channel);
-                    channel.register(selector, OP_CONNECT, attachment);
-                }
-            }
-            catch (Exception ex)
-            {
-                writer.doReset(streamId, source, sourceRef);
-                LangUtil.rethrowUnchecked(ex);
-            }
         }
     }
 
@@ -184,35 +105,45 @@ public final class Connector extends TransportPoller implements Nukleus
         }
     }
 
-    private int processConnect(SelectionKey selectionKey)
+    private int processConnect(
+        SelectionKey selectionKey)
     {
-        ConnectRequestState attachment = (ConnectRequestState) selectionKey.attachment();
-        ConnectorState state = attachment.owner();
-        long streamId = attachment.streamId();
-        SocketChannel channel = attachment.channel();
-
-        String handler = state.source();
-        long handlerRef = state.sourceRef();
+        final Request request = (Request) selectionKey.attachment();
 
         try
         {
+            final SocketChannel channel = request.channel();
+
             channel.finishConnect();
 
-            // even, positive, non-zero
-            streamsConnected.increment();
-            final long newServerStreamId = streamsConnected.get() << 1L;
-
-            reader.doRegister(handler, handlerRef, streamId, newServerStreamId, channel);
-            writer.doRegister(handler, handlerRef, streamId, newServerStreamId, channel);
-
-            selectionKey.cancel();
+            processConnectFinished(request);
         }
         catch (Exception ex)
         {
-            writer.doReset(streamId, handler, handlerRef);
+            request.fail();
             LangUtil.rethrowUnchecked(ex);
         }
 
         return 1;
+    }
+
+    private void processConnectFinished(
+        Request request)
+    {
+        final String sourceName = request.source();
+        final long sourceRef = request.sourceRef();
+        final long sourceId = request.sourceId();
+
+        final String targetName = request.target();
+
+        final String replyName = request.reply();
+        final long replyRef = request.replyRef();
+        final long replyId = request.replyId();
+
+        final SocketChannel channel = request.channel();
+
+        request.succeed();
+
+        router.onConnected(targetName, sourceName, sourceRef, sourceId, replyName, replyRef, replyId, channel);
     }
 }

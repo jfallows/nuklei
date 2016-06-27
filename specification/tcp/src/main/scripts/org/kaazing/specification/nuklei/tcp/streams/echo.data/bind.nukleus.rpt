@@ -1,0 +1,110 @@
+#
+# Copyright 2007-2016, Kaazing Corporation. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+property newTargetRef ${nuklei:newInitialRef()} # external scope
+
+property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)}
+
+property targetInitial ${nuklei.streams("target", "tcp#source")}
+property targetReply ${nuklei.streams("tcp", "target")}
+
+property newTargetId ${nuklei:newStreamId()}
+property newTargetReplyId ${nuklei:newStreamId()}
+property newTargetReplyRef ${nuklei:newReplyRef()}
+
+connect await ROUTED
+        agrona://stream/bidirectional
+        option reader ${agrona:manyToOneReader(targetInitial.throttle)}
+        option writer ${agrona:manyToOneWriter(targetInitial.buffer)}
+connected
+
+write [0x00 0x00 0x00 0x01]
+write ${newTargetId}
+write ${newTargetRef}
+write ${newTargetReplyId}
+write ${newTargetReplyRef}
+write [0x01] [0x04] [0x7f 0x00 0x00 0x01]
+write [0x1f 0x90]
+write [0x01] [0x04] [0x7f 0x00 0x00 0x01]
+write [0x9f 0x90]
+write flush
+
+read [0x40 0x00 0x00 0x02]
+read ${newTargetId}
+read [0..4]
+
+write [0x00 0x00 0x00 0x02]
+write ${newTargetId}
+write [0x0d] "client data 1"
+write flush
+
+write [0x00 0x00 0x00 0x02]
+write ${newTargetId}
+write [0x0d] "client data 2"
+write flush
+
+read [0x40 0x00 0x00 0x02]
+read ${newTargetId}
+read [0..4]
+
+read [0x40 0x00 0x00 0x02]
+read ${newTargetId}
+read [0..4]
+
+close
+closed
+
+connect await ROUTED
+        agrona://stream/bidirectional
+        option reader ${agrona:manyToOneReader(targetReply.buffer)}
+        option writer ${agrona:manyToOneWriter(targetReply.throttle)}
+connected
+
+read [0x00 0x00 0x00 0x01]
+read ([0..8]:targetReplyId)
+read ([0..8]:targetReplyRef)
+read ${newTargetId}
+read ${newTargetRef}
+read [0x01] [0x04] [0x7f 0x00 0x00 0x01]
+read [0x9f 0x90]
+read [0x01] [0x04] [0x7f 0x00 0x00 0x01]
+read [0x1f 0x90]
+
+write [0x40 0x00 0x00 0x02]
+write ${targetReplyId}
+write [0x00 0x02 0x00 0x00]
+write flush
+
+read [0x00 0x00 0x00 0x02]
+read ${targetReplyId}
+read [0x0d] "server data 1"
+
+write [0x40 0x00 0x00 0x02]
+write ${targetReplyId}
+write [0x00 0x00 0x00 0x0d]
+write flush
+
+read [0x00 0x00 0x00 0x02]
+read ${targetReplyId}
+read [0x0d] "server data 2"
+
+write [0x40 0x00 0x00 0x02]
+write ${targetReplyId}
+write [0x00 0x00 0x00 0x0d]
+write flush
+
+close
+closed

@@ -23,14 +23,9 @@ import java.net.InetSocketAddress;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.tcp.internal.Context;
-import org.kaazing.nuklei.tcp.internal.acceptor.Acceptor;
-import org.kaazing.nuklei.tcp.internal.connector.Connector;
-import org.kaazing.nuklei.tcp.internal.reader.Reader;
-import org.kaazing.nuklei.tcp.internal.types.AddressFW;
+import org.kaazing.nuklei.tcp.internal.router.Router;
 import org.kaazing.nuklei.tcp.internal.types.control.BindFW;
 import org.kaazing.nuklei.tcp.internal.types.control.BoundFW;
-import org.kaazing.nuklei.tcp.internal.types.control.CaptureFW;
-import org.kaazing.nuklei.tcp.internal.types.control.CapturedFW;
 import org.kaazing.nuklei.tcp.internal.types.control.ErrorFW;
 import org.kaazing.nuklei.tcp.internal.types.control.PrepareFW;
 import org.kaazing.nuklei.tcp.internal.types.control.PreparedFW;
@@ -38,13 +33,10 @@ import org.kaazing.nuklei.tcp.internal.types.control.RouteFW;
 import org.kaazing.nuklei.tcp.internal.types.control.RoutedFW;
 import org.kaazing.nuklei.tcp.internal.types.control.UnbindFW;
 import org.kaazing.nuklei.tcp.internal.types.control.UnboundFW;
-import org.kaazing.nuklei.tcp.internal.types.control.UncaptureFW;
-import org.kaazing.nuklei.tcp.internal.types.control.UncapturedFW;
 import org.kaazing.nuklei.tcp.internal.types.control.UnprepareFW;
 import org.kaazing.nuklei.tcp.internal.types.control.UnpreparedFW;
 import org.kaazing.nuklei.tcp.internal.types.control.UnrouteFW;
 import org.kaazing.nuklei.tcp.internal.types.control.UnroutedFW;
-import org.kaazing.nuklei.tcp.internal.writer.Writer;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
@@ -58,34 +50,27 @@ public final class Conductor implements Nukleus
 {
     private static final int SEND_BUFFER_CAPACITY = 1024; // TODO: Configuration and Context
 
-    private final CaptureFW captureRO = new CaptureFW();
-    private final UncaptureFW uncaptureRO = new UncaptureFW();
-    private final RouteFW routeRO = new RouteFW();
-    private final UnrouteFW unrouteRO = new UnrouteFW();
     private final BindFW bindRO = new BindFW();
     private final UnbindFW unbindRO = new UnbindFW();
     private final PrepareFW prepareRO = new PrepareFW();
     private final UnprepareFW unprepareRO = new UnprepareFW();
+    private final RouteFW routeRO = new RouteFW();
+    private final UnrouteFW unrouteRO = new UnrouteFW();
 
     private final ErrorFW.Builder errorRW = new ErrorFW.Builder();
-    private final CapturedFW.Builder capturedRW = new CapturedFW.Builder();
-    private final UncapturedFW.Builder uncapturedRW = new UncapturedFW.Builder();
-    private final RoutedFW.Builder routedRW = new RoutedFW.Builder();
-    private final UnroutedFW.Builder unroutedRW = new UnroutedFW.Builder();
     private final BoundFW.Builder boundRW = new BoundFW.Builder();
     private final UnboundFW.Builder unboundRW = new UnboundFW.Builder();
     private final PreparedFW.Builder preparedRW = new PreparedFW.Builder();
     private final UnpreparedFW.Builder unpreparedRW = new UnpreparedFW.Builder();
+    private final RoutedFW.Builder routedRW = new RoutedFW.Builder();
+    private final UnroutedFW.Builder unroutedRW = new UnroutedFW.Builder();
 
     private final RingBuffer conductorCommands;
 
     private final BroadcastTransmitter conductorResponses;
     private final AtomicBuffer sendBuffer;
 
-    private Acceptor acceptor;
-    private Connector connector;
-    private Reader reader;
-    private Writer writer;
+    private Router router;
 
     public Conductor(Context context)
     {
@@ -95,24 +80,10 @@ public final class Conductor implements Nukleus
         this.sendBuffer = new UnsafeBuffer(new byte[SEND_BUFFER_CAPACITY]);
     }
 
-    public void setAcceptor(Acceptor acceptor)
+    public void setRouter(
+        Router router)
     {
-        this.acceptor = acceptor;
-    }
-
-    public void setConnector(Connector connector)
-    {
-        this.connector = connector;
-    }
-
-    public void setReader(Reader reader)
-    {
-        this.reader = reader;
-    }
-
-    public void setWriter(Writer writer)
-    {
-        this.writer = writer;
+        this.router = router;
     }
 
     @Override
@@ -136,43 +107,6 @@ public final class Conductor implements Nukleus
         conductorResponses.transmit(errorRO.typeId(), errorRO.buffer(), errorRO.offset(), errorRO.length());
     }
 
-    public void onCapturedResponse(long correlationId)
-    {
-        CapturedFW capturedRO = capturedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
-                                          .correlationId(correlationId)
-                                          .build();
-
-        conductorResponses.transmit(capturedRO.typeId(), capturedRO.buffer(), capturedRO.offset(), capturedRO.length());
-    }
-
-    public void onUncapturedResponse(long correlationId)
-    {
-        UncapturedFW uncapturedRO = uncapturedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
-                                                .correlationId(correlationId)
-                                                .build();
-
-        conductorResponses.transmit(
-                uncapturedRO.typeId(), uncapturedRO.buffer(), uncapturedRO.offset(), uncapturedRO.length());
-    }
-
-    public void onRoutedResponse(long correlationId)
-    {
-        RoutedFW routedRO = routedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
-                                    .correlationId(correlationId)
-                                    .build();
-
-        conductorResponses.transmit(routedRO.typeId(), routedRO.buffer(), routedRO.offset(), routedRO.length());
-    }
-
-    public void onUnroutedResponse(long correlationId)
-    {
-        UnroutedFW unroutedRO = unroutedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
-                                          .correlationId(correlationId)
-                                          .build();
-
-        conductorResponses.transmit(unroutedRO.typeId(), unroutedRO.buffer(), unroutedRO.offset(), unroutedRO.length());
-    }
-
     public void onBoundResponse(
         long correlationId,
         long referenceId)
@@ -187,16 +121,11 @@ public final class Conductor implements Nukleus
 
     public void onUnboundResponse(
         long correlationId,
-        String destination,
-        long destinationRef,
-        InetSocketAddress localAddress)
+        long referenceId)
     {
         UnboundFW unboundRO = unboundRW.wrap(sendBuffer, 0, sendBuffer.capacity())
                                        .correlationId(correlationId)
-                                       .destination(destination)
-                                       .destinationRef(destinationRef)
-                                       .address(a -> ipAddress(localAddress, a::ipv4Address, a::ipv6Address))
-                                       .port(localAddress.getPort())
+                                       .referenceId(referenceId)
                                        .build();
 
         conductorResponses.transmit(unboundRO.typeId(), unboundRO.buffer(), unboundRO.offset(), unboundRO.length());
@@ -216,36 +145,67 @@ public final class Conductor implements Nukleus
 
     public void onUnpreparedResponse(
         long correlationId,
-        String source,
-        InetSocketAddress remoteAddress)
+        long referenceId)
     {
         UnpreparedFW unpreparedRO = unpreparedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
                                                 .correlationId(correlationId)
-                                                .source(source)
-                                                .address(a -> ipAddress(remoteAddress, a::ipv4Address, a::ipv6Address))
-                                                .port(remoteAddress.getPort())
+                                                .referenceId(referenceId)
                                                 .build();
 
         conductorResponses.transmit(
             unpreparedRO.typeId(), unpreparedRO.buffer(), unpreparedRO.offset(), unpreparedRO.length());
     }
 
+    public void onRoutedResponse(
+        long correlationId,
+        String source,
+        long sourceRef,
+        String target,
+        long targetRef,
+        String reply,
+        InetSocketAddress address)
+    {
+        RoutedFW routedRO = routedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                                    .correlationId(correlationId)
+                                    .source(source)
+                                    .sourceRef(sourceRef)
+                                    .target(target)
+                                    .targetRef(targetRef)
+                                    .reply(reply)
+                                    .address(a -> ipAddress(address, a::ipv4Address, a::ipv6Address))
+                                    .port(address.getPort())
+                                    .build();
+
+        conductorResponses.transmit(routedRO.typeId(), routedRO.buffer(), routedRO.offset(), routedRO.length());
+    }
+
+    public void onUnroutedResponse(
+        long correlationId,
+        String source,
+        long sourceRef,
+        String target,
+        long targetRef,
+        String reply,
+        InetSocketAddress address)
+    {
+        UnroutedFW unroutedRO = unroutedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                                          .correlationId(correlationId)
+                                          .source(source)
+                                          .sourceRef(sourceRef)
+                                          .target(target)
+                                          .targetRef(targetRef)
+                                          .reply(reply)
+                                          .address(a -> ipAddress(address, a::ipv4Address, a::ipv6Address))
+                                          .port(address.getPort())
+                                          .build();
+
+        conductorResponses.transmit(unroutedRO.typeId(), unroutedRO.buffer(), unroutedRO.offset(), unroutedRO.length());
+    }
+
     private void handleCommand(int msgTypeId, MutableDirectBuffer buffer, int index, int length)
     {
         switch (msgTypeId)
         {
-        case CaptureFW.TYPE_ID:
-            handleCaptureCommand(buffer, index, length);
-            break;
-        case UncaptureFW.TYPE_ID:
-            handleUncaptureCommand(buffer, index, length);
-            break;
-        case RouteFW.TYPE_ID:
-            handleRouteCommand(buffer, index, length);
-            break;
-        case UnrouteFW.TYPE_ID:
-            handleUnrouteCommand(buffer, index, length);
-            break;
         case BindFW.TYPE_ID:
             handleBindCommand(buffer, index, length);
             break;
@@ -258,98 +218,83 @@ public final class Conductor implements Nukleus
         case UnprepareFW.TYPE_ID:
             handleUnprepareCommand(buffer, index, length);
             break;
+        case RouteFW.TYPE_ID:
+            handleRouteCommand(buffer, index, length);
+            break;
+        case UnrouteFW.TYPE_ID:
+            handleUnrouteCommand(buffer, index, length);
+            break;
         default:
             // ignore unrecognized commands (forwards compatible)
             break;
         }
     }
 
-    private void handleCaptureCommand(DirectBuffer buffer, int index, int length)
-    {
-        captureRO.wrap(buffer, index, index + length);
-
-        long correlationId = captureRO.correlationId();
-        String source = captureRO.source().asString();
-
-        reader.doCapture(correlationId, source);
-    }
-
-    private void handleUncaptureCommand(DirectBuffer buffer, int index, int length)
-    {
-        uncaptureRO.wrap(buffer, index, index + length);
-
-        long correlationId = uncaptureRO.correlationId();
-        String source = uncaptureRO.source().asString();
-
-        reader.doUncapture(correlationId, source);
-    }
-
-    private void handleRouteCommand(DirectBuffer buffer, int index, int length)
-    {
-        routeRO.wrap(buffer, index, index + length);
-
-        long correlationId = routeRO.correlationId();
-        String destination = routeRO.destination().asString();
-
-        writer.doRoute(correlationId, destination);
-    }
-
-    private void handleUnrouteCommand(DirectBuffer buffer, int index, int length)
-    {
-        unrouteRO.wrap(buffer, index, index + length);
-
-        long correlationId = unrouteRO.correlationId();
-        String destination = unrouteRO.destination().asString();
-
-        writer.doUnroute(correlationId, destination);
-    }
-
     private void handleBindCommand(DirectBuffer buffer, int index, int length)
     {
         bindRO.wrap(buffer, index, index + length);
 
-        long correlationId = bindRO.correlationId();
-        String destination = bindRO.destination().asString();
-        long destinationRef = bindRO.destinationRef();
-        AddressFW address = bindRO.address();
-        int port = bindRO.port();
+        final long correlationId = bindRO.correlationId();
 
-        InetSocketAddress localAddress = new InetSocketAddress(inetAddress(address), port);
-
-        acceptor.doBind(correlationId, destination, destinationRef, localAddress);
+        router.doBind(correlationId);
     }
 
     private void handleUnbindCommand(DirectBuffer buffer, int index, int length)
     {
         unbindRO.wrap(buffer, index, index + length);
 
-        long correlationId = unbindRO.correlationId();
-        long referenceId = unbindRO.referenceId();
+        final long correlationId = unbindRO.correlationId();
+        final long referenceId = unbindRO.referenceId();
 
-        acceptor.doUnbind(correlationId, referenceId);
+        router.doUnbind(correlationId, referenceId);
     }
 
     private void handlePrepareCommand(DirectBuffer buffer, int index, int length)
     {
         prepareRO.wrap(buffer, index, index + length);
 
-        long correlationId = prepareRO.correlationId();
-        String source = prepareRO.source().asString();
-        AddressFW address = prepareRO.address();
-        int port = prepareRO.port();
+        final long correlationId = prepareRO.correlationId();
 
-        InetSocketAddress remoteAddress = new InetSocketAddress(inetAddress(address), port);
-
-        connector.doPrepare(correlationId, source, remoteAddress);
+        router.doPrepare(correlationId);
     }
 
     private void handleUnprepareCommand(DirectBuffer buffer, int index, int length)
     {
         unprepareRO.wrap(buffer, index, index + length);
 
-        long correlationId = unprepareRO.correlationId();
-        long referenceId = unprepareRO.referenceId();
+        final long correlationId = unprepareRO.correlationId();
+        final long referenceId = unprepareRO.referenceId();
 
-        connector.doUnprepare(correlationId, referenceId);
+        router.doUnprepare(correlationId, referenceId);
+    }
+
+    private void handleRouteCommand(DirectBuffer buffer, int index, int length)
+    {
+        routeRO.wrap(buffer, index, index + length);
+
+        final long correlationId = routeRO.correlationId();
+        final String source = routeRO.source().asString();
+        final long sourceRef = routeRO.sourceRef();
+        final String target = routeRO.target().asString();
+        final long targetRef = routeRO.targetRef();
+        final String reply = routeRO.reply().asString();
+        final InetSocketAddress address = new InetSocketAddress(inetAddress(routeRO.address()), routeRO.port());
+
+        router.doRoute(correlationId, source, sourceRef, target, targetRef, reply, address);
+    }
+
+    private void handleUnrouteCommand(DirectBuffer buffer, int index, int length)
+    {
+        unrouteRO.wrap(buffer, index, index + length);
+
+        final long correlationId = unrouteRO.correlationId();
+        final String source = unrouteRO.source().asString();
+        final long sourceRef = unrouteRO.sourceRef();
+        final String target = unrouteRO.target().asString();
+        final long targetRef = unrouteRO.targetRef();
+        final String reply = unrouteRO.reply().asString();
+        final InetSocketAddress address = new InetSocketAddress(inetAddress(unrouteRO.address()), unrouteRO.port());
+
+        router.doUnroute(correlationId, source, sourceRef, target, targetRef, reply, address);
     }
 }

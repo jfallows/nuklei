@@ -35,8 +35,8 @@ public class AcceptIT
 
     private final NukleusRule nukleus = new NukleusRule()
         .directory("target/nukleus-itests")
-        .initialize("echo", "source")
-        .initialize("source", "echo");
+        .streams("echo", "source")
+        .streams("source", "echo");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);

@@ -40,7 +40,7 @@ public class ConnectIT
         .commandBufferCapacity(1024)
         .responseBufferCapacity(1024)
         .counterValuesBufferCapacity(1024)
-        .initialize("destination", "echo");
+        .streams("destination", "echo");
 
     @Rule
     public final TestRule chain = outerRule(k3po).around(timeout).around(nukleus);

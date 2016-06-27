@@ -83,7 +83,7 @@
                 <groupId>org.kaazing</groupId>
                 <artifactId>nuklei-maven-plugin</artifactId>
                 <configuration>
-                    <scopeNames>tcp</scopeNames>
+                    <scopeNames>common::stream::Frame common::stream::Window common::stream::Reset tcp</scopeNames>
                     <packageName>org.kaazing.nuklei.tcp.internal.types</packageName>
                 </configuration>
             </plugin>

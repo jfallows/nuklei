@@ -49,7 +49,7 @@ public final class Context implements Closeable
     private int maximumStreamsCount;
     private int streamsBufferCapacity;
     private int throttleBufferCapacity;
-    private Function<String, Path> captureStreamsFile;
+    private Function<String, Path> captureStreamsPath;
     private BiFunction<String, String, Path> routeStreamsPath;
     private IdleStrategy idleStrategy;
     private ErrorHandler errorHandler;
@@ -127,19 +127,19 @@ public final class Context implements Closeable
         return streamsPath;
     }
 
-    public Context captureStreamsFile(
+    public Context captureStreamsPath(
         Function<String, Path> captureStreamsFile)
     {
-        this.captureStreamsFile = captureStreamsFile;
+        this.captureStreamsPath = captureStreamsFile;
         return this;
     }
 
-    public Function<String, Path> captureStreamsFile()
+    public Function<String, Path> captureStreamsPath()
     {
-        return captureStreamsFile;
+        return captureStreamsPath;
     }
 
-    public Context routeStreamsFile(
+    public Context routeStreamsPath(
         BiFunction<String, String, Path> routeStreamsPath)
     {
         this.routeStreamsPath = routeStreamsPath;
@@ -266,9 +266,9 @@ public final class Context implements Closeable
             watchService(FileSystems.getDefault().newWatchService());
             streamsPath(configDirectory.resolve("ws/streams"));
 
-            captureStreamsFile(source -> configDirectory.resolve(format("ws/streams/%s", source)));
+            captureStreamsPath(source -> configDirectory.resolve(format("ws/streams/%s", source)));
 
-            routeStreamsFile((source, target) -> configDirectory.resolve(format("%s/streams/ws#%s", target, source)));
+            routeStreamsPath((source, target) -> configDirectory.resolve(format("%s/streams/ws#%s", target, source)));
 
             this.controlRO = controlRW.controlPath(config.directory().resolve("ws/control"))
                                       .commandBufferCapacity(config.commandBufferCapacity())

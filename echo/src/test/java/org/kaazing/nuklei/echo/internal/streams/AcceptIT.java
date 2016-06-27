@@ -40,7 +40,7 @@ public class AcceptIT
         .commandBufferCapacity(1024)
         .responseBufferCapacity(1024)
         .counterValuesBufferCapacity(1024)
-        .initialize("source", "echo");
+        .streams("source", "echo");
 
     @Rule
     public final TestRule chain = outerRule(k3po).around(timeout).around(nukleus);
