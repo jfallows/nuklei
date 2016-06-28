@@ -39,7 +39,6 @@
     <modules>
         <module>specification/common</module>
         <module>specification/tcp</module>
-        <module>specification/echo</module>
         <module>specification/http</module>
         <module>specification/ws</module>
         <module>api</module>
@@ -47,7 +46,6 @@
         <module>tcp</module>
         <module>http</module>
         <module>ws</module>
-        <module>echo</module>
         <module>shell</module>
         <module>reaktor</module>
         <module>bench</module>
