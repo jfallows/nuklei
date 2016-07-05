@@ -44,10 +44,10 @@ public final class WsStreams
     private final WsDataFW.Builder wsDataRW = new WsDataFW.Builder();
     private final WsEndFW.Builder wsEndRW = new WsEndFW.Builder();
 
-    private final StreamsLayout captureStreams;
-    private final StreamsLayout routeStreams;
-    private final RingBuffer captureBuffer;
-    private final RingBuffer routeBuffer;
+    private final StreamsLayout sourceStreams;
+    private final StreamsLayout targetStreams;
+    private final RingBuffer sourceBuffer;
+    private final RingBuffer targetBuffer;
     private final AtomicBuffer atomicBuffer;
 
     WsStreams(
@@ -55,25 +55,25 @@ public final class WsStreams
         String source,
         String target)
     {
-        this.captureStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsBufferCapacity())
-                                                         .path(context.captureStreamsPath().apply(source))
-                                                         .readonly(true)
-                                                         .build();
-        this.captureBuffer = this.captureStreams.streamsBuffer();
+        this.sourceStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsBufferCapacity())
+                                                        .path(context.captureStreamsPath().apply(source))
+                                                        .readonly(true)
+                                                        .build();
+        this.sourceBuffer = this.sourceStreams.streamsBuffer();
 
-        this.routeStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsBufferCapacity())
-                                                       .path(context.routeStreamsPath().apply(target, source))
-                                                       .readonly(false)
-                                                       .build();
-        this.routeBuffer = this.routeStreams.streamsBuffer();
+        this.targetStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsBufferCapacity())
+                                                        .path(context.routeStreamsPath().apply(target, source))
+                                                        .readonly(false)
+                                                        .build();
+        this.targetBuffer = this.targetStreams.streamsBuffer();
 
         this.atomicBuffer = new UnsafeBuffer(allocateDirect(context.maxMessageLength()).order(nativeOrder()));
     }
 
     public void close()
     {
-        captureStreams.close();
-        routeStreams.close();
+        sourceStreams.close();
+        targetStreams.close();
     }
 
     public boolean httpBegin(
@@ -94,7 +94,7 @@ public final class WsStreams
 
         HttpBeginFW httpBegin = httpBeginRW.build();
 
-        return captureBuffer.write(httpBegin.typeId(), httpBegin.buffer(), httpBegin.offset(), httpBegin.length());
+        return sourceBuffer.write(httpBegin.typeId(), httpBegin.buffer(), httpBegin.offset(), httpBegin.length());
     }
 
     public boolean httpData(
@@ -108,7 +108,7 @@ public final class WsStreams
                                         .payload(b-> b.set(buffer, offset, length))
                                         .build();
 
-        return captureBuffer.write(httpData.typeId(), httpData.buffer(), httpData.offset(), httpData.length());
+        return sourceBuffer.write(httpData.typeId(), httpData.buffer(), httpData.offset(), httpData.length());
     }
 
     public boolean httpEnd(
@@ -118,7 +118,7 @@ public final class WsStreams
                                      .streamId(streamId)
                                      .build();
 
-        return captureBuffer.write(httpEnd.typeId(), httpEnd.buffer(), httpEnd.offset(), httpEnd.length());
+        return sourceBuffer.write(httpEnd.typeId(), httpEnd.buffer(), httpEnd.offset(), httpEnd.length());
     }
 
     public boolean wsBegin(
@@ -132,7 +132,7 @@ public final class WsStreams
                                      .protocol(protocol)
                                      .build();
 
-        return captureBuffer.write(wsBegin.typeId(), wsBegin.buffer(), wsBegin.offset(), wsBegin.length());
+        return sourceBuffer.write(wsBegin.typeId(), wsBegin.buffer(), wsBegin.offset(), wsBegin.length());
     }
 
     public boolean wsData(
@@ -146,7 +146,7 @@ public final class WsStreams
                                   .payload(b-> b.set(buffer, offset, length))
                                   .build();
 
-        return captureBuffer.write(wsData.typeId(), wsData.buffer(), wsData.offset(), wsData.length());
+        return sourceBuffer.write(wsData.typeId(), wsData.buffer(), wsData.offset(), wsData.length());
     }
 
     public boolean wsEnd(
@@ -156,11 +156,11 @@ public final class WsStreams
                                .streamId(streamId)
                                .build();
 
-        return captureBuffer.write(wsEnd.typeId(), wsEnd.buffer(), wsEnd.offset(), wsEnd.length());
+        return sourceBuffer.write(wsEnd.typeId(), wsEnd.buffer(), wsEnd.offset(), wsEnd.length());
     }
 
     public int read(MessageHandler handler)
     {
-        return routeBuffer.read(handler);
+        return targetBuffer.read(handler);
     }
 }

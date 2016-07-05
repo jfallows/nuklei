@@ -1,0 +1,47 @@
+#
+# Copyright 2007-2016, Kaazing Corporation. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)}
+
+property targetInitial ${nuklei.streams("target", "http#source")}
+property targetReply ${nuklei.streams("http", "target")}
+
+connect await ROUTED
+        agrona://stream/bidirectional
+        option reader ${agrona:manyToOneReader(targetInitial.buffer)}
+        option writer ${agrona:manyToOneWriter(targetReply.buffer)}
+connected
+
+read [0x00 0x00 0x00 0x01]
+read ([0..8]:targetId)
+read ([0..8]:targetRef)
+read ([0..8]:targetReplyId)
+read ([0..8]:targetReplyRef)
+read [0x00] [0x07] ":scheme" [0x04] "http"
+read [0x00] [0x07] ":method" [0x03] "GET"
+read [0x00] [0x05] ":path" [0x01] "/"
+read [0x00] [0x04] "host" [0x0e] "localhost:8080"
+
+write [0x00 0x00 0x00 0x01]
+write ${targetReplyId}
+write ${targetReplyRef}
+write ${targetId}
+write ${targetRef}
+write [0x00] [0x07] ":status" [0x03] "200"
+write flush
+
+close
+closed

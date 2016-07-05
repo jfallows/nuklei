@@ -14,33 +14,38 @@
 # limitations under the License.
 #
 
-property sourceInitial ${streams:map("target/nukleus-itests/http/streams/source", 1024 * 1024)}
-property sourceReply ${streams:map("target/nukleus-itests/source/streams/http", 1024 * 1024)}
+property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)}
 
-property newReplyStreamId ${streams:newReplyStreamId()}
+property sourceInitial ${nuklei.streams("http", "source")}
+property sourceReply ${nuklei.streams("source", "http#source")}
 
-connect await BOUND
+connect await ROUTED
         agrona://stream/bidirectional
         option reader ${agrona:manyToOneReader(sourceInitial.buffer)}
         option writer ${agrona:manyToOneWriter(sourceReply.buffer)}
 connected
 
 read [0x00 0x00 0x00 0x01]
-read ([0..8]:sourceStreamId)
+read ([0..8]:sourceId)
 read ([0..8]:sourceRef)
+read ([0..8]:sourceReplyId)
+read ([0..8]:sourceReplyRef)
 
 write [0x00 0x00 0x00 0x01]
-write ${newReplyStreamId}
-write ${sourceStreamId}
+write ${sourceReplyId}
+write ${sourceReplyRef}
+write ${sourceId}
+write ${sourceRef}
 write flush
 
 read [0x00 0x00 0x00 0x02]
-read ${sourceStreamId}
+read ${sourceId}
+read [0x12]
 read "GET / HTTP/1.1\r\n"
 read "\r\n"
 
 write [0x00 0x00 0x00 0x02]
-write ${newReplyStreamId}
+write ${sourceReplyId}
+write [0x1a]
 write "HTTP/1.1 400 Bad Request\r\n"
-write "\r\n"
 write flush

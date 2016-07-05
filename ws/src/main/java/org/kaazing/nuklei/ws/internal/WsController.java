@@ -140,14 +140,14 @@ public final class WsController implements Controller
         return promise;
     }
 
-    public CompletableFuture<Long> route(
+    public CompletableFuture<Void> route(
         String source,
         long sourceRef,
         String target,
         long targetRef,
         String protocol)
     {
-        final CompletableFuture<Long> promise = new CompletableFuture<>();
+        final CompletableFuture<Void> promise = new CompletableFuture<>();
 
         long correlationId = conductorCommands.nextCorrelationId();
 
@@ -221,21 +221,6 @@ public final class WsController implements Controller
         }
     }
 
-    private void handleRoutedResponse(
-        DirectBuffer buffer,
-        int index,
-        int length)
-    {
-        routedRO.wrap(buffer, index, length);
-        long correlationId = routedRO.correlationId();
-
-        CompletableFuture<?> promise = promisesByCorrelationId.remove(correlationId);
-        if (promise != null)
-        {
-            commandSucceeded(promise);
-        }
-    }
-
     @SuppressWarnings("unchecked")
     private void handleBoundResponse(
         DirectBuffer buffer,
@@ -262,6 +247,21 @@ public final class WsController implements Controller
         long correlationId = unboundRO.correlationId();
 
         CompletableFuture<Void> promise = (CompletableFuture<Void>)promisesByCorrelationId.remove(correlationId);
+        if (promise != null)
+        {
+            commandSucceeded(promise);
+        }
+    }
+
+    private void handleRoutedResponse(
+        DirectBuffer buffer,
+        int index,
+        int length)
+    {
+        routedRO.wrap(buffer, index, length);
+        long correlationId = routedRO.correlationId();
+
+        CompletableFuture<?> promise = promisesByCorrelationId.remove(correlationId);
         if (promise != null)
         {
             commandSucceeded(promise);

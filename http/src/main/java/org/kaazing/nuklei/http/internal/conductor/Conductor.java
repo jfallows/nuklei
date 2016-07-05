@@ -15,17 +15,15 @@
  */
 package org.kaazing.nuklei.http.internal.conductor;
 
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.http.internal.Context;
-import org.kaazing.nuklei.http.internal.reader.Reader;
+import org.kaazing.nuklei.http.internal.router.Router;
 import org.kaazing.nuklei.http.internal.types.control.BindFW;
 import org.kaazing.nuklei.http.internal.types.control.BoundFW;
-import org.kaazing.nuklei.http.internal.types.control.CaptureFW;
-import org.kaazing.nuklei.http.internal.types.control.CapturedFW;
 import org.kaazing.nuklei.http.internal.types.control.ErrorFW;
 import org.kaazing.nuklei.http.internal.types.control.PrepareFW;
 import org.kaazing.nuklei.http.internal.types.control.PreparedFW;
@@ -33,8 +31,6 @@ import org.kaazing.nuklei.http.internal.types.control.RouteFW;
 import org.kaazing.nuklei.http.internal.types.control.RoutedFW;
 import org.kaazing.nuklei.http.internal.types.control.UnbindFW;
 import org.kaazing.nuklei.http.internal.types.control.UnboundFW;
-import org.kaazing.nuklei.http.internal.types.control.UncaptureFW;
-import org.kaazing.nuklei.http.internal.types.control.UncapturedFW;
 import org.kaazing.nuklei.http.internal.types.control.UnprepareFW;
 import org.kaazing.nuklei.http.internal.types.control.UnpreparedFW;
 import org.kaazing.nuklei.http.internal.types.control.UnrouteFW;
@@ -51,8 +47,6 @@ public final class Conductor implements Nukleus
 {
     private static final int SEND_BUFFER_CAPACITY = 1024; // TODO: Configuration and Context
 
-    private final CaptureFW captureRO = new CaptureFW();
-    private final UncaptureFW uncaptureRO = new UncaptureFW();
     private final RouteFW routeRO = new RouteFW();
     private final UnrouteFW unrouteRO = new UnrouteFW();
     private final BindFW bindRO = new BindFW();
@@ -61,8 +55,6 @@ public final class Conductor implements Nukleus
     private final UnprepareFW unprepareRO = new UnprepareFW();
 
     private final ErrorFW.Builder errorRW = new ErrorFW.Builder();
-    private final CapturedFW.Builder capturedRW = new CapturedFW.Builder();
-    private final UncapturedFW.Builder uncapturedRW = new UncapturedFW.Builder();
     private final RoutedFW.Builder routedRW = new RoutedFW.Builder();
     private final UnroutedFW.Builder unroutedRW = new UnroutedFW.Builder();
     private final BoundFW.Builder boundRW = new BoundFW.Builder();
@@ -74,18 +66,20 @@ public final class Conductor implements Nukleus
     private final BroadcastTransmitter conductorResponses;
     private final AtomicBuffer sendBuffer;
 
-    private Reader reader;
+    private Router router;
 
-    public Conductor(Context context)
+    public Conductor(
+        Context context)
     {
         this.conductorCommands = context.conductorCommands();
         this.conductorResponses = context.conductorResponses();
         this.sendBuffer = new UnsafeBuffer(new byte[SEND_BUFFER_CAPACITY]);
     }
 
-    public void setReader(Reader reader)
+    public void setRouter(
+        Router router)
     {
-        this.reader = reader;
+        this.router = router;
     }
 
     @Override
@@ -109,43 +103,6 @@ public final class Conductor implements Nukleus
         conductorResponses.transmit(errorRO.typeId(), errorRO.buffer(), errorRO.offset(), errorRO.length());
     }
 
-    public void onCapturedResponse(long correlationId)
-    {
-        CapturedFW capturedRO = capturedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
-                                          .correlationId(correlationId)
-                                          .build();
-
-        conductorResponses.transmit(capturedRO.typeId(), capturedRO.buffer(), capturedRO.offset(), capturedRO.length());
-    }
-
-    public void onUncapturedResponse(long correlationId)
-    {
-        UncapturedFW uncapturedRO = uncapturedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
-                                                .correlationId(correlationId)
-                                                .build();
-
-        conductorResponses.transmit(
-                uncapturedRO.typeId(), uncapturedRO.buffer(), uncapturedRO.offset(), uncapturedRO.length());
-    }
-
-    public void onRoutedResponse(long correlationId)
-    {
-        RoutedFW routedRO = routedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
-                                    .correlationId(correlationId)
-                                    .build();
-
-        conductorResponses.transmit(routedRO.typeId(), routedRO.buffer(), routedRO.offset(), routedRO.length());
-    }
-
-    public void onUnroutedResponse(long correlationId)
-    {
-        UnroutedFW unroutedRO = unroutedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
-                                          .correlationId(correlationId)
-                                          .build();
-
-        conductorResponses.transmit(unroutedRO.typeId(), unroutedRO.buffer(), unroutedRO.offset(), unroutedRO.length());
-    }
-
     public void onBoundResponse(
         long correlationId,
         long referenceId)
@@ -160,24 +117,12 @@ public final class Conductor implements Nukleus
 
     public void onUnboundResponse(
         long correlationId,
-        String destination,
-        long destinationRef,
-        String source,
-        Map<String, String> headers)
+        long referenceId)
     {
-        UnboundFW unboundRO =
-            unboundRW.wrap(sendBuffer, 0, sendBuffer.capacity())
-                     .correlationId(correlationId)
-                     .destination(destination)
-                     .destinationRef(destinationRef)
-                     .source(source)
-                     .iterate(headers.entrySet(), entry ->
-                     {
-                         String name = entry.getKey();
-                         String value = entry.getValue();
-                         unboundRW.headers(item -> item.representation((byte)0).name(name).value(value));
-                     })
-                     .build();
+        UnboundFW unboundRO = unboundRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                .correlationId(correlationId)
+                .referenceId(referenceId)
+                .build();
 
         conductorResponses.transmit(unboundRO.typeId(), unboundRO.buffer(), unboundRO.offset(), unboundRO.length());
     }
@@ -196,45 +141,76 @@ public final class Conductor implements Nukleus
 
     public void onUnpreparedResponse(
         long correlationId,
-        String destination,
-        long destinationRef,
-        String source,
-        Map<String, String> headers)
+        long referenceId)
     {
-        UnpreparedFW unpreparedRO =
-            unpreparedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
-                        .correlationId(correlationId)
-                        .source(source)
-                        .destination(destination)
-                        .destinationRef(destinationRef)
-                        .iterate(headers.entrySet(), entry ->
-                        {
-                            String name = entry.getKey();
-                            String value = entry.getValue();
-                            unpreparedRW.headers(item -> item.representation((byte)0).name(name).value(value));
-                        })
-                        .build();
+        UnpreparedFW unpreparedRO = unpreparedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                                                .correlationId(correlationId)
+                                                .referenceId(referenceId)
+                                                .build();
 
         conductorResponses.transmit(
             unpreparedRO.typeId(), unpreparedRO.buffer(), unpreparedRO.offset(), unpreparedRO.length());
+    }
+
+    public void onRoutedResponse(
+        long correlationId,
+        String source,
+        long sourceRef,
+        String target,
+        long targetRef,
+        String reply,
+        Map<String, String> headers)
+    {
+        RoutedFW routedRO = routedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                .correlationId(correlationId)
+                .source(source)
+                .sourceRef(sourceRef)
+                .target(target)
+                .targetRef(targetRef)
+                .reply(reply)
+                .iterate(headers.entrySet(), entry ->
+                {
+                    String name = entry.getKey();
+                    String value = entry.getValue();
+                    routedRW.headers(b -> b.item(i -> i.name(name).value(value)));
+                })
+                .build();
+
+
+        conductorResponses.transmit(routedRO.typeId(), routedRO.buffer(), routedRO.offset(), routedRO.length());
+    }
+
+    public void onUnroutedResponse(
+        long correlationId,
+        String source,
+        long sourceRef,
+        String target,
+        long targetRef,
+        String reply,
+        Map<String, String> headers)
+    {
+        UnroutedFW unroutedRO = unroutedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
+                .correlationId(correlationId)
+                .source(source)
+                .sourceRef(sourceRef)
+                .target(target)
+                .targetRef(targetRef)
+                .reply(reply)
+                .iterate(headers.entrySet(), entry ->
+                {
+                    String name = entry.getKey();
+                    String value = entry.getValue();
+                    unroutedRW.headers(b -> b.item(i -> i.name(name).value(value)));
+                })
+                .build();
+
+        conductorResponses.transmit(unroutedRO.typeId(), unroutedRO.buffer(), unroutedRO.offset(), unroutedRO.length());
     }
 
     private void handleCommand(int msgTypeId, DirectBuffer buffer, int index, int length)
     {
         switch (msgTypeId)
         {
-        case CaptureFW.TYPE_ID:
-            handleCaptureCommand(buffer, index, length);
-            break;
-        case UncaptureFW.TYPE_ID:
-            handleUncaptureCommand(buffer, index, length);
-            break;
-        case RouteFW.TYPE_ID:
-            handleRouteCommand(buffer, index, length);
-            break;
-        case UnrouteFW.TYPE_ID:
-            handleUnrouteCommand(buffer, index, length);
-            break;
         case BindFW.TYPE_ID:
             handleBindCommand(buffer, index, length);
             break;
@@ -247,105 +223,87 @@ public final class Conductor implements Nukleus
         case UnprepareFW.TYPE_ID:
             handleUnprepareCommand(buffer, index, length);
             break;
+        case RouteFW.TYPE_ID:
+            handleRouteCommand(buffer, index, length);
+            break;
+        case UnrouteFW.TYPE_ID:
+            handleUnrouteCommand(buffer, index, length);
+            break;
         default:
             // ignore unrecognized commands (forwards compatible)
             break;
         }
     }
 
-    private void handleCaptureCommand(DirectBuffer buffer, int index, int length)
-    {
-        captureRO.wrap(buffer, index, index + length);
-
-        long correlationId = captureRO.correlationId();
-        String source = captureRO.source().asString();
-
-        reader.doCapture(correlationId, source);
-    }
-
-    private void handleUncaptureCommand(DirectBuffer buffer, int index, int length)
-    {
-        uncaptureRO.wrap(buffer, index, index + length);
-
-        long correlationId = uncaptureRO.correlationId();
-        String source = uncaptureRO.source().asString();
-
-        reader.doUncapture(correlationId, source);
-    }
-
-    private void handleRouteCommand(DirectBuffer buffer, int index, int length)
-    {
-        routeRO.wrap(buffer, index, index + length);
-
-        long correlationId = routeRO.correlationId();
-        String destination = routeRO.destination().asString();
-
-        reader.doRoute(correlationId, destination);
-    }
-
-    private void handleUnrouteCommand(DirectBuffer buffer, int index, int length)
-    {
-        unrouteRO.wrap(buffer, index, index + length);
-
-        long correlationId = unrouteRO.correlationId();
-        String destination = unrouteRO.destination().asString();
-
-        reader.doUnroute(correlationId, destination);
-    }
-
     private void handleBindCommand(DirectBuffer buffer, int index, int length)
     {
         bindRO.wrap(buffer, index, index + length);
 
-        long correlationId = bindRO.correlationId();
-        String destination = bindRO.destination().asString();
-        long destinationRef = bindRO.destinationRef();
-        String source = bindRO.source().asString();
+        final long correlationId = bindRO.correlationId();
 
-        Map<String, String> headers = new LinkedHashMap<>();
-        bindRO.headers().forEach(header ->
-        {
-            headers.put(header.name().asString(), header.value().asString());
-        });
-
-        reader.doBind(correlationId, destination, destinationRef, source, headers);
+        router.doBind(correlationId);
     }
 
     private void handleUnbindCommand(DirectBuffer buffer, int index, int length)
     {
         unbindRO.wrap(buffer, index, index + length);
 
-        long correlationId = unbindRO.correlationId();
-        long referenceId = unbindRO.referenceId();
+        final long correlationId = unbindRO.correlationId();
+        final long referenceId = unbindRO.referenceId();
 
-        reader.doUnbind(correlationId, referenceId);
+        router.doUnbind(correlationId, referenceId);
     }
 
     private void handlePrepareCommand(DirectBuffer buffer, int index, int length)
     {
         prepareRO.wrap(buffer, index, index + length);
 
-        long correlationId = prepareRO.correlationId();
-        String source = prepareRO.source().asString();
-        String destination = prepareRO.destination().asString();
-        long destinationRef = prepareRO.destinationRef();
+        final long correlationId = prepareRO.correlationId();
 
-        Map<String, String> headers = new LinkedHashMap<>();
-        prepareRO.headers().forEach((header) ->
-        {
-            headers.put(header.name().asString(), header.value().asString());
-        });
-
-        reader.doPrepare(correlationId, destination, destinationRef, source, headers);
+        router.doPrepare(correlationId);
     }
 
     private void handleUnprepareCommand(DirectBuffer buffer, int index, int length)
     {
         unprepareRO.wrap(buffer, index, index + length);
 
-        long correlationId = unprepareRO.correlationId();
-        long referenceId = unprepareRO.referenceId();
+        final long correlationId = unprepareRO.correlationId();
+        final long referenceId = unprepareRO.referenceId();
 
-        reader.doUnprepare(correlationId, referenceId);
+        router.doUnprepare(correlationId, referenceId);
+    }
+
+    private void handleRouteCommand(DirectBuffer buffer, int index, int length)
+    {
+        routeRO.wrap(buffer, index, index + length);
+
+        final long correlationId = routeRO.correlationId();
+        final String source = routeRO.source().asString();
+        final long sourceRef = routeRO.sourceRef();
+        final String target = routeRO.target().asString();
+        final long targetRef = routeRO.targetRef();
+        final String reply = routeRO.reply().asString();
+
+        final Map<String, String> headers = new HashMap<>();
+        routeRO.headers().forEach(h -> headers.put(h.name().asString(), h.value().asString()));
+
+        router.doRoute(correlationId, source, sourceRef, target, targetRef, reply, headers);
+    }
+
+    private void handleUnrouteCommand(DirectBuffer buffer, int index, int length)
+    {
+        unrouteRO.wrap(buffer, index, index + length);
+
+        final long correlationId = unrouteRO.correlationId();
+        final String source = unrouteRO.source().asString();
+        final long sourceRef = unrouteRO.sourceRef();
+        final String target = unrouteRO.target().asString();
+        final long targetRef = unrouteRO.targetRef();
+        final String reply = unrouteRO.reply().asString();
+
+        final Map<String, String> headers = new HashMap<>();
+        routeRO.headers().forEach(h -> headers.put(h.name().asString(), h.value().asString()));
+
+        router.doUnroute(correlationId, source, sourceRef, target, targetRef, reply, headers);
     }
 }

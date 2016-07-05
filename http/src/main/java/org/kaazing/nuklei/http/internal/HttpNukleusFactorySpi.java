@@ -19,7 +19,8 @@ import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.NukleusFactorySpi;
 import org.kaazing.nuklei.http.internal.conductor.Conductor;
-import org.kaazing.nuklei.http.internal.reader.Reader;
+import org.kaazing.nuklei.http.internal.router.Router;
+import org.kaazing.nuklei.http.internal.watcher.Watcher;
 
 public final class HttpNukleusFactorySpi implements NukleusFactorySpi
 {
@@ -36,11 +37,13 @@ public final class HttpNukleusFactorySpi implements NukleusFactorySpi
         context.conclude(config);
 
         Conductor conductor = new Conductor(context);
-        Reader reader = new Reader(context);
+        Watcher watcher = new Watcher(context);
+        Router router = new Router(context);
 
-        conductor.setReader(reader);
-        reader.setConductor(conductor);
+        conductor.setRouter(router);
+        watcher.setRouter(router);
+        router.setConductor(conductor);
 
-        return new HttpNukleus(conductor, reader, context);
+        return new HttpNukleus(conductor, watcher, router, context);
     }
 }

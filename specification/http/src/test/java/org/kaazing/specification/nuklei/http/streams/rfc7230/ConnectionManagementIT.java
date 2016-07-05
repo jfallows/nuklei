@@ -34,26 +34,24 @@ public class ConnectionManagementIT
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
     private final NukleusRule nukleus = new NukleusRule()
-        .directory("target/nukleus-itests")
-        .streams("http", "source")
-        .streams("source", "http")
-        .streams("http", "destination")
-        .streams("destination", "http");
+            .directory("target/nukleus-itests")
+            .streams("http", "source")
+            .streams("target", "http#source")
+            .streams("http", "target")
+            .streams("source", "http#target");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);
 
     @Test
     @Specification({
-        "nuklei/http/control/capture.source.destination/controller",
-        "nuklei/http/control/capture.source.destination/nukleus",
-        "nuklei/http/control/route.source.destination/controller",
-        "nuklei/http/control/route.source.destination/nukleus",
-        "nuklei/http/control/bind.source.destination/controller",
-        "nuklei/http/control/bind.source.destination/nukleus",
+        "nuklei/http/control/bind/controller",
+        "nuklei/http/control/bind/nukleus",
+        "nuklei/http/control/route/controller",
+        "nuklei/http/control/route/nukleus",
         "nuklei/http/streams/rfc7230/connection.management/payload.bytes.passthrough.verbatim.after.101.upgrade/source",
         "nuklei/http/streams/rfc7230/connection.management/payload.bytes.passthrough.verbatim.after.101.upgrade/nukleus",
-        "nuklei/http/streams/rfc7230/connection.management/payload.bytes.passthrough.verbatim.after.101.upgrade/destination" })
+        "nuklei/http/streams/rfc7230/connection.management/payload.bytes.passthrough.verbatim.after.101.upgrade/target" })
     public void shouldPassthroughPayloadBytesAfter101Upgrade() throws Exception
     {
         k3po.finish();

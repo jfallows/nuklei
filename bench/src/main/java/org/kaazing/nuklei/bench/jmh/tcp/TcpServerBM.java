@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
 
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.ControllerFactory;
@@ -52,6 +53,8 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Control;
 
+import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 @State(Scope.Benchmark)
@@ -71,7 +74,7 @@ public class TcpServerBM
     @Setup
     public void create() throws Exception
     {
-        int streamsCapacity = 1024 * 1024 * 16;
+        final long streamsCapacity = 1024L * 1024L * 16L;
 
         final Properties properties = new Properties();
         properties.setProperty(DIRECTORY_PROPERTY_NAME, "target/nukleus-benchmarks");
@@ -84,29 +87,26 @@ public class TcpServerBM
         this.nukleus = (TcpNukleus) nuklei.create("tcp", config);
         this.controller = controllers.create(TcpController.class, config);
 
-        controller.capture("destination");
+        File target = new File("target/nukleus-benchmarks/target/streams/tcp");
+        createEmptyFile(target.getAbsoluteFile(), streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH);
+
+        final CompletableFuture<Long> bind = controller.bind();
         while (this.nukleus.process() != 0L || this.controller.process() != 0L)
         {
             // intentional
         }
+        long sourceRef = bind.get();
 
-        File destination = new File("target/nukleus-benchmarks/destination/streams/tcp");
-        createEmptyFile(destination.getAbsoluteFile(), streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH);
-
-        controller.route("destination");
+        final long targetRef = (long) (Math.random() * Long.MAX_VALUE);
+        final CompletableFuture<Void> route =
+                controller.route("any", sourceRef, "target", targetRef, new InetSocketAddress("localhost", 8080));
         while (this.nukleus.process() != 0L || this.controller.process() != 0L)
         {
             // intentional
         }
+        route.get();
 
-        final long destinationRef = (long) (Math.random() * Long.MAX_VALUE);
-        controller.bind("destination", destinationRef, new InetSocketAddress("localhost", 8080));
-        while (this.nukleus.process() != 0L || this.controller.process() != 0L)
-        {
-            // intentional
-        }
-
-        this.streams = controller.streams("destination");
+        this.streams = controller.streams("any", "target");
 
         byte[] sendByteArray = "Hello, world".getBytes(StandardCharsets.UTF_8);
         this.sendByteBuffer = allocateDirect(sendByteArray.length).order(nativeOrder()).put(sendByteArray);
@@ -165,10 +165,20 @@ public class TcpServerBM
     @GroupThreads(1)
     public void reader(Control control) throws Exception
     {
+        final MessageHandler handler = this::handleRead;
         while (!control.stopMeasurement &&
-               streams.read((msgTypeId, buffer, offset, length) -> {}) == 0)
+               streams.read(handler) == 0)
         {
             Thread.yield();
         }
+    }
+
+    private int handleRead(
+        int msgTypeId,
+        DirectBuffer buffer,
+        int index,
+        int length)
+    {
+        return 0;
     }
 }

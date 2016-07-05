@@ -14,33 +14,42 @@
 # limitations under the License.
 #
 
-property sourceInitial ${streams:map("target/nukleus-itests/http/streams/source", 1024 * 1024)}
-property sourceReply ${streams:map("target/nukleus-itests/source/streams/http", 1024 * 1024)}
+property newTargetRef ${nuklei:newInitialRef()} # external scope
 
-property destinationInitial ${streams:map("target/nukleus-itests/destination/streams/http", 1024 * 1024)}
-property destinationReply ${streams:map("target/nukleus-itests/http/streams/destination", 1024 * 1024)}
+property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)}
 
-property newInitialStreamId ${streams:newInitialStreamId()}
-property newReplyStreamId ${streams:newReplyStreamId()}
-property newReferenceId ${streams:newReferenceId()}
+property sourceInitial ${nuklei.streams("http", "source")}
+property sourceReply ${nuklei.streams("reply", "http#target")}
 
-connect await BOUND
+property targetInitial ${nuklei.streams("target", "http#source")}
+property targetReply ${nuklei.streams("http", "target")}
+
+property newTargetId ${nuklei:newStreamId()}
+property newTargetReplyId ${nuklei:newStreamId()}
+property newTargetReplyRef ${nuklei:newReplyRef()}
+
+connect await ROUTED
         agrona://stream/bidirectional
         option reader ${agrona:manyToOneReader(sourceInitial.buffer)}
         option writer ${agrona:manyToOneWriter(sourceReply.buffer)}
 connected
 
 read [0x00 0x00 0x00 0x01]
-read ([0..8]:sourceStreamId)
+read ([0..8]:sourceId)
 read ([0..8]:sourceRef)
+read ([0..8]:sourceReplyId)
+read ([0..8]:sourceReplyRef)
 
 write [0x00 0x00 0x00 0x01]
-write ${newReplyStreamId}
-write ${sourceStreamId}
+write ${sourceReplyId}
+write ${sourceReplyRef}
+write ${sourceId}
+write ${sourceRef}
 write flush
 
 read [0x00 0x00 0x00 0x02]
-read ${sourceStreamId}
+read ${sourceId}
+read [0x48]
 read "POST / HTTP/1.1\r\n"
 read "Host: localhost:8080\r\n"
 read "Content-Length: 11\r\n"
@@ -48,7 +57,8 @@ read "\r\n"
 read "hello world"
 
 write [0x00 0x00 0x00 0x02]
-write ${newReplyStreamId}
+write ${sourceReplyId}
+write [0x13]
 write "HTTP/1.1 200 OK\r\n"
 write "\r\n"
 write flush
@@ -56,15 +66,17 @@ write flush
 close
 closed
 
-connect await BOUND
+connect await ROUTED
         agrona://stream/bidirectional
-        option reader ${agrona:manyToOneReader(destinationReply.buffer)}
-        option writer ${agrona:manyToOneWriter(destinationInitial.buffer)}
+        option reader ${agrona:manyToOneReader(targetReply.buffer)}
+        option writer ${agrona:manyToOneWriter(targetInitial.buffer)}
 connected
 
 write [0x00 0x00 0x00 0x01]
-write ${newInitialStreamId}
-write ${newDestinationRef}
+write ${newTargetId}
+write ${newTargetRef}
+write ${newTargetReplyId}
+write ${newTargetReplyRef}
 write [0x00] [0x07] ":scheme" [0x04] "http"
 write [0x00] [0x07] ":method" [0x04] "POST"
 write [0x00] [0x05] ":path" [0x01] "/"
@@ -73,13 +85,16 @@ write [0x00] [0x0e] "content-length" [0x02] "11"
 write flush
 
 write [0x00 0x00 0x00 0x02]
-write ${newInitialStreamId}
+write ${newTargetId}
+write [0x0b]
 write "hello world"
 write flush
 
 read [0x00 0x00 0x00 0x01]
-read ([0..8]:destinationStreamId)
-read ${newInitialStreamId}
+read ${newTargetReplyId}
+read ${newTargetReplyRef}
+read ${newTargetId}
+read ${newTargetRef}
 read [0x00] [0x07] ":status" [0x03] "200"
 
 close

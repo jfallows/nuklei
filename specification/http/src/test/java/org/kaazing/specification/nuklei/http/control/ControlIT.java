@@ -37,32 +37,78 @@ public class ControlIT
 
     @Test
     @Specification({
-        "capture.source.destination/nukleus",
-        "capture.source.destination/controller"
+        "bind/nukleus",
+        "bind/controller"
     })
-    public void shouldCaptureSourceAndDestination() throws Exception
+    public void shouldBind() throws Exception
     {
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "route.source.destination/nukleus",
-        "route.source.destination/controller"
+        "unbind/nukleus",
+        "unbind/controller"
     })
-    public void shouldRouteSourceAndDestination() throws Exception
+    public void shouldUnbind() throws Exception
     {
         k3po.start();
-        k3po.notifyBarrier("CAPTURED");
+        k3po.notifyBarrier("ROUTABLE");
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "bind.source.destination/nukleus",
-        "bind.source.destination/controller"
+        "prepare/nukleus",
+        "prepare/controller"
     })
-    public void shouldBindSourceToDestination() throws Exception
+    public void shouldPrepare() throws Exception
+    {
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "unprepare/nukleus",
+        "unprepare/controller"
+    })
+    public void shouldUnprepare() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("ROUTABLE");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "route/nukleus",
+        "route/controller"
+    })
+    public void shouldRoute() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("ROUTABLE");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "route.headers/nukleus",
+        "route.headers/controller"
+    })
+    public void shouldRouteHeaders() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("ROUTABLE");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "unroute/nukleus",
+        "unroute/controller"
+    })
+    public void shouldUnroute() throws Exception
     {
         k3po.start();
         k3po.notifyBarrier("ROUTED");
@@ -71,37 +117,13 @@ public class ControlIT
 
     @Test
     @Specification({
-        "unbind.source.destination/controller",
-        "unbind.source.destination/nukleus"
+        "unroute.headers/nukleus",
+        "unroute.headers/controller"
     })
-    public void shouldUnbindSourceDestination() throws Exception
-    {
-        k3po.start();
-        k3po.notifyBarrier("BOUND");
-        k3po.finish();
-    }
-
-    @Test
-    @Specification({
-        "prepare.source.destination/controller",
-        "prepare.source.destination/nukleus"
-    })
-    public void shouldPrepareDestination() throws Exception
+    public void shouldUnrouteHeaders() throws Exception
     {
         k3po.start();
         k3po.notifyBarrier("ROUTED");
-        k3po.finish();
-    }
-
-    @Test
-    @Specification({
-        "unprepare.source.destination/controller",
-        "unprepare.source.destination/nukleus"
-    })
-    public void shouldUnprepareSourceDestination() throws Exception
-    {
-        k3po.start();
-        k3po.notifyBarrier("PREPARED");
         k3po.finish();
     }
 }

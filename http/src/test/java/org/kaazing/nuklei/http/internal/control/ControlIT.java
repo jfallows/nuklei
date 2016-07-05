@@ -38,74 +38,65 @@ public class ControlIT
         .directory("target/nukleus-itests")
         .commandBufferCapacity(1024)
         .responseBufferCapacity(1024)
-        .counterValuesBufferCapacity(1024)
-        .streams("source", "http")
-        .streams("destination", "http");
+        .counterValuesBufferCapacity(1024);
 
     @Rule
     public final TestRule chain = outerRule(k3po).around(timeout).around(nukleus);
 
     @Test
     @Specification({
-        "capture.source.destination/controller"
+        "bind/controller"
     })
-    public void shouldCaptureSourceDestination() throws Exception
+    public void shouldBind() throws Exception
     {
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "capture.source.destination/controller",
-        "route.source.destination/controller"
+        "bind/controller",
+        "unbind/controller"
     })
-    public void shouldRouteSourceDestination() throws Exception
+    public void shouldUnbind() throws Exception
     {
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "capture.source.destination/controller",
-        "route.source.destination/controller",
-        "bind.source.destination/controller"
+        "prepare/controller"
     })
-    public void shouldBindSourceDestination() throws Exception
+    public void shouldPrepare() throws Exception
     {
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "capture.source.destination/controller",
-        "route.source.destination/controller",
-        "bind.source.destination/controller",
-        "unbind.source.destination/controller"
+        "prepare/controller",
+        "unprepare/controller"
     })
-    public void shouldUnbindSourceDestination() throws Exception
+    public void shouldUnprepare() throws Exception
     {
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "capture.source.destination/controller",
-        "route.source.destination/controller",
-        "prepare.source.destination/controller"
+        "bind/controller",
+        "route/controller"
     })
-    public void shouldPrepareSourceDestination() throws Exception
+    public void shouldRoute() throws Exception
     {
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "capture.source.destination/controller",
-        "route.source.destination/controller",
-        "prepare.source.destination/controller",
-        "unprepare.source.destination/controller"
+        "bind/controller",
+        "route.headers/controller"
     })
-    public void shouldUnprepareSourceDestination() throws Exception
+    public void shouldRouteHeaders() throws Exception
     {
         k3po.finish();
     }

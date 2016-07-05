@@ -143,14 +143,14 @@ public final class TcpController implements Controller
         return promise;
     }
 
-    public CompletableFuture<Long> route(
+    public CompletableFuture<Void> route(
         String source,
         long sourceRef,
         String target,
         long targetRef,
         InetSocketAddress address)
     {
-        final CompletableFuture<Long> promise = new CompletableFuture<>();
+        final CompletableFuture<Void> promise = new CompletableFuture<>();
 
         long correlationId = conductorCommands.nextCorrelationId();
 

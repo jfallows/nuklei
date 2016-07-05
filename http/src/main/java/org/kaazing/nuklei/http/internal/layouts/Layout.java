@@ -32,8 +32,9 @@
 package org.kaazing.nuklei.http.internal.layouts;
 
 
-public abstract class Layout
+public abstract class Layout implements AutoCloseable
 {
+    @Override
     public abstract void close();
 
     public abstract static class Builder<T extends Layout>

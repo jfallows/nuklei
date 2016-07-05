@@ -73,7 +73,7 @@ public class HttpServerBM
     @Setup
     public void init() throws Exception
     {
-        int streamsCapacity = 1024 * 1024 * 16;
+        long streamsCapacity = 1024L * 1024L * 16L;
 
         final Properties properties = new Properties();
         properties.setProperty(DIRECTORY_PROPERTY_NAME, "target/nukleus-benchmarks");
@@ -86,42 +86,26 @@ public class HttpServerBM
         this.nukleus = nuklei.create("http", config);
         this.controller = controllers.create(HttpController.class, config);
 
-        controller.capture("source");
-        while (this.nukleus.process() != 0L || this.controller.process() != 0L)
-        {
-            // intentional
-        }
-
-        controller.capture("destination");
-        while (this.nukleus.process() != 0L || this.controller.process() != 0L)
-        {
-            // intentional
-        }
-
         File source = new File("target/nukleus-benchmarks/source/streams/http").getAbsoluteFile();
         createEmptyFile(source, streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH);
 
-        controller.route("source");
+        final CompletableFuture<Long> bind = controller.bind();
         while (this.nukleus.process() != 0L || this.controller.process() != 0L)
         {
             // intentional
         }
+        final Long sourceRef = bind.get();
 
-        File destination = new File("target/nukleus-benchmarks/destination/streams/http").getAbsoluteFile();
+        File destination = new File("target/nukleus-benchmarks/target/streams/http").getAbsoluteFile();
         createEmptyFile(destination, streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH);
 
-        controller.route("destination");
+        final long targetRef = (long) (Math.random() * Long.MAX_VALUE);
+        CompletableFuture<Void> route = controller.route("source", sourceRef, "target", targetRef, "source", emptyMap());
         while (this.nukleus.process() != 0L || this.controller.process() != 0L)
         {
             // intentional
         }
-
-        CompletableFuture<Long> sourceRefFuture = controller.bind("destination", 0x1234L, "source", emptyMap());
-        while (this.nukleus.process() != 0L || this.controller.process() != 0L)
-        {
-            // intentional
-        }
-        final long sourceRef = sourceRefFuture.get();
+        route.get();
 
         this.requestStreams = controller.streams("source", "destination");
         this.responseStreams = controller.streams("destination", "source");

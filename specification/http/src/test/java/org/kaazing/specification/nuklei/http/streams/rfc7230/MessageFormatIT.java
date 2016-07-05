@@ -36,25 +36,23 @@ public class MessageFormatIT
     private final NukleusRule nukleus = new NukleusRule()
         .directory("target/nukleus-itests")
         .streams("http", "source")
-        .streams("source", "http")
-        .streams("http", "destination")
-        .streams("destination", "http");
+        .streams("target", "http#source")
+        .streams("http", "target")
+        .streams("reply", "http#target");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);
 
     @Test
     @Specification({
-        "nuklei/http/control/capture.source.destination/controller",
-        "nuklei/http/control/capture.source.destination/nukleus",
-        "nuklei/http/control/route.source.destination/controller",
-        "nuklei/http/control/route.source.destination/nukleus",
-        "nuklei/http/control/bind.source.destination/controller",
-        "nuklei/http/control/bind.source.destination/nukleus",
+        "nuklei/http/control/bind/controller",
+        "nuklei/http/control/bind/nukleus",
+        "nuklei/http/control/route/controller",
+        "nuklei/http/control/route/nukleus",
 //      "http/rfc7230/message.format/inbound.should.process.request.with.content.length/request",
         "nuklei/http/streams/rfc7230/message.format/inbound.should.process.request.with.content.length/source",
         "nuklei/http/streams/rfc7230/message.format/inbound.should.process.request.with.content.length/nukleus",
-        "nuklei/http/streams/rfc7230/message.format/inbound.should.process.request.with.content.length/destination" })
+        "nuklei/http/streams/rfc7230/message.format/inbound.should.process.request.with.content.length/target" })
     public void inboundShouldProcessRequestWithContentLength() throws Exception
     {
         k3po.finish();
@@ -62,16 +60,14 @@ public class MessageFormatIT
 
     @Test
     @Specification({
-        "nuklei/http/control/capture.source.destination/controller",
-        "nuklei/http/control/capture.source.destination/nukleus",
-        "nuklei/http/control/route.source.destination/controller",
-        "nuklei/http/control/route.source.destination/nukleus",
-        "nuklei/http/control/prepare.source.destination/controller",
-        "nuklei/http/control/prepare.source.destination/nukleus",
+        "nuklei/http/control/prepare/controller",
+        "nuklei/http/control/prepare/nukleus",
+        "nuklei/http/control/route/controller",
+        "nuklei/http/control/route/nukleus",
         "nuklei/http/streams/rfc7230/message.format/outbound.should.accept.headers/source",
         "nuklei/http/streams/rfc7230/message.format/outbound.should.accept.headers/nukleus",
 //      "http/rfc7230/message.format/outbound.should.accept.headers/response",
-        "nuklei/http/streams/rfc7230/message.format/outbound.should.accept.headers/destination" })
+        "nuklei/http/streams/rfc7230/message.format/outbound.should.accept.headers/target" })
     public void ouboundShouldAcceptHeaders() throws Exception
     {
         k3po.finish();

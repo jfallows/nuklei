@@ -14,21 +14,28 @@
 # limitations under the License.
 #
 
-property sourceInitial ${streams:map("target/nukleus-itests/http/streams/source", 1024 * 1024)}
-property sourceReply ${streams:map("target/nukleus-itests/source/streams/http", 1024 * 1024)}
+property newSourceRef ${nuklei:newInitialRef()} # external scope
 
-property newSourceStreamId ${streams:newInitialStreamId()}
-property sourceRef ${streams:newReferenceId()}
+property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)}
 
-connect await PREPARED
+property sourceInitial ${nuklei.streams("http", "source")}
+property sourceReply ${nuklei.streams("reply", "http#target")}
+
+property newSourceId ${nuklei:newStreamId()}
+property newSourceReplyRef ${nuklei:newReplyRef()}
+property newSourceReplyId ${nuklei:newStreamId()}
+
+connect await ROUTED
         agrona://stream/bidirectional
         option reader ${agrona:manyToOneReader(sourceReply.buffer)}
         option writer ${agrona:manyToOneWriter(sourceInitial.buffer)}
 connected
 
 write [0x00 0x00 0x00 0x01]
-write ${newSourceStreamId}
-write ${sourceRef}
+write ${newSourceId}
+write ${newSourceRef}
+write ${newSourceReplyId}
+write ${newSourceReplyRef}
 write [0x00] [0x07] ":scheme" [0x04] "http"
 write [0x00] [0x07] ":method" [0x03] "GET"
 write [0x00] [0x05] ":path"   [0x01] "/"

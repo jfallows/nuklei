@@ -29,44 +29,8 @@ scope http
         }
 
 
-        struct Capture extends common::control::Capture
-        {
-        }
-
-        struct Captured extends common::control::Captured
-        {
-        }
-
-        struct Uncapture extends common::control::Uncapture
-        {
-        }
-
-        struct Uncaptured extends common::control::Uncaptured
-        {
-        }
-
-        struct Route extends common::control::Route
-        {
-        }
-
-        struct Routed extends common::control::Routed
-        {
-        }
-
-        struct Unroute extends common::control::Unroute
-        {
-        }
-
-        struct Unrouted extends common::control::Unrouted
-        {
-        }
-
         struct Bind extends common::control::Bind
         {
-            string destination;
-            int64 destinationRef;
-            string source;
-            list<http::Header> headers;
         }
 
         struct Bound extends common::control::Bound
@@ -79,18 +43,10 @@ scope http
 
         struct Unbound extends common::control::Unbound
         {
-            string destination;
-            int64 destinationRef;
-            string source;
-            list<http::Header> headers;
         }
 
         struct Prepare extends common::control::Prepare
         {
-            string source;
-            string destination;
-            int64 destinationRef;
-            list<http::Header> headers;
         }
 
         struct Prepared extends common::control::Prepared
@@ -103,11 +59,28 @@ scope http
 
         struct Unprepared extends common::control::Unprepared
         {
-            string source;
-            string destination;
-            int64 destinationRef;
+        }
+
+        struct Route extends common::control::Route
+        {
             list<http::Header> headers;
         }
+
+        struct Routed extends common::control::Routed
+        {
+            list<http::Header> headers;
+        }
+
+        struct Unroute extends common::control::Unroute
+        {
+            list<http::Header> headers;
+        }
+
+        struct Unrouted extends common::control::Unrouted
+        {
+            list<http::Header> headers;
+        }
+
     }
 
     scope stream
@@ -128,6 +101,10 @@ scope http
         }
 
         struct HttpReset extends common::stream::Reset
+        {
+        }
+
+        struct HttpWindow extends common::stream::Window
         {
         }
     }

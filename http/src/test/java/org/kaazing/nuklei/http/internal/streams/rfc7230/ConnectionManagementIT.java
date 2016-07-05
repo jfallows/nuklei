@@ -38,18 +38,20 @@ public class ConnectionManagementIT
             .commandBufferCapacity(1024)
             .responseBufferCapacity(1024)
             .counterValuesBufferCapacity(1024)
-            .streams("destination", "http");
+            .streams("http", "source")
+            .streams("target", "http#source")
+            .streams("http", "target")
+            .streams("reply", "http#target");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);
 
     @Test
     @Specification({
-        "nuklei/http/control/capture.source.destination/controller",
-        "nuklei/http/control/route.source.destination/controller",
-        "nuklei/http/control/bind.source.destination/controller",
+        "nuklei/http/control/bind/controller",
+        "nuklei/http/control/route/controller",
         "nuklei/http/streams/rfc7230/connection.management/payload.bytes.passthrough.verbatim.after.101.upgrade/source",
-        "nuklei/http/streams/rfc7230/connection.management/payload.bytes.passthrough.verbatim.after.101.upgrade/destination" })
+        "nuklei/http/streams/rfc7230/connection.management/payload.bytes.passthrough.verbatim.after.101.upgrade/target" })
     public void shouldPassthroughPayloadBytesAfter101Upgrade() throws Exception
     {
         k3po.finish();

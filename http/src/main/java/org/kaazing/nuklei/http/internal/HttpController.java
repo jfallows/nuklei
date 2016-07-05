@@ -25,8 +25,6 @@ import java.util.concurrent.CompletableFuture;
 import org.kaazing.nuklei.Controller;
 import org.kaazing.nuklei.http.internal.types.control.BindFW;
 import org.kaazing.nuklei.http.internal.types.control.BoundFW;
-import org.kaazing.nuklei.http.internal.types.control.CaptureFW;
-import org.kaazing.nuklei.http.internal.types.control.CapturedFW;
 import org.kaazing.nuklei.http.internal.types.control.ErrorFW;
 import org.kaazing.nuklei.http.internal.types.control.RouteFW;
 import org.kaazing.nuklei.http.internal.types.control.RoutedFW;
@@ -46,16 +44,14 @@ public final class HttpController implements Controller
     private static final int MAX_SEND_LENGTH = 1024; // TODO: Configuration and Context
 
     // TODO: thread-safe flyweights or command queue from public methods
-    private final CaptureFW.Builder captureRW = new CaptureFW.Builder();
-    private final RouteFW.Builder routeRW = new RouteFW.Builder();
     private final BindFW.Builder bindRW = new BindFW.Builder();
     private final UnbindFW.Builder unbindRW = new UnbindFW.Builder();
+    private final RouteFW.Builder routeRW = new RouteFW.Builder();
 
     private final ErrorFW errorRO = new ErrorFW();
-    private final CapturedFW capturedRO = new CapturedFW();
-    private final RoutedFW routedRO = new RoutedFW();
     private final BoundFW boundRO = new BoundFW();
     private final UnboundFW unboundRO = new UnboundFW();
+    private final RoutedFW routedRO = new RoutedFW();
 
     private final Context context;
     private final RingBuffer conductorCommands;
@@ -100,58 +96,7 @@ public final class HttpController implements Controller
         return "http";
     }
 
-    public CompletableFuture<Void> capture(
-        String source)
-    {
-        final CompletableFuture<Void> promise = new CompletableFuture<Void>();
-
-        long correlationId = conductorCommands.nextCorrelationId();
-
-        CaptureFW captureRO = captureRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                       .correlationId(correlationId)
-                                       .source(source)
-                                       .build();
-
-        if (!conductorCommands.write(captureRO.typeId(), captureRO.buffer(), captureRO.offset(), captureRO.length()))
-        {
-            promise.completeExceptionally(new IllegalStateException("unable to offer command"));
-        }
-        else
-        {
-            promisesByCorrelationId.put(correlationId, promise);
-        }
-
-        return promise;
-    }
-
-    public CompletableFuture<Void> route(String destination)
-    {
-        final CompletableFuture<Void> promise = new CompletableFuture<Void>();
-
-        long correlationId = conductorCommands.nextCorrelationId();
-
-        RouteFW routeRO = routeRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                 .correlationId(correlationId)
-                                 .destination(destination)
-                                 .build();
-
-        if (!conductorCommands.write(routeRO.typeId(), routeRO.buffer(), routeRO.offset(), routeRO.length()))
-        {
-            promise.completeExceptionally(new IllegalStateException("unable to offer command"));
-        }
-        else
-        {
-            promisesByCorrelationId.put(correlationId, promise);
-        }
-
-        return promise;
-    }
-
-    public CompletableFuture<Long> bind(
-        String destination,
-        long destinationRef,
-        String source,
-        Map<String, String> headers)
+    public CompletableFuture<Long> bind()
     {
         final CompletableFuture<Long> promise = new CompletableFuture<Long>();
 
@@ -159,27 +104,15 @@ public final class HttpController implements Controller
 
         BindFW bindRO = bindRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                               .correlationId(correlationId)
-                              .destination(destination)
-                              .destinationRef(destinationRef)
-                              .source(source)
-                              .iterate(headers.entrySet(), entry ->
-                              {
-                                  bindRW.headers(item ->
-                                  {
-                                    String name = entry.getKey();
-                                    String value = entry.getValue();
-                                    item.representation((byte)0).name(name).value(value);
-                                  });
-                              })
                               .build();
 
         if (!conductorCommands.write(bindRO.typeId(), bindRO.buffer(), bindRO.offset(), bindRO.length()))
         {
-            promise.completeExceptionally(new IllegalStateException("unable to offer command"));
+            commandSendFailed(promise);
         }
         else
         {
-            promisesByCorrelationId.put(correlationId, promise);
+            commandSent(correlationId, promise);
         }
 
         return promise;
@@ -199,11 +132,53 @@ public final class HttpController implements Controller
 
         if (!conductorCommands.write(unbindRO.typeId(), unbindRO.buffer(), unbindRO.offset(), unbindRO.length()))
         {
-            promise.completeExceptionally(new IllegalStateException("unable to offer command"));
+            commandSendFailed(promise);
         }
         else
         {
-            promisesByCorrelationId.put(correlationId, promise);
+            commandSent(correlationId, promise);
+        }
+
+        return promise;
+    }
+
+    public CompletableFuture<Void> route(
+        String source,
+        long sourceRef,
+        String target,
+        long targetRef,
+        String reply,
+        Map<String, String> headers)
+    {
+        final CompletableFuture<Void> promise = new CompletableFuture<>();
+
+        long correlationId = conductorCommands.nextCorrelationId();
+
+        RouteFW routeRO = routeRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                 .correlationId(correlationId)
+                                 .source(source)
+                                 .sourceRef(sourceRef)
+                                 .target(target)
+                                 .targetRef(targetRef)
+                                 .reply(reply)
+                                 .iterate(headers.entrySet(), entry ->
+                                 {
+                                     routeRW.headers(b -> b.item(i ->
+                                     {
+                                       String name = entry.getKey();
+                                       String value = entry.getValue();
+                                       i.name(name).value(value);
+                                     }));
+                                 })
+                                 .build();
+
+        if (!conductorCommands.write(routeRO.typeId(), routeRO.buffer(), routeRO.offset(), routeRO.length()))
+        {
+            commandSendFailed(promise);
+        }
+        else
+        {
+            commandSent(correlationId, promise);
         }
 
         return promise;
@@ -227,17 +202,14 @@ public final class HttpController implements Controller
         case ErrorFW.TYPE_ID:
             handleErrorResponse(buffer, index, length);
             break;
-        case CapturedFW.TYPE_ID:
-            handleCapturedResponse(buffer, index, length);
-            break;
-        case RoutedFW.TYPE_ID:
-            handleRoutedResponse(buffer, index, length);
-            break;
         case BoundFW.TYPE_ID:
             handleBoundResponse(buffer, index, length);
             break;
         case UnboundFW.TYPE_ID:
             handleUnboundResponse(buffer, index, length);
+            break;
+        case RoutedFW.TYPE_ID:
+            handleRoutedResponse(buffer, index, length);
             break;
         default:
             break;
@@ -257,22 +229,38 @@ public final class HttpController implements Controller
         CompletableFuture<?> promise = promisesByCorrelationId.remove(correlationId);
         if (promise != null)
         {
-            promise.completeExceptionally(new IllegalStateException().fillInStackTrace());
+            commandFailed(promise, "command failed");
         }
     }
 
-    private void handleCapturedResponse(
+    @SuppressWarnings("unchecked")
+    private void handleBoundResponse(
         DirectBuffer buffer,
         int index,
         int length)
     {
-        capturedRO.wrap(buffer, index, length);
-        long correlationId = capturedRO.correlationId();
+        boundRO.wrap(buffer, index, length);
+        long correlationId = boundRO.correlationId();
+
+        CompletableFuture<Long> promise = (CompletableFuture<Long>)promisesByCorrelationId.remove(correlationId);
+        if (promise != null)
+        {
+            commandSucceeded(promise, boundRO.referenceId());
+        }
+    }
+
+    private void handleUnboundResponse(
+        DirectBuffer buffer,
+        int index,
+        int length)
+    {
+        unboundRO.wrap(buffer, index, length);
+        long correlationId = unboundRO.correlationId();
 
         CompletableFuture<?> promise = promisesByCorrelationId.remove(correlationId);
         if (promise != null)
         {
-            promise.complete(null);
+            commandSucceeded(promise);
         }
     }
 
@@ -291,35 +279,36 @@ public final class HttpController implements Controller
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private void handleBoundResponse(
-        DirectBuffer buffer,
-        int index,
-        int length)
+    private void commandSent(
+        final long correlationId,
+        final CompletableFuture<?> promise)
     {
-        boundRO.wrap(buffer, index, length);
-        long correlationId = boundRO.correlationId();
-
-        CompletableFuture<Long> promise = (CompletableFuture<Long>)promisesByCorrelationId.remove(correlationId);
-        if (promise != null)
-        {
-            promise.complete(boundRO.referenceId());
-        }
+        promisesByCorrelationId.put(correlationId, promise);
     }
 
-    @SuppressWarnings("unchecked")
-    private void handleUnboundResponse(
-        DirectBuffer buffer,
-        int index,
-        int length)
+    private <T> boolean commandSucceeded(
+        final CompletableFuture<T> promise)
     {
-        unboundRO.wrap(buffer, index, length);
-        long correlationId = unboundRO.correlationId();
+        return commandSucceeded(promise, null);
+    }
 
-        CompletableFuture<Void> promise = (CompletableFuture<Void>)promisesByCorrelationId.remove(correlationId);
-        if (promise != null)
-        {
-            promise.complete(null);
-        }
+    private <T> boolean commandSucceeded(
+        final CompletableFuture<T> promise,
+        final T value)
+    {
+        return promise.complete(value);
+    }
+
+    private boolean commandSendFailed(
+        final CompletableFuture<?> promise)
+    {
+        return commandFailed(promise, "unable to offer command");
+    }
+
+    private boolean commandFailed(
+        final CompletableFuture<?> promise,
+        final String message)
+    {
+        return promise.completeExceptionally(new IllegalStateException(message).fillInStackTrace());
     }
 }

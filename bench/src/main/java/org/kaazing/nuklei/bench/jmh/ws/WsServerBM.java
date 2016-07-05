@@ -74,7 +74,7 @@ public class WsServerBM
     @Setup
     public void init() throws Exception
     {
-        int streamsCapacity = 1024 * 1024 * 16;
+        long streamsCapacity = 1024L * 1024L * 16L;
 
         final Properties properties = new Properties();
         properties.setProperty(DIRECTORY_PROPERTY_NAME, "target/nukleus-benchmarks");
@@ -87,45 +87,29 @@ public class WsServerBM
         this.nukleus = (WsNukleus) nuklei.create("ws", config);
         this.controller = controllers.create(WsController.class, config);
 
-        controller.capture("source");
-        while (this.nukleus.process() != 0L || this.controller.process() != 0L)
-        {
-            // intentional
-        }
-
-        controller.capture("destination");
-        while (this.nukleus.process() != 0L || this.controller.process() != 0L)
-        {
-            // intentional
-        }
-
         File source = new File("target/nukleus-benchmarks/source/streams/ws").getAbsoluteFile();
         createEmptyFile(source, streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH);
 
-        controller.route("source");
+        final CompletableFuture<Long> bind = controller.bind();
         while (this.nukleus.process() != 0L || this.controller.process() != 0L)
         {
             // intentional
         }
+        final long sourceRef = bind.get();
 
-        File destination = new File("target/nukleus-benchmarks/destination/streams/ws").getAbsoluteFile();
-        createEmptyFile(destination, streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH);
+        File target = new File("target/nukleus-benchmarks/target/streams/ws").getAbsoluteFile();
+        createEmptyFile(target, streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH);
 
-        controller.route("destination");
+        final long targetRef = (long) (Math.random() * Long.MAX_VALUE);
+        CompletableFuture<Void> route = controller.route("source", sourceRef, "target", targetRef, null);
         while (this.nukleus.process() != 0L || this.controller.process() != 0L)
         {
             // intentional
         }
+        route.get();
 
-        CompletableFuture<Long> sourceRefFuture = controller.bind("destination", 0x1234L, "source", null);
-        while (this.nukleus.process() != 0L || this.controller.process() != 0L)
-        {
-            // intentional
-        }
-        final long sourceRef = sourceRefFuture.get();
-
-        this.requestStreams = controller.streams("source", "destination");
-        this.responseStreams = controller.streams("destination", "source");
+        this.requestStreams = controller.streams("source", "target");
+        this.responseStreams = controller.streams("target", "source");
 
         // odd, positive, non-zero
         final Random random = new Random();

@@ -26,7 +26,6 @@ import java.util.Properties;
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.Controller;
 import org.kaazing.nuklei.ControllerFactory;
-import org.kaazing.nuklei.echo.internal.EchoController;
 import org.kaazing.nuklei.http.internal.HttpController;
 import org.kaazing.nuklei.tcp.internal.TcpController;
 import org.kaazing.nuklei.ws.internal.WsController;
@@ -61,32 +60,22 @@ public final class Main
         TcpController tcpctl = controllers.create(TcpController.class, config);
         WsController wsctl = controllers.create(WsController.class, config);
         HttpController httpctl = controllers.create(HttpController.class, config);
-        EchoController echoctl = controllers.create(EchoController.class, config);
 
         Agent control = new CompositeAgent(new CompositeAgent(new ControllerAgent(tcpctl), new ControllerAgent(httpctl)),
-                                           new CompositeAgent(new ControllerAgent(wsctl), new ControllerAgent(echoctl)));
+                                           new ControllerAgent(wsctl));
 
         AgentRunner runner = new AgentRunner(idleStrategy, errorHandler, errorCounter, control);
 
         startOnThread(runner);
 
-        echoctl.capture("ws")
-        .thenCompose(v -> wsctl.capture("echo"))
-        .thenCompose(v -> wsctl.capture("http"))
-        .thenCompose(v -> httpctl.capture("ws"))
-        .thenCompose(v -> httpctl.capture("tcp"))
-        .thenCompose(v -> tcpctl.capture("http"))
-        .thenCompose(v -> echoctl.route("ws"))
-        .thenCompose(v -> wsctl.route("echo"))
-        .thenCompose(v -> wsctl.route("http"))
-        .thenCompose(v -> httpctl.route("ws"))
-        .thenCompose(v -> httpctl.route("tcp"))
-        .thenCompose(v -> tcpctl.route("http"))
-        .thenCompose(v -> echoctl.bind("ws"))
-        .thenCompose(echoRef -> wsctl.bind("echo", echoRef, "http", null))
-        .thenCompose(wsRef -> httpctl.bind("ws", wsRef, "tcp", singletonMap(":path", "/")))
-        .thenCompose(httpRef -> tcpctl.bind("http", httpRef, new InetSocketAddress("localhost", 8080)))
-        .join();
+        long tcpInitRef = tcpctl.bind().get();
+        long httpInitRef = httpctl.bind().get();
+        long wsInitRef = wsctl.bind().get();
+        long wsReplyRef = wsInitRef; // TODO: unidirectional binds
+
+        tcpctl.route("any", tcpInitRef, "http", httpInitRef, new InetSocketAddress("localhost", 8080)).get();
+        httpctl.route("tcp", httpInitRef, "ws", wsInitRef, "http", singletonMap(":path", "/")).get();
+        wsctl.route("http", wsInitRef, "ws", wsReplyRef, null).get();
 
         // TODO: resource cleanup via try-with-resources
         System.out.println("echo bound to ws://localhost:8080/");
