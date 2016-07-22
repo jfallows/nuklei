@@ -19,7 +19,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.STREAMS_BUFFER_CAPACITY_PROPERTY_NAME;
-import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
+import static org.agrona.IoUtil.createEmptyFile;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -50,9 +50,9 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Control;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.Throughput)

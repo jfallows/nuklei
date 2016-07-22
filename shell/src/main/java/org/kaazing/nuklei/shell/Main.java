@@ -18,7 +18,7 @@ package org.kaazing.nuklei.shell;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
-import static uk.co.real_logic.agrona.concurrent.AgentRunner.startOnThread;
+import static org.agrona.concurrent.AgentRunner.startOnThread;
 
 import java.net.InetSocketAddress;
 import java.util.Properties;
@@ -30,16 +30,16 @@ import org.kaazing.nuklei.http.internal.HttpController;
 import org.kaazing.nuklei.tcp.internal.TcpController;
 import org.kaazing.nuklei.ws.internal.WsController;
 
-import uk.co.real_logic.agrona.ErrorHandler;
-import uk.co.real_logic.agrona.concurrent.Agent;
-import uk.co.real_logic.agrona.concurrent.AgentRunner;
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.CompositeAgent;
-import uk.co.real_logic.agrona.concurrent.CountersManager;
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.SleepingIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.ErrorHandler;
+import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.AgentRunner;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.CompositeAgent;
+import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.SleepingIdleStrategy;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class Main
 {
@@ -47,7 +47,7 @@ public final class Main
     {
         IdleStrategy idleStrategy = new SleepingIdleStrategy(MILLISECONDS.toNanos(100));
         ErrorHandler errorHandler = throwable -> throwable.printStackTrace(System.err);
-        AtomicBuffer labelsBuffer = new UnsafeBuffer(new byte[CountersManager.LABEL_LENGTH]);
+        AtomicBuffer labelsBuffer = new UnsafeBuffer(new byte[CountersManager.MAX_LABEL_LENGTH]);
         AtomicBuffer countersBuffer = new UnsafeBuffer(new byte[CountersManager.COUNTER_LENGTH]);
         CountersManager counters = new CountersManager(labelsBuffer, countersBuffer);
         AtomicCounter errorCounter = counters.newCounter("errors");

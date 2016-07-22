@@ -18,8 +18,8 @@ package org.kaazing.nuklei.ws.internal.routable.stream;
 import org.kaazing.nuklei.ws.internal.routable.Source;
 import org.kaazing.nuklei.ws.internal.routable.Target;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.MessageHandler;
 
 public final class ReplyDecodingStreamFactory
 {

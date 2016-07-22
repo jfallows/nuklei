@@ -15,19 +15,19 @@
  */
 package org.kaazing.nuklei.ws.internal.layouts;
 
-import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
-import static uk.co.real_logic.agrona.IoUtil.mapExistingFile;
-import static uk.co.real_logic.agrona.IoUtil.unmap;
+import static org.agrona.IoUtil.createEmptyFile;
+import static org.agrona.IoUtil.mapExistingFile;
+import static org.agrona.IoUtil.unmap;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
 import java.nio.file.Path;
 
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.ringbuffer.OneToOneRingBuffer;
+import org.agrona.concurrent.ringbuffer.RingBuffer;
+import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 public final class StreamsLayout extends Layout
 {
@@ -112,8 +112,7 @@ public final class StreamsLayout extends Layout
             final AtomicBuffer atomicStreams = new UnsafeBuffer(mappedStreams);
             final AtomicBuffer atomicThrottle = new UnsafeBuffer(mappedThrottle);
 
-            // TODO: use OneToOneRingBuffer instead (now single writer / single reader)
-            return new StreamsLayout(new ManyToOneRingBuffer(atomicStreams), new ManyToOneRingBuffer(atomicThrottle));
+            return new StreamsLayout(new OneToOneRingBuffer(atomicStreams), new OneToOneRingBuffer(atomicThrottle));
         }
     }
 }

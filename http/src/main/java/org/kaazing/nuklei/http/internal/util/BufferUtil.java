@@ -15,7 +15,7 @@
  */
 package org.kaazing.nuklei.http.internal.util;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public final class BufferUtil
 {

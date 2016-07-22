@@ -24,8 +24,8 @@ import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.tcp.internal.router.Router;
 
-import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.nio.TransportPoller;
+import org.agrona.LangUtil;
+import org.agrona.nio.TransportPoller;
 
 /**
  * The {@code Connector} nukleus accepts new socket connections and informs the {@code Router} nukleus.

@@ -20,8 +20,8 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.kaazing.nuklei.ws.internal.types.stream.WsFrameFW.STATUS_NORMAL_CLOSURE;
 import static org.kaazing.nuklei.ws.internal.types.stream.WsFrameFW.STATUS_PROTOCOL_ERROR;
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_BYTE;
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_SHORT;
+import static org.agrona.BitUtil.SIZE_OF_BYTE;
+import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
 import java.security.MessageDigest;
 import java.util.Base64;
@@ -41,10 +41,10 @@ import org.kaazing.nuklei.ws.internal.types.stream.ResetFW;
 import org.kaazing.nuklei.ws.internal.types.stream.WindowFW;
 import org.kaazing.nuklei.ws.internal.types.stream.WsFrameFW;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
+import org.agrona.DirectBuffer;
+import org.agrona.LangUtil;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.MessageHandler;
 
 public final class InitialDecodingStreamFactory
 {

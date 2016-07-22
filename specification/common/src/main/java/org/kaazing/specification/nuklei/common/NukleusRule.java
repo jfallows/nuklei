@@ -15,7 +15,7 @@
  */
 package org.kaazing.specification.nuklei.common;
 
-import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
+import static org.agrona.IoUtil.createEmptyFile;
 
 import java.io.File;
 
@@ -23,7 +23,7 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 public final class NukleusRule implements TestRule
 {

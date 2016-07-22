@@ -21,8 +21,8 @@ property newReplyStreamId ${streams:newReplyStreamId()}
 
 connect await PREPARED
         agrona://stream/bidirectional
-        option reader ${agrona:manyToOneReader(nukleus.buffer)}
-        option writer ${agrona:manyToOneWriter(source.buffer)}
+        option reader ${agrona:oneToOneReader(nukleus.buffer)}
+        option writer ${agrona:oneToOneWriter(source.buffer)}
 connected
 
 read [0x00 0x00 0x00 0x01]

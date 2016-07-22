@@ -17,8 +17,8 @@ package org.kaazing.nuklei.ws.internal.routable;
 
 import java.util.function.Function;
 
-import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
+import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.concurrent.MessageHandler;
 
 public final class Reply
 {

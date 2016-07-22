@@ -25,8 +25,8 @@ import org.kaazing.nuklei.tcp.internal.Context;
 import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
 import org.kaazing.nuklei.tcp.internal.router.Router;
 
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * The {@code Readable} nukleus reads network traffic via a {@code Source} nukleus and control flow commands

@@ -25,7 +25,7 @@ import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.RESPONSE_BUFFER_CAPACITY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.STREAMS_BUFFER_CAPACITY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.THROTTLE_BUFFER_CAPACITY_PROPERTY_NAME;
-import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
+import static org.agrona.IoUtil.createEmptyFile;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -40,9 +40,9 @@ import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.NukleusFactory;
 
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.SleepingIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.SleepingIdleStrategy;
+import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 public final class NukleusRule implements TestRule
 {

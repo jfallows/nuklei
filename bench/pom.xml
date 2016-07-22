@@ -21,7 +21,7 @@
     </scm>
 
     <properties>
-        <jmh.version>1.11.2</jmh.version>
+        <jmh.version>1.12</jmh.version>
     </properties>
 
     <dependencies>

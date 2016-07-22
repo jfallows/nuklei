@@ -29,11 +29,11 @@ import org.kaazing.nuklei.http.internal.types.stream.FrameFW;
 import org.kaazing.nuklei.http.internal.types.stream.ResetFW;
 import org.kaazing.nuklei.http.internal.types.stream.WindowFW;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.MessageHandler;
+import org.agrona.concurrent.ringbuffer.RingBuffer;
 
 public final class Source implements Nukleus
 {

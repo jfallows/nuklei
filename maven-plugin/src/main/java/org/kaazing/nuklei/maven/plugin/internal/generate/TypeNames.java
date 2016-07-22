@@ -21,7 +21,7 @@ import com.squareup.javapoet.TypeName;
 
 public final class TypeNames
 {
-    private static final String AGRONA_PACKAGE = "uk.co.real_logic.agrona";
+    private static final String AGRONA_PACKAGE = "org.agrona";
     private static final String AGRONA_CONCURRENT_PACKAGE = AGRONA_PACKAGE + ".concurrent";
 
     public static final ClassName BIT_UTIL_TYPE = ClassName.get(AGRONA_PACKAGE, "BitUtil");

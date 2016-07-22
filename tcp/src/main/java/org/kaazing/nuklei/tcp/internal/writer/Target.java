@@ -22,8 +22,8 @@ import java.util.function.IntSupplier;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 
-import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.nio.TransportPoller;
+import org.agrona.LangUtil;
+import org.agrona.nio.TransportPoller;
 
 @Reaktive
 public final class Target extends TransportPoller implements Nukleus

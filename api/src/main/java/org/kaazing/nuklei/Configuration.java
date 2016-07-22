@@ -100,7 +100,7 @@ public class Configuration
 
     public int counterLabelsBufferCapacity()
     {
-        return getInteger(COUNTERS_BUFFER_CAPACITY_PROPERTY_NAME, CONTROL_COUNTERS_BUFFER_CAPACITY_DEFAULT);
+        return getInteger(COUNTERS_BUFFER_CAPACITY_PROPERTY_NAME, CONTROL_COUNTERS_BUFFER_CAPACITY_DEFAULT) * 2;
     }
 
     private String getProperty(String key, String defaultValue)

@@ -27,10 +27,10 @@ import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
 import org.kaazing.nuklei.tcp.internal.connector.Connector;
 import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
 
-import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.LangUtil;
+import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * The {@code Writable} nukleus reads streams data from multiple {@code Source} nuklei and monitors completion of

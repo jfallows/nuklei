@@ -37,8 +37,8 @@ import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.Controller;
 import org.kaazing.nuklei.ControllerFactory;
 
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.SleepingIdleStrategy;
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.SleepingIdleStrategy;
 
 public final class ControllerRule implements TestRule
 {

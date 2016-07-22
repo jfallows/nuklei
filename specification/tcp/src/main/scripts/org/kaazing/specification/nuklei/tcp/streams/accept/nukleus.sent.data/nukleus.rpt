@@ -22,8 +22,8 @@ property newDestinationRef ${streams:newReferenceId()}
 
 connect await BOUND
         agrona://stream/bidirectional
-        option reader ${agrona:manyToOneReader(nukleus.buffer)}
-        option writer ${agrona:manyToOneWriter(destination.buffer)}
+        option reader ${agrona:oneToOneReader(nukleus.buffer)}
+        option writer ${agrona:oneToOneWriter(destination.buffer)}
 connected
 
 write [0x00 0x00 0x00 0x01]

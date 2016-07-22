@@ -15,20 +15,20 @@
  */
 package org.kaazing.nuklei.http.internal.layouts;
 
-import static uk.co.real_logic.agrona.BitUtil.align;
-import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
-import static uk.co.real_logic.agrona.IoUtil.mapExistingFile;
-import static uk.co.real_logic.agrona.IoUtil.unmap;
+import static org.agrona.BitUtil.align;
+import static org.agrona.IoUtil.createEmptyFile;
+import static org.agrona.IoUtil.mapExistingFile;
+import static org.agrona.IoUtil.unmap;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
 import java.nio.file.Path;
 
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+import org.agrona.BitUtil;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
+import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 public final class ControlLayout extends Layout
 {

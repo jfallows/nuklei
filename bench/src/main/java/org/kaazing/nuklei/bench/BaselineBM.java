@@ -18,13 +18,18 @@ package org.kaazing.nuklei.bench;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static uk.co.real_logic.agrona.IoUtil.mapExistingFile;
-import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
-import static uk.co.real_logic.agrona.IoUtil.unmap;
+import static org.agrona.IoUtil.createEmptyFile;
+import static org.agrona.IoUtil.mapExistingFile;
+import static org.agrona.IoUtil.unmap;
+import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
+import java.util.Random;
 
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
+import org.agrona.concurrent.ringbuffer.OneToOneRingBuffer;
 import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -42,84 +47,86 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Control;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
-
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.Throughput)
 @Fork(3)
-@Warmup(iterations = 5, time = 1, timeUnit = SECONDS)
+@Warmup(iterations = 10, time = 1, timeUnit = SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = SECONDS)
 @OutputTimeUnit(SECONDS)
 public class BaselineBM
 {
-    private RingBuffer sourceCapture;
-    private RingBuffer sourceRoute;
-    private RingBuffer destinationCapture;
-    private RingBuffer destinationRoute;
+    private ManyToOneRingBuffer source;
+    private OneToOneRingBuffer target;
 
-    private DirectBuffer writeBuffer;
+    private MutableDirectBuffer writeBuffer;
     private MutableDirectBuffer copyBuffer;
 
     @Setup(Level.Trial)
     public void init()
     {
-        int capacity = 1024 * 1024 * 16 + RingBufferDescriptor.TRAILER_LENGTH;
+        final int capacity = 1024 * 1024 * 16 + TRAILER_LENGTH;
+        final int payload = 256;
 
-        File sourceToNukleus = new File("target/nukleus-benchmarks/nukleus/streams/source").getAbsoluteFile();
-        File nukleusToDestination = new File("target/nukleus-benchmarks/destination/streams/nukleus").getAbsoluteFile();
+        final File sourceFile = new File("target/benchmarks/baseline/source").getAbsoluteFile();
+        final File targetFile = new File("target/benchmarks/baseline/target").getAbsoluteFile();
 
-        this.sourceCapture = new ManyToOneRingBuffer(new UnsafeBuffer(mapNewFile(sourceToNukleus, capacity)));
-        this.sourceRoute = new ManyToOneRingBuffer(new UnsafeBuffer(mapExistingFile(sourceToNukleus, "source")));
+        createEmptyFile(sourceFile, capacity);
+        createEmptyFile(targetFile, capacity);
 
-        this.destinationCapture = new ManyToOneRingBuffer(new UnsafeBuffer(mapNewFile(nukleusToDestination, capacity)));
-        this.destinationRoute = new ManyToOneRingBuffer(new UnsafeBuffer(mapExistingFile(nukleusToDestination, "destination")));
+        this.source = new ManyToOneRingBuffer(new UnsafeBuffer(mapExistingFile(sourceFile, "source")));
+        this.target = new OneToOneRingBuffer(new UnsafeBuffer(mapExistingFile(targetFile, "target")));
 
-        byte[] byteArray = "Hello, world".getBytes(StandardCharsets.UTF_8);
-        UnsafeBuffer writeBuffer = new UnsafeBuffer(allocateDirect(byteArray.length).order(nativeOrder()));
-        writeBuffer.putBytes(0, byteArray);
-        this.writeBuffer = writeBuffer;
+        this.writeBuffer = new UnsafeBuffer(allocateDirect(payload).order(nativeOrder()));
+        this.writeBuffer.setMemory(0, payload, (byte)new Random().nextInt(256));
 
-        this.copyBuffer = new UnsafeBuffer(allocateDirect(sourceCapture.maxMsgLength()).order(nativeOrder()));
+        this.copyBuffer = new UnsafeBuffer(allocateDirect(source.maxMsgLength()).order(nativeOrder()));
     }
 
     @TearDown(Level.Trial)
     public void destroy()
     {
-        unmap(sourceCapture.buffer().byteBuffer());
-        unmap(sourceRoute.buffer().byteBuffer());
-        unmap(destinationCapture.buffer().byteBuffer());
-        unmap(destinationRoute.buffer().byteBuffer());
+        unmap(source.buffer().byteBuffer());
+        unmap(target.buffer().byteBuffer());
+    }
+
+    @TearDown(Level.Iteration)
+    public void reset()
+    {
+        source.buffer().setMemory(source.buffer().capacity() - TRAILER_LENGTH, TRAILER_LENGTH, (byte)0);
+        source.buffer().putLongOrdered(0, 0L);
+
+        target.buffer().setMemory(target.buffer().capacity() - TRAILER_LENGTH, TRAILER_LENGTH, (byte)0);
+        target.buffer().putLongOrdered(0, 0L);
     }
 
     @AuxCounters
     @State(Scope.Thread)
     public static class Counters
     {
-        public int messages;
+        public long writerAt;
+        public long readerAt;
 
         @Setup(Level.Iteration)
         public void init()
         {
-            messages = 0;
+            writerAt = 0;
+            readerAt = 0;
         }
     }
 
     @Benchmark
     @Group("asymmetric")
-    @GroupThreads(1)
-    public void writer(Control control) throws Exception
+    @GroupThreads(2)
+    public void writer(Control control, Counters counters) throws Exception
     {
         while (!control.stopMeasurement &&
-               !sourceRoute.write(0x02, writeBuffer, 0, writeBuffer.capacity()))
+               !source.write(0x02, writeBuffer, 0, writeBuffer.capacity()))
         {
             Thread.yield();
         }
+
+        counters.writerAt = source.producerPosition();
     }
 
     @Benchmark
@@ -127,27 +134,32 @@ public class BaselineBM
     @GroupThreads(1)
     public void copier(Control control, Counters counters) throws Exception
     {
-        counters.messages += sourceCapture.read((msgTypeId, buffer, offset, length) ->
+        if (!control.stopMeasurement)
         {
-            MutableDirectBuffer copyBuffer = this.copyBuffer;
-            copyBuffer.putBytes(0, buffer, offset, length);
-            while (!control.stopMeasurement &&
-                   !destinationRoute.write(msgTypeId, copyBuffer, 0, length))
+            source.read((msgTypeId, buffer, offset, length) ->
             {
-                Thread.yield();
-            }
-        });
+                final MutableDirectBuffer copyBuffer = this.copyBuffer;
+                copyBuffer.putBytes(0, buffer, offset, length);
+                while (!control.stopMeasurement &&
+                        !target.write(msgTypeId, copyBuffer, 0, length))
+                {
+                    Thread.yield();
+                }
+            });
+        }
     }
 
     @Benchmark
     @Group("asymmetric")
     @GroupThreads(1)
-    public void reader(Control control) throws Exception
+    public void reader(Control control, Counters counters) throws Exception
     {
         while (!control.stopMeasurement &&
-               destinationCapture.read((msgTypeId, buffer, offset, length) -> {}) == 0)
+               target.read((msgTypeId, buffer, offset, length) -> {}) == 0)
         {
             Thread.yield();
         }
+
+        counters.readerAt = target.consumerPosition();
     }
 }

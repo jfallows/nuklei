@@ -16,8 +16,8 @@
 package org.kaazing.nuklei.http.internal;
 
 import static java.lang.String.format;
-import static uk.co.real_logic.agrona.CloseHelper.quietClose;
-import static uk.co.real_logic.agrona.LangUtil.rethrowUnchecked;
+import static org.agrona.CloseHelper.quietClose;
+import static org.agrona.LangUtil.rethrowUnchecked;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -28,16 +28,15 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.logging.Logger;
 
+import org.agrona.ErrorHandler;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.broadcast.BroadcastTransmitter;
+import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
+import org.agrona.concurrent.ringbuffer.RingBuffer;
+import org.agrona.concurrent.status.CountersManager;
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.http.internal.layouts.ControlLayout;
-
-import uk.co.real_logic.agrona.ErrorHandler;
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.CountersManager;
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 public final class Context implements Closeable
 {

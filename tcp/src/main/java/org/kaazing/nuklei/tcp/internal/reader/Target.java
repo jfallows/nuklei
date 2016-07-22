@@ -26,12 +26,12 @@ import org.kaazing.nuklei.tcp.internal.types.stream.TcpBeginFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.TcpDataFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.TcpEndFW;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.MessageHandler;
+import org.agrona.concurrent.ringbuffer.RingBuffer;
 
 public final class Target implements Nukleus
 {

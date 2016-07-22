@@ -15,7 +15,7 @@
  */
 package org.kaazing.nuklei.http.internal.routable;
 
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
+import org.agrona.concurrent.MessageHandler;
 
 @FunctionalInterface
 public interface HandlerFactory

@@ -20,8 +20,8 @@ import static java.util.Arrays.binarySearch;
 import static java.util.Arrays.sort;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.commons.cli.Option.builder;
-import static uk.co.real_logic.agrona.IoUtil.tmpDirName;
-import static uk.co.real_logic.agrona.LangUtil.rethrowUnchecked;
+import static org.agrona.IoUtil.tmpDirName;
+import static org.agrona.LangUtil.rethrowUnchecked;
 
 import java.util.Comparator;
 import java.util.Properties;
@@ -35,13 +35,13 @@ import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.NukleusFactory;
 
-import uk.co.real_logic.agrona.ErrorHandler;
-import uk.co.real_logic.agrona.collections.ArrayUtil;
-import uk.co.real_logic.agrona.concurrent.Agent;
-import uk.co.real_logic.agrona.concurrent.AgentRunner;
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.SigIntBarrier;
-import uk.co.real_logic.agrona.concurrent.SleepingIdleStrategy;
+import org.agrona.ErrorHandler;
+import org.agrona.collections.ArrayUtil;
+import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.AgentRunner;
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.SigIntBarrier;
+import org.agrona.concurrent.SleepingIdleStrategy;
 
 public final class Reaktor implements AutoCloseable
 {

@@ -25,8 +25,8 @@ import java.util.function.Consumer;
 import org.kaazing.nuklei.tcp.internal.types.AddressFW;
 import org.kaazing.nuklei.tcp.internal.types.OctetsFW;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.LangUtil;
+import org.agrona.DirectBuffer;
+import org.agrona.LangUtil;
 
 public final class IpUtil
 {

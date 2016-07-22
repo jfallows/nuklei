@@ -32,8 +32,8 @@ import org.kaazing.nuklei.tcp.internal.connector.Connector;
 import org.kaazing.nuklei.tcp.internal.reader.Reader;
 import org.kaazing.nuklei.tcp.internal.writer.Writer;
 
-import uk.co.real_logic.agrona.collections.LongHashSet;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
+import org.agrona.collections.LongHashSet;
+import org.agrona.concurrent.status.AtomicCounter;
 
 /**
  * The {@code Router} nukleus manages in-bound and out-bound routes, coordinating with the {@code Acceptable},

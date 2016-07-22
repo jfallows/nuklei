@@ -15,7 +15,7 @@
  */
 package org.kaazing.nuklei.tcp.internal.router;
 
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
+import org.agrona.concurrent.status.AtomicCounter;
 
 public enum RouteKind
 {

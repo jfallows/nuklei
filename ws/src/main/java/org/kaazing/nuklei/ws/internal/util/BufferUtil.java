@@ -17,8 +17,8 @@ package org.kaazing.nuklei.ws.internal.util;
 
 import static java.nio.ByteOrder.BIG_ENDIAN;
 import static java.nio.ByteOrder.nativeOrder;
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import org.agrona.BitUtil;
+import org.agrona.MutableDirectBuffer;
 
 public final class BufferUtil
 {

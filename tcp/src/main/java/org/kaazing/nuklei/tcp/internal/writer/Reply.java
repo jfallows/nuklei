@@ -17,7 +17,7 @@ package org.kaazing.nuklei.tcp.internal.writer;
 
 import java.nio.channels.SocketChannel;
 
-import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
+import org.agrona.collections.Long2ObjectHashMap;
 
 public final class Reply
 {

@@ -25,8 +25,8 @@ import org.kaazing.nuklei.ws.internal.types.stream.WsBeginFW;
 import org.kaazing.nuklei.ws.internal.types.stream.WsDataFW;
 import org.kaazing.nuklei.ws.internal.types.stream.WsEndFW;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.MessageHandler;
 
 public final class ReplyEncodingStreamFactory
 {

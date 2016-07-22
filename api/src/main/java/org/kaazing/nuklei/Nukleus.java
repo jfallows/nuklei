@@ -15,7 +15,7 @@
  */
 package org.kaazing.nuklei;
 
-import uk.co.real_logic.agrona.collections.ArrayUtil;
+import org.agrona.collections.ArrayUtil;
 
 @FunctionalInterface
 public interface Nukleus extends AutoCloseable

@@ -29,13 +29,13 @@ import org.kaazing.nuklei.ws.internal.types.control.RoutedFW;
 import org.kaazing.nuklei.ws.internal.types.control.UnbindFW;
 import org.kaazing.nuklei.ws.internal.types.control.UnboundFW;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastReceiver;
-import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.broadcast.BroadcastReceiver;
+import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
+import org.agrona.concurrent.ringbuffer.RingBuffer;
 
 public final class WsController implements Controller
 {

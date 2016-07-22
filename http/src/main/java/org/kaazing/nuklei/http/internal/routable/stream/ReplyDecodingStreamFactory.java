@@ -32,9 +32,9 @@ import org.kaazing.nuklei.http.internal.types.stream.EndFW;
 import org.kaazing.nuklei.http.internal.types.stream.ResetFW;
 import org.kaazing.nuklei.http.internal.types.stream.WindowFW;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.MessageHandler;
 
 public final class ReplyDecodingStreamFactory
 {

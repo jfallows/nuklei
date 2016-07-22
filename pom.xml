@@ -33,7 +33,8 @@
 
         <!-- animal sniffer does not yet support Java8, see MANIMALSNIFFER-45 -->
         <animal.sniffer.skip>true</animal.sniffer.skip>
-        <k3po.version>3.0.0-alpha-34</k3po.version>
+        <k3po.version>3.0.0-alpha-36</k3po.version>
+        <agrona.version>0.5.2</agrona.version>
     </properties>
 
     <modules>
@@ -55,9 +56,9 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>uk.co.real-logic</groupId>
+                <groupId>org.agrona</groupId>
                 <artifactId>Agrona</artifactId>
-                <version>0.4.8</version>
+                <version>${agrona.version}</version>
             </dependency>
             <dependency>
                 <groupId>junit</groupId>

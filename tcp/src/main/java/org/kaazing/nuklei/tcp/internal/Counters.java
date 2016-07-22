@@ -15,8 +15,8 @@
  */
 package org.kaazing.nuklei.tcp.internal;
 
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.CountersManager;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.CountersManager;
 
 public final class Counters implements AutoCloseable
 {

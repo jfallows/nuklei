@@ -27,10 +27,10 @@ import org.kaazing.nuklei.tcp.internal.reader.Target;
 import org.kaazing.nuklei.tcp.internal.types.stream.ResetFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.WindowFW;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.LangUtil;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class StreamFactory
 {

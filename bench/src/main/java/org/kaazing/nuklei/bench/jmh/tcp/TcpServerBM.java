@@ -20,7 +20,7 @@ import static java.nio.ByteOrder.nativeOrder;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.STREAMS_BUFFER_CAPACITY_PROPERTY_NAME;
-import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
+import static org.agrona.IoUtil.createEmptyFile;
 
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -53,9 +53,9 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Control;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.MessageHandler;
+import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.Throughput)

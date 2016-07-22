@@ -31,8 +31,8 @@ property client125 ${ws:randomBytes(125)}
 
 connect await ROUTED
         agrona://stream/bidirectional
-        option reader ${agrona:manyToOneReader(sourceReply.buffer)}
-        option writer ${agrona:manyToOneWriter(sourceInitial.buffer)}
+        option reader ${agrona:oneToOneReader(sourceReply.buffer)}
+        option writer ${agrona:oneToOneWriter(sourceInitial.buffer)}
 connected
 
 write [0x00 0x00 0x00 0x01]

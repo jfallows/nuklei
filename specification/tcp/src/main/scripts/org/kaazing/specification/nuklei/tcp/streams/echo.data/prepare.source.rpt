@@ -27,8 +27,8 @@ property newSourceReplyRef ${nuklei:newReplyRef()}
 
 connect await ROUTED
         agrona://stream/bidirectional
-        option reader ${agrona:manyToOneReader(sourceInitial.throttle)}
-        option writer ${agrona:manyToOneWriter(sourceInitial.buffer)}
+        option reader ${agrona:oneToOneReader(sourceInitial.throttle)}
+        option writer ${agrona:oneToOneWriter(sourceInitial.buffer)}
 connected
 
 write [0x00 0x00 0x00 0x01]
@@ -67,8 +67,8 @@ closed
 
 connect await ROUTED
         agrona://stream/bidirectional
-        option reader ${agrona:manyToOneReader(sourceReply.buffer)}
-        option writer ${agrona:manyToOneWriter(sourceReply.throttle)}
+        option reader ${agrona:oneToOneReader(sourceReply.buffer)}
+        option writer ${agrona:oneToOneWriter(sourceReply.throttle)}
 connected
 
 read [0x00 0x00 0x00 0x01]

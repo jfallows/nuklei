@@ -26,9 +26,9 @@ import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.tcp.internal.reader.stream.StreamFactory;
 import org.kaazing.nuklei.tcp.internal.router.Router;
 
-import uk.co.real_logic.agrona.CloseHelper;
-import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.nio.TransportPoller;
+import org.agrona.CloseHelper;
+import org.agrona.LangUtil;
+import org.agrona.nio.TransportPoller;
 
 @Reaktive
 public final class Source extends TransportPoller implements Nukleus

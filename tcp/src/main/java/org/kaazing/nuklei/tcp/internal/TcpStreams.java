@@ -23,11 +23,11 @@ import org.kaazing.nuklei.tcp.internal.types.stream.TcpBeginFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.TcpDataFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.TcpEndFW;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.MessageHandler;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.ringbuffer.RingBuffer;
 
 public final class TcpStreams
 {

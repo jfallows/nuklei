@@ -21,8 +21,8 @@ property targetReply ${nuklei.streams("http", "target")}
 
 connect await ROUTED
         agrona://stream/bidirectional
-        option reader ${agrona:manyToOneReader(targetInitial.buffer)}
-        option writer ${agrona:manyToOneWriter(targetReply.buffer)}
+        option reader ${agrona:oneToOneReader(targetInitial.buffer)}
+        option writer ${agrona:oneToOneWriter(targetReply.buffer)}
 connected
 
 read [0x00 0x00 0x00 0x01]

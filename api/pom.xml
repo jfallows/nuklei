@@ -22,7 +22,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>uk.co.real-logic</groupId>
+            <groupId>org.agrona</groupId>
             <artifactId>Agrona</artifactId>
         </dependency>
         <dependency>

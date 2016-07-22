@@ -16,8 +16,8 @@
 package org.kaazing.nuklei.ws.internal.routable;
 
 import static org.kaazing.nuklei.ws.internal.util.BufferUtil.xor;
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_BYTE;
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.SIZE_OF_BYTE;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import java.util.function.Consumer;
 
@@ -35,12 +35,12 @@ import org.kaazing.nuklei.ws.internal.types.stream.WsDataFW;
 import org.kaazing.nuklei.ws.internal.types.stream.WsEndFW;
 import org.kaazing.nuklei.ws.internal.types.stream.WsFrameFW;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.MessageHandler;
+import org.agrona.concurrent.ringbuffer.RingBuffer;
 
 public final class Target implements Nukleus
 {

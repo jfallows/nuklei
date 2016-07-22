@@ -17,7 +17,7 @@ package org.kaazing.specification.nuklei.tcp.streams;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
-import static uk.co.real_logic.agrona.IoUtil.createEmptyFile;
+import static org.agrona.IoUtil.createEmptyFile;
 
 import java.io.File;
 
@@ -31,7 +31,7 @@ import org.junit.rules.Timeout;
 import org.kaazing.k3po.junit.annotation.Specification;
 import org.kaazing.k3po.junit.rules.K3poRule;
 
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 public class AcceptIT
 {

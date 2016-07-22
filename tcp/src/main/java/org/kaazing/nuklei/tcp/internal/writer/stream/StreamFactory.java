@@ -27,9 +27,9 @@ import org.kaazing.nuklei.tcp.internal.types.stream.EndFW;
 import org.kaazing.nuklei.tcp.internal.writer.Source;
 import org.kaazing.nuklei.tcp.internal.writer.Target;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
+import org.agrona.DirectBuffer;
+import org.agrona.LangUtil;
+import org.agrona.concurrent.MessageHandler;
 
 public final class StreamFactory
 {
