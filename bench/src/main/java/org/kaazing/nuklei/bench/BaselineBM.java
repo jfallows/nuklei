@@ -28,7 +28,6 @@ import java.util.Random;
 
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.OneToOneRingBuffer;
 import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -56,7 +55,7 @@ import org.openjdk.jmh.infra.Control;
 @OutputTimeUnit(SECONDS)
 public class BaselineBM
 {
-    private ManyToOneRingBuffer source;
+    private OneToOneRingBuffer source;
     private OneToOneRingBuffer target;
 
     private MutableDirectBuffer writeBuffer;
@@ -74,7 +73,7 @@ public class BaselineBM
         createEmptyFile(sourceFile, capacity);
         createEmptyFile(targetFile, capacity);
 
-        this.source = new ManyToOneRingBuffer(new UnsafeBuffer(mapExistingFile(sourceFile, "source")));
+        this.source = new OneToOneRingBuffer(new UnsafeBuffer(mapExistingFile(sourceFile, "source")));
         this.target = new OneToOneRingBuffer(new UnsafeBuffer(mapExistingFile(targetFile, "target")));
 
         this.writeBuffer = new UnsafeBuffer(allocateDirect(payload).order(nativeOrder()));
@@ -117,7 +116,7 @@ public class BaselineBM
 
     @Benchmark
     @Group("asymmetric")
-    @GroupThreads(2)
+    @GroupThreads(1)
     public void writer(Control control, Counters counters) throws Exception
     {
         while (!control.stopMeasurement &&
