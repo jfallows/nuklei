@@ -26,6 +26,7 @@ import java.io.File;
 import java.util.Random;
 
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.OneToOneRingBuffer;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -52,6 +53,7 @@ import org.openjdk.jmh.infra.Control;
 @OutputTimeUnit(SECONDS)
 public class BaselineBM
 {
+    private AtomicBuffer buffer;
     private OneToOneRingBuffer source;
     private OneToOneRingBuffer target;
 
@@ -60,14 +62,14 @@ public class BaselineBM
     @Setup(Level.Trial)
     public void init()
     {
-        final int capacity = 1024 * 1024 * 16 + TRAILER_LENGTH;
-        final int payload = 128;
+        final int capacity = 1024 * 1024 * 64 + TRAILER_LENGTH;
+        final int payload = 256;
 
-        final File sourceFile = new File("target/benchmarks/baseline/source").getAbsoluteFile();
-        final File targetFile = new File("target/benchmarks/baseline/target").getAbsoluteFile();
+        final File bufferFile = new File("target/benchmarks/baseline/buffer").getAbsoluteFile();
 
-        this.source = new OneToOneRingBuffer(new UnsafeBuffer(mapNewFile(sourceFile, capacity)));
-        this.target = new OneToOneRingBuffer(new UnsafeBuffer(mapNewFile(targetFile, capacity)));
+        this.buffer = new UnsafeBuffer(mapNewFile(bufferFile, capacity));
+        this.source = new OneToOneRingBuffer(buffer);
+        this.target = new OneToOneRingBuffer(buffer);
 
         this.writeBuffer = new UnsafeBuffer(allocateDirect(payload).order(nativeOrder()));
         this.writeBuffer.setMemory(0, payload, (byte)new Random().nextInt(256));
@@ -76,26 +78,24 @@ public class BaselineBM
     @TearDown(Level.Trial)
     public void destroy()
     {
-        unmap(source.buffer().byteBuffer());
-        unmap(target.buffer().byteBuffer());
+        unmap(buffer.byteBuffer());
     }
 
     @Setup(Level.Iteration)
     public void reset()
     {
-        source.buffer().setMemory(source.buffer().capacity() - TRAILER_LENGTH, TRAILER_LENGTH, (byte)0);
-        source.buffer().putLongOrdered(0, 0L);
-        target.buffer().setMemory(target.buffer().capacity() - TRAILER_LENGTH, TRAILER_LENGTH, (byte)0);
-        target.buffer().putLongOrdered(0, 0L);
+        buffer.setMemory(target.buffer().capacity() - TRAILER_LENGTH, TRAILER_LENGTH, (byte)0);
+        buffer.putLongOrdered(0, 0L);
     }
 
     @Benchmark
     @Group("asymmetric")
     @GroupThreads(1)
-    public void writer(Control control) throws Exception
+    public void writer(
+        final Control control) throws Exception
     {
         while (!control.stopMeasurement &&
-               !source.write(0x02, writeBuffer, 0, writeBuffer.capacity()))
+                !target.write(0x02, writeBuffer, 0, writeBuffer.capacity()))
         {
             Thread.yield();
         }
@@ -104,28 +104,11 @@ public class BaselineBM
     @Benchmark
     @Group("asymmetric")
     @GroupThreads(1)
-    public void copier(Control control) throws Exception
-    {
-        if (!control.stopMeasurement)
-        {
-            source.read((msgTypeId, buffer, offset, length) ->
-            {
-                while (!control.stopMeasurement &&
-                        !target.write(msgTypeId, buffer, offset, length))
-                {
-                    Thread.yield();
-                }
-            });
-        }
-    }
-
-    @Benchmark
-    @Group("asymmetric")
-    @GroupThreads(1)
-    public void reader(Control control) throws Exception
+    public void reader(
+        final Control control) throws Exception
     {
         while (!control.stopMeasurement &&
-               target.read((msgTypeId, buffer, offset, length) -> {}) == 0)
+               source.read((msgTypeId, buffer, offset, length) -> {}) == 0)
         {
             Thread.yield();
         }
