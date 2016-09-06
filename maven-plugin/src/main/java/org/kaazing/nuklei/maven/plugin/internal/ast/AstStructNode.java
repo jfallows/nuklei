@@ -29,6 +29,7 @@ public final class AstStructNode extends AstNode
     private final String supertype;
     private final List<AstMemberNode> members;
 
+    @Override
     public <R> R accept(
         Visitor<R> visitor)
     {
@@ -129,6 +130,7 @@ public final class AstStructNode extends AstNode
             return this;
         }
 
+        @Override
         public AstStructNode build()
         {
             return new AstStructNode(name, typeId, supertype, members);

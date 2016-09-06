@@ -23,6 +23,7 @@ public final class AstSpecificationNode extends AstNode
 {
     private final AstScopeNode scope;
 
+    @Override
     public <R> R accept(
         Visitor<R> visitor)
     {
@@ -73,6 +74,7 @@ public final class AstSpecificationNode extends AstNode
             return this;
         }
 
+        @Override
         public AstSpecificationNode build()
         {
             return new AstSpecificationNode(scope);

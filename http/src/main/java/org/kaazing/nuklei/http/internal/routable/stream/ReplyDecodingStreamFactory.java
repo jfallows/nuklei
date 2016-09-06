@@ -167,6 +167,7 @@ public final class ReplyDecodingStreamFactory
                     offset = decodeHttpEnd(buffer, offset, limit);
                     break;
                 case END:
+                default:
                     break loop;
                 }
             }

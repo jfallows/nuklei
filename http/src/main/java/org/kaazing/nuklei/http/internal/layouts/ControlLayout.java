@@ -166,11 +166,11 @@ public final class ControlLayout extends Layout
         @Override
         public ControlLayout build()
         {
-            File controlFile = controlPath.toFile();
-            int commandBufferLength = commandBufferCapacity + RingBufferDescriptor.TRAILER_LENGTH;
-            int responseBufferLength = responseBufferCapacity + BroadcastBufferDescriptor.TRAILER_LENGTH;
-            int counterLabelsBufferLength = counterLabelsBufferCapacity;
-            int counterValuesBufferLength = counterValuesBufferCapacity;
+            final File controlFile = controlPath.toFile();
+            final int commandBufferLength = commandBufferCapacity + RingBufferDescriptor.TRAILER_LENGTH;
+            final int responseBufferLength = responseBufferCapacity + BroadcastBufferDescriptor.TRAILER_LENGTH;
+            final int counterLabelsBufferLength = counterLabelsBufferCapacity;
+            final int counterValuesBufferLength = counterValuesBufferCapacity;
 
             if (!readonly)
             {
@@ -186,14 +186,14 @@ public final class ControlLayout extends Layout
                 unmap(metadata);
             }
 
-            int commandBufferOffset = END_OF_META_DATA_OFFSET;
+            final long commandBufferOffset = END_OF_META_DATA_OFFSET;
             layout.commandBuffer.wrap(mapExistingFile(controlFile, "commands", commandBufferOffset, commandBufferLength));
 
-            int responseBufferOffset = commandBufferOffset + commandBufferLength;
+            final long responseBufferOffset = commandBufferOffset + commandBufferLength;
             layout.responseBuffer.wrap(
                     mapExistingFile(controlFile, "responses", responseBufferOffset, responseBufferLength));
 
-            int counterLabelsBufferOffset = responseBufferOffset + responseBufferLength;
+            final long counterLabelsBufferOffset = responseBufferOffset + responseBufferLength;
             if (counterLabelsBuffer != null)
             {
                 layout.counterLabelsBuffer.wrap(counterLabelsBuffer);
@@ -205,7 +205,7 @@ public final class ControlLayout extends Layout
                         mapExistingFile(controlFile, "counterLabels", counterLabelsBufferOffset, counterLabelsBufferLength));
             }
 
-            int counterValuesBufferOffset = counterLabelsBufferOffset + counterLabelsBufferLength;
+            final long counterValuesBufferOffset = counterLabelsBufferOffset + counterLabelsBufferLength;
             if (counterValuesBuffer != null)
             {
                 layout.counterValuesBuffer.wrap(counterValuesBuffer);
@@ -216,6 +216,7 @@ public final class ControlLayout extends Layout
                 layout.counterValuesBuffer.wrap(
                         mapExistingFile(controlFile, "counterValues", counterValuesBufferOffset, counterValuesBufferLength));
             }
+
             return layout;
         }
     }

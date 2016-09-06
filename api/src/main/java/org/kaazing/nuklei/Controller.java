@@ -20,6 +20,7 @@ public interface Controller extends AutoCloseable
 {
     int process();
 
+    @Override
     default void close() throws Exception
     {
     }

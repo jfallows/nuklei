@@ -114,6 +114,7 @@ public final class AstUnionNode extends AstNode
             return this;
         }
 
+        @Override
         public AstUnionNode build()
         {
             return new AstUnionNode(name, supertype, cases);

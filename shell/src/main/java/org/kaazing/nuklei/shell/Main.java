@@ -83,6 +83,10 @@ public final class Main
         runner.close();
     }
 
+    private Main()
+    {
+    }
+
     private static final class ControllerAgent implements Agent
     {
         private final Controller controller;

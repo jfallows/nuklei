@@ -80,6 +80,8 @@ public final class BufferUtil
                 index += BitUtil.SIZE_OF_SHORT;
                 buffer.putByte(index, (byte) (buffer.getByte(index) ^ ((bits >> REMAINING_SHIFT_3RD_BYTE) & 0xff)));
                 break;
+            default:
+                throw new IllegalStateException("remaining=" + remaining);
             }
         }
     }
