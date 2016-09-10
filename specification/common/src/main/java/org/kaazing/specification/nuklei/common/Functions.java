@@ -49,19 +49,19 @@ public final class Functions
     }
 
     @Function
-    public static byte[] newInitialRef()
+    public static byte[] newReferenceId()
     {
-        return longToBytesNative(RANDOM.nextLong() & 0x7FFFFFFF_FFFFFFFFL);
-    }
-
-    @Function
-    public static byte[] newReplyRef()
-    {
-        return longToBytesNative(RANDOM.nextLong() | 0x80000000_00000000L);
+        return longToBytesNative(RANDOM.nextLong());
     }
 
     @Function
     public static byte[] newStreamId()
+    {
+        return longToBytesNative(RANDOM.nextLong());
+    }
+
+    @Function
+    public static byte[] newCorrelationId()
     {
         return longToBytesNative(RANDOM.nextLong());
     }
