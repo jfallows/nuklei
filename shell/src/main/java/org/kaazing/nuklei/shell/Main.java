@@ -68,7 +68,7 @@ public final class Main
 
         startOnThread(runner);
 
-        long tcpInitRef = tcpctl.bind().get();
+        long tcpInitRef = tcpctl.bind(0x21).get();
         long httpInitRef = httpctl.bind().get();
         long wsInitRef = wsctl.bind().get();
         long wsReplyRef = wsInitRef; // TODO: unidirectional binds

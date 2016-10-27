@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-# external newSourceRef
+# external newInitialRef
 
 property nukleiC1C ${nuklei:directory("target/nukleus-itests").controlCapacity(1024, 1024)}
 
@@ -28,7 +28,7 @@ connected
 
 write [0x00 0x00 0x00 0x01]
 write ${controlC1C.nextCorrelationId()}
-write [0x01 0x01]
+write [0x11]
 write flush
 
 read [0x40 0x00 0x00 0x01]

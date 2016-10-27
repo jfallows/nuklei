@@ -18,24 +18,23 @@ package org.kaazing.nuklei.tcp.internal;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 
-import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
-import org.kaazing.nuklei.tcp.internal.types.stream.TcpBeginFW;
-import org.kaazing.nuklei.tcp.internal.types.stream.TcpDataFW;
-import org.kaazing.nuklei.tcp.internal.types.stream.TcpEndFW;
-
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.MessageHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
+import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
+import org.kaazing.nuklei.tcp.internal.types.stream.BeginFW;
+import org.kaazing.nuklei.tcp.internal.types.stream.DataFW;
+import org.kaazing.nuklei.tcp.internal.types.stream.EndFW;
 
 public final class TcpStreams
 {
     private static final int MAX_SEND_LENGTH = 1024; // TODO: Configuration and Context
 
-    private final TcpBeginFW.Builder beginRW = new TcpBeginFW.Builder();
-    private final TcpDataFW.Builder dataRW = new TcpDataFW.Builder();
-    private final TcpEndFW.Builder endRW = new TcpEndFW.Builder();
+    private final BeginFW.Builder beginRW = new BeginFW.Builder();
+    private final DataFW.Builder dataRW = new DataFW.Builder();
+    private final EndFW.Builder endRW = new EndFW.Builder();
 
     private final StreamsLayout captureStreams;
     private final StreamsLayout routeStreams;
@@ -71,12 +70,14 @@ public final class TcpStreams
 
     public void begin(
         long streamId,
-        long routableRef)
+        long referenceId,
+        long correlationId)
     {
-        TcpBeginFW beginRO = beginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                    .streamId(streamId)
-                                    .routableRef(routableRef)
-                                    .build();
+        BeginFW beginRO = beginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                 .streamId(streamId)
+                                 .referenceId(referenceId)
+                                 .correlationId(correlationId)
+                                 .build();
 
         if (!captureBuffer.write(beginRO.typeId(), beginRO.buffer(), beginRO.offset(), beginRO.length()))
         {
@@ -90,10 +91,10 @@ public final class TcpStreams
         int offset,
         int length)
     {
-        TcpDataFW dataRO = dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                 .streamId(streamId)
-                                 .payload(o -> o.set(buffer, offset, length))
-                                 .build();
+        DataFW dataRO = dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                              .streamId(streamId)
+                              .payload(o -> o.set(buffer, offset, length))
+                              .build();
 
         if (!captureBuffer.write(dataRO.typeId(), dataRO.buffer(), dataRO.offset(), dataRO.length()))
         {
@@ -104,9 +105,9 @@ public final class TcpStreams
     public void end(
         long streamId)
     {
-        TcpEndFW endRO = endRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                              .streamId(streamId)
-                              .build();
+        EndFW endRO = endRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                           .streamId(streamId)
+                           .build();
 
         if (!captureBuffer.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.length()))
         {

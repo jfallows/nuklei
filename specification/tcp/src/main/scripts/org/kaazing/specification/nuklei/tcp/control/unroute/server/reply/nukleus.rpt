@@ -14,28 +14,29 @@
 # limitations under the License.
 #
 
-property nukleiC11N ${nuklei:directory("target/nukleus-itests").controlCapacity(1024, 1024)}
+property nukleiC12N ${nuklei:directory("target/nukleus-itests").controlCapacity(1024, 1024)}
 
-property controlC11N ${nukleiC11N.controlNew("tcp")}
+property controlC12N ${nukleiC12N.controlNew("tcp")}
 
-connect await BOUND_INITIAL
+connect await ROUTED_REPLY
         agrona://stream/bidirectional
-        option reader ${agrona:manyToOneReader(controlC11N.nukleus)}
-        option writer ${agrona:broadcastTransmitter(controlC11N.controller)}
+        option reader ${agrona:manyToOneReader(controlC12N.nukleus)}
+        option writer ${agrona:broadcastTransmitter(controlC12N.controller)}
 
 connected
 
-read [0x00 0x00 0x00 0x11]
-read ([0..8]:correlationIdC11N)
-read [0x06] "source"
-read ([0..8]:initialRefC11N)
-read [0x06] "target"
-read ([0..8]:targetRefC11N)
+read [0x00 0x00 0x00 0x12]
+read ([0..8]:correlationIdC12N)
+read [0x05] "reply"
+read ([0..8]:replyRefC12N)
+read [0x03] "any"
+read ([0..8]:targetRefC12N)
+read [0x08]
 read [0x01] [0x04] [0x7f 0x00 0x00 0x01]
 read [0x1f 0x90]
 
-write [0x40 0x00 0x00 0x11]
-write ${correlationIdC11N}
+write [0x40 0x00 0x00 0x12]
+write ${correlationIdC12N}
 write flush
 
 close

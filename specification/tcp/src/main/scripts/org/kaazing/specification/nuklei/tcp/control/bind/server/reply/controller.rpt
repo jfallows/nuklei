@@ -14,25 +14,26 @@
 # limitations under the License.
 #
 
-# external newSourceRef
+# external newReplyRef
 
-property nukleiC1C ${nuklei:directory("target/nukleus-itests").controlCapacity(1024, 1024)}
+property nukleiC1CR ${nuklei:directory("target/nukleus-itests").controlCapacity(1024, 1024)}
 
-property controlC1C ${nukleiC1C.control("tcp")}
+property controlC1CR ${nukleiC1CR.control("tcp")}
 
-connect agrona://stream/bidirectional
-        option reader ${agrona:broadcastReceiver(controlC1C.controller)}
-        option writer ${agrona:manyToOneWriter(controlC1C.nukleus)}
+connect await BOUND_INITIAL
+        agrona://stream/bidirectional
+        option reader ${agrona:broadcastReceiver(controlC1CR.controller)}
+        option writer ${agrona:manyToOneWriter(controlC1CR.nukleus)}
 
 connected
 
 write [0x00 0x00 0x00 0x01]
-write ${controlC1C.nextCorrelationId()}
-write [0x02 0x02]
+write ${controlC1CR.nextCorrelationId()}
+write [0x22]
 write flush
 
 read [0x40 0x00 0x00 0x01]
-read ${controlC1C.correlationId()}
+read ${controlC1CR.correlationId()}
 read ([0..8]:newReplyRef)
 
 close

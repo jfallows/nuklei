@@ -15,22 +15,31 @@
  */
 package org.kaazing.nuklei.tcp.internal.writer;
 
+import static java.util.Collections.emptyList;
+import static org.kaazing.nuklei.tcp.internal.writer.Route.addressMatches;
+import static org.kaazing.nuklei.tcp.internal.writer.Route.sourceMatches;
+import static org.kaazing.nuklei.tcp.internal.writer.Route.sourceRefMatches;
+import static org.kaazing.nuklei.tcp.internal.writer.Route.targetMatches;
+import static org.kaazing.nuklei.tcp.internal.writer.Route.targetRefMatches;
+
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
-import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-
-import org.kaazing.nuklei.Nukleus;
-import org.kaazing.nuklei.tcp.internal.Context;
-import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
-import org.kaazing.nuklei.tcp.internal.connector.Connector;
-import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
+import java.util.function.LongFunction;
+import java.util.function.Predicate;
 
 import org.agrona.LangUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.tcp.internal.Context;
+import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
+import org.kaazing.nuklei.tcp.internal.connector.Connector;
+import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
 
 /**
  * The {@code Writable} nukleus reads streams data from multiple {@code Source} nuklei and monitors completion of
@@ -38,31 +47,36 @@ import org.agrona.concurrent.UnsafeBuffer;
  */
 public final class Writer extends Nukleus.Composite
 {
+    private static final List<Route> EMPTY_ROUTES = emptyList();
+
     private final Context context;
     private final Conductor conductor;
     private final Connector connector;
     private final String name;
     private final String sourceName;
     private final AtomicBuffer writeBuffer;
+    private final Map<String, Source> sourcesByPartitionName;
     private final Map<String, Target> targetsByName;
-    private final Long2ObjectHashMap<Route> routesByRef;
-    private final Long2ObjectHashMap<Reply> repliesByRef;
+    private final Long2ObjectHashMap<List<Route>> routesByRef;
+    private final LongFunction<SocketChannel> resolveReply;
 
     public Writer(
         Context context,
         Conductor conductor,
         Connector connector,
-        String sourceName)
+        String sourceName,
+        LongFunction<SocketChannel> resolveReply)
     {
         this.context = context;
         this.conductor = conductor;
         this.connector = connector;
         this.sourceName = sourceName;
-        this.name = String.format("writer[%s]", sourceName);
+        this.resolveReply = resolveReply;
+        this.name = sourceName;
         this.writeBuffer = new UnsafeBuffer(new byte[context.maxMessageLength()]);
+        this.sourcesByPartitionName = new HashMap<>();
         this.targetsByName = new HashMap<>();
         this.routesByRef = new Long2ObjectHashMap<>();
-        this.repliesByRef = new Long2ObjectHashMap<>();
     }
 
     @Override
@@ -72,17 +86,31 @@ public final class Writer extends Nukleus.Composite
     }
 
     public void onReadable(
-        Path sourcePath)
+        String partitionName)
     {
-        StreamsLayout layout = new StreamsLayout.Builder()
-            .path(sourcePath)
-            .streamsCapacity(context.streamsBufferCapacity())
-            .throttleCapacity(context.throttleBufferCapacity())
-            .readonly(true)
-            .build();
+        sourcesByPartitionName.computeIfAbsent(partitionName, this::newSource);
+    }
 
-        final String partitionName = sourcePath.getFileName().toString();
-        include(new Source(partitionName, this, routesByRef::get, repliesByRef::get, layout, writeBuffer));
+    public void onConnected(
+        String sourceName,
+        long sourceId,
+        long sourceRef,
+        String targetName,
+        long correlationId,
+        SocketChannel channel)
+    {
+        final Source source = sourcesByPartitionName.get(sourceName);
+        final Target target = targetsByName.computeIfAbsent(targetName, this::newTarget);
+
+        source.onConnected(sourceId, sourceRef, target, channel, correlationId);
+    }
+
+    public void onConnectFailed(
+        String partitionName,
+        long sourceId)
+    {
+        Source source = sourcesByPartitionName.get(partitionName);
+        source.doReset(sourceId);
     }
 
     public void doRoute(
@@ -90,17 +118,17 @@ public final class Writer extends Nukleus.Composite
         long sourceRef,
         String targetName,
         long targetRef,
-        String replyName,
         InetSocketAddress address)
     {
         try
         {
-            final Target target = targetsByName.computeIfAbsent(targetName, this::supplyTarget);
-            final Route newRoute = new Route(sourceName, sourceRef, target, targetRef, replyName, address);
+            final Target target = targetsByName.computeIfAbsent(targetName, this::newTarget);
+            final Route newRoute = new Route(sourceName, sourceRef, target, targetRef, address);
 
-            routesByRef.put(sourceRef, newRoute);
+            routesByRef.computeIfAbsent(sourceRef, this::newRoutes)
+                       .add(newRoute);
 
-            conductor.onRoutedResponse(correlationId, sourceName, sourceRef, targetName, targetRef, replyName, address);
+            conductor.onRoutedResponse(correlationId);
         }
         catch (Exception ex)
         {
@@ -114,20 +142,20 @@ public final class Writer extends Nukleus.Composite
         long sourceRef,
         String targetName,
         long targetRef,
-        String replyName,
         InetSocketAddress address)
     {
-        Route route = routesByRef.get(sourceRef);
+        final List<Route> routes = lookupRoutes(sourceRef);
 
-        if (route != null &&
-                route.sourceRef() == sourceRef &&
-                route.target().name().equals(targetName) &&
-                route.targetRef() == targetRef &&
-                route.reply().equals(replyName) &&
-                route.address().equals(address))
+        final Predicate<Route> filter =
+                sourceMatches(sourceName)
+                 .and(sourceRefMatches(sourceRef))
+                 .and(targetMatches(targetName))
+                 .and(targetRefMatches(targetRef))
+                 .and(addressMatches(address));
+
+        if (routes.removeIf(filter))
         {
-            routesByRef.remove(sourceRef);
-            conductor.onUnroutedResponse(correlationId, sourceName, sourceRef, targetName, targetRef, replyName, address);
+            conductor.onUnroutedResponse(correlationId);
         }
         else
         {
@@ -135,56 +163,41 @@ public final class Writer extends Nukleus.Composite
         }
     }
 
-    public void doRouteReply(
-        String replyName,
-        long replyRef,
-        long replyId,
-        SocketChannel channel)
+    @Override
+    protected void toString(
+        StringBuilder builder)
     {
-        final Target target = targetsByName.computeIfAbsent(replyName, this::supplyTarget);
-        final Reply reply = repliesByRef.computeIfAbsent(replyRef, v -> new Reply());
-
-        reply.register(replyId, target, channel);
+        builder.append(String.format("%s[name=%s]", getClass().getSimpleName(), name));
     }
 
-    public void doConnect(
-        Source source,
-        long sourceRef,
-        long sourceId,
-        String targetName,
-        long targetRef,
-        String replyName,
-        long replyRef,
-        long replyId,
-        SocketChannel channel,
-        InetSocketAddress address)
-    {
-        final Runnable onfailure = () -> onConnectFailed(source, sourceId);
-        final Runnable onsuccess = () -> onConnectSucceeded(source, sourceId, sourceRef, replyId, replyRef);
-        connector.doConnect(sourceName, sourceRef, sourceId, targetName, targetRef, replyName, replyRef, replyId,
-                channel, address, onsuccess, onfailure);
-    }
-
-    public void onConnectSucceeded(
-        Source source,
-        long sourceId,
-        long sourceRef,
-        long replyId,
-        long replyRef)
-    {
-        source.doBegin(sourceId, sourceRef, replyId, replyRef);
-    }
-
-    public void onConnectFailed(
-        Source source,
-        long sourceId)
-    {
-        source.doReset(sourceId);
-    }
-
-    private Target supplyTarget(
+    private Target newTarget(
         String targetName)
     {
         return include(new Target(targetName));
+    }
+
+    private List<Route> newRoutes(
+        long sourceRef)
+    {
+        return new ArrayList<>();
+    }
+
+    private List<Route> lookupRoutes(
+        long referenceId)
+    {
+        return routesByRef.getOrDefault(referenceId, EMPTY_ROUTES);
+    }
+
+    private Source newSource(
+        String partitionName)
+    {
+        StreamsLayout layout = new StreamsLayout.Builder()
+            .path(context.captureStreamsPath().apply(partitionName))
+            .streamsCapacity(context.streamsBufferCapacity())
+            .throttleCapacity(context.throttleBufferCapacity())
+            .readonly(true)
+            .build();
+
+        return include(new Source(partitionName, connector, this::lookupRoutes, resolveReply, layout, writeBuffer));
     }
 }

@@ -20,16 +20,15 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
+import org.agrona.DirectBuffer;
+import org.agrona.LangUtil;
+import org.agrona.concurrent.MessageHandler;
 import org.kaazing.nuklei.tcp.internal.types.OctetsFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.BeginFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.DataFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.EndFW;
 import org.kaazing.nuklei.tcp.internal.writer.Source;
 import org.kaazing.nuklei.tcp.internal.writer.Target;
-
-import org.agrona.DirectBuffer;
-import org.agrona.LangUtil;
-import org.agrona.concurrent.MessageHandler;
 
 public final class StreamFactory
 {

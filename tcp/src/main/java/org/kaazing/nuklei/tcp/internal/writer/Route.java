@@ -16,7 +16,9 @@
 package org.kaazing.nuklei.tcp.internal.writer;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 public class Route
 {
@@ -24,7 +26,6 @@ public class Route
     private final long sourceRef;
     private final Target target;
     private final long targetRef;
-    private final String reply;
     private final InetSocketAddress address;
 
     public Route(
@@ -32,14 +33,12 @@ public class Route
         long sourceRef,
         Target target,
         long targetRef,
-        String reply,
         InetSocketAddress address)
     {
         this.source = source;
         this.sourceRef = sourceRef;
         this.target = target;
         this.targetRef = targetRef;
-        this.reply = reply;
         this.address = address;
     }
 
@@ -61,11 +60,6 @@ public class Route
     public long targetRef()
     {
         return this.targetRef;
-    }
-
-    public String reply()
-    {
-        return reply;
     }
 
     public InetSocketAddress address()
@@ -93,14 +87,46 @@ public class Route
                 this.targetRef == that.targetRef &&
                 Objects.equals(this.source, that.source) &&
                 Objects.equals(this.target, that.target) &&
-                Objects.equals(this.reply, that.reply) &&
                 Objects.equals(this.address, that.address);
     }
 
     @Override
     public String toString()
     {
-        return String.format("[source=\"%s\", sourceRef=%d, target=\"%s\", targetRef=%d, reply=\"%s\", address=%s]",
-                source, sourceRef, target, targetRef, reply, address);
+        return String.format("[source=\"%s\", sourceRef=%d, target=\"%s\", targetRef=%d, address=%s]",
+                source, sourceRef, target.name(), targetRef, address);
+    }
+
+    public static Predicate<Route> sourceMatches(
+        String source)
+    {
+        Objects.requireNonNull(source);
+        return r -> source.equals(r.source);
+    }
+
+    public static Predicate<Route> sourceRefMatches(
+        long sourceRef)
+    {
+        return r -> sourceRef == r.sourceRef;
+    }
+
+    public static Predicate<Route> targetMatches(
+        String target)
+    {
+        Objects.requireNonNull(target);
+        return r -> target.equals(r.target.name());
+    }
+
+    public static Predicate<Route> targetRefMatches(
+        long targetRef)
+    {
+        return r -> targetRef == r.targetRef;
+    }
+
+    public static Predicate<Route> addressMatches(
+        SocketAddress address)
+    {
+        Objects.requireNonNull(address);
+        return r -> address.equals(r.address);
     }
 }

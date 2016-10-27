@@ -37,8 +37,8 @@ public class ServerIT
 
     private final NukleusRule nukleus = new NukleusRule()
         .directory("target/nukleus-itests")
-        .streams("target", "tcp#source")
-        .streams("tcp", "target");
+        .streams("target", "tcp#any")
+        .streams("tcp", "reply");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);
@@ -46,7 +46,8 @@ public class ServerIT
     @Test
     @Specification({
         "connection.established/server/nukleus",
-        "connection.established/server/target"
+        "connection.established/server/target",
+        "connection.established/server/reply"
     })
     public void shouldEstablishConnection() throws Exception
     {
@@ -59,7 +60,8 @@ public class ServerIT
     @Test
     @Specification({
         "server.sent.data/server/nukleus",
-        "server.sent.data/server/target" })
+        "server.sent.data/server/target",
+        "server.sent.data/server/reply" })
     public void shouldReceiveServerSentData() throws Exception
     {
         k3po.start();
@@ -71,7 +73,8 @@ public class ServerIT
     @Test
     @Specification({
         "client.sent.data/server/nukleus",
-        "client.sent.data/server/target" })
+        "client.sent.data/server/target",
+        "client.sent.data/server/reply" })
     public void shouldReceiveClientSentData() throws Exception
     {
         k3po.start();
@@ -83,7 +86,8 @@ public class ServerIT
     @Test
     @Specification({
         "echo.data/server/nukleus",
-        "echo.data/server/target" })
+        "echo.data/server/target",
+        "echo.data/server/reply" })
     public void shouldEchoData() throws Exception
     {
         k3po.start();
@@ -95,7 +99,8 @@ public class ServerIT
     @Test
     @Specification({
         "server.close/server/nukleus",
-        "server.close/server/target" })
+        "server.close/server/target",
+        "server.close/server/reply" })
     public void shouldInitiateServerClose() throws Exception
     {
         k3po.start();
@@ -107,7 +112,8 @@ public class ServerIT
     @Test
     @Specification({
         "client.close/server/nukleus",
-        "client.close/server/target" })
+        "client.close/server/target",
+        "client.close/server/reply" })
     public void shouldInitiateClientClose() throws Exception
     {
         k3po.start();

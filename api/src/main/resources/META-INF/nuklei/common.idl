@@ -29,6 +29,7 @@ scope common
 
         struct Bind extends common::control::Frame [0x00000001]
         {
+            int8 kind; // [SERVER (0x10) | CLIENT (0x20)] ORed [INITIAL (0x01) | REPLY (0x02)]
         }
 
         struct Bound extends common::control::Frame [0x40000001]
@@ -43,28 +44,7 @@ scope common
 
         struct Unbound extends common::control::Frame [0x40000002]
         {
-            int64 referenceId;
         }
-
-        struct Prepare extends common::control::Frame [0x00000003]
-        {
-        }
-
-        struct Prepared extends common::control::Frame [0x40000003]
-        {
-            int64 referenceId;
-        }
-
-        struct Unprepare extends common::control::Frame [0x00000004]
-        {
-            int64 referenceId;
-        }
-
-        struct Unprepared extends common::control::Frame [0x40000004]
-        {
-            int64 referenceId;
-        }
-
 
         struct Route extends common::control::Frame [0x00000011]
         {
@@ -72,16 +52,11 @@ scope common
             int64 sourceRef;
             string target;
             int64 targetRef;
-            string reply;
+            octets extension;
         }
 
         struct Routed extends common::control::Frame [0x40000011]
         {
-            string source;
-            int64 sourceRef;
-            string target;
-            int64 targetRef;
-            string reply;
         }
 
         struct Unroute extends common::control::Frame [0x00000012]
@@ -90,16 +65,11 @@ scope common
             int64 sourceRef;
             string target;
             int64 targetRef;
-            string reply;
+            octets extension;
         }
 
         struct Unrouted extends common::control::Frame [0x40000012]
         {
-            string source;
-            int64 sourceRef;
-            string target;
-            int64 targetRef;
-            string reply;
         }
 
 
@@ -123,18 +93,20 @@ scope common
 
         struct Begin extends common::stream::Frame [0x00000001]
         {
-            int64 routableRef;
-            int64 replyId;
-            int64 replyRef;
+            int64 referenceId;
+            int64 correlationId;
+            octets extension;
         }
 
         struct Data extends common::stream::Frame [0x00000002]
         {
             octets payload;
+            octets extension;
         }
 
         struct End extends common::stream::Frame [0x00000003]
         {
+            octets extension;
         }
 
         struct Reset extends common::stream::Frame [0x40000001]

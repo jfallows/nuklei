@@ -43,6 +43,12 @@ public final class Target extends TransportPoller implements Nukleus
     }
 
     @Override
+    public String toString()
+    {
+        return String.format("%s[name=%s]", getClass().getSimpleName(), targetName);
+    }
+
+    @Override
     public int process()
     {
         int weight = 0;

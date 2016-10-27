@@ -23,62 +23,13 @@ scope tcp
 
     scope control
     {
-        struct Error extends common::control::Error
-        {
-        }
-
-        struct Bind extends common::control::Bind
-        {
-        }
-
-        struct Bound extends common::control::Bound
-        {
-        }
-
-        struct Unbind extends common::control::Unbind
-        {
-        }
-
-        struct Unbound extends common::control::Unbound
-        {
-        }
-
-        struct Prepare extends common::control::Prepare
-        {
-        }
-
-        struct Prepared extends common::control::Prepared
-        {
-        }
-
-        struct Unprepare extends common::control::Unprepare
-        {
-        }
-
-        struct Unprepared extends common::control::Unprepared
-        {
-        }
-
-
-        struct Route extends common::control::Route
+        struct RouteEx
         {
             tcp::Address address;
             uint16 port;
         }
 
-        struct Routed extends common::control::Routed
-        {
-            tcp::Address address;
-            uint16 port;
-        }
-
-        struct Unroute extends common::control::Unroute
-        {
-            tcp::Address address;
-            uint16 port;
-        }
-
-        struct Unrouted extends common::control::Unrouted
+        struct UnrouteEx
         {
             tcp::Address address;
             uint16 port;
@@ -87,28 +38,12 @@ scope tcp
 
     scope stream
     {
-        struct TcpBegin extends common::stream::Begin
+        struct BeginEx
         {
             tcp::Address localAddress;
             uint16 localPort;
             tcp::Address remoteAddress;
             uint16 remotePort;
-        }
-
-        struct TcpData extends common::stream::Data
-        {
-        }
-
-        struct TcpEnd extends common::stream::End
-        {
-        }
-
-        struct TcpReset extends common::stream::Reset
-        {
-        }
-
-        struct TcpWindow extends common::stream::Window
-        {
         }
     }
 }

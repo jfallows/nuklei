@@ -14,29 +14,32 @@
 # limitations under the License.
 #
 
-property nukleiC12N ${nuklei:directory("target/nukleus-itests").controlCapacity(1024, 1024)}
+property newReplyRef ${nuklei:newReferenceId()} # external scope
 
-property controlC12N ${nukleiC12N.controlNew("tcp")}
+property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)}
+
+property targetReply ${nuklei.streams("tcp", "reply")}
+
+property newReplyId ${nuklei:newStreamId()}
 
 connect await ROUTED_REPLY
         agrona://stream/bidirectional
-        option reader ${agrona:manyToOneReader(controlC12N.nukleus)}
-        option writer ${agrona:broadcastTransmitter(controlC12N.controller)}
-
+        option reader ${agrona:oneToOneReader(targetReply.throttle)}
+        option writer ${agrona:oneToOneWriter(targetReply.buffer)}
 connected
 
-read [0x00 0x00 0x00 0x12]
-read ([0..8]:correlationIdC12N)
-read [0x06] "source"
-read ([0..8]:replyRefC12N)
-read [0x06] "target"
-read ([0..8]:targetRefC12N)
-read [0x01] [0x04] [0x7f 0x00 0x00 0x01]
-read [0x1f 0x90]
+write await WINDOW_UPDATED
 
-write [0x40 0x00 0x00 0x12]
-write ${correlationIdC12N}
+write [0x00 0x00 0x00 0x01]
+write ${newReplyId}
+write ${newReplyRef}
+write ${correlationId}
+write [0x00]
 write flush
+
+read [0x40 0x00 0x00 0x02]
+read ${newReplyId}
+read [0..4]
 
 close
 closed

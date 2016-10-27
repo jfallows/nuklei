@@ -22,15 +22,6 @@ import static org.kaazing.nuklei.tcp.internal.util.IpUtil.ipAddress;
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
 
-import org.kaazing.nuklei.Controller;
-import org.kaazing.nuklei.tcp.internal.types.control.BindFW;
-import org.kaazing.nuklei.tcp.internal.types.control.BoundFW;
-import org.kaazing.nuklei.tcp.internal.types.control.ErrorFW;
-import org.kaazing.nuklei.tcp.internal.types.control.RouteFW;
-import org.kaazing.nuklei.tcp.internal.types.control.RoutedFW;
-import org.kaazing.nuklei.tcp.internal.types.control.UnbindFW;
-import org.kaazing.nuklei.tcp.internal.types.control.UnboundFW;
-
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AtomicBuffer;
@@ -38,6 +29,16 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.broadcast.BroadcastReceiver;
 import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
+import org.kaazing.nuklei.Controller;
+import org.kaazing.nuklei.tcp.internal.types.Flyweight.Builder.Visitor;
+import org.kaazing.nuklei.tcp.internal.types.control.BindFW;
+import org.kaazing.nuklei.tcp.internal.types.control.BoundFW;
+import org.kaazing.nuklei.tcp.internal.types.control.ErrorFW;
+import org.kaazing.nuklei.tcp.internal.types.control.RouteExFW;
+import org.kaazing.nuklei.tcp.internal.types.control.RouteFW;
+import org.kaazing.nuklei.tcp.internal.types.control.RoutedFW;
+import org.kaazing.nuklei.tcp.internal.types.control.UnbindFW;
+import org.kaazing.nuklei.tcp.internal.types.control.UnboundFW;
 
 
 public final class TcpController implements Controller
@@ -46,6 +47,7 @@ public final class TcpController implements Controller
 
     // TODO: thread-safe flyweights or command queue from public methods
     private final RouteFW.Builder routeRW = new RouteFW.Builder();
+    private final RouteExFW.Builder routeExRW = new RouteExFW.Builder();
     private final BindFW.Builder bindRW = new BindFW.Builder();
     private final UnbindFW.Builder unbindRW = new UnbindFW.Builder();
 
@@ -97,14 +99,15 @@ public final class TcpController implements Controller
         return "tcp";
     }
 
-    public CompletableFuture<Long> bind()
+    public CompletableFuture<Long> bind(
+        final int kind)
     {
         final CompletableFuture<Long> promise = new CompletableFuture<>();
-
-        long correlationId = conductorCommands.nextCorrelationId();
+        final long correlationId = conductorCommands.nextCorrelationId();
 
         BindFW bindRO = bindRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                               .correlationId(correlationId)
+                              .kind((byte)kind)
                               .build();
 
         if (!conductorCommands.write(bindRO.typeId(), bindRO.buffer(), bindRO.offset(), bindRO.length()))
@@ -120,11 +123,10 @@ public final class TcpController implements Controller
     }
 
     public CompletableFuture<Void> unbind(
-        long referenceId)
+        final long referenceId)
     {
         final CompletableFuture<Void> promise = new CompletableFuture<>();
-
-        long correlationId = conductorCommands.nextCorrelationId();
+        final long correlationId = conductorCommands.nextCorrelationId();
 
         UnbindFW unbindRO = unbindRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                                     .correlationId(correlationId)
@@ -160,8 +162,7 @@ public final class TcpController implements Controller
                                  .sourceRef(sourceRef)
                                  .target(target)
                                  .targetRef(targetRef)
-                                 .address(a -> ipAddress(address, a::ipv4Address, a::ipv6Address))
-                                 .port(address.getPort())
+                                 .extension(b -> b.set(visitRouteEx(address)))
                                  .build();
 
         if (!conductorCommands.write(routeRO.typeId(), routeRO.buffer(), routeRO.offset(), routeRO.length()))
@@ -181,6 +182,17 @@ public final class TcpController implements Controller
         String target)
     {
         return new TcpStreams(context, source, target);
+    }
+
+    private Visitor visitRouteEx(
+        InetSocketAddress address)
+    {
+        return (buffer, offset, limit) ->
+            routeExRW.wrap(buffer, offset, limit)
+                     .address(a -> ipAddress(address, a::ipv4Address, a::ipv6Address))
+                     .port(address.getPort())
+                     .build()
+                     .length();
     }
 
     private int handleResponse(

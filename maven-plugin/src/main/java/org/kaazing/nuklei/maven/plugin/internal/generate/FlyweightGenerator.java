@@ -85,7 +85,7 @@ public final class FlyweightGenerator extends ClassSpecGenerator
                         .returns(typeVarT)
                         .addParameter(DIRECT_BUFFER_TYPE, "buffer")
                         .addParameter(int.class, "offset")
-                        .addParameter(int.class, "length")
+                        .addParameter(int.class, "maxLimit")
                         .build())
                 .build();
     }
@@ -228,7 +228,8 @@ public final class FlyweightGenerator extends ClassSpecGenerator
                             .addModifiers(PUBLIC, ABSTRACT)
                             .addParameter(MUTABLE_DIRECT_BUFFER_TYPE, "buffer")
                             .addParameter(int.class, "offset")
-                            .addParameter(int.class, "length")
+                            .addParameter(int.class, "maxLimit")
+                            .returns(int.class)
                             .build())
                     .build();
         }

@@ -23,6 +23,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.collections.LongHashSet;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.tcp.internal.Context;
@@ -31,9 +34,6 @@ import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
 import org.kaazing.nuklei.tcp.internal.connector.Connector;
 import org.kaazing.nuklei.tcp.internal.reader.Reader;
 import org.kaazing.nuklei.tcp.internal.writer.Writer;
-
-import org.agrona.collections.LongHashSet;
-import org.agrona.concurrent.status.AtomicCounter;
 
 /**
  * The {@code Router} nukleus manages in-bound and out-bound routes, coordinating with the {@code Acceptable},
@@ -45,7 +45,8 @@ public final class Router extends Nukleus.Composite
     private static final Pattern SOURCE_NAME = Pattern.compile("([^#]+).*");
 
     private final Context context;
-    private final LongHashSet routableRefs;
+    private final LongHashSet referenceIds;
+    private final Long2ObjectHashMap<SocketChannel> correlationIds;
     private final Map<String, Reader> readers;
     private final Map<String, Writer> writers;
 
@@ -57,7 +58,8 @@ public final class Router extends Nukleus.Composite
         Context context)
     {
         this.context = context;
-        this.routableRefs = new LongHashSet(-1L);
+        this.referenceIds = new LongHashSet(-1L);
+        this.correlationIds = new Long2ObjectHashMap<>();
         this.readers = new HashMap<>();
         this.writers = new HashMap<>();
     }
@@ -83,16 +85,25 @@ public final class Router extends Nukleus.Composite
         return "router";
     }
 
-    public void doBind(
-        long correlationId)
+    @Override
+    protected void toString(
+        StringBuilder builder)
     {
-        final AtomicCounter streamsBound = context.counters().streamsBound();
+        builder.append(getClass().getSimpleName());
+    }
 
-        final long routableRef = RouteKind.BIND.nextRef(streamsBound);
+    public void doBind(
+        long correlationId,
+        int kind)
+    {
+        final AtomicCounter targetsBound = context.counters().targetsBound();
 
-        if (routableRefs.add(routableRef))
+        final RouteKind routeKind = RouteKind.of(kind);
+        final long referenceId = routeKind.nextRef(targetsBound);
+
+        if (referenceIds.add(referenceId))
         {
-            conductor.onBoundResponse(correlationId, routableRef);
+            conductor.onBoundResponse(correlationId, referenceId);
         }
         else
         {
@@ -102,42 +113,11 @@ public final class Router extends Nukleus.Composite
 
     public void doUnbind(
         long correlationId,
-        long routableRef)
+        long referenceId)
     {
-        if (routableRefs.remove(routableRef))
+        if (referenceIds.remove(referenceId))
         {
-            conductor.onUnboundResponse(correlationId, routableRef);
-        }
-        else
-        {
-            conductor.onErrorResponse(correlationId);
-        }
-    }
-
-    public void doPrepare(
-        long correlationId)
-    {
-        final AtomicCounter streamsPrepared = context.counters().streamsPrepared();
-
-        final long routableRef = RouteKind.PREPARE.nextRef(streamsPrepared);
-
-        if (routableRefs.add(routableRef))
-        {
-            conductor.onPreparedResponse(correlationId, routableRef);
-        }
-        else
-        {
-            conductor.onErrorResponse(correlationId);
-        }
-    }
-
-    public void doUnprepare(
-        long correlationId,
-        long routableRef)
-    {
-        if (routableRefs.remove(routableRef))
-        {
-            conductor.onUnpreparedResponse(correlationId, routableRef);
+            conductor.onUnboundResponse(correlationId);
         }
         else
         {
@@ -151,19 +131,21 @@ public final class Router extends Nukleus.Composite
         long sourceRef,
         String targetName,
         long targetRef,
-        String replyName,
         InetSocketAddress address)
     {
-        // TODO: reply name differs from source name
-        if (routableRefs.contains(sourceRef) && replyName.equals(sourceName))
+        if (referenceIds.contains(sourceRef))
         {
-            switch (RouteKind.of(sourceRef))
+            switch (RouteKind.match(sourceRef))
             {
-            case BIND:
-                doRouteBind(correlationId, sourceName, sourceRef, targetName, targetRef, replyName, address);
+            case SERVER_INITIAL:
+                doRouteAcceptor(correlationId, sourceName, sourceRef, targetName, targetRef, address);
                 break;
-            case PREPARE:
-                doRoutePrepare(correlationId, sourceName, sourceRef, targetName, targetRef, replyName, address);
+            case SERVER_REPLY:
+            case CLIENT_INITIAL:
+                doRouteWriter(correlationId, sourceName, sourceRef, targetName, targetRef, address);
+                break;
+            case CLIENT_REPLY:
+                doRouteReader(correlationId, sourceName, sourceRef, targetName, targetRef, address);
                 break;
             default:
                 conductor.onErrorResponse(correlationId);
@@ -181,20 +163,30 @@ public final class Router extends Nukleus.Composite
         long sourceRef,
         String targetName,
         long targetRef,
-        String replyName,
         InetSocketAddress address)
     {
-        switch (RouteKind.of(sourceRef))
+        if (referenceIds.contains(sourceRef))
         {
-        case BIND:
-            doUnrouteBind(correlationId, sourceName, sourceRef, targetName, targetRef, replyName, address);
-            break;
-        case PREPARE:
-            doUnroutePrepare(correlationId, sourceName, sourceRef, targetName, targetRef, replyName, address);
-            break;
-        default:
+            switch (RouteKind.match(sourceRef))
+            {
+            case SERVER_INITIAL:
+                doUnrouteAcceptor(correlationId, sourceName, sourceRef, targetName, targetRef, address);
+                break;
+            case SERVER_REPLY:
+            case CLIENT_INITIAL:
+                doUnrouteWriter(correlationId, sourceName, sourceRef, targetName, targetRef, address);
+                break;
+            case CLIENT_REPLY:
+                doUnrouteReader(correlationId, sourceName, sourceRef, targetName, targetRef, address);
+                break;
+            default:
+                conductor.onErrorResponse(correlationId);
+                break;
+            }
+        }
+        else
+        {
             conductor.onErrorResponse(correlationId);
-            break;
         }
     }
 
@@ -203,33 +195,39 @@ public final class Router extends Nukleus.Composite
         String targetName,
         long targetRef,
         long targetId,
-        String replyName,
-        long replyRef,
-        long replyId,
+        long correlationId,
         SocketChannel channel)
     {
-        Writer writer = writers.computeIfAbsent(targetName, this::newWriter);
-        writer.doRouteReply(replyName, replyRef, replyId, channel);
+        correlationIds.put(correlationId, channel);
 
         Reader reader = readers.computeIfAbsent(sourceName, this::newReader);
-        reader.doBegin(targetName, targetRef, targetId, replyRef, replyId, channel);
+        reader.doBegin(targetName, targetRef, targetId, correlationId, channel);
     }
 
     public void onConnected(
-        String targetName,
         String sourceName,
         long sourceRef,
         long sourceId,
-        String replyName,
-        long replyRef,
-        long replyId,
-        SocketChannel channel)
+        String targetName,
+        long targetId,
+        long targetRef,
+        long correlationId,
+        SocketChannel channel,
+        InetSocketAddress address)
     {
-        Writer writer = writers.computeIfAbsent(sourceName, this::newWriter);
-        writer.doRouteReply(replyName, replyRef, replyId, channel);
+        Writer writer = writers.get(sourceName);
+        writer.onConnected(sourceName, sourceId, sourceRef, targetName, correlationId, channel);
 
         Reader reader = readers.computeIfAbsent(targetName, this::newReader);
-        reader.doBegin(replyName, replyRef, replyId, sourceRef, sourceId, channel);
+        reader.onConnected(targetId, correlationId, channel, address);
+    }
+
+    public void onConnectFailed(
+        String sourceName,
+        long sourceId)
+    {
+        Writer writer = writers.get(sourceName);
+        writer.onConnectFailed(sourceName, sourceId);
     }
 
     public void onReadable(
@@ -237,7 +235,8 @@ public final class Router extends Nukleus.Composite
     {
         String sourceName = source(sourcePath);
         Writer writer = writers.computeIfAbsent(sourceName, this::newWriter);
-        writer.onReadable(sourcePath);
+        String partitionName = sourcePath.getFileName().toString();
+        writer.onReadable(partitionName);
     }
 
     public void onExpired(
@@ -260,49 +259,53 @@ public final class Router extends Nukleus.Composite
         }
     }
 
-    private void doRouteBind(
+    private void doRouteAcceptor(
         long correlationId,
         String sourceName,
         long sourceRef,
         String targetName,
         long targetRef,
-        String replyName,
         InetSocketAddress address)
     {
         Reader reader = readers.computeIfAbsent(sourceName, this::newReader);
-        reader.doRoute(targetName);
-
-        acceptor.doRoute(correlationId, sourceName, sourceRef, targetName, targetRef, replyName, address);
+        reader.doAccept(correlationId, sourceRef, targetName, targetRef, address);
     }
 
-    private void doRoutePrepare(
+    private void doRouteWriter(
         long correlationId,
         String sourceName,
         long sourceRef,
         String targetName,
         long targetRef,
-        String replyName,
         InetSocketAddress address)
     {
-        Reader reader = readers.computeIfAbsent(targetName, this::newReader);
-        reader.doRoute(sourceName);
-
         Writer writer = writers.computeIfAbsent(sourceName, this::newWriter);
-        writer.doRoute(correlationId, sourceRef, targetName, targetRef, replyName, address);
+        writer.doRoute(correlationId, sourceRef, targetName, targetRef, address);
     }
 
-    private void doUnrouteBind(
+    private void doRouteReader(
         long correlationId,
         String sourceName,
         long sourceRef,
         String targetName,
         long targetRef,
-        String replyName,
+        InetSocketAddress address)
+    {
+        Reader reader = readers.computeIfAbsent(sourceName, this::newReader);
+        reader.doRoute(correlationId, sourceRef, targetName, targetRef, address);
+    }
+
+    private void doUnrouteAcceptor(
+        long correlationId,
+        String sourceName,
+        long sourceRef,
+        String targetName,
+        long targetRef,
         InetSocketAddress address)
     {
         if (acceptor != null)
         {
-            acceptor.doUnroute(correlationId, sourceName, sourceRef, targetName, targetRef, replyName, address);
+            acceptor.doUnroute(correlationId, sourceName, sourceRef, targetName, targetRef, address);
         }
         else
         {
@@ -310,19 +313,37 @@ public final class Router extends Nukleus.Composite
         }
     }
 
-    private void doUnroutePrepare(
+    private void doUnrouteWriter(
         long correlationId,
         String sourceName,
         long sourceRef,
         String targetName,
         long targetRef,
-        String replyName,
         InetSocketAddress address)
     {
         Writer writer = writers.get(sourceName);
         if (writer != null)
         {
-            writer.doUnroute(correlationId, sourceRef, targetName, targetRef, replyName, address);
+            writer.doUnroute(correlationId, sourceRef, targetName, targetRef, address);
+        }
+        else
+        {
+            conductor.onErrorResponse(correlationId);
+        }
+    }
+
+    private void doUnrouteReader(
+        long correlationId,
+        String sourceName,
+        long sourceRef,
+        String targetName,
+        long targetRef,
+        InetSocketAddress address)
+    {
+        Reader reader = readers.get(sourceName);
+        if (reader != null)
+        {
+            reader.doUnroute(correlationId, sourceRef, targetName, targetRef, address);
         }
         else
         {
@@ -333,12 +354,12 @@ public final class Router extends Nukleus.Composite
     private Reader newReader(
         String sourceName)
     {
-        return include(new Reader(context, this, sourceName));
+        return include(new Reader(context, conductor, acceptor, sourceName));
     }
 
     private Writer newWriter(
         String sourceName)
     {
-        return include(new Writer(context, conductor, connector, sourceName));
+        return include(new Writer(context, conductor, connector, sourceName, correlationIds::remove));
     }
 }

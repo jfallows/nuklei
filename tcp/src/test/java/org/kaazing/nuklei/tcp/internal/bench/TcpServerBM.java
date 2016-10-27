@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.bench.jmh.tcp;
+package org.kaazing.nuklei.tcp.internal.bench;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
@@ -90,7 +90,7 @@ public class TcpServerBM
         File target = new File("target/nukleus-benchmarks/target/streams/tcp");
         createEmptyFile(target.getAbsoluteFile(), streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH);
 
-        final CompletableFuture<Long> bind = controller.bind();
+        final CompletableFuture<Long> bind = controller.bind(0x01);
         while (this.nukleus.process() != 0L || this.controller.process() != 0L)
         {
             // intentional

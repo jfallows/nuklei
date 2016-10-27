@@ -164,7 +164,7 @@ public final class StreamFactory
 
             final int update = windowRO.update();
 
-            if (readableBytes == 0)
+            if (readableBytes == 0 && update > 0)
             {
                 final int interestOps = key.interestOps();
                 final int newInterestOps = interestOps | SelectionKey.OP_READ;

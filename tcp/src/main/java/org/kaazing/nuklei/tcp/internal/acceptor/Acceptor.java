@@ -15,23 +15,38 @@
  */
 package org.kaazing.nuklei.tcp.internal.acceptor;
 
+import static java.net.StandardSocketOptions.SO_REUSEADDR;
 import static java.nio.channels.SelectionKey.OP_ACCEPT;
+import static java.util.Collections.emptyList;
+import static org.agrona.CloseHelper.quietClose;
+import static org.kaazing.nuklei.tcp.internal.acceptor.Route.descriptionMatches;
+import static org.kaazing.nuklei.tcp.internal.acceptor.Route.sourceMatches;
+import static org.kaazing.nuklei.tcp.internal.acceptor.Route.sourceRefMatches;
+import static org.kaazing.nuklei.tcp.internal.acceptor.Route.targetMatches;
+import static org.kaazing.nuklei.tcp.internal.acceptor.Route.targetRefMatches;
+import static org.kaazing.nuklei.tcp.internal.util.IpUtil.describe;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.channels.NetworkChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
+import org.agrona.CloseHelper;
+import org.agrona.LangUtil;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.nio.TransportPoller;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
+import org.kaazing.nuklei.tcp.internal.Context;
 import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
 import org.kaazing.nuklei.tcp.internal.router.Router;
-
-import org.agrona.LangUtil;
-import org.agrona.nio.TransportPoller;
 
 /**
  * The {@code Acceptor} nukleus accepts new socket connections and informs the {@code Router} nukleus.
@@ -39,14 +54,17 @@ import org.agrona.nio.TransportPoller;
 @Reaktive
 public final class Acceptor extends TransportPoller implements Nukleus
 {
-    private final Map<InetSocketAddress, Route> routesByAddress;
+    private static final List<Route> EMPTY_ROUTES = emptyList();
+
+    private final Context context;
 
     private Conductor conductor;
     private Router router;
 
-    public Acceptor()
+    public Acceptor(
+        Context context)
     {
-        this.routesByAddress = new HashMap<>();
+        this.context = context;
     }
 
     public void setConductor(
@@ -77,7 +95,10 @@ public final class Acceptor extends TransportPoller implements Nukleus
     @Override
     public void close()
     {
-        routesByAddress.values().forEach(this::unroute);
+        for (SelectionKey key : selector.keys())
+        {
+            quietClose(key.channel());
+        }
         super.close();
     }
 
@@ -87,27 +108,24 @@ public final class Acceptor extends TransportPoller implements Nukleus
         long sourceRef,
         String targetName,
         long targetRef,
-        String replyName,
         InetSocketAddress address)
     {
         try
         {
-            final ServerSocketChannel serverChannel = ServerSocketChannel.open();
-            serverChannel.bind(address);
-            serverChannel.configureBlocking(false);
+            final SelectionKey key = findOrRegisterKey(address);
+            final List<Route> routes = attachment(key);
 
-            Route newRoute = new Route(sourceName, sourceRef, targetName, targetRef, replyName, address);
-            serverChannel.register(selector, OP_ACCEPT, newRoute);
-            newRoute.attach(serverChannel);
+            final String description = describe(address);
+            final Predicate<SocketChannel> condition = ch -> hasLocalAddress(ch, address);
+            Route newRoute = new Route(sourceName, sourceRef, targetName, targetRef, description, condition);
+            routes.add(newRoute);
 
-            routesByAddress.put(address, newRoute);
-
-            conductor.onRoutedResponse(correlationId, sourceName, sourceRef, targetName, targetRef, replyName, address);
+            conductor.onRoutedResponse(correlationId);
         }
-        catch (IOException ex)
+        catch (Exception ex)
         {
-            LangUtil.rethrowUnchecked(ex);
             conductor.onErrorResponse(correlationId);
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 
@@ -117,17 +135,27 @@ public final class Acceptor extends TransportPoller implements Nukleus
         long sourceRef,
         String targetName,
         long targetRef,
-        String replyName,
         InetSocketAddress address)
     {
-        final Route route = routesByAddress.get(address);
+        final SelectionKey key = findRegisteredKey(address);
+        final List<Route> routes = attachment(key);
 
-        Route candidate = new Route(sourceName, sourceRef, targetName, targetRef, replyName, address);
-        if (route != null && route.equals(candidate))
+        final Predicate<Route> filter =
+                sourceMatches(sourceName)
+                 .and(sourceRefMatches(sourceRef))
+                 .and(targetMatches(targetName))
+                 .and(targetRefMatches(targetRef))
+                 .and(descriptionMatches(describe(address)));
+
+        if (routes.removeIf(filter))
         {
-            routesByAddress.remove(address);
-            unroute(route);
-            conductor.onUnroutedResponse(correlationId, sourceName, sourceRef, targetName, targetRef, replyName, address);
+            if (routes.isEmpty())
+            {
+                CloseHelper.quietClose(key.channel());
+                selectNowWithoutProcessing();
+            }
+
+            conductor.onUnroutedResponse(correlationId);
         }
         else
         {
@@ -147,42 +175,22 @@ public final class Acceptor extends TransportPoller implements Nukleus
         }
     }
 
-    private void unroute(
-        Route route)
-    {
-        try
-        {
-            route.channel().close();
-            selectNowWithoutProcessing();
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
-    }
-
     private int processAccept(
         SelectionKey selectionKey)
     {
         try
         {
-            final Route route = (Route) selectionKey.attachment();
-            final String sourceName = route.source();
-            final long sourceRef = route.sourceRef();
-            final String targetName = route.target();
-            final long targetRef = route.targetRef();
-            final String replyName = route.reply();
-            final ServerSocketChannel serverChannel = route.channel();
+            final ServerSocketChannel serverChannel = channel(selectionKey);
 
             final SocketChannel channel = serverChannel.accept();
             channel.configureBlocking(false);
 
-            final long targetId = System.identityHashCode(channel);
+            final List<Route> routes = attachment(selectionKey);
 
-            final long replyRef = -sourceRef;
-            final long replyId = System.identityHashCode(channel);
-
-            router.onAccepted(sourceName, targetName, targetRef, targetId, replyName, replyRef, replyId, channel);
+            routes.stream()
+                  .filter(r -> r.condition().test(channel))
+                  .findFirst()
+                  .ifPresent(r -> handleAccepted(r, channel));
         }
         catch (Exception ex)
         {
@@ -190,5 +198,96 @@ public final class Acceptor extends TransportPoller implements Nukleus
         }
 
         return 1;
+    }
+
+    private void handleAccepted(
+        final Route route,
+        final SocketChannel channel)
+    {
+        final String sourceName = route.source();
+        final String targetName = route.target();
+        final long targetRef = route.targetRef();
+
+        final AtomicCounter streamsSourced = context.counters().streamsSourced();
+        final long targetId = streamsSourced.increment();
+        final long correlationId = System.identityHashCode(channel);
+
+        router.onAccepted(sourceName, targetName, targetRef, targetId, correlationId, channel);
+    }
+
+    private SelectionKey findRegisteredKey(
+        InetSocketAddress localAddress)
+    {
+        return findSelectionKey(localAddress, a -> null);
+    }
+
+    private SelectionKey findOrRegisterKey(
+        InetSocketAddress address)
+    {
+        return findSelectionKey(address, this::registerKey);
+    }
+
+    private SelectionKey findSelectionKey(
+        InetSocketAddress localAddress,
+        Function<InetSocketAddress, SelectionKey> mappingFunction)
+    {
+        final Optional<SelectionKey> optional =
+                selector.keys()
+                        .stream()
+                        .filter(k -> hasLocalAddress(channel(k), localAddress))
+                        .findFirst();
+
+        return optional.orElse(mappingFunction.apply(localAddress));
+    }
+
+    private SelectionKey registerKey(
+        InetSocketAddress localAddress)
+    {
+        try
+        {
+            final ServerSocketChannel serverChannel = ServerSocketChannel.open();
+            serverChannel.bind(localAddress);
+            serverChannel.setOption(SO_REUSEADDR, true);
+            serverChannel.configureBlocking(false);
+
+            return serverChannel.register(selector, OP_ACCEPT, new ArrayList<Route>());
+        }
+        catch (IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        // unreachable
+        return null;
+    }
+
+    private boolean hasLocalAddress(
+        NetworkChannel channel,
+        InetSocketAddress address)
+    {
+        try
+        {
+            return channel.getLocalAddress().equals(address);
+        }
+        catch (IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        // unreachable
+        return false;
+    }
+
+    private static ServerSocketChannel channel(
+        SelectionKey selectionKey)
+    {
+        return (ServerSocketChannel) selectionKey.channel();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Route> attachment(
+        SelectionKey key)
+    {
+        return key != null ? (List<Route>) key.attachment() : EMPTY_ROUTES;
     }
 }

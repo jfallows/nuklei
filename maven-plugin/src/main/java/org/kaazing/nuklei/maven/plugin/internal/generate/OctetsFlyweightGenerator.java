@@ -94,8 +94,10 @@ public final class OctetsFlyweightGenerator extends ClassSpecGenerator
                 .addTypeVariable(typeVarT)
                 .addParameter(visitorType, "visitor")
                 .returns(typeVarT)
-                .addStatement("int length = buffer().getByte(offset() + FIELD_OFFSET_LENGTH) & 0xFF")
-                .addStatement("return visitor.visit(buffer(), offset() + FIELD_SIZE_LENGTH, length)")
+                .addStatement("DirectBuffer buffer = buffer()")
+                .addStatement("int offset = offset()")
+                .addStatement("int length = buffer.getByte(offset() + FIELD_OFFSET_LENGTH) & 0xFF")
+                .addStatement("return visitor.visit(buffer, offset + FIELD_SIZE_LENGTH, offset + FIELD_SIZE_LENGTH + length)")
                 .build();
     }
 
@@ -204,6 +206,7 @@ public final class OctetsFlyweightGenerator extends ClassSpecGenerator
                     .returns(octetsType.nestedClass("Builder"))
                     .addParameter(octetsType, "value")
                     .addStatement("buffer().putBytes(offset(), value.buffer(), value.offset(), value.length())")
+                    .addStatement("limit(offset() + value.length())")
                     .addStatement("return this")
                     .build();
         }
@@ -216,8 +219,9 @@ public final class OctetsFlyweightGenerator extends ClassSpecGenerator
                     .addParameter(DIRECT_BUFFER_TYPE, "value")
                     .addParameter(int.class, "offset")
                     .addParameter(int.class, "length")
-                    .addStatement("buffer().putByte(offset(), (byte) length)")
+                    .addStatement("buffer().putByte(offset() + FIELD_OFFSET_LENGTH, (byte) length)")
                     .addStatement("buffer().putBytes(offset() + FIELD_SIZE_LENGTH, value, offset, length)")
+                    .addStatement("limit(offset() + FIELD_OFFSET_LENGTH + FIELD_SIZE_LENGTH + length)")
                     .addStatement("return this")
                     .build();
         }
@@ -228,8 +232,9 @@ public final class OctetsFlyweightGenerator extends ClassSpecGenerator
                     .addModifiers(PUBLIC)
                     .returns(octetsType.nestedClass("Builder"))
                     .addParameter(byte[].class, "value")
-                    .addStatement("buffer().putByte(offset(), (byte) value.length)")
+                    .addStatement("buffer().putByte(offset() + FIELD_OFFSET_LENGTH, (byte) value.length)")
                     .addStatement("buffer().putBytes(offset() + FIELD_SIZE_LENGTH, value)")
+                    .addStatement("limit(offset() + FIELD_OFFSET_LENGTH + FIELD_SIZE_LENGTH + value.length)")
                     .addStatement("return this")
                     .build();
         }
@@ -240,8 +245,10 @@ public final class OctetsFlyweightGenerator extends ClassSpecGenerator
                     .addModifiers(PUBLIC)
                     .returns(octetsType.nestedClass("Builder"))
                     .addParameter(visitorType, "visitor")
-                    .addStatement("int length = buffer().getByte(offset() + FIELD_OFFSET_LENGTH) & 0xFF")
-                    .addStatement("visitor.visit(buffer(), offset() + FIELD_SIZE_LENGTH, length)")
+                    .addStatement("int length = visitor.visit(buffer(), offset() + FIELD_OFFSET_LENGTH + FIELD_SIZE_LENGTH," +
+                            " maxLimit())")
+                    .addStatement("buffer().putByte(offset() + FIELD_OFFSET_LENGTH, (byte) length)")
+                    .addStatement("limit(offset() + FIELD_OFFSET_LENGTH + FIELD_SIZE_LENGTH + length)")
                     .addStatement("return this")
                     .build();
         }

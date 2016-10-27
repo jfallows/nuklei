@@ -16,27 +16,8 @@
 package org.kaazing.nuklei.tcp.internal.conductor;
 
 import static org.kaazing.nuklei.tcp.internal.util.IpUtil.inetAddress;
-import static org.kaazing.nuklei.tcp.internal.util.IpUtil.ipAddress;
 
 import java.net.InetSocketAddress;
-
-import org.kaazing.nuklei.Nukleus;
-import org.kaazing.nuklei.Reaktive;
-import org.kaazing.nuklei.tcp.internal.Context;
-import org.kaazing.nuklei.tcp.internal.router.Router;
-import org.kaazing.nuklei.tcp.internal.types.control.BindFW;
-import org.kaazing.nuklei.tcp.internal.types.control.BoundFW;
-import org.kaazing.nuklei.tcp.internal.types.control.ErrorFW;
-import org.kaazing.nuklei.tcp.internal.types.control.PrepareFW;
-import org.kaazing.nuklei.tcp.internal.types.control.PreparedFW;
-import org.kaazing.nuklei.tcp.internal.types.control.RouteFW;
-import org.kaazing.nuklei.tcp.internal.types.control.RoutedFW;
-import org.kaazing.nuklei.tcp.internal.types.control.UnbindFW;
-import org.kaazing.nuklei.tcp.internal.types.control.UnboundFW;
-import org.kaazing.nuklei.tcp.internal.types.control.UnprepareFW;
-import org.kaazing.nuklei.tcp.internal.types.control.UnpreparedFW;
-import org.kaazing.nuklei.tcp.internal.types.control.UnrouteFW;
-import org.kaazing.nuklei.tcp.internal.types.control.UnroutedFW;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -44,6 +25,21 @@ import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.broadcast.BroadcastTransmitter;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
+import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.Reaktive;
+import org.kaazing.nuklei.tcp.internal.Context;
+import org.kaazing.nuklei.tcp.internal.router.Router;
+import org.kaazing.nuklei.tcp.internal.types.OctetsFW;
+import org.kaazing.nuklei.tcp.internal.types.control.BindFW;
+import org.kaazing.nuklei.tcp.internal.types.control.BoundFW;
+import org.kaazing.nuklei.tcp.internal.types.control.ErrorFW;
+import org.kaazing.nuklei.tcp.internal.types.control.RouteExFW;
+import org.kaazing.nuklei.tcp.internal.types.control.RouteFW;
+import org.kaazing.nuklei.tcp.internal.types.control.RoutedFW;
+import org.kaazing.nuklei.tcp.internal.types.control.UnbindFW;
+import org.kaazing.nuklei.tcp.internal.types.control.UnboundFW;
+import org.kaazing.nuklei.tcp.internal.types.control.UnrouteFW;
+import org.kaazing.nuklei.tcp.internal.types.control.UnroutedFW;
 
 @Reaktive
 public final class Conductor implements Nukleus
@@ -52,16 +48,14 @@ public final class Conductor implements Nukleus
 
     private final BindFW bindRO = new BindFW();
     private final UnbindFW unbindRO = new UnbindFW();
-    private final PrepareFW prepareRO = new PrepareFW();
-    private final UnprepareFW unprepareRO = new UnprepareFW();
     private final RouteFW routeRO = new RouteFW();
     private final UnrouteFW unrouteRO = new UnrouteFW();
+
+    private final RouteExFW routeExRO = new RouteExFW();
 
     private final ErrorFW.Builder errorRW = new ErrorFW.Builder();
     private final BoundFW.Builder boundRW = new BoundFW.Builder();
     private final UnboundFW.Builder unboundRW = new UnboundFW.Builder();
-    private final PreparedFW.Builder preparedRW = new PreparedFW.Builder();
-    private final UnpreparedFW.Builder unpreparedRW = new UnpreparedFW.Builder();
     private final RoutedFW.Builder routedRW = new RoutedFW.Builder();
     private final UnroutedFW.Builder unroutedRW = new UnroutedFW.Builder();
 
@@ -120,83 +114,30 @@ public final class Conductor implements Nukleus
     }
 
     public void onUnboundResponse(
-        long correlationId,
-        long referenceId)
+        long correlationId)
     {
         UnboundFW unboundRO = unboundRW.wrap(sendBuffer, 0, sendBuffer.capacity())
                                        .correlationId(correlationId)
-                                       .referenceId(referenceId)
                                        .build();
 
         conductorResponses.transmit(unboundRO.typeId(), unboundRO.buffer(), unboundRO.offset(), unboundRO.length());
     }
 
-    public void onPreparedResponse(
-        long correlationId,
-        long referenceId)
-    {
-        PreparedFW preparedRO = preparedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
-                                          .correlationId(correlationId)
-                                          .referenceId(referenceId)
-                                          .build();
-
-        conductorResponses.transmit(preparedRO.typeId(), preparedRO.buffer(), preparedRO.offset(), preparedRO.length());
-    }
-
-    public void onUnpreparedResponse(
-        long correlationId,
-        long referenceId)
-    {
-        UnpreparedFW unpreparedRO = unpreparedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
-                                                .correlationId(correlationId)
-                                                .referenceId(referenceId)
-                                                .build();
-
-        conductorResponses.transmit(
-            unpreparedRO.typeId(), unpreparedRO.buffer(), unpreparedRO.offset(), unpreparedRO.length());
-    }
-
     public void onRoutedResponse(
-        long correlationId,
-        String source,
-        long sourceRef,
-        String target,
-        long targetRef,
-        String reply,
-        InetSocketAddress address)
+        long correlationId)
     {
         RoutedFW routedRO = routedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
                                     .correlationId(correlationId)
-                                    .source(source)
-                                    .sourceRef(sourceRef)
-                                    .target(target)
-                                    .targetRef(targetRef)
-                                    .reply(reply)
-                                    .address(a -> ipAddress(address, a::ipv4Address, a::ipv6Address))
-                                    .port(address.getPort())
                                     .build();
 
         conductorResponses.transmit(routedRO.typeId(), routedRO.buffer(), routedRO.offset(), routedRO.length());
     }
 
     public void onUnroutedResponse(
-        long correlationId,
-        String source,
-        long sourceRef,
-        String target,
-        long targetRef,
-        String reply,
-        InetSocketAddress address)
+        long correlationId)
     {
         UnroutedFW unroutedRO = unroutedRW.wrap(sendBuffer, 0, sendBuffer.capacity())
                                           .correlationId(correlationId)
-                                          .source(source)
-                                          .sourceRef(sourceRef)
-                                          .target(target)
-                                          .targetRef(targetRef)
-                                          .reply(reply)
-                                          .address(a -> ipAddress(address, a::ipv4Address, a::ipv6Address))
-                                          .port(address.getPort())
                                           .build();
 
         conductorResponses.transmit(unroutedRO.typeId(), unroutedRO.buffer(), unroutedRO.offset(), unroutedRO.length());
@@ -212,12 +153,6 @@ public final class Conductor implements Nukleus
         case UnbindFW.TYPE_ID:
             handleUnbindCommand(buffer, index, length);
             break;
-        case PrepareFW.TYPE_ID:
-            handlePrepareCommand(buffer, index, length);
-            break;
-        case UnprepareFW.TYPE_ID:
-            handleUnprepareCommand(buffer, index, length);
-            break;
         case RouteFW.TYPE_ID:
             handleRouteCommand(buffer, index, length);
             break;
@@ -230,16 +165,23 @@ public final class Conductor implements Nukleus
         }
     }
 
-    private void handleBindCommand(DirectBuffer buffer, int index, int length)
+    private void handleBindCommand(
+        DirectBuffer buffer,
+        int index,
+        int length)
     {
         bindRO.wrap(buffer, index, index + length);
 
         final long correlationId = bindRO.correlationId();
+        final int kind = bindRO.kind();
 
-        router.doBind(correlationId);
+        router.doBind(correlationId, kind);
     }
 
-    private void handleUnbindCommand(DirectBuffer buffer, int index, int length)
+    private void handleUnbindCommand(
+        DirectBuffer buffer,
+        int index,
+        int length)
     {
         unbindRO.wrap(buffer, index, index + length);
 
@@ -249,26 +191,10 @@ public final class Conductor implements Nukleus
         router.doUnbind(correlationId, referenceId);
     }
 
-    private void handlePrepareCommand(DirectBuffer buffer, int index, int length)
-    {
-        prepareRO.wrap(buffer, index, index + length);
-
-        final long correlationId = prepareRO.correlationId();
-
-        router.doPrepare(correlationId);
-    }
-
-    private void handleUnprepareCommand(DirectBuffer buffer, int index, int length)
-    {
-        unprepareRO.wrap(buffer, index, index + length);
-
-        final long correlationId = unprepareRO.correlationId();
-        final long referenceId = unprepareRO.referenceId();
-
-        router.doUnprepare(correlationId, referenceId);
-    }
-
-    private void handleRouteCommand(DirectBuffer buffer, int index, int length)
+    private void handleRouteCommand(
+        DirectBuffer buffer,
+        int index,
+        int length)
     {
         routeRO.wrap(buffer, index, index + length);
 
@@ -277,13 +203,19 @@ public final class Conductor implements Nukleus
         final long sourceRef = routeRO.sourceRef();
         final String target = routeRO.target().asString();
         final long targetRef = routeRO.targetRef();
-        final String reply = routeRO.reply().asString();
-        final InetSocketAddress address = new InetSocketAddress(inetAddress(routeRO.address()), routeRO.port());
+        final OctetsFW extension = routeRO.extension();
 
-        router.doRoute(correlationId, source, sourceRef, target, targetRef, reply, address);
+        final RouteExFW routeEx = extension.get(routeExRO::wrap);
+
+        final InetSocketAddress address = new InetSocketAddress(inetAddress(routeEx.address()), routeEx.port());
+
+        router.doRoute(correlationId, source, sourceRef, target, targetRef, address);
     }
 
-    private void handleUnrouteCommand(DirectBuffer buffer, int index, int length)
+    private void handleUnrouteCommand(
+        DirectBuffer buffer,
+        int index,
+        int length)
     {
         unrouteRO.wrap(buffer, index, index + length);
 
@@ -292,9 +224,11 @@ public final class Conductor implements Nukleus
         final long sourceRef = unrouteRO.sourceRef();
         final String target = unrouteRO.target().asString();
         final long targetRef = unrouteRO.targetRef();
-        final String reply = unrouteRO.reply().asString();
-        final InetSocketAddress address = new InetSocketAddress(inetAddress(unrouteRO.address()), unrouteRO.port());
+        final OctetsFW extension = unrouteRO.extension();
 
-        router.doUnroute(correlationId, source, sourceRef, target, targetRef, reply, address);
+        final RouteExFW routeEx = extension.get(routeExRO::wrap);
+        final InetSocketAddress address = new InetSocketAddress(inetAddress(routeEx.address()), routeEx.port());
+
+        router.doUnroute(correlationId, source, sourceRef, target, targetRef, address);
     }
 }

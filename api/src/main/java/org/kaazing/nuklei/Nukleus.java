@@ -93,11 +93,17 @@ public interface Nukleus extends AutoCloseable
             return builder.toString();
         }
 
+        protected void toString(
+            StringBuilder builder)
+        {
+            builder.append(name());
+        }
+
         protected final void deepToString(
             int level,
             StringBuilder builder)
         {
-            builder.append(name());
+            toString(builder);
 
             if (nuklei.length != 0)
             {
@@ -117,7 +123,7 @@ public interface Nukleus extends AutoCloseable
                     }
                     else
                     {
-                        builder.append(nukleus.name());
+                        builder.append(nukleus.toString());
                     }
                 }
             }

@@ -15,9 +15,9 @@
  */
 package org.kaazing.nuklei.tcp.internal.acceptor;
 
-import java.net.InetSocketAddress;
-import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 public class Route
 {
@@ -25,31 +25,23 @@ public class Route
     private final long sourceRef;
     private final String target;
     private final long targetRef;
-    private final String reply;
-    private final InetSocketAddress address;
-
-    private ServerSocketChannel channel;
+    private final String description;
+    private final Predicate<SocketChannel> condition;
 
     public Route(
         String source,
         long sourceRef,
         String target,
         long targetRef,
-        String reply,
-        InetSocketAddress address)
+        String description,
+        Predicate<SocketChannel> condition)
     {
         this.source = source;
         this.sourceRef = sourceRef;
         this.target = target;
         this.targetRef = targetRef;
-        this.reply = reply;
-        this.address = address;
-    }
-
-    public void attach(
-        ServerSocketChannel channel)
-    {
-        this.channel = channel;
+        this.description = description;
+        this.condition = condition;
     }
 
     public String source()
@@ -72,25 +64,20 @@ public class Route
         return this.targetRef;
     }
 
-    public String reply()
+    public String description()
     {
-        return reply;
+        return description;
     }
 
-    public InetSocketAddress address()
+    public Predicate<SocketChannel> condition()
     {
-        return address;
-    }
-
-    public ServerSocketChannel channel()
-    {
-        return channel;
+        return condition;
     }
 
     @Override
     public int hashCode()
     {
-        return address.hashCode();
+        return description.hashCode();
     }
 
     @Override
@@ -107,14 +94,46 @@ public class Route
                 this.targetRef == that.targetRef &&
                 Objects.equals(this.source, that.source) &&
                 Objects.equals(this.target, that.target) &&
-                Objects.equals(this.reply, that.reply) &&
-                Objects.equals(this.address, that.address);
+                Objects.equals(this.description, that.description);
     }
 
     @Override
     public String toString()
     {
-        return String.format("[source=\"%s\", sourceRef=%d, target=\"%s\", targetRef=%d, reply=\"%s\", address=%s]",
-                source, sourceRef, target, targetRef, reply, address);
+        return String.format("[source=\"%s\", sourceRef=%d, target=\"%s\", targetRef=%d, description=%s]",
+                source, sourceRef, target, targetRef, description);
+    }
+
+    public static Predicate<Route> sourceMatches(
+        String source)
+    {
+        Objects.requireNonNull(source);
+        return r -> source.equals(r.source);
+    }
+
+    public static Predicate<Route> sourceRefMatches(
+        long sourceRef)
+    {
+        return r -> sourceRef == r.sourceRef;
+    }
+
+    public static Predicate<Route> targetMatches(
+        String target)
+    {
+        Objects.requireNonNull(target);
+        return r -> target.equals(r.target);
+    }
+
+    public static Predicate<Route> targetRefMatches(
+        long targetRef)
+    {
+        return r -> targetRef == r.targetRef;
+    }
+
+    public static Predicate<Route> descriptionMatches(
+        String description)
+    {
+        Objects.requireNonNull(description);
+        return r -> description.equals(r.description);
     }
 }

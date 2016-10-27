@@ -67,6 +67,15 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-generator-annprocess</artifactId>
+        </dependency>
+        <dependency>
             <!-- Needed for EL only, not AST -->
             <groupId>org.kaazing</groupId>
             <artifactId>k3po.lang</artifactId>
@@ -83,7 +92,7 @@
                 <groupId>org.kaazing</groupId>
                 <artifactId>nuklei-maven-plugin</artifactId>
                 <configuration>
-                    <scopeNames>common::stream::Frame common::stream::Window common::stream::Reset tcp</scopeNames>
+                    <scopeNames>common tcp</scopeNames>
                     <packageName>org.kaazing.nuklei.tcp.internal.types</packageName>
                 </configuration>
             </plugin>

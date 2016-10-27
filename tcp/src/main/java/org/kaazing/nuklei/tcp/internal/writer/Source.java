@@ -18,15 +18,9 @@ package org.kaazing.nuklei.tcp.internal.writer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.LongFunction;
-
-import org.kaazing.nuklei.Nukleus;
-import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
-import org.kaazing.nuklei.tcp.internal.types.stream.BeginFW;
-import org.kaazing.nuklei.tcp.internal.types.stream.FrameFW;
-import org.kaazing.nuklei.tcp.internal.types.stream.ResetFW;
-import org.kaazing.nuklei.tcp.internal.types.stream.WindowFW;
-import org.kaazing.nuklei.tcp.internal.writer.stream.StreamFactory;
 
 import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
@@ -34,39 +28,48 @@ import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.MessageHandler;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
+import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.tcp.internal.connector.Connector;
+import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
+import org.kaazing.nuklei.tcp.internal.router.RouteKind;
+import org.kaazing.nuklei.tcp.internal.types.stream.BeginFW;
+import org.kaazing.nuklei.tcp.internal.types.stream.FrameFW;
+import org.kaazing.nuklei.tcp.internal.types.stream.ResetFW;
+import org.kaazing.nuklei.tcp.internal.types.stream.WindowFW;
+import org.kaazing.nuklei.tcp.internal.writer.stream.StreamFactory;
 
 public final class Source implements Nukleus
 {
     private final FrameFW frameRO = new FrameFW();
     private final BeginFW beginRO = new BeginFW();
 
+    private final BeginFW.Builder beginRW = new BeginFW.Builder();
     private final ResetFW.Builder resetRW = new ResetFW.Builder();
     private final WindowFW.Builder windowRW = new WindowFW.Builder();
 
-    private final String name;
-    private final Writer writer;
-    private final LongFunction<Route> lookupRoute;
-    private final LongFunction<Reply> lookupReply;
+    private final String partitionName;
+    private final Connector connector;
+    private final LongFunction<List<Route>> lookupRoutes;
+    private final LongFunction<SocketChannel> resolveReply;
     private final StreamsLayout layout;
     private final AtomicBuffer writeBuffer;
     private final RingBuffer streamsBuffer;
     private final RingBuffer throttleBuffer;
     private final StreamFactory streamFactory;
     private final Long2ObjectHashMap<MessageHandler> streams;
-    private final BeginFW.Builder beginRW = new BeginFW.Builder();
 
     Source(
         String partitionName,
-        Writer writer,
-        LongFunction<Route> lookupRoute,
-        LongFunction<Reply> lookupReply,
+        Connector connector,
+        LongFunction<List<Route>> lookupRoutes,
+        LongFunction<SocketChannel> resolveReply,
         StreamsLayout layout,
         AtomicBuffer writeBuffer)
     {
-        this.name = String.format("sources[%s]", partitionName);
-        this.writer = writer;
-        this.lookupRoute = lookupRoute;
-        this.lookupReply = lookupReply;
+        this.partitionName = partitionName;
+        this.connector = connector;
+        this.lookupRoutes = lookupRoutes;
+        this.resolveReply = resolveReply;
         this.layout = layout;
         this.writeBuffer = writeBuffer;
         this.streamsBuffer = layout.streamsBuffer();
@@ -90,13 +93,13 @@ public final class Source implements Nukleus
     @Override
     public String name()
     {
-        return name;
+        return partitionName;
     }
 
     @Override
     public String toString()
     {
-        return name;
+        return String.format("%s[name=%s]", getClass().getSimpleName(), partitionName);
     }
 
     private void handleRead(
@@ -132,56 +135,101 @@ public final class Source implements Nukleus
         beginRO.wrap(buffer, index, index + length);
 
         final long streamId = beginRO.streamId();
-        final long routableRef = beginRO.routableRef();
-        final long replyId = beginRO.replyId();
-        final long replyRef = beginRO.replyRef();
+        final long referenceId = beginRO.referenceId();
+        final long correlationId = beginRO.correlationId();
 
-        if (routableRef > 0)
+        switch (RouteKind.match(referenceId))
         {
-            final Route route = lookupRoute.apply(routableRef);
-            if (route != null)
-            {
-                final Target target = route.target();
-                final SocketChannel channel = newSocketChannel();
+        case SERVER_REPLY:
+            handleBeginServerReply(buffer, index, length, streamId, referenceId, correlationId);
+            break;
+        case CLIENT_INITIAL:
+            handleBeginClientInitial(streamId, referenceId, correlationId);
+            break;
+        default:
+            doReset(streamId);
+            break;
+        }
+    }
 
-                final MessageHandler newStream = streamFactory.newStream(streamId, target, channel);
+    private void handleBeginServerReply(
+        MutableDirectBuffer buffer,
+        int index,
+        int length,
+        final long streamId,
+        final long referenceId,
+        final long correlationId)
+    {
+        final List<Route> routes = lookupRoutes.apply(referenceId);
+        final SocketChannel channel = resolveReply.apply(correlationId);
 
-                streams.put(streamId, newStream);
+        final Optional<Route> optional = routes.stream()
+              .filter(r -> validateReplyRoute(r, channel))
+              .findFirst();
 
-                final long sourceRef = route.sourceRef();
-                final long sourceId = streamId;
-                final String targetName = route.target().name();
-                final long targetRef = route.targetRef();
-                final String replyName = route.reply();
-                final InetSocketAddress address = route.address();
+        if (optional.isPresent())
+        {
+            final Route route = optional.get();
+            final Target target = route.target();
+            final MessageHandler newStream = streamFactory.newStream(streamId, target, channel);
 
-                writer.doConnect(this, sourceRef, sourceId, targetName, targetRef,
-                        replyName, replyRef, replyId, channel, address);
-            }
-            else
-            {
-                doReset(streamId);
-            }
+            streams.put(streamId, newStream);
+
+            newStream.onMessage(BeginFW.TYPE_ID, buffer, index, length);
         }
         else
         {
-            final Reply reply = lookupReply.apply(routableRef);
-            final Reply.Path path = reply.consume(streamId);
-
-            if (path != null)
-            {
-                final Target target = path.target();
-                final SocketChannel channel = path.channel();
-                final MessageHandler newStream = streamFactory.newStream(streamId, target, channel);
-                streams.put(streamId, newStream);
-
-                newStream.onMessage(BeginFW.TYPE_ID, buffer, index, length);
-            }
-            else
-            {
-                new WriterException().doThrow(ex -> doReset(streamId));
-            }
+            doReset(streamId);
         }
+    }
+
+    private void handleBeginClientInitial(
+        final long streamId,
+        final long referenceId,
+        final long correlationId)
+    {
+        final List<Route> routes = lookupRoutes.apply(referenceId);
+
+        final Optional<Route> optional = routes.stream().findFirst();
+
+        if (optional.isPresent())
+        {
+            final Route route = optional.get();
+            final Target target = route.target();
+            final long targetRef = route.targetRef();
+            final SocketChannel channel = newSocketChannel();
+
+            final MessageHandler newStream = streamFactory.newStream(streamId, target, channel);
+
+            streams.put(streamId, newStream);
+
+            final String targetName = route.target().name();
+            final InetSocketAddress remoteAddress = route.address();
+
+            connector.doConnect(
+                    partitionName, referenceId, streamId, correlationId, targetName, targetRef, channel, remoteAddress);
+        }
+        else
+        {
+            doReset(streamId);
+        }
+    }
+
+    private boolean validateReplyRoute(
+        final Route route,
+        final SocketChannel channel)
+    {
+        try
+        {
+            return route != null && channel != null && route.address().equals(channel.getLocalAddress());
+        }
+        catch (IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        // unreachable
+        return false;
     }
 
     private SocketChannel newSocketChannel()
@@ -201,29 +249,24 @@ public final class Source implements Nukleus
         return null;
     }
 
-    public void doBegin(
+    public void onConnected(
         long sourceId,
         long sourceRef,
-        long replyId,
-        long replyRef)
+        Target target,
+        SocketChannel channel,
+        long correlationId)
     {
-        final MessageHandler stream = streams.get(sourceId);
+        final MessageHandler newStream = streamFactory.newStream(sourceId, target, channel);
 
-        if (stream != null)
-        {
-            final BeginFW begin = beginRW.wrap(writeBuffer, 0, writeBuffer.capacity())
-                .streamId(sourceId)
-                .routableRef(sourceRef)
-                .replyId(replyId)
-                .replyRef(replyRef)
-                .build();
+        streams.put(sourceId, newStream);
 
-            stream.onMessage(BeginFW.TYPE_ID, writeBuffer, begin.offset(), begin.length());
-        }
-        else
-        {
-            doReset(sourceId);
-        }
+        final BeginFW begin = beginRW.wrap(writeBuffer, 0, writeBuffer.capacity())
+            .streamId(sourceId)
+            .referenceId(sourceRef)
+            .correlationId(correlationId)
+            .build();
+
+        newStream.onMessage(BeginFW.TYPE_ID, writeBuffer, begin.offset(), begin.length());
     }
 
     public void doWindow(

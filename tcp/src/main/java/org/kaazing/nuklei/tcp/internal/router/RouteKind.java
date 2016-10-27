@@ -19,7 +19,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 
 public enum RouteKind
 {
-    BIND
+    SERVER_INITIAL
     {
         @Override
         public final long nextRef(
@@ -30,7 +30,20 @@ public enum RouteKind
             return counter.get() << 1L;
         }
     },
-    PREPARE
+
+    SERVER_REPLY
+    {
+        @Override
+        public final long nextRef(
+            AtomicCounter counter)
+        {
+            // negative, even, non-zero
+            counter.increment();
+            return counter.get() << 1L | 0x8000000000000000L;
+        }
+    },
+
+    CLIENT_INITIAL
     {
         @Override
         public final long nextRef(
@@ -39,23 +52,53 @@ public enum RouteKind
             // positive, odd
             return (counter.increment() << 1L) | 1L;
         }
-    };
+    },
 
-    public static final int BIND_ID = BIND.ordinal();
-    public static final int PREPARE_ID = PREPARE.ordinal();
+    CLIENT_REPLY
+    {
+        @Override
+        public final long nextRef(
+            AtomicCounter counter)
+        {
+            // negative, odd
+            return (counter.increment() << 1L) | 0x8000000000000001L;
+        }
+    };
 
     public abstract long nextRef(
         AtomicCounter counter);
 
     public static RouteKind of(
-        long ref)
+        int kind)
     {
-        switch ((int)ref & 0x01)
+        switch (kind)
         {
-        case 0:
-            return BIND;
-        case 1:
-            return PREPARE;
+        case 0x11:
+            return CLIENT_INITIAL;
+        case 0x12:
+            return CLIENT_REPLY;
+        case 0x21:
+            return SERVER_INITIAL;
+        case 0x22:
+            return SERVER_REPLY;
+        default:
+            throw new IllegalArgumentException("Unexpected kind: " + kind);
+        }
+    }
+
+    public static RouteKind match(
+        long referenceId)
+    {
+        switch ((int)referenceId & 0x01 | (int)(referenceId >> 32) & 0x80000000)
+        {
+        case 0x00000001:
+            return CLIENT_INITIAL;
+        case 0x80000001:
+            return CLIENT_REPLY;
+        case 0x00000000:
+            return SERVER_INITIAL;
+        case 0x80000000:
+            return SERVER_REPLY;
         default:
             throw new IllegalArgumentException();
         }

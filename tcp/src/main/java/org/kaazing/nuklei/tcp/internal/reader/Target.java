@@ -19,27 +19,30 @@ import static org.kaazing.nuklei.tcp.internal.util.IpUtil.ipAddress;
 
 import java.net.InetSocketAddress;
 
-import org.kaazing.nuklei.Nukleus;
-import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
-import org.kaazing.nuklei.tcp.internal.types.stream.FrameFW;
-import org.kaazing.nuklei.tcp.internal.types.stream.TcpBeginFW;
-import org.kaazing.nuklei.tcp.internal.types.stream.TcpDataFW;
-import org.kaazing.nuklei.tcp.internal.types.stream.TcpEndFW;
-
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.MessageHandler;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
+import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
+import org.kaazing.nuklei.tcp.internal.types.Flyweight.Builder.Visitor;
+import org.kaazing.nuklei.tcp.internal.types.stream.BeginExFW;
+import org.kaazing.nuklei.tcp.internal.types.stream.BeginFW;
+import org.kaazing.nuklei.tcp.internal.types.stream.DataFW;
+import org.kaazing.nuklei.tcp.internal.types.stream.EndFW;
+import org.kaazing.nuklei.tcp.internal.types.stream.FrameFW;
 
 public final class Target implements Nukleus
 {
     private final FrameFW frameRO = new FrameFW();
 
-    private final TcpBeginFW.Builder tcpBeginRW = new TcpBeginFW.Builder();
-    private final TcpDataFW.Builder tcpDataRW = new TcpDataFW.Builder();
-    private final TcpEndFW.Builder tcpEndRW = new TcpEndFW.Builder();
+    private final BeginFW.Builder beginRW = new BeginFW.Builder();
+    private final DataFW.Builder tcpDataRW = new DataFW.Builder();
+    private final EndFW.Builder tcpEndRW = new EndFW.Builder();
+
+    private final BeginExFW.Builder beginExRW = new BeginExFW.Builder();
 
     private final String name;
     private final StreamsLayout layout;
@@ -83,7 +86,7 @@ public final class Target implements Nukleus
     @Override
     public String toString()
     {
-        return name;
+        return String.format("%s[name=%s]", getClass().getSimpleName(), name);
     }
 
     public void addThrottle(
@@ -97,6 +100,65 @@ public final class Target implements Nukleus
         long streamId)
     {
         throttles.remove(streamId);
+    }
+
+    public void doTcpBegin(
+        long streamId,
+        long referenceId,
+        long correlationId,
+        InetSocketAddress localAddress,
+        InetSocketAddress remoteAddress)
+    {
+        BeginFW begin = beginRW.wrap(writeBuffer, 0, writeBuffer.capacity())
+                .referenceId(referenceId)
+                .streamId(streamId)
+                .correlationId(correlationId)
+                .extension(b -> b.set(visitBeginEx(localAddress, remoteAddress)))
+                .build();
+
+        streamsBuffer.write(begin.typeId(), begin.buffer(), begin.offset(), begin.length());
+    }
+
+    public int doTcpData(
+        long streamId,
+        DirectBuffer payload,
+        int offset,
+        int length)
+    {
+        DataFW tcpData = tcpDataRW.wrap(writeBuffer, 0, writeBuffer.capacity())
+                .streamId(streamId)
+                .payload(p -> p.set(payload, offset, length))
+                .extension(b -> b.set((buf, off, len) -> 0))
+                .build();
+
+        streamsBuffer.write(tcpData.typeId(), tcpData.buffer(), tcpData.offset(), tcpData.length());
+
+        return tcpData.length();
+    }
+
+    public void doTcpEnd(
+        long streamId)
+    {
+        EndFW tcpEnd = tcpEndRW.wrap(writeBuffer, 0, writeBuffer.capacity())
+                .streamId(streamId)
+                .extension(b -> b.set((buf, off, len) -> 0))
+                .build();
+
+        streamsBuffer.write(tcpEnd.typeId(), tcpEnd.buffer(), tcpEnd.offset(), tcpEnd.length());
+    }
+
+    private Visitor visitBeginEx(
+        InetSocketAddress localAddress,
+        InetSocketAddress remoteAddress)
+    {
+        return (buffer, offset, limit) ->
+            beginExRW.wrap(buffer, offset, limit)
+                     .localAddress(a -> ipAddress(localAddress, a::ipv4Address, a::ipv6Address))
+                     .localPort(localAddress.getPort())
+                     .remoteAddress(a -> ipAddress(remoteAddress, a::ipv4Address, a::ipv6Address))
+                     .remotePort(remoteAddress.getPort())
+                     .build()
+                     .length();
     }
 
     private void handleRead(
@@ -114,53 +176,5 @@ public final class Target implements Nukleus
         {
             throttle.onMessage(msgTypeId, buffer, index, length);
         }
-    }
-
-    public void doTcpBegin(
-        long routableRef,
-        long streamId,
-        long replyRef,
-        long replyId,
-        InetSocketAddress localAddress,
-        InetSocketAddress remoteAddress)
-    {
-        TcpBeginFW tcpBegin = tcpBeginRW.wrap(writeBuffer, 0, writeBuffer.capacity())
-                .routableRef(routableRef)
-                .streamId(streamId)
-                .replyRef(replyRef)
-                .replyId(replyId)
-                .localAddress(a -> ipAddress(localAddress, a::ipv4Address, a::ipv6Address))
-                .localPort(localAddress.getPort())
-                .remoteAddress(a -> ipAddress(remoteAddress, a::ipv4Address, a::ipv6Address))
-                .remotePort(remoteAddress.getPort())
-                .build();
-
-        streamsBuffer.write(tcpBegin.typeId(), tcpBegin.buffer(), tcpBegin.offset(), tcpBegin.length());
-    }
-
-    public int doTcpData(
-        long streamId,
-        DirectBuffer payload,
-        int offset,
-        int length)
-    {
-        TcpDataFW tcpData = tcpDataRW.wrap(writeBuffer, 0, writeBuffer.capacity())
-                .streamId(streamId)
-                .payload(p -> p.set(payload, offset, length))
-                .build();
-
-        streamsBuffer.write(tcpData.typeId(), tcpData.buffer(), tcpData.offset(), tcpData.length());
-
-        return tcpData.length();
-    }
-
-    public void doTcpEnd(
-        long streamId)
-    {
-        TcpEndFW tcpEnd = tcpEndRW.wrap(writeBuffer, 0, writeBuffer.capacity())
-                .streamId(streamId)
-                .build();
-
-        streamsBuffer.write(tcpEnd.typeId(), tcpEnd.buffer(), tcpEnd.offset(), tcpEnd.length());
     }
 }

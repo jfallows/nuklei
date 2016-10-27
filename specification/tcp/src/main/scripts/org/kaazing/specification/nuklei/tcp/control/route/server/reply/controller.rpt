@@ -21,7 +21,7 @@ property nukleiC11C ${nuklei:directory("target/nukleus-itests").controlCapacity(
 
 property controlC11C ${nukleiC11C.control("tcp")}
 
-connect await BOUND_REPLY
+connect await ROUTED_INITIAL
         agrona://stream/bidirectional
         option reader ${agrona:broadcastReceiver(controlC11C.controller)}
         option writer ${agrona:manyToOneWriter(controlC11C.nukleus)}
@@ -30,10 +30,11 @@ connected
 
 write [0x00 0x00 0x00 0x11]
 write ${controlC11C.nextCorrelationId()}
-write [0x06] "source"
+write [0x05] "reply"
 write ${newReplyRef}
-write [0x06] "target"
+write [0x03] "any"
 write ${newTargetRef}
+write [0x08]
 write [0x01] [0x04] [0x7f 0x00 0x00 0x01]
 write [0x1f 0x90]
 write flush

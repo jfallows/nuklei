@@ -15,18 +15,32 @@
  */
 package org.kaazing.nuklei.tcp.internal.reader;
 
-import java.nio.channels.SocketChannel;
-import java.util.Map;
-import java.util.TreeMap;
+import static java.util.Collections.emptyList;
+import static org.kaazing.nuklei.tcp.internal.reader.Route.addressMatches;
+import static org.kaazing.nuklei.tcp.internal.reader.Route.sourceMatches;
+import static org.kaazing.nuklei.tcp.internal.reader.Route.sourceRefMatches;
+import static org.kaazing.nuklei.tcp.internal.reader.Route.targetMatches;
+import static org.kaazing.nuklei.tcp.internal.reader.Route.targetRefMatches;
 
+import java.net.InetSocketAddress;
+import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
+import java.util.function.Predicate;
+
+import org.agrona.LangUtil;
+import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.tcp.internal.Context;
+import org.kaazing.nuklei.tcp.internal.acceptor.Acceptor;
+import org.kaazing.nuklei.tcp.internal.conductor.Conductor;
 import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
-import org.kaazing.nuklei.tcp.internal.router.Router;
-
-import org.agrona.concurrent.AtomicBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * The {@code Readable} nukleus reads network traffic via a {@code Source} nukleus and control flow commands
@@ -35,22 +49,31 @@ import org.agrona.concurrent.UnsafeBuffer;
 @Reaktive
 public final class Reader extends Nukleus.Composite
 {
+    private static final List<Route> EMPTY_ROUTES = emptyList();
+
     private final Context context;
+    private final Conductor conductor;
+    private final Acceptor acceptor;
     private final String sourceName;
     private final Source source;
     private final Map<String, Target> targetsByName;
     private final AtomicBuffer writeBuffer;
+    private final Long2ObjectHashMap<List<Route>> routesByRef;
 
     public Reader(
         Context context,
-        Router router,
+        Conductor conductor,
+        Acceptor acceptor,
         String sourceName)
     {
         this.context = context;
+        this.conductor = conductor;
+        this.acceptor = acceptor;
         this.sourceName = sourceName;
-        this.source = include(new Source(router, context.maxMessageLength()));
+        this.source = include(new Source(sourceName, context.maxMessageLength()));
         this.writeBuffer = new UnsafeBuffer(new byte[context.maxMessageLength()]);
         this.targetsByName = new TreeMap<>();
+        this.routesByRef = new Long2ObjectHashMap<>();
     }
 
     @Override
@@ -59,25 +82,137 @@ public final class Reader extends Nukleus.Composite
         return String.format("reader[%s]", sourceName);
     }
 
+    public void onConnected(
+        long targetId,
+        long correlationId,
+        SocketChannel channel,
+        InetSocketAddress address)
+    {
+        final Predicate<Route> filter =
+                sourceMatches(sourceName)
+                 .and(addressMatches(address));
+
+        final Optional<Route> optional = routesByRef.values().stream()
+            .flatMap(rs -> rs.stream())
+            .filter(filter)
+            .findFirst();
+
+        if (optional.isPresent())
+        {
+            final Route route = optional.get();
+            final Target target = route.target();
+            final long targetRef = route.targetRef();
+
+            source.doBegin(target, targetRef, targetId, correlationId, channel);
+        }
+    }
+
     public void doBegin(
         String targetName,
         long targetRef,
         long targetId,
-        long replyRef,
-        long replyId,
+        long correlationId,
         SocketChannel channel)
     {
-        Target target = targetsByName.computeIfAbsent(targetName, this::supplyTarget);
-        source.doBegin(target, targetRef, targetId, replyRef, replyId, channel);
+        Target target = targetsByName.computeIfAbsent(targetName, this::newTarget);
+        source.doBegin(target, targetRef, targetId, correlationId, channel);
+    }
+
+    public void doAccept(
+        long correlationId,
+        long sourceRef,
+        String targetName,
+        long targetRef,
+        InetSocketAddress address)
+    {
+        try
+        {
+            final Target target = targetsByName.computeIfAbsent(targetName, this::newTarget);
+            final Route newRoute = new Route(sourceName, sourceRef, target, targetRef, address);
+
+            routesByRef.computeIfAbsent(sourceRef, this::newRoutes)
+                       .add(newRoute);
+
+            // TODO: re-factor to use Reader Routes from Acceptor
+            acceptor.doRoute(correlationId, sourceName, sourceRef, targetName, targetRef, address);
+        }
+        catch (Exception ex)
+        {
+            conductor.onErrorResponse(correlationId);
+            LangUtil.rethrowUnchecked(ex);
+        }
     }
 
     public void doRoute(
-        String targetName)
+        long correlationId,
+        long sourceRef,
+        String targetName,
+        long targetRef,
+        InetSocketAddress address)
     {
-        targetsByName.computeIfAbsent(targetName, this::supplyTarget);
+        try
+        {
+            final Target target = targetsByName.computeIfAbsent(targetName, this::newTarget);
+            final Route newRoute = new Route(sourceName, sourceRef, target, targetRef, address);
+
+            routesByRef.computeIfAbsent(sourceRef, this::newRoutes)
+                       .add(newRoute);
+
+            conductor.onRoutedResponse(correlationId);
+        }
+        catch (Exception ex)
+        {
+            conductor.onErrorResponse(correlationId);
+            LangUtil.rethrowUnchecked(ex);
+        }
     }
 
-    private Target supplyTarget(
+    public void doUnroute(
+        long correlationId,
+        long sourceRef,
+        String targetName,
+        long targetRef,
+        InetSocketAddress address)
+    {
+        final List<Route> routes = lookupRoutes(sourceRef);
+
+        final Predicate<Route> filter =
+                sourceMatches(sourceName)
+                 .and(sourceRefMatches(sourceRef))
+                 .and(targetMatches(targetName))
+                 .and(targetRefMatches(targetRef))
+                 .and(addressMatches(address));
+
+        if (routes.removeIf(filter))
+        {
+            conductor.onUnroutedResponse(correlationId);
+        }
+        else
+        {
+            conductor.onErrorResponse(correlationId);
+        }
+    }
+
+    @Override
+    protected void toString(
+        StringBuilder builder)
+    {
+        builder.append(String.format("%s[name=%s]", getClass().getSimpleName(), sourceName));
+    }
+
+    private List<Route> newRoutes(
+        long sourceRef)
+    {
+        return new ArrayList<>();
+    }
+
+    private List<Route> lookupRoutes(
+        long referenceId)
+    {
+        return routesByRef.getOrDefault(referenceId, EMPTY_ROUTES);
+    }
+
+    private Target newTarget(
         String targetName)
     {
         StreamsLayout layout = new StreamsLayout.Builder()

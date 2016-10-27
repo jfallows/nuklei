@@ -19,7 +19,7 @@ property newReplyRef ${nuklei:newReferenceId()} # external scope
 property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)}
 
 property sourceInitial ${nuklei.streams("tcp", "source")}
-property sourceReply ${nuklei.streams("source", "tcp#target")}
+property sourceReply ${nuklei.streams("reply", "tcp#any")}
 
 property newReplyId ${nuklei:newStreamId()}
 
@@ -33,6 +33,7 @@ read [0x00 0x00 0x00 0x01]
 read ([0..8]:initialId)
 read ([0..8]:initialRef)
 read ([0..8]:correlationId)
+read [0x00]
 
 write [0x40 0x00 0x00 0x02]
 write ${initialId}
@@ -40,6 +41,16 @@ write [0x00 0x02 0x00 0x00]
 write flush
 
 write notify WINDOW_UPDATED
+
+read [0x00 0x00 0x00 0x02]
+read ${initialId}
+read [0x0b] "client data"
+read [0x00]
+
+write [0x40 0x00 0x00 0x02]
+write ${initialId}
+write [0x0d 0x00 0x00 0x00]
+write flush
 
 close
 closed
@@ -56,6 +67,7 @@ write [0x00 0x00 0x00 0x01]
 write ${newReplyId}
 write ${newReplyRef}
 write ${correlationId}
+write [0x10]
 write [0x01] [0x04] [0x7f 0x00 0x00 0x01]
 write [0x1f 0x90]
 write [0x01] [0x04] [0x7f 0x00 0x00 0x01]

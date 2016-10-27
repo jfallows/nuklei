@@ -14,14 +14,14 @@
 # limitations under the License.
 #
 
-property newReplyRef ${nuklei:newReferenceId()} # external scope
+property newInitialRef ${nuklei:newReferenceId()} # external scope
 property newTargetRef ${nuklei:newReferenceId()} # external scope
 
 property nukleiC12C ${nuklei:directory("target/nukleus-itests").controlCapacity(1024, 1024)}
 
 property controlC12C ${nukleiC12C.control("tcp")}
 
-connect await ROUTED_REPLY
+connect await ROUTED_INITIAL
         agrona://stream/bidirectional
         option reader ${agrona:broadcastReceiver(controlC12C.controller)}
         option writer ${agrona:manyToOneWriter(controlC12C.nukleus)}
@@ -31,9 +31,10 @@ connected
 write [0x00 0x00 0x00 0x12]
 write ${controlC12C.nextCorrelationId()}
 write [0x06] "source"
-write ${newReplyRef}
-write [0x06] "target"
+write ${newInitialRef}
+write [0x03] "any"
 write ${newTargetRef}
+write [0x08]
 write [0x01] [0x04] [0x7f 0x00 0x00 0x01]
 write [0x1f 0x90]
 write flush
@@ -44,4 +45,4 @@ read ${controlC12C.correlationId()}
 close
 closed
 
-read notify UNROUTED_REPLY
+read notify UNROUTED_INITIAL

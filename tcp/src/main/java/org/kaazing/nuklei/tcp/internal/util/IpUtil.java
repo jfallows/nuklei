@@ -22,11 +22,10 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.function.Consumer;
 
-import org.kaazing.nuklei.tcp.internal.types.AddressFW;
-import org.kaazing.nuklei.tcp.internal.types.OctetsFW;
-
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
+import org.kaazing.nuklei.tcp.internal.types.AddressFW;
+import org.kaazing.nuklei.tcp.internal.types.OctetsFW;
 
 public final class IpUtil
 {
@@ -108,6 +107,12 @@ public final class IpUtil
             LangUtil.rethrowUnchecked(ex);
             return UNREACHABLE;
         }
+    }
+
+    public static String describe(
+        InetSocketAddress localAddress)
+    {
+        return String.format("local.address == %s", localAddress);
     }
 
 }

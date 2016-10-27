@@ -40,8 +40,8 @@ public final class TcpNukleusFactorySpi implements NukleusFactorySpi
         Conductor conductor = new Conductor(context);
         Router router = new Router(context);
         Watcher watcher = new Watcher(context);
-        Acceptor acceptor = new Acceptor();
-        Connector connector = new Connector();
+        Acceptor acceptor = new Acceptor(context);
+        Connector connector = new Connector(context);
 
         router.setConductor(conductor);
         acceptor.setConductor(conductor);

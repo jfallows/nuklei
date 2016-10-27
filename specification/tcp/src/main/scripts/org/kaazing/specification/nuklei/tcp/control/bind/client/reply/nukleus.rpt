@@ -17,7 +17,7 @@
 property nukleiC1N ${nuklei:directory("target/nukleus-itests").controlCapacity(1024, 1024)}
 
 property controlC1N ${nukleiC1N.controlNew("tcp")}
-property replyRefC1N ${nuklei:newInitialRef()}
+property replyRefC1N ${nuklei:newReferenceId()}
 
 connect agrona://stream/bidirectional
         option reader ${agrona:manyToOneReader(controlC1N.nukleus)}
@@ -27,7 +27,7 @@ connected
 
 read [0x00 0x00 0x00 0x01]
 read ([0..8]:correlationIdC1N)
-read [0x01 0x02]
+read [0x12]
 
 write [0x40 0x00 0x00 0x01]
 write ${correlationIdC1N}

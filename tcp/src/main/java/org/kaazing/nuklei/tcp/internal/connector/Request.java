@@ -15,6 +15,7 @@
  */
 package org.kaazing.nuklei.tcp.internal.connector;
 
+import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
 public class Request
@@ -24,13 +25,9 @@ public class Request
     private final long sourceId;
     private final String targetName;
     private final long targetRef;
-    private final long targetId;
-    private final String replyName;
-    private final long replyRef;
-    private final long replyId;
+    private final long correlationId;
     private final SocketChannel channel;
-    private final Runnable onsuccess;
-    private final Runnable onfailure;
+    private final InetSocketAddress address;
 
     public Request(
         String sourceName,
@@ -38,29 +35,21 @@ public class Request
         long sourceId,
         String targetName,
         long targetRef,
-        long targetId,
-        String replyName,
-        long replyRef,
-        long replyId,
+        long correlationId,
         SocketChannel channel,
-        Runnable onsuccess,
-        Runnable onfailure)
+        InetSocketAddress address)
     {
         this.sourceName = sourceName;
         this.sourceRef = sourceRef;
         this.sourceId = sourceId;
         this.targetName = targetName;
         this.targetRef = targetRef;
-        this.targetId = targetId;
-        this.replyName = replyName;
-        this.replyRef = replyRef;
-        this.replyId = replyId;
+        this.correlationId = correlationId;
         this.channel = channel;
-        this.onsuccess = onsuccess;
-        this.onfailure = onfailure;
+        this.address = address;
     }
 
-    public String source()
+    public String sourceName()
     {
         return sourceName;
     }
@@ -75,7 +64,7 @@ public class Request
         return sourceId;
     }
 
-    public String target()
+    public String targetName()
     {
         return targetName;
     }
@@ -85,24 +74,9 @@ public class Request
         return targetRef;
     }
 
-    public long targetId()
+    public long correlationId()
     {
-        return targetId;
-    }
-
-    public String reply()
-    {
-        return replyName;
-    }
-
-    public long replyRef()
-    {
-        return replyRef;
-    }
-
-    public long replyId()
-    {
-        return replyId;
+        return correlationId;
     }
 
     public SocketChannel channel()
@@ -110,20 +84,17 @@ public class Request
         return channel;
     }
 
-    public void fail()
+    public InetSocketAddress address()
     {
-        onfailure.run();
-    }
-
-    public void succeed()
-    {
-        onsuccess.run();
+        return address;
     }
 
     @Override
     public String toString()
     {
-        return String.format("[source=%s, sourceRef=%d, sourceId=%d, replyName=%s, replyRef=%d, replyId=%d, channel=%s]",
-                sourceName, sourceRef, sourceId, replyName, replyRef, replyId, channel);
+        return String.format(
+                "[sourceName=%s, sourceRef=%d, sourceId=%d, targetName=%s, targetRef=%d" +
+                        ", correlationId=%d, channel=%s, address=%s]",
+                sourceName, sourceRef, sourceId, targetName, targetRef, correlationId, channel, address);
     }
 }

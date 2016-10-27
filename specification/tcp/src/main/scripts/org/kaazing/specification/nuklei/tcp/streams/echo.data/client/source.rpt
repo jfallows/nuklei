@@ -19,7 +19,6 @@ property newInitialRef ${nuklei:newReferenceId()} # external scope
 property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)}
 
 property sourceInitial ${nuklei.streams("tcp", "source")}
-property sourceReply ${nuklei.streams("source", "tcp#target")}
 
 property newInitialId ${nuklei:newStreamId()}
 property newCorrelationId ${nuklei:newCorrelationId()}
@@ -34,6 +33,7 @@ write [0x00 0x00 0x00 0x01]
 write ${newInitialId}
 write ${newInitialRef}
 write ${newCorrelationId}
+write [0x00]
 write flush
 
 read [0x40 0x00 0x00 0x02]
@@ -43,11 +43,13 @@ read [0..4]
 write [0x00 0x00 0x00 0x02]
 write ${newInitialId}
 write [0x0d] "client data 1"
+write [0x00]
 write flush
 
 write [0x00 0x00 0x00 0x02]
 write ${newInitialId}
 write [0x0d] "client data 2"
+write [0x00]
 write flush
 
 read [0x40 0x00 0x00 0x02]
@@ -57,45 +59,6 @@ read [0..4]
 read [0x40 0x00 0x00 0x02]
 read ${newInitialId}
 read [0..4]
-
-close
-closed
-
-connect await ROUTED_REPLY
-        agrona://stream/bidirectional
-        option reader ${agrona:oneToOneReader(sourceReply.buffer)}
-        option writer ${agrona:oneToOneWriter(sourceReply.throttle)}
-connected
-
-read [0x00 0x00 0x00 0x01]
-read ([0..8]:replyId)
-read ([0..8]:replyRef)
-read ${newCorrelationId}
-read ([0..8]:localAddress)
-read ([0..8]:remoteAddress)
-
-write [0x40 0x00 0x00 0x02]
-write ${replyId}
-write [0x00 0x02 0x00 0x00]
-write flush
-
-read [0x00 0x00 0x00 0x02]
-read ${replyId}
-read [0x0d] "server data 1"
-
-write [0x40 0x00 0x00 0x02]
-write ${replyId}
-write [0x00 0x00 0x00 0x0d]
-write flush
-
-read [0x00 0x00 0x00 0x02]
-read ${replyId}
-read [0x0d] "server data 2"
-
-write [0x40 0x00 0x00 0x02]
-write ${replyId}
-write [0x00 0x00 0x00 0x0d]
-write flush
 
 close
 closed

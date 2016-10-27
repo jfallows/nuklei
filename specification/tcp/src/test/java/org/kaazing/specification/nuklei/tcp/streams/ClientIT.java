@@ -38,7 +38,7 @@ public class ClientIT
     private final NukleusRule nukleus = new NukleusRule()
         .directory("target/nukleus-itests")
         .streams("tcp", "source")
-        .streams("source", "tcp#target");
+        .streams("reply", "tcp#any");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);
@@ -46,7 +46,8 @@ public class ClientIT
     @Test
     @Specification({
         "connection.established/client/nukleus",
-        "connection.established/client/source"
+        "connection.established/client/source",
+        "connection.established/client/reply"
     })
     public void shouldEstablishConnection() throws Exception
     {
@@ -59,7 +60,8 @@ public class ClientIT
     @Test
     @Specification({
         "server.sent.data/client/nukleus",
-        "server.sent.data/client/source" })
+        "server.sent.data/client/source",
+        "server.sent.data/client/reply" })
     public void shouldReceiveServerSentData() throws Exception
     {
         k3po.start();
@@ -71,7 +73,8 @@ public class ClientIT
     @Test
     @Specification({
         "client.sent.data/client/nukleus",
-        "client.sent.data/client/source" })
+        "client.sent.data/client/source",
+        "client.sent.data/client/reply" })
     public void shouldReceiveClientSentData() throws Exception
     {
         k3po.start();
@@ -80,11 +83,11 @@ public class ClientIT
         k3po.finish();
     }
 
-
     @Test
     @Specification({
         "echo.data/client/nukleus",
-        "echo.data/client/source" })
+        "echo.data/client/source",
+        "echo.data/client/reply" })
     public void shouldEchoData() throws Exception
     {
         k3po.start();
@@ -96,7 +99,8 @@ public class ClientIT
     @Test
     @Specification({
         "server.close/client/nukleus",
-        "server.close/client/source" })
+        "server.close/client/source",
+        "server.close/client/reply" })
     public void shouldInitiateServerClose() throws Exception
     {
         k3po.start();
@@ -108,7 +112,8 @@ public class ClientIT
     @Test
     @Specification({
         "client.close/client/nukleus",
-        "client.close/client/source" })
+        "client.close/client/source",
+        "client.close/client/reply" })
     public void shouldInitiateClientClose() throws Exception
     {
         k3po.start();
@@ -121,7 +126,8 @@ public class ClientIT
     @Test
     @Specification({
         "concurrent.connections/client/nukleus",
-        "concurrent.connections/client/source" })
+        "concurrent.connections/client/source",
+        "concurrent.connections/client/reply" })
     public void shouldEstablishConcurrentConnections() throws Exception
     {
         k3po.start();

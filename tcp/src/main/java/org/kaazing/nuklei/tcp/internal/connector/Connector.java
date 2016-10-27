@@ -20,12 +20,13 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
+import org.agrona.LangUtil;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.nio.TransportPoller;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
+import org.kaazing.nuklei.tcp.internal.Context;
 import org.kaazing.nuklei.tcp.internal.router.Router;
-
-import org.agrona.LangUtil;
-import org.agrona.nio.TransportPoller;
 
 /**
  * The {@code Connector} nukleus accepts new socket connections and informs the {@code Router} nukleus.
@@ -33,7 +34,15 @@ import org.agrona.nio.TransportPoller;
 @Reaktive
 public final class Connector extends TransportPoller implements Nukleus
 {
+    private final Context context;
+
     private Router router;
+
+    public Connector(
+        Context context)
+    {
+        this.context = context;
+    }
 
     public void setRouter(
         Router router)
@@ -58,28 +67,20 @@ public final class Connector extends TransportPoller implements Nukleus
         String sourceName,
         long sourceRef,
         long sourceId,
+        long correlationId,
         String targetName,
         long targetRef,
-        String replyName,
-        long replyRef,
-        long replyId,
         SocketChannel channel,
-        InetSocketAddress address,
-        Runnable onsuccess,
-        Runnable onfailure)
+        InetSocketAddress remoteAddress)
     {
+        final Request request =
+                new Request(sourceName, sourceRef, sourceId, targetName, targetRef, correlationId, channel, remoteAddress);
+
         try
         {
-            final long targetId = System.identityHashCode(channel);
-
-            final Request request = new Request(sourceName, sourceRef, sourceId,
-                    targetName, targetRef, targetId,
-                    replyName, replyRef, replyId,
-                    channel, onsuccess, onfailure);
-
-            if (channel.connect(address))
+            if (channel.connect(remoteAddress))
             {
-                processConnectFinished(request);
+                handleConnected(request);
             }
             else
             {
@@ -88,7 +89,7 @@ public final class Connector extends TransportPoller implements Nukleus
         }
         catch (IOException ex)
         {
-            onfailure.run();
+            handleConnectFailed(request);
             LangUtil.rethrowUnchecked(ex);
         }
     }
@@ -109,41 +110,45 @@ public final class Connector extends TransportPoller implements Nukleus
         SelectionKey selectionKey)
     {
         final Request request = (Request) selectionKey.attachment();
+        final SocketChannel channel = request.channel();
 
         try
         {
-            final SocketChannel channel = request.channel();
-
             channel.finishConnect();
-
-            processConnectFinished(request);
+            handleConnected(request);
         }
         catch (Exception ex)
         {
-            request.fail();
+            handleConnectFailed(request);
             LangUtil.rethrowUnchecked(ex);
         }
 
         return 1;
     }
 
-    private void processConnectFinished(
+    private void handleConnected(
         Request request)
     {
-        final String sourceName = request.source();
+        final AtomicCounter streamsSourced = context.counters().streamsSourced();
+        final String sourceName = request.sourceName();
         final long sourceRef = request.sourceRef();
         final long sourceId = request.sourceId();
-
-        final String targetName = request.target();
-
-        final String replyName = request.reply();
-        final long replyRef = request.replyRef();
-        final long replyId = request.replyId();
-
+        final String targetName = request.targetName();
+        final long targetRef = request.targetRef();
+        final long targetId = streamsSourced.increment();
+        final long correlationId = request.correlationId();
         final SocketChannel channel = request.channel();
+        final InetSocketAddress address = request.address();
 
-        request.succeed();
+        router.onConnected(sourceName, sourceRef, sourceId, targetName, targetId, targetRef, correlationId, channel, address);
+    }
 
-        router.onConnected(targetName, sourceName, sourceRef, sourceId, replyName, replyRef, replyId, channel);
+    private void handleConnectFailed(
+        Request request)
+    {
+        final String sourceName = request.sourceName();
+        final long sourceId = request.sourceId();
+
+        router.onConnectFailed(sourceName, sourceId);
     }
 }

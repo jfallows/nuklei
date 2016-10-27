@@ -24,8 +24,6 @@ import java.util.function.IntSupplier;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.tcp.internal.reader.stream.StreamFactory;
-import org.kaazing.nuklei.tcp.internal.router.Router;
-
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.nio.TransportPoller;
@@ -33,19 +31,27 @@ import org.agrona.nio.TransportPoller;
 @Reaktive
 public final class Source extends TransportPoller implements Nukleus
 {
+    private final String sourceName;
     private final StreamFactory streamFactory;
 
     public Source(
-        Router router,
+        String sourceName,
         int bufferSize)
     {
+        this.sourceName = sourceName;
         this.streamFactory = new StreamFactory(bufferSize);
     }
 
     @Override
     public String name()
     {
-        return "source";
+        return sourceName;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[name=%s]", getClass().getSimpleName(), sourceName);
     }
 
     @Override
@@ -70,8 +76,7 @@ public final class Source extends TransportPoller implements Nukleus
         Target target,
         long targetRef,
         long targetId,
-        long replyRef,
-        long replyId,
+        long correlationId,
         SocketChannel channel)
     {
         try
@@ -79,7 +84,7 @@ public final class Source extends TransportPoller implements Nukleus
             final InetSocketAddress localAddress = (InetSocketAddress) channel.getLocalAddress();
             final InetSocketAddress remoteAddress = (InetSocketAddress) channel.getRemoteAddress();
 
-            target.doTcpBegin(targetRef, targetId, replyRef, replyId, localAddress, remoteAddress);
+            target.doTcpBegin(targetId, targetRef, correlationId, localAddress, remoteAddress);
 
             final SelectionKey key = channel.register(selector, 0);
             final IntSupplier attachment = streamFactory.newStream(target, targetId, key, channel);
