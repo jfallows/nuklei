@@ -18,22 +18,17 @@ package org.kaazing.nuklei.reaktor.internal;
 import static java.lang.String.format;
 import static java.util.Arrays.binarySearch;
 import static java.util.Arrays.sort;
+import static java.util.Collections.unmodifiableMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.commons.cli.Option.builder;
 import static org.agrona.IoUtil.tmpDirName;
 import static org.agrona.LangUtil.rethrowUnchecked;
+import static org.apache.commons.cli.Option.builder;
 
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.kaazing.nuklei.Configuration;
-import org.kaazing.nuklei.Nukleus;
-import org.kaazing.nuklei.NukleusFactory;
+import java.util.function.Predicate;
 
 import org.agrona.ErrorHandler;
 import org.agrona.collections.ArrayUtil;
@@ -42,27 +37,59 @@ import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SigIntBarrier;
 import org.agrona.concurrent.SleepingIdleStrategy;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.kaazing.nuklei.Configuration;
+import org.kaazing.nuklei.Controller;
+import org.kaazing.nuklei.ControllerFactory;
+import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.NukleusFactory;
 
 public final class Reaktor implements AutoCloseable
 {
     private final AgentRunner runner;
+    private final Map<Class<? extends Controller>, Controller> controllersByKind;
 
-    private Reaktor(Configuration config, ToBooleanFunction<String> includes)
+    private Reaktor(
+        Configuration config,
+        Predicate<String> nukleusIncludes,
+        Predicate<Class<? extends Controller>> controllerIncludes)
     {
-        NukleusFactory factory = NukleusFactory.instantiate();
+        NukleusFactory nukleusFactory = NukleusFactory.instantiate();
 
         Nukleus[] nuklei = new Nukleus[0];
 
-        for (String name : factory.names())
+        for (String name : nukleusFactory.names())
         {
-            if (includes.applyAsBoolean(name))
+            if (nukleusIncludes.test(name))
             {
-                Nukleus nukleus = factory.create(name, config);
+                Nukleus nukleus = nukleusFactory.create(name, config);
                 nuklei = ArrayUtil.add(nuklei, nukleus);
             }
         }
 
-        final Nukleus[] workers = nuklei;
+        ControllerFactory controllerFactory = ControllerFactory.instantiate();
+
+        Controller[] controllers = new Controller[0];
+        Map<Class<? extends Controller>, Controller> controllersByKind = new HashMap<>();
+
+        for (Class<? extends Controller> kind : controllerFactory.kinds())
+        {
+            if (controllerIncludes.test(kind))
+            {
+                Controller controller = controllerFactory.create(kind, config);
+                controllersByKind.put(kind, controller);
+                controllers = ArrayUtil.add(controllers, controller);
+            }
+        }
+
+        this.controllersByKind = unmodifiableMap(controllersByKind);
+
+        final Nukleus[] nuklei0 = nuklei;
+        final Controller[] controllers0 = controllers;
         IdleStrategy idleStrategy = new SleepingIdleStrategy(MILLISECONDS.toNanos(50L));
         ErrorHandler errorHandler = throwable -> throwable.printStackTrace(System.err);
         Agent agent = new Agent()
@@ -78,9 +105,14 @@ public final class Reaktor implements AutoCloseable
             {
                 int work = 0;
 
-                for (int i=0; i < workers.length; i++)
+                for (int i=0; i < nuklei0.length; i++)
                 {
-                    work += workers[i].process();
+                    work += nuklei0[i].process();
+                }
+
+                for (int i=0; i < controllers0.length; i++)
+                {
+                    work += controllers0[i].process();
                 }
 
                 return work;
@@ -88,6 +120,12 @@ public final class Reaktor implements AutoCloseable
         };
 
         this.runner = new AgentRunner(idleStrategy, errorHandler, null, agent);
+    }
+
+    public <T extends Controller> T controller(
+        Class<T> kind)
+    {
+        return kind.cast(controllersByKind.get(kind));
     }
 
     public Reaktor start()
@@ -109,9 +147,19 @@ public final class Reaktor implements AutoCloseable
         }
     }
 
-    public static Reaktor launch(final Configuration config, ToBooleanFunction<String> includes)
+    public static Reaktor launch(
+        Configuration config,
+        Predicate<String> includes)
     {
-        Reaktor reaktor = new Reaktor(config, includes);
+        return launch(config, includes, k -> false);
+    }
+
+    public static Reaktor launch(
+        Configuration config,
+        Predicate<String> nuklei,
+        Predicate<Class<? extends Controller>> controllers)
+    {
+        Reaktor reaktor = new Reaktor(config, nuklei, controllers);
         reaktor.start();
         return reaktor;
     }
@@ -142,12 +190,12 @@ public final class Reaktor implements AutoCloseable
 
             Configuration config = new Configuration(properties);
 
-            ToBooleanFunction<String> includes = name -> true;
+            Predicate<String> includes = name -> true;
             if (nuklei != null)
             {
-                Comparator<String> c = (o1, o2) -> o1.compareTo(o2);
-                sort(nuklei, c);
-                includes = name -> (binarySearch(nuklei, name, c) >= 0);
+                Comparator<String> comparator = (o1, o2) -> o1.compareTo(o2);
+                sort(nuklei, comparator);
+                includes = name -> binarySearch(nuklei, name, comparator) >= 0;
             }
 
             try (final Reaktor reaktor = Reaktor.launch(config, includes))
@@ -157,11 +205,5 @@ public final class Reaktor implements AutoCloseable
                 new SigIntBarrier().await();
             }
         }
-    }
-
-    @FunctionalInterface
-    private interface ToBooleanFunction<T>
-    {
-        boolean applyAsBoolean(T value);
     }
 }

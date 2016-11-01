@@ -18,9 +18,9 @@ package org.kaazing.nuklei.tcp.internal.bench;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.agrona.IoUtil.createEmptyFile;
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.STREAMS_BUFFER_CAPACITY_PROPERTY_NAME;
-import static org.agrona.IoUtil.createEmptyFile;
 
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -28,15 +28,13 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
-import java.util.concurrent.CompletableFuture;
+import java.util.Random;
 
+import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import org.kaazing.nuklei.Configuration;
-import org.kaazing.nuklei.ControllerFactory;
-import org.kaazing.nuklei.NukleusFactory;
+import org.kaazing.nuklei.reaktor.internal.Reaktor;
 import org.kaazing.nuklei.tcp.internal.TcpController;
-import org.kaazing.nuklei.tcp.internal.TcpNukleus;
-import org.kaazing.nuklei.tcp.internal.TcpStreams;
-import org.openjdk.jmh.annotations.AuxCounters;
+import org.kaazing.nuklei.tcp.internal.TcpReadableStreams;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -52,10 +50,10 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Control;
-
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.MessageHandler;
-import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+import org.openjdk.jmh.runner.Runner;
+import org.openjdk.jmh.runner.RunnerException;
+import org.openjdk.jmh.runner.options.Options;
+import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.Throughput)
@@ -65,84 +63,74 @@ import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 @OutputTimeUnit(SECONDS)
 public class TcpServerBM
 {
-    private TcpNukleus nukleus;
-    private TcpController controller;
-    private TcpStreams streams;
+    private static final Configuration CONFIGURATION;
+    private static final Reaktor REAKTOR;
 
-    private ByteBuffer sendByteBuffer;
-
-    @Setup
-    public void create() throws Exception
+    static
     {
-        final long streamsCapacity = 1024L * 1024L * 16L;
-
-        final Properties properties = new Properties();
+        Properties properties = new Properties();
         properties.setProperty(DIRECTORY_PROPERTY_NAME, "target/nukleus-benchmarks");
-        properties.setProperty(STREAMS_BUFFER_CAPACITY_PROPERTY_NAME, Long.toString(streamsCapacity));
-        final Configuration config = new Configuration(properties);
+        properties.setProperty(STREAMS_BUFFER_CAPACITY_PROPERTY_NAME, Long.toString(1024L * 1024L * 16L));
 
-        NukleusFactory nuklei = NukleusFactory.instantiate();
-        ControllerFactory controllers = ControllerFactory.instantiate();
+        CONFIGURATION = new Configuration(properties);
+        REAKTOR = Reaktor.launch(CONFIGURATION, n -> "tcp".equals(n), TcpController.class::isAssignableFrom);
+    }
 
-        this.nukleus = (TcpNukleus) nuklei.create("tcp", config);
-        this.controller = controllers.create(TcpController.class, config);
+    private TcpReadableStreams streams;
+    private ByteBuffer sendByteBuffer;
+    private final Random random = new Random();
+    private final long targetRef = random.nextLong();
+    private long sourceRef;
 
-        File target = new File("target/nukleus-benchmarks/target/streams/tcp");
-        createEmptyFile(target.getAbsoluteFile(), streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH);
-
-        final CompletableFuture<Long> bind = controller.bind(0x01);
-        while (this.nukleus.process() != 0L || this.controller.process() != 0L)
-        {
-            // intentional
-        }
-        long sourceRef = bind.get();
-
-        final long targetRef = (long) (Math.random() * Long.MAX_VALUE);
-        final CompletableFuture<Void> route =
-                controller.route("any", sourceRef, "target", targetRef, new InetSocketAddress("localhost", 8080));
-        while (this.nukleus.process() != 0L || this.controller.process() != 0L)
-        {
-            // intentional
-        }
-        route.get();
-
-        this.streams = controller.streams("any", "target");
+    @Setup(Level.Iteration)
+    public void init() throws Exception
+    {
+        REAKTOR.start();
 
         byte[] sendByteArray = "Hello, world".getBytes(StandardCharsets.UTF_8);
         this.sendByteBuffer = allocateDirect(sendByteArray.length).order(nativeOrder()).put(sendByteArray);
     }
 
-    @TearDown
-    public void close() throws Exception
+    @TearDown(Level.Iteration)
+    public void destroy() throws Exception
     {
-        this.nukleus.close();
-        this.controller.close();
-        this.streams.close();
+        REAKTOR.close();
     }
 
-    @AuxCounters
-    @State(Scope.Thread)
-    public static class Counters
+    @Setup(Level.Trial)
+    public void reinit() throws Exception
     {
-        public int messages;
+        File target = new File("target/nukleus-benchmarks/tcp/streams/target");
+        createEmptyFile(target.getAbsoluteFile(), CONFIGURATION.streamsBufferCapacity() + RingBufferDescriptor.TRAILER_LENGTH);
 
-        @Setup(Level.Iteration)
-        public void init()
-        {
-            messages = 0;
-        }
+        TcpController controller = REAKTOR.controller(TcpController.class);
+        this.sourceRef = controller.bind(0x21).get();
+        controller.route("any", sourceRef, "target", targetRef, new InetSocketAddress("localhost", 8080)).get();
+
+        this.streams = controller.streams("any", "target");
+    }
+
+    @TearDown(Level.Trial)
+    public void reset() throws Exception
+    {
+        this.streams.close();
+        this.streams = null;
+
+        TcpController controller = REAKTOR.controller(TcpController.class);
+        controller.unroute("any", sourceRef, "target", targetRef, new InetSocketAddress("localhost", 8080)).get();
     }
 
     @Benchmark
     @Group("asymmetric")
     @GroupThreads(1)
-    public void writer(Control control) throws Exception
+    public void writer(
+        final Control control) throws Exception
     {
         if (control.startMeasurement && !control.stopMeasurement)
         {
             try (SocketChannel channel = SocketChannel.open())
             {
-                channel.connect(new InetSocketAddress("localhost", 8080));
+                channel.connect(new InetSocketAddress("127.0.0.1", 8080));
                 while (control.startMeasurement && !control.stopMeasurement)
                 {
                     sendByteBuffer.rewind();
@@ -155,30 +143,23 @@ public class TcpServerBM
     @Benchmark
     @Group("asymmetric")
     @GroupThreads(1)
-    public void nukleus(Counters counters) throws Exception
+    public void reader(
+        final Control control) throws Exception
     {
-        counters.messages += this.nukleus.process();
-    }
-
-    @Benchmark
-    @Group("asymmetric")
-    @GroupThreads(1)
-    public void reader(Control control) throws Exception
-    {
-        final MessageHandler handler = this::handleRead;
         while (!control.stopMeasurement &&
-               streams.read(handler) == 0)
+               streams.read((msgTypeId, buffer, offset, length) -> {}) == 0)
         {
             Thread.yield();
         }
     }
 
-    private int handleRead(
-        int msgTypeId,
-        DirectBuffer buffer,
-        int index,
-        int length)
+    public static void main(String[] args) throws RunnerException
     {
-        return 0;
+        Options opt = new OptionsBuilder()
+                .include(TcpServerBM.class.getSimpleName())
+                .forks(0)
+                .build();
+
+        new Runner(opt).run();
     }
 }

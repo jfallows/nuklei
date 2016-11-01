@@ -22,7 +22,7 @@ import static org.kaazing.nuklei.tcp.internal.reader.Route.sourceRefMatches;
 import static org.kaazing.nuklei.tcp.internal.reader.Route.targetMatches;
 import static org.kaazing.nuklei.tcp.internal.reader.Route.targetRefMatches;
 
-import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
@@ -86,7 +86,7 @@ public final class Reader extends Nukleus.Composite
         long targetId,
         long correlationId,
         SocketChannel channel,
-        InetSocketAddress address)
+        SocketAddress address)
     {
         final Predicate<Route> filter =
                 sourceMatches(sourceName)
@@ -107,23 +107,12 @@ public final class Reader extends Nukleus.Composite
         }
     }
 
-    public void doBegin(
-        String targetName,
-        long targetRef,
-        long targetId,
-        long correlationId,
-        SocketChannel channel)
-    {
-        Target target = targetsByName.computeIfAbsent(targetName, this::newTarget);
-        source.doBegin(target, targetRef, targetId, correlationId, channel);
-    }
-
-    public void doAccept(
+    public void doRouteAccept(
         long correlationId,
         long sourceRef,
         String targetName,
         long targetRef,
-        InetSocketAddress address)
+        SocketAddress address)
     {
         try
         {
@@ -133,8 +122,7 @@ public final class Reader extends Nukleus.Composite
             routesByRef.computeIfAbsent(sourceRef, this::newRoutes)
                        .add(newRoute);
 
-            // TODO: re-factor to use Reader Routes from Acceptor
-            acceptor.doRoute(correlationId, sourceName, sourceRef, targetName, targetRef, address);
+            acceptor.doRegister(correlationId, sourceName, address);
         }
         catch (Exception ex)
         {
@@ -143,12 +131,38 @@ public final class Reader extends Nukleus.Composite
         }
     }
 
+    public void doUnrouteAccept(
+        long correlationId,
+        long sourceRef,
+        String targetName,
+        long targetRef,
+        SocketAddress address)
+    {
+        final List<Route> routes = lookupRoutes(sourceRef);
+
+        final Predicate<Route> filter =
+                sourceMatches(sourceName)
+                 .and(sourceRefMatches(sourceRef))
+                 .and(targetMatches(targetName))
+                 .and(targetRefMatches(targetRef))
+                 .and(addressMatches(address));
+
+        if (routes.removeIf(filter))
+        {
+            acceptor.doUnregister(correlationId, sourceName, address);
+        }
+        else
+        {
+            conductor.onErrorResponse(correlationId);
+        }
+    }
+
     public void doRoute(
         long correlationId,
         long sourceRef,
         String targetName,
         long targetRef,
-        InetSocketAddress address)
+        SocketAddress address)
     {
         try
         {
@@ -172,7 +186,7 @@ public final class Reader extends Nukleus.Composite
         long sourceRef,
         String targetName,
         long targetRef,
-        InetSocketAddress address)
+        SocketAddress address)
     {
         final List<Route> routes = lookupRoutes(sourceRef);
 

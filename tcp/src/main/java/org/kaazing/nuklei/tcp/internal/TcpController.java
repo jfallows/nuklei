@@ -39,6 +39,8 @@ import org.kaazing.nuklei.tcp.internal.types.control.RouteFW;
 import org.kaazing.nuklei.tcp.internal.types.control.RoutedFW;
 import org.kaazing.nuklei.tcp.internal.types.control.UnbindFW;
 import org.kaazing.nuklei.tcp.internal.types.control.UnboundFW;
+import org.kaazing.nuklei.tcp.internal.types.control.UnrouteFW;
+import org.kaazing.nuklei.tcp.internal.types.control.UnroutedFW;
 
 
 public final class TcpController implements Controller
@@ -46,15 +48,17 @@ public final class TcpController implements Controller
     private static final int MAX_SEND_LENGTH = 1024; // TODO: Configuration and Context
 
     // TODO: thread-safe flyweights or command queue from public methods
-    private final RouteFW.Builder routeRW = new RouteFW.Builder();
-    private final RouteExFW.Builder routeExRW = new RouteExFW.Builder();
     private final BindFW.Builder bindRW = new BindFW.Builder();
     private final UnbindFW.Builder unbindRW = new UnbindFW.Builder();
+    private final UnrouteFW.Builder unrouteRW = new UnrouteFW.Builder();
+    private final RouteExFW.Builder routeExRW = new RouteExFW.Builder();
+    private final RouteFW.Builder routeRW = new RouteFW.Builder();
 
     private final ErrorFW errorRO = new ErrorFW();
-    private final RoutedFW routedRO = new RoutedFW();
     private final BoundFW boundRO = new BoundFW();
     private final UnboundFW unboundRO = new UnboundFW();
+    private final RoutedFW routedRO = new RoutedFW();
+    private final UnroutedFW unroutedRO = new UnroutedFW();
 
     private final Context context;
     private final RingBuffer conductorCommands;
@@ -177,11 +181,43 @@ public final class TcpController implements Controller
         return promise;
     }
 
-    public TcpStreams streams(
+    public CompletableFuture<Void> unroute(
+        String source,
+        long sourceRef,
+        String target,
+        long targetRef,
+        InetSocketAddress address)
+    {
+        final CompletableFuture<Void> promise = new CompletableFuture<>();
+
+        long correlationId = conductorCommands.nextCorrelationId();
+
+        UnrouteFW unrouteRO = unrouteRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                 .correlationId(correlationId)
+                                 .source(source)
+                                 .sourceRef(sourceRef)
+                                 .target(target)
+                                 .targetRef(targetRef)
+                                 .extension(b -> b.set(visitRouteEx(address)))
+                                 .build();
+
+        if (!conductorCommands.write(unrouteRO.typeId(), unrouteRO.buffer(), unrouteRO.offset(), unrouteRO.length()))
+        {
+            commandSendFailed(promise);
+        }
+        else
+        {
+            commandSent(correlationId, promise);
+        }
+
+        return promise;
+    }
+
+    public TcpReadableStreams streams(
         String source,
         String target)
     {
-        return new TcpStreams(context, source, target);
+        return new TcpReadableStreams(context, source, target);
     }
 
     private Visitor visitRouteEx(
@@ -215,6 +251,9 @@ public final class TcpController implements Controller
         case RoutedFW.TYPE_ID:
             handleRoutedResponse(buffer, index, length);
             break;
+        case UnroutedFW.TYPE_ID:
+            handleUnroutedResponse(buffer, index, length);
+            break;
         default:
             break;
         }
@@ -244,6 +283,21 @@ public final class TcpController implements Controller
     {
         routedRO.wrap(buffer, index, length);
         long correlationId = routedRO.correlationId();
+
+        CompletableFuture<?> promise = promisesByCorrelationId.remove(correlationId);
+        if (promise != null)
+        {
+            commandSucceeded(promise);
+        }
+    }
+
+    private void handleUnroutedResponse(
+        DirectBuffer buffer,
+        int index,
+        int length)
+    {
+        unroutedRO.wrap(buffer, index, length);
+        long correlationId = unroutedRO.correlationId();
 
         CompletableFuture<?> promise = promisesByCorrelationId.remove(correlationId);
         if (promise != null)

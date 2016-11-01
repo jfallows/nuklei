@@ -22,6 +22,12 @@ public enum RouteKind
     SERVER_INITIAL
     {
         @Override
+        public int kind()
+        {
+            return 0x21;
+        }
+
+        @Override
         public final long nextRef(
             AtomicCounter counter)
         {
@@ -33,6 +39,12 @@ public enum RouteKind
 
     SERVER_REPLY
     {
+        @Override
+        public int kind()
+        {
+            return 0x22;
+        }
+
         @Override
         public final long nextRef(
             AtomicCounter counter)
@@ -46,6 +58,12 @@ public enum RouteKind
     CLIENT_INITIAL
     {
         @Override
+        public int kind()
+        {
+            return 0x11;
+        }
+
+        @Override
         public final long nextRef(
             AtomicCounter counter)
         {
@@ -57,6 +75,12 @@ public enum RouteKind
     CLIENT_REPLY
     {
         @Override
+        public int kind()
+        {
+            return 0x12;
+        }
+
+        @Override
         public final long nextRef(
             AtomicCounter counter)
         {
@@ -67,6 +91,8 @@ public enum RouteKind
 
     public abstract long nextRef(
         AtomicCounter counter);
+
+    public abstract int kind();
 
     public static RouteKind of(
         int kind)

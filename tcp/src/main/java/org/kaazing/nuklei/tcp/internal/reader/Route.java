@@ -15,7 +15,6 @@
  */
 package org.kaazing.nuklei.tcp.internal.reader;
 
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -26,14 +25,14 @@ public class Route
     private final long sourceRef;
     private final Target target;
     private final long targetRef;
-    private final InetSocketAddress address;
+    private final SocketAddress address;
 
     public Route(
         String source,
         long sourceRef,
         Target target,
         long targetRef,
-        InetSocketAddress address)
+        SocketAddress address)
     {
         this.source = source;
         this.sourceRef = sourceRef;
@@ -62,7 +61,7 @@ public class Route
         return this.targetRef;
     }
 
-    public InetSocketAddress address()
+    public SocketAddress address()
     {
         return address;
     }

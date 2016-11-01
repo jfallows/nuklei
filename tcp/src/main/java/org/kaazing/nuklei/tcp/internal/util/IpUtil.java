@@ -76,11 +76,11 @@ public final class IpUtil
     public static InetAddress ipv4Address(
         DirectBuffer buffer,
         int offset,
-        int length)
+        int limit)
     {
         try
         {
-            assert length == IPV4_ADDRESS_BYTES.length;
+            assert limit - offset == IPV4_ADDRESS_BYTES.length;
             buffer.getBytes(offset, IPV4_ADDRESS_BYTES, 0, IPV4_ADDRESS_BYTES.length);
             return InetAddress.getByAddress(IPV4_ADDRESS_BYTES);
         }
@@ -94,11 +94,11 @@ public final class IpUtil
     public static InetAddress ipv6Address(
         DirectBuffer buffer,
         int offset,
-        int length)
+        int limit)
     {
         try
         {
-            assert length == IPV6_ADDRESS_BYTES.length;
+            assert limit - offset == IPV6_ADDRESS_BYTES.length;
             buffer.getBytes(offset, IPV6_ADDRESS_BYTES, 0, IPV6_ADDRESS_BYTES.length);
             return InetAddress.getByAddress(IPV6_ADDRESS_BYTES);
         }

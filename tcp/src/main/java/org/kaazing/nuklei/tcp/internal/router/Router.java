@@ -16,6 +16,7 @@
 package org.kaazing.nuklei.tcp.internal.router;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -192,16 +193,17 @@ public final class Router extends Nukleus.Composite
 
     public void onAccepted(
         String sourceName,
-        String targetName,
-        long targetRef,
-        long targetId,
-        long correlationId,
-        SocketChannel channel)
+        SocketChannel channel,
+        SocketAddress address)
     {
+        final AtomicCounter streamsSourced = context.counters().streamsSourced();
+        final long targetId = streamsSourced.increment();
+        final long correlationId = System.identityHashCode(channel);
+
         correlationIds.put(correlationId, channel);
 
         Reader reader = readers.computeIfAbsent(sourceName, this::newReader);
-        reader.doBegin(targetName, targetRef, targetId, correlationId, channel);
+        reader.onConnected(targetId, correlationId, channel, address);
     }
 
     public void onConnected(
@@ -268,7 +270,7 @@ public final class Router extends Nukleus.Composite
         InetSocketAddress address)
     {
         Reader reader = readers.computeIfAbsent(sourceName, this::newReader);
-        reader.doAccept(correlationId, sourceRef, targetName, targetRef, address);
+        reader.doRouteAccept(correlationId, sourceRef, targetName, targetRef, address);
     }
 
     private void doRouteWriter(
@@ -303,9 +305,10 @@ public final class Router extends Nukleus.Composite
         long targetRef,
         InetSocketAddress address)
     {
-        if (acceptor != null)
+        Reader reader = readers.get(sourceName);
+        if (reader != null)
         {
-            acceptor.doUnroute(correlationId, sourceName, sourceRef, targetName, targetRef, address);
+            reader.doUnrouteAccept(correlationId, sourceRef, targetName, targetRef, address);
         }
         else
         {
