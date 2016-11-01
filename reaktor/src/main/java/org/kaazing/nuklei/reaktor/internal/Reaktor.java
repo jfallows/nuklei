@@ -154,12 +154,20 @@ public final class Reaktor implements AutoCloseable
         return launch(config, includes, k -> false);
     }
 
+    public static Reaktor init(
+        Configuration config,
+        Predicate<String> nuklei,
+        Predicate<Class<? extends Controller>> controllers)
+    {
+        return new Reaktor(config, nuklei, controllers);
+    }
+
     public static Reaktor launch(
         Configuration config,
         Predicate<String> nuklei,
         Predicate<Class<? extends Controller>> controllers)
     {
-        Reaktor reaktor = new Reaktor(config, nuklei, controllers);
+        Reaktor reaktor = init(config, nuklei, controllers);
         reaktor.start();
         return reaktor;
     }

@@ -15,6 +15,7 @@
  */
 package org.kaazing.nuklei.tcp.internal;
 
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.MessageHandler;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
@@ -23,6 +24,7 @@ public final class TcpReadableStreams
 {
     private final StreamsLayout routeStreams;
     private final RingBuffer routeBuffer;
+    private final RingBuffer throttleBuffer;
 
     TcpReadableStreams(
         Context context,
@@ -35,6 +37,7 @@ public final class TcpReadableStreams
                                                        .readonly(true)
                                                        .build();
         this.routeBuffer = this.routeStreams.streamsBuffer();
+        this.throttleBuffer = this.routeStreams.throttleBuffer();
     }
 
     public void close()
@@ -46,5 +49,14 @@ public final class TcpReadableStreams
         MessageHandler handler)
     {
         return routeBuffer.read(handler);
+    }
+
+    public boolean write(
+        int msgTypeId,
+        DirectBuffer srcBuffer,
+        int srcIndex,
+        int length)
+    {
+        return throttleBuffer.write(msgTypeId, srcBuffer, srcIndex, length);
     }
 }

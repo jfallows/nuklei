@@ -163,7 +163,6 @@ public final class StreamFactory
             windowRO.wrap(buffer, index, index + length);
 
             final int update = windowRO.update();
-
             if (readableBytes == 0 && update > 0)
             {
                 final int interestOps = key.interestOps();

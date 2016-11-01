@@ -18,9 +18,12 @@ package org.kaazing.nuklei.tcp.internal.bench;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.IoUtil.createEmptyFile;
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.STREAMS_BUFFER_CAPACITY_PROPERTY_NAME;
+import static org.kaazing.nuklei.tcp.internal.router.RouteKind.SERVER_INITIAL;
 
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -30,11 +33,19 @@ import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import java.util.Random;
 
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.MessageHandler;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.reaktor.internal.Reaktor;
 import org.kaazing.nuklei.tcp.internal.TcpController;
 import org.kaazing.nuklei.tcp.internal.TcpReadableStreams;
+import org.kaazing.nuklei.tcp.internal.types.OctetsFW;
+import org.kaazing.nuklei.tcp.internal.types.stream.BeginFW;
+import org.kaazing.nuklei.tcp.internal.types.stream.DataFW;
+import org.kaazing.nuklei.tcp.internal.types.stream.WindowFW;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -76,35 +87,30 @@ public class TcpServerBM
         REAKTOR = Reaktor.launch(CONFIGURATION, n -> "tcp".equals(n), TcpController.class::isAssignableFrom);
     }
 
+    private final BeginFW beginRO = new BeginFW();
+    private final DataFW dataRO = new DataFW();
+    private final WindowFW.Builder windowRW = new WindowFW.Builder();
+
     private TcpReadableStreams streams;
     private ByteBuffer sendByteBuffer;
+    private AtomicBuffer throttleBuffer;
     private final Random random = new Random();
     private final long targetRef = random.nextLong();
     private long sourceRef;
 
-    @Setup(Level.Iteration)
-    public void init() throws Exception
-    {
-        REAKTOR.start();
-
-        byte[] sendByteArray = "Hello, world".getBytes(StandardCharsets.UTF_8);
-        this.sendByteBuffer = allocateDirect(sendByteArray.length).order(nativeOrder()).put(sendByteArray);
-    }
-
-    @TearDown(Level.Iteration)
-    public void destroy() throws Exception
-    {
-        REAKTOR.close();
-    }
-
     @Setup(Level.Trial)
     public void reinit() throws Exception
     {
+        byte[] sendByteArray = "Hello, world".getBytes(StandardCharsets.UTF_8);
+        this.sendByteBuffer = allocateDirect(sendByteArray.length).order(nativeOrder()).put(sendByteArray);
+
+        this.throttleBuffer = new UnsafeBuffer(allocateDirect(SIZE_OF_LONG + SIZE_OF_INT));
+
         File target = new File("target/nukleus-benchmarks/tcp/streams/target");
         createEmptyFile(target.getAbsoluteFile(), CONFIGURATION.streamsBufferCapacity() + RingBufferDescriptor.TRAILER_LENGTH);
 
         TcpController controller = REAKTOR.controller(TcpController.class);
-        this.sourceRef = controller.bind(0x21).get();
+        this.sourceRef = controller.bind(SERVER_INITIAL.kind()).get();
         controller.route("any", sourceRef, "target", targetRef, new InetSocketAddress("localhost", 8080)).get();
 
         this.streams = controller.streams("any", "target");
@@ -134,7 +140,10 @@ public class TcpServerBM
                 while (control.startMeasurement && !control.stopMeasurement)
                 {
                     sendByteBuffer.rewind();
-                    channel.write(sendByteBuffer);
+                    if (channel.write(sendByteBuffer) == 0)
+                    {
+                        Thread.yield();
+                    }
                 }
             }
         }
@@ -146,11 +155,47 @@ public class TcpServerBM
     public void reader(
         final Control control) throws Exception
     {
+        final MessageHandler handler = this::handleRead;
         while (!control.stopMeasurement &&
-               streams.read((msgTypeId, buffer, offset, length) -> {}) == 0)
+               streams.read(handler) == 0)
         {
             Thread.yield();
         }
+    }
+
+    private void handleRead(
+        int msgTypeId,
+        MutableDirectBuffer buffer,
+        int index,
+        int length)
+    {
+        if (msgTypeId == BeginFW.TYPE_ID)
+        {
+            beginRO.wrap(buffer, index, index + length);
+            final long streamId = beginRO.streamId();
+            doWindow(streamId, 8192);
+        }
+        else if (msgTypeId == DataFW.TYPE_ID)
+        {
+            dataRO.wrap(buffer, index, index + length);
+            final long streamId = dataRO.streamId();
+            final OctetsFW payload = dataRO.payload();
+
+            final int update = payload.length();
+            doWindow(streamId, update);
+        }
+    }
+
+    private void doWindow(
+        final long streamId,
+        final int update)
+    {
+        final WindowFW window = windowRW.wrap(throttleBuffer, 0, throttleBuffer.capacity())
+                .streamId(streamId)
+                .update(update)
+                .build();
+
+        streams.write(window.typeId(), window.buffer(), window.offset(), window.length());
     }
 
     public static void main(String[] args) throws RunnerException
