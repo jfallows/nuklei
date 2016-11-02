@@ -122,7 +122,7 @@
                 <configuration>
                     <shadeJar>false</shadeJar>
                     <shadeTestJar>true</shadeTestJar>
-                    <testOutputFile>${project.build.directory}/benchmarks.jar</testOutputFile>
+                    <testOutputFile>${project.build.directory}/microbenchmarks.jar</testOutputFile>
                 </configuration>
                 <executions>
                     <execution>
