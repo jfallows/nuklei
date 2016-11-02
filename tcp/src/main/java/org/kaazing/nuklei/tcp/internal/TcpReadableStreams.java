@@ -59,4 +59,9 @@ public final class TcpReadableStreams
     {
         return throttleBuffer.write(msgTypeId, srcBuffer, srcIndex, length);
     }
+
+    public long consumerPosition()
+    {
+        return routeBuffer.consumerPosition();
+    }
 }

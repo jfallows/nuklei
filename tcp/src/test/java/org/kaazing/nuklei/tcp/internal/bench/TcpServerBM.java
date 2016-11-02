@@ -137,6 +137,7 @@ public class TcpServerBM
             try (SocketChannel channel = SocketChannel.open())
             {
                 channel.connect(new InetSocketAddress("127.0.0.1", 8080));
+                channel.configureBlocking(false);
                 while (control.startMeasurement && !control.stopMeasurement)
                 {
                     sendByteBuffer.rewind();
