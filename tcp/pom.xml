@@ -116,12 +116,27 @@
                 <artifactId>maven-failsafe-plugin</artifactId>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <attachTestJar>false</attachTestJar>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>io.gatling</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>2.4.4.3-SNAPSHOT</version>
+                <version>2.4.4.2</version>
                 <configuration>
-                    <shadeJar>false</shadeJar>
                     <shadeTestJar>true</shadeTestJar>
+                    <outputFile>${project.build.directory}/${artifactId}-shaded.jar</outputFile>
                     <testOutputFile>${project.build.directory}/microbenchmarks.jar</testOutputFile>
                 </configuration>
                 <executions>
@@ -135,6 +150,9 @@
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>org.openjdk.jmh.Main</mainClass>
+                                    <manifestEntries>
+                                        <Class-Path>${project.build.directory}/${artifactId}-shaded.jar</Class-Path>
+                                    </manifestEntries>
                                 </transformer>
                             </transformers>
                         </configuration>
