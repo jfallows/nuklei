@@ -24,88 +24,22 @@ scope http
 
     scope control
     {
-        struct Error extends common::control::Error
-        {
-        }
-
-
-        struct Bind extends common::control::Bind
-        {
-        }
-
-        struct Bound extends common::control::Bound
-        {
-        }
-
-        struct Unbind extends common::control::Unbind
-        {
-        }
-
-        struct Unbound extends common::control::Unbound
-        {
-        }
-
-        struct Prepare extends common::control::Prepare
-        {
-        }
-
-        struct Prepared extends common::control::Prepared
-        {
-        }
-
-        struct Unprepare extends common::control::Unprepare
-        {
-        }
-
-        struct Unprepared extends common::control::Unprepared
-        {
-        }
-
-        struct Route extends common::control::Route
+        struct RouteEx
         {
             list<http::Header> headers;
         }
 
-        struct Routed extends common::control::Routed
+        struct UnrouteEx
         {
             list<http::Header> headers;
         }
-
-        struct Unroute extends common::control::Unroute
-        {
-            list<http::Header> headers;
-        }
-
-        struct Unrouted extends common::control::Unrouted
-        {
-            list<http::Header> headers;
-        }
-
     }
 
     scope stream
     {
-        struct HttpBegin extends common::stream::Begin
+        struct BeginEx
         {
             list<http::Header> headers;
-        }
-
-        struct HttpData extends common::stream::Data
-        {
-            // TODO: chunk
-        }
-
-        struct HttpEnd extends common::stream::End
-        {
-            // TODO: trailers
-        }
-
-        struct HttpReset extends common::stream::Reset
-        {
-        }
-
-        struct HttpWindow extends common::stream::Window
-        {
         }
     }
 }
