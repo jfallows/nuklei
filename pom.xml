@@ -33,7 +33,7 @@
 
         <!-- animal sniffer does not yet support Java8, see MANIMALSNIFFER-45 -->
         <animal.sniffer.skip>true</animal.sniffer.skip>
-        <k3po.version>3.0.0-alpha-51</k3po.version>
+        <k3po.version>3.0.0-alpha-54</k3po.version>
         <agrona.version>0.5.2</agrona.version>
         <jmh.version>1.12</jmh.version>
     </properties>
@@ -133,7 +133,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-shade-plugin</artifactId>
-                    <version>2.4.2</version>
+                    <version>2.4.3</version>
                 </plugin>
                 <plugin>
                     <groupId>org.kaazing</groupId>
