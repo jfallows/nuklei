@@ -30,7 +30,6 @@ import org.kaazing.specification.nuklei.common.NukleusRule;
 public class ArchitectureIT
 {
     private final K3poRule k3po = new K3poRule()
-            .addScriptRoot("control", "org/kaazing/specification/nuklei/http/control")
             .addScriptRoot("streams", "org/kaazing/specification/nuklei/http/streams/rfc7230/architecture")
             .addScriptRoot("http", "org/kaazing/specification/http/rfc7230/architecture");
 
@@ -42,139 +41,102 @@ public class ArchitectureIT
         .streams("target", "http#source")
         .streams("http", "target")
         .streams("reply", "http#target")
-        .streams("source", "http#source");
+        .streams("reply", "http#source");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);
 
     @Test
     @Specification({
-        "${control}/prepare/controller",
-        "${control}/prepare/nukleus",
-        "${control}/route/controller",
-        "${control}/route/nukleus",
-        "${streams}/request.and.correlated.response/server/source",
-        "${streams}/request.and.correlated.response/server/nukleus",
-//      "${http}/outbound.must.send.version/response",
-        "${streams}/request.and.correlated.response/server/target" })
+//      "${http}/request.and.response/request",
+        "${streams}/request.and.response/server/source",
+        "${streams}/request.and.response/server/nukleus",
+        "${streams}/request.and.response/server/target" })
     public void shouldCorrelateRequestAndResponse() throws Exception
     {
+        k3po.start();
+        k3po.notifyBarrier("ROUTED_INITIAL");
+        k3po.notifyBarrier("ROUTED_REPLY");
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "nuklei/http/control/bind/controller",
-        "nuklei/http/control/bind/nukleus",
-        "nuklei/http/control/route/controller",
-        "nuklei/http/control/route/nukleus",
-//      "http/rfc7230/architecture/inbound.must.send.version/request",
-        "nuklei/http/streams/rfc7230/architecture/inbound.must.send.version/source",
-        "nuklei/http/streams/rfc7230/architecture/inbound.must.send.version/nukleus",
-        "nuklei/http/streams/rfc7230/architecture/inbound.must.send.version/target" })
-    public void inboundMustSendVersion() throws Exception
+//      "${http}/request.header.host.missing/request",
+        "${streams}/request.header.host.missing/server/source",
+        "${streams}/request.header.host.missing/server/nukleus" })
+    public void shouldRejectRequestWhenHostHeaderMissing() throws Exception
     {
+        k3po.start();
+        k3po.notifyBarrier("ROUTED_INITIAL");
+        k3po.notifyBarrier("ROUTED_REPLY");
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "nuklei/http/control/bind/controller",
-        "nuklei/http/control/bind/nukleus",
-        "nuklei/http/control/route/controller",
-        "nuklei/http/control/route/nukleus",
-//      "http/rfc7230/architecture/response.must.be.505.on.invalid.version/request",
-        "nuklei/http/streams/rfc7230/architecture/response.must.be.505.on.invalid.version/source",
-        "nuklei/http/streams/rfc7230/architecture/response.must.be.505.on.invalid.version/nukleus" })
-    public void inboundMustSend505OnInvalidVersion() throws Exception
+//      "${http}/request.version.http.1.2+/request",
+        "${streams}/request.version.http.1.2+/server/source",
+        "${streams}/request.version.http.1.2+/server/nukleus",
+        "${streams}/request.version.http.1.2+/server/target" })
+    public void shouldRespondVersionHttp11WhenRequestVersionHttp12plus() throws Exception
     {
+        k3po.start();
+        k3po.notifyBarrier("ROUTED_INITIAL");
+        k3po.notifyBarrier("ROUTED_REPLY");
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "nuklei/http/control/bind/controller",
-        "nuklei/http/control/bind/nukleus",
-        "nuklei/http/control/route/controller",
-        "nuklei/http/control/route/nukleus",
-//      "http/rfc7230/architecture/inbound.must.reply.with.version.one.dot.one.when.received.higher.minor.version/request",
-        "nuklei/http/streams/rfc7230/architecture/inbound.must.reply.with.http.1.1.when.received.http.1.2+/source",
-        "nuklei/http/streams/rfc7230/architecture/inbound.must.reply.with.http.1.1.when.received.http.1.2+/nukleus",
-        "nuklei/http/streams/rfc7230/architecture/inbound.must.reply.with.http.1.1.when.received.http.1.2+/target" })
-    public void inboundMustReplyWithHttpOneDotOneWhenReceivedHttpOneDotTwoPlus() throws Exception
+//      "${http}/request.version.not.invalid/request",
+        "${streams}/request.version.invalid/server/source",
+        "${streams}/request.version.invalid/server/nukleus" })
+    public void shouldRejectRequestWhenVersionInvalid() throws Exception
     {
+        k3po.start();
+        k3po.notifyBarrier("ROUTED_INITIAL");
+        k3po.notifyBarrier("ROUTED_REPLY");
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "nuklei/http/control/bind/controller",
-        "nuklei/http/control/bind/nukleus",
-        "nuklei/http/control/route/controller",
-        "nuklei/http/control/route/nukleus",
-//      "http/rfc7230/architecture/origin.server.should.send.505.on.major.version.not.equal.to.one/request",
-        "nuklei/http/streams/rfc7230/architecture/origin.server.should.send.505.on.major.version.not.equal.to.one/source",
-        "nuklei/http/streams/rfc7230/architecture/origin.server.should.send.505.on.major.version.not.equal.to.one/nukleus" })
-    public void originServerShouldSend505OnMajorVersionNotEqualToOne() throws Exception
+//      "${http}/request.version.not.http.1.x/request",
+        "${streams}/request.version.not.http.1.x/server/source",
+        "${streams}/request.version.not.http.1.x/server/nukleus" })
+    public void shouldRejectRequestWhenVersionNotHttp1x() throws Exception
     {
+        k3po.start();
+        k3po.notifyBarrier("ROUTED_INITIAL");
+        k3po.notifyBarrier("ROUTED_REPLY");
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "nuklei/http/control/bind/controller",
-        "nuklei/http/control/bind/nukleus",
-        "nuklei/http/control/route/controller",
-        "nuklei/http/control/route/nukleus",
-        "nuklei/http/streams/rfc7230/architecture/client.must.send.host.identifier/source",
-        "nuklei/http/streams/rfc7230/architecture/client.must.send.host.identifier/nukleus",
-//      "http/rfc7230/architecture/client.must.send.host.identifier/response",
-        "nuklei/http/streams/rfc7230/architecture/client.must.send.host.identifier/target" })
-    public void clientMustSendHostIdentifier() throws Exception
+//      "${http}/request.uri.with.user.info/request",
+        "${streams}/request.uri.with.user.info/server/source",
+        "${streams}/request.uri.with.user.info/server/nukleus" })
+    public void shouldRejectRequestWithUserInfo() throws Exception
     {
+        k3po.start();
+        k3po.notifyBarrier("ROUTED_INITIAL");
+        k3po.notifyBarrier("ROUTED_REPLY");
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "nuklei/http/control/bind/controller",
-        "nuklei/http/control/bind/nukleus",
-        "nuklei/http/control/route/controller",
-        "nuklei/http/control/route/nukleus",
-//      "http/rfc7230/architecture/inbound.must.reject.requests.missing.host.identifier/request",
-        "nuklei/http/streams/rfc7230/architecture/inbound.must.reject.requests.missing.host.identifier/source",
-        "nuklei/http/streams/rfc7230/architecture/inbound.must.reject.requests.missing.host.identifier/nukleus" })
-    public void inboundMustRejectRequestsMissingHostIdentifier() throws Exception
+//      "${http}/request.uri.with.percent.chars/request",
+        "${streams}/request.uri.with.percent.chars/server/source",
+        "${streams}/request.uri.with.percent.chars/server/nukleus",
+        "${streams}/request.uri.with.percent.chars/server/target" })
+    public void shouldAcceptRequestWithPercentChars() throws Exception
     {
-        k3po.finish();
-    }
-
-    @Test
-    @Specification({
-        "nuklei/http/control/bind/controller",
-        "nuklei/http/control/bind/nukleus",
-        "nuklei/http/control/route/controller",
-        "nuklei/http/control/route/nukleus",
-//      "http/rfc7230/architecture/inbound.must.reject.requests.with.user.info.on.uri/request",
-        "nuklei/http/streams/rfc7230/architecture/inbound.must.reject.requests.with.user.info.on.uri/source",
-        "nuklei/http/streams/rfc7230/architecture/inbound.must.reject.requests.with.user.info.on.uri/nukleus" })
-    public void inboundMustRejectRequestWithUserInfoOnURI() throws Exception
-    {
-        k3po.finish();
-    }
-
-    @Test
-    @Specification({
-        "nuklei/http/control/bind/controller",
-        "nuklei/http/control/bind/nukleus",
-        "nuklei/http/control/route/controller",
-        "nuklei/http/control/route/nukleus",
-//      "http/rfc7230/architecture/inbound.should.allow.requests.with.percent.chars.in.uri/request",
-        "nuklei/http/streams/rfc7230/architecture/inbound.should.allow.requests.with.percent.chars.in.uri/source",
-        "nuklei/http/streams/rfc7230/architecture/inbound.should.allow.requests.with.percent.chars.in.uri/nukleus",
-        "nuklei/http/streams/rfc7230/architecture/inbound.should.allow.requests.with.percent.chars.in.uri/target" })
-    public void inboundShouldAllowRequestsWithPercentCharsInURI() throws Exception
-    {
+        k3po.start();
+        k3po.notifyBarrier("ROUTED_INITIAL");
+        k3po.notifyBarrier("ROUTED_REPLY");
         k3po.finish();
     }
 }

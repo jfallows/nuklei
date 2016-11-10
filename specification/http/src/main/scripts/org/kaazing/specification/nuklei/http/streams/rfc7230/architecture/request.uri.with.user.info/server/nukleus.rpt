@@ -14,38 +14,75 @@
 # limitations under the License.
 #
 
+property newTargetInitialRef ${nuklei:newReferenceId()} # external scope
+property newSourceReplyRef ${nuklei:newReferenceId()} # external scope
+
 property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)}
 
 property sourceInitial ${nuklei.streams("http", "source")}
-property sourceReply ${nuklei.streams("source", "http#source")}
+property sourceReply ${nuklei.streams("reply", "http#source")}
 
-connect await ROUTED
+property newSourceReplyId ${nuklei:newStreamId()}
+
+connect await ROUTED_INITIAL
         agrona://stream/bidirectional
         option reader ${agrona:oneToOneReader(sourceInitial.buffer)}
-        option writer ${agrona:oneToOneWriter(sourceReply.buffer)}
+        option writer ${agrona:oneToOneWriter(sourceInitial.throttle)}
 connected
 
 read [0x00 0x00 0x00 0x01]
-read ([0..8]:sourceId)
-read ([0..8]:sourceRef)
-read ([0..8]:sourceReplyId)
-read ([0..8]:sourceReplyRef)
+read ([0..8]:initialId)
+read ([0..8]:initialRef)
+read ([0..8]:correlationId)
+read [0x00]
 
-write [0x00 0x00 0x00 0x01]
-write ${sourceReplyId}
-write ${sourceReplyRef}
-write ${sourceId}
-write ${sourceRef}
+write [0x40 0x00 0x00 0x02]
+write ${initialId}
+write [0x00 0x02 0x00 0x00]
 write flush
 
 read [0x00 0x00 0x00 0x02]
-read ${sourceId}
-read [0x39]
+read ${initialId}
+read [0x12]
 read "GET http://username:password@localhost:8000/ HTTP/1.1\r\n"
 read "\r\n"
 
+write notify REQUEST_DECODED
+
+write [0x40 0x00 0x00 0x02]
+write ${initialId}
+write [0x12 0x00 0x00 0x00]
+write flush
+
+close
+closed
+
+connect await REQUEST_DECODED
+        agrona://stream/bidirectional
+        option reader ${agrona:oneToOneReader(sourceReply.throttle)}
+        option writer ${agrona:oneToOneWriter(sourceReply.buffer)}
+connected
+
+write [0x00 0x00 0x00 0x01]
+write ${newSourceReplyId}
+write ${newSourceReplyRef}
+write ${correlationId}
+write [0x00]
+write flush
+
+read [0x40 0x00 0x00 0x02]
+read ${newSourceReplyId}
+read [0..4]
+
 write [0x00 0x00 0x00 0x02]
-write ${sourceReplyId}
+write ${newSourceReplyId}
 write [0x1a]
 write "HTTP/1.1 400 Bad Request\r\n"
 write flush
+
+read [0x40 0x00 0x00 0x02]
+read ${newSourceReplyId}
+read [0..4]
+
+close
+closed

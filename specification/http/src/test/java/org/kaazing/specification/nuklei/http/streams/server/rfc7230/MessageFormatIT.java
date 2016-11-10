@@ -29,47 +29,47 @@ import org.kaazing.specification.nuklei.common.NukleusRule;
 
 public class MessageFormatIT
 {
-    private final K3poRule k3po = new K3poRule().setScriptRoot("org/kaazing/specification");
+    private final K3poRule k3po = new K3poRule()
+            .addScriptRoot("streams", "org/kaazing/specification/nuklei/http/streams/rfc7230/message.format")
+            .addScriptRoot("http", "org/kaazing/specification/http/rfc7230/message.format");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
     private final NukleusRule nukleus = new NukleusRule()
-        .directory("target/nukleus-itests")
-        .streams("http", "source")
-        .streams("target", "http#source")
-        .streams("http", "target")
-        .streams("reply", "http#target");
+            .directory("target/nukleus-itests")
+            .streams("http", "source")
+            .streams("target", "http#source")
+            .streams("http", "target")
+            .streams("reply", "http#target");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);
 
     @Test
     @Specification({
-        "nuklei/http/control/bind/controller",
-        "nuklei/http/control/bind/nukleus",
-        "nuklei/http/control/route/controller",
-        "nuklei/http/control/route/nukleus",
-//      "http/rfc7230/message.format/inbound.should.process.request.with.content.length/request",
-        "nuklei/http/streams/rfc7230/message.format/inbound.should.process.request.with.content.length/source",
-        "nuklei/http/streams/rfc7230/message.format/inbound.should.process.request.with.content.length/nukleus",
-        "nuklei/http/streams/rfc7230/message.format/inbound.should.process.request.with.content.length/target" })
-    public void inboundShouldProcessRequestWithContentLength() throws Exception
+//      "${http}/request.with.content.length/request",
+        "${streams}/request.with.content.length/server/source",
+        "${streams}/request.with.content.length/server/nukleus",
+        "${streams}/request.with.content.length/server/target" })
+    public void shouldAcceptRequestWithContentLength() throws Exception
     {
+        k3po.start();
+        k3po.notifyBarrier("ROUTED_INITIAL");
+        k3po.notifyBarrier("ROUTED_REPLY");
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "nuklei/http/control/prepare/controller",
-        "nuklei/http/control/prepare/nukleus",
-        "nuklei/http/control/route/controller",
-        "nuklei/http/control/route/nukleus",
-        "nuklei/http/streams/rfc7230/message.format/outbound.should.accept.headers/source",
-        "nuklei/http/streams/rfc7230/message.format/outbound.should.accept.headers/nukleus",
-//      "http/rfc7230/message.format/outbound.should.accept.headers/response",
-        "nuklei/http/streams/rfc7230/message.format/outbound.should.accept.headers/target" })
-    public void ouboundShouldAcceptHeaders() throws Exception
+//      "${http}/request.with.headers/request",
+        "${streams}/request.with.headers/server/source",
+        "${streams}/request.with.headers/server/nukleus",
+        "${streams}/request.with.headers/server/target" })
+    public void shouldAcceptRequestWithHeaders() throws Exception
     {
+        k3po.start();
+        k3po.notifyBarrier("ROUTED_INITIAL");
+        k3po.notifyBarrier("ROUTED_REPLY");
         k3po.finish();
     }
 }

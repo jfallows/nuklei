@@ -29,7 +29,9 @@ import org.kaazing.specification.nuklei.common.NukleusRule;
 
 public class ConnectionManagementIT
 {
-    private final K3poRule k3po = new K3poRule().setScriptRoot("org/kaazing/specification");
+    private final K3poRule k3po = new K3poRule()
+            .addScriptRoot("streams", "org/kaazing/specification/nuklei/http/streams/rfc7230/connection.management")
+            .addScriptRoot("http", "org/kaazing/specification/http/rfc7230/connection.management");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
@@ -38,22 +40,22 @@ public class ConnectionManagementIT
             .streams("http", "source")
             .streams("target", "http#source")
             .streams("http", "target")
-            .streams("source", "http#target");
+            .streams("reply", "http#target");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);
 
     @Test
     @Specification({
-        "nuklei/http/control/bind/controller",
-        "nuklei/http/control/bind/nukleus",
-        "nuklei/http/control/route/controller",
-        "nuklei/http/control/route/nukleus",
-        "nuklei/http/streams/rfc7230/connection.management/payload.bytes.passthrough.verbatim.after.101.upgrade/source",
-        "nuklei/http/streams/rfc7230/connection.management/payload.bytes.passthrough.verbatim.after.101.upgrade/nukleus",
-        "nuklei/http/streams/rfc7230/connection.management/payload.bytes.passthrough.verbatim.after.101.upgrade/target" })
-    public void shouldPassthroughPayloadBytesAfter101Upgrade() throws Exception
+//      "${http}/response.status.101.with.upgrade/request",
+        "${streams}/response.status.101.with.upgrade/server/source",
+        "${streams}/response.status.101.with.upgrade/server/nukleus",
+        "${streams}/response.status.101.with.upgrade/server/target" })
+    public void shouldSwitchProtocolAfterUpgrade() throws Exception
     {
+        k3po.start();
+        k3po.notifyBarrier("ROUTED_INITIAL");
+        k3po.notifyBarrier("ROUTED_REPLY");
         k3po.finish();
     }
 }

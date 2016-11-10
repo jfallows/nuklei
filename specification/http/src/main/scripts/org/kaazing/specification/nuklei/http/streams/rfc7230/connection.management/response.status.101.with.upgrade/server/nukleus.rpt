@@ -47,14 +47,26 @@ write flush
 
 read [0x00 0x00 0x00 0x02]
 read ${initialId}
-read [0x48]
-read "POST / HTTP/1.1\r\n"
+read [0x50]
+read "GET / HTTP/1.1\r\n"
 read "Host: localhost:8080\r\n"
-read "Content-Length: 11\r\n"
+read "Connection: Upgrade\r\n"
+read "Upgrade: protocol\r\n"
 read "\r\n"
-read "hello world"
 
-write notify REQUEST_DECODED
+read notify REQUEST_HEADERS_RECEIVED
+
+write [0x40 0x00 0x00 0x02]
+write ${initialId}
+write [0x50 0x00 0x00 0x00]
+write flush
+
+read [0x00 0x00 0x00 0x02]
+read ${initialId}
+read [0x17]
+read "custom protocol payload"
+
+read notify REQUEST_PAYLOAD_RECEIVED
 
 write [0x40 0x00 0x00 0x02]
 write ${initialId}
@@ -64,32 +76,37 @@ write flush
 close
 closed
 
-connect await REQUEST_DECODED
+connect await ROUTED_INITIAL
         agrona://stream/bidirectional
         option reader ${agrona:oneToOneReader(targetInitial.throttle)}
         option writer ${agrona:oneToOneWriter(targetInitial.buffer)}
 connected
 
+write await REQUEST_HEADERS_RECEIVED
+
 write [0x00 0x00 0x00 0x01]
 write ${newTargetInitialId}
 write ${newTargetInitialRef}
 write ${newTargetCorrelationId}
-write [0x5c]
+write [0x6e]
 write [0x00] [0x07] ":scheme" [0x04] "http"
 write [0x00] [0x07] ":method" [0x03] "GET"
 write [0x00] [0x05] ":path" [0x01] "/"
 write [0x00] [0x04] "host" [0x0e] "localhost:8080"
-write [0x00] [0x0e] "content-length" [0x02] "11"
+write [0x00] [0x0a] "connection" [0x07] "Upgrade"
+write [0x00] [0x07] "upgrade" [0x08] "protocol" 
 write flush
 
 read [0x40 0x00 0x00 0x02]
 read ${newTargetInitialId}
 read [0..4]
 
+write await REQUEST_PAYLOAD_RECEIVED
+
 write [0x00 0x00 0x00 0x02]
 write ${newTargetInitialId}
-write [0x0b]
-write "hello world"
+write [0x17]
+write "custom protocol payload"
 write flush
 
 read [0x40 0x00 0x00 0x02]
@@ -109,14 +126,27 @@ read [0x00 0x00 0x00 0x01]
 read ([0..8]:targetReplyId)
 read ([0..8]:targetReplyRef)
 read ${newTargetCorrelationId}
-read [0x0d]
-read [0x00] [0x07] ":status" [0x03] "200"
+read [0x1f]
+read [0x00] [0x07] ":status" [0x03] "101"
+read [0x00] [0x07] "upgrade" [0x08] "protocol"
 
-read notify HTTP_RESPONSE_RECEIVED
+read notify HTTP_RESPONSE_HEADERS_RECEIVED
 
 write [0x40 0x00 0x00 0x02]
 write ${targetReplyId}
 write [0x00 0x02 0x00 0x00]
+write flush
+
+read [0x00 0x00 0x00 0x02]
+read ${targetReplyId}
+read [0x17]
+read "custom protocol payload"
+
+read notify HTTP_RESPONSE_PAYLOAD_RECEIVED
+
+write [0x40 0x00 0x00 0x02]
+write ${targetReplyId}
+write [0x28 0x00 0x00 0x00]
 write flush
 
 close
@@ -128,7 +158,7 @@ connect await ROUTED_REPLY
         option writer ${agrona:oneToOneWriter(sourceReply.buffer)}
 connected
 
-write await HTTP_RESPONSE_RECEIVED
+write await HTTP_RESPONSE_HEADERS_RECEIVED
 
 write [0x00 0x00 0x00 0x01]
 write ${newSourceReplyId}
@@ -143,9 +173,22 @@ read [0..4]
 
 write [0x00 0x00 0x00 0x02]
 write ${newSourceReplyId}
-write [0x13]
-write "HTTP/1.1 200 OK\r\n"
+write [0x37]
+write "HTTP/1.1 101 Switching Protocols\r\n"
+write"Upgrade: protocol\r\n"
 write "\r\n"
+write flush
+
+read [0x40 0x00 0x00 0x02]
+read ${newSourceReplyId}
+read [0..4]
+
+write await HTTP_RESPONSE_PAYLOAD_RECEIVED
+
+write [0x00 0x00 0x00 0x02]
+write ${newSourceReplyId}
+write [0x17]
+write "custom protocol payload"
 write flush
 
 read [0x40 0x00 0x00 0x02]

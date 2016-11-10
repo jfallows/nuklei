@@ -47,12 +47,11 @@ write flush
 
 read [0x00 0x00 0x00 0x02]
 read ${initialId}
-read [0x48]
-read "POST / HTTP/1.1\r\n"
+read [0x3a]
+read "GET / HTTP/1.1\r\n"
 read "Host: localhost:8080\r\n"
-read "Content-Length: 11\r\n"
+read "X-Custom: header\r\n"
 read "\r\n"
-read "hello world"
 
 write notify REQUEST_DECODED
 
@@ -74,22 +73,12 @@ write [0x00 0x00 0x00 0x01]
 write ${newTargetInitialId}
 write ${newTargetInitialRef}
 write ${newTargetCorrelationId}
-write [0x5c]
+write [0x5a]
 write [0x00] [0x07] ":scheme" [0x04] "http"
 write [0x00] [0x07] ":method" [0x03] "GET"
 write [0x00] [0x05] ":path" [0x01] "/"
 write [0x00] [0x04] "host" [0x0e] "localhost:8080"
-write [0x00] [0x0e] "content-length" [0x02] "11"
-write flush
-
-read [0x40 0x00 0x00 0x02]
-read ${newTargetInitialId}
-read [0..4]
-
-write [0x00 0x00 0x00 0x02]
-write ${newTargetInitialId}
-write [0x0b]
-write "hello world"
+write [0x00] [0x08] "x-custom" [0x06] "header"
 write flush
 
 read [0x40 0x00 0x00 0x02]

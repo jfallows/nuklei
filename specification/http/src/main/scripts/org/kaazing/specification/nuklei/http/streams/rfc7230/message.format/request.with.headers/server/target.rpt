@@ -14,34 +14,61 @@
 # limitations under the License.
 #
 
+property newReplyRef ${nuklei:newReferenceId()}
+
 property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)}
 
 property targetInitial ${nuklei.streams("target", "http#source")}
 property targetReply ${nuklei.streams("http", "target")}
 
-connect await ROUTED
+property newReplyId ${nuklei:newStreamId()}
+
+connect await ROUTED_INITIAL
         agrona://stream/bidirectional
         option reader ${agrona:oneToOneReader(targetInitial.buffer)}
-        option writer ${agrona:oneToOneWriter(targetReply.buffer)}
+        option writer ${agrona:oneToOneWriter(targetInitial.throttle)}
 connected
 
 read [0x00 0x00 0x00 0x01]
-read ([0..8]:targetId)
-read ([0..8]:targetRef)
-read ([0..8]:targetReplyId)
-read ([0..8]:targetReplyRef)
+read ([0..8]:targetInitialId)
+read ([0..8]:targetInitialRef)
+read ([0..8]:targetCorrelationId)
+read [0x5a]
 read [0x00] [0x07] ":scheme" [0x04] "http"
 read [0x00] [0x07] ":method" [0x03] "GET"
 read [0x00] [0x05] ":path" [0x01] "/"
 read [0x00] [0x04] "host" [0x0e] "localhost:8080"
+read [0x00] [0x08] "x-custom" [0x06] "header"
+
+read notify HTTP_REQUEST_RECEIVED
+
+write [0x40 0x00 0x00 0x02]
+write ${targetInitialId}
+write [0x00 0x02 0x00 0x00]
+write flush
+
+close
+closed
+
+connect await ROUTED_REPLY
+        agrona://stream/bidirectional
+        option reader ${agrona:oneToOneReader(targetReply.throttle)}
+        option writer ${agrona:oneToOneWriter(targetReply.buffer)}
+connected
+
+write await HTTP_REQUEST_RECEIVED
 
 write [0x00 0x00 0x00 0x01]
-write ${targetReplyId}
-write ${targetReplyRef}
-write ${targetId}
-write ${targetRef}
+write ${newReplyId}
+write ${newReplyRef}
+write ${targetCorrelationId}
+write [0x0d]
 write [0x00] [0x07] ":status" [0x03] "200"
 write flush
+
+read [0x40 0x00 0x00 0x02]
+read ${newReplyId}
+read [0..4]
 
 close
 closed

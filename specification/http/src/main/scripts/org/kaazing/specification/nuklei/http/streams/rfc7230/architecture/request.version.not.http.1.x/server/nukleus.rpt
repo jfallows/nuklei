@@ -20,13 +20,9 @@ property newSourceReplyRef ${nuklei:newReferenceId()} # external scope
 property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)}
 
 property sourceInitial ${nuklei.streams("http", "source")}
-property targetInitial ${nuklei.streams("target", "http#source")}
-property targetReply ${nuklei.streams("http", "target")}
-property sourceReply ${nuklei.streams("reply", "http#target")}
+property sourceReply ${nuklei.streams("reply", "http#source")}
 
-property newTargetInitialId ${nuklei:newStreamId()}
 property newSourceReplyId ${nuklei:newStreamId()}
-property newTargetCorrelationId ${nuklei:newCorrelationId()}
 
 connect await ROUTED_INITIAL
         agrona://stream/bidirectional
@@ -47,18 +43,16 @@ write flush
 
 read [0x00 0x00 0x00 0x02]
 read ${initialId}
-read [0x48]
-read "POST / HTTP/1.1\r\n"
+read [0x12]
+read "GET / HTTP/2.0\r\n"
 read "Host: localhost:8080\r\n"
-read "Content-Length: 11\r\n"
 read "\r\n"
-read "hello world"
 
 write notify REQUEST_DECODED
 
 write [0x40 0x00 0x00 0x02]
 write ${initialId}
-write [0x28 0x00 0x00 0x00]
+write [0x12 0x00 0x00 0x00]
 write flush
 
 close
@@ -66,69 +60,9 @@ closed
 
 connect await REQUEST_DECODED
         agrona://stream/bidirectional
-        option reader ${agrona:oneToOneReader(targetInitial.throttle)}
-        option writer ${agrona:oneToOneWriter(targetInitial.buffer)}
-connected
-
-write [0x00 0x00 0x00 0x01]
-write ${newTargetInitialId}
-write ${newTargetInitialRef}
-write ${newTargetCorrelationId}
-write [0x5c]
-write [0x00] [0x07] ":scheme" [0x04] "http"
-write [0x00] [0x07] ":method" [0x03] "GET"
-write [0x00] [0x05] ":path" [0x01] "/"
-write [0x00] [0x04] "host" [0x0e] "localhost:8080"
-write [0x00] [0x0e] "content-length" [0x02] "11"
-write flush
-
-read [0x40 0x00 0x00 0x02]
-read ${newTargetInitialId}
-read [0..4]
-
-write [0x00 0x00 0x00 0x02]
-write ${newTargetInitialId}
-write [0x0b]
-write "hello world"
-write flush
-
-read [0x40 0x00 0x00 0x02]
-read ${newTargetInitialId}
-read [0..4]
-
-close
-closed
-
-connect await ROUTED_REPLY
-        agrona://stream/bidirectional
-        option reader ${agrona:oneToOneReader(targetReply.buffer)}
-        option writer ${agrona:oneToOneWriter(targetReply.throttle)}
-connected
-
-read [0x00 0x00 0x00 0x01]
-read ([0..8]:targetReplyId)
-read ([0..8]:targetReplyRef)
-read ${newTargetCorrelationId}
-read [0x0d]
-read [0x00] [0x07] ":status" [0x03] "200"
-
-read notify HTTP_RESPONSE_RECEIVED
-
-write [0x40 0x00 0x00 0x02]
-write ${targetReplyId}
-write [0x00 0x02 0x00 0x00]
-write flush
-
-close
-closed
-
-connect await ROUTED_REPLY
-        agrona://stream/bidirectional
         option reader ${agrona:oneToOneReader(sourceReply.throttle)}
         option writer ${agrona:oneToOneWriter(sourceReply.buffer)}
 connected
-
-write await HTTP_RESPONSE_RECEIVED
 
 write [0x00 0x00 0x00 0x01]
 write ${newSourceReplyId}
@@ -143,9 +77,8 @@ read [0..4]
 
 write [0x00 0x00 0x00 0x02]
 write ${newSourceReplyId}
-write [0x13]
-write "HTTP/1.1 200 OK\r\n"
-write "\r\n"
+write [0x29]
+write "HTTP/1.1 505 HTTP Version Not Supported\r\n"
 write flush
 
 read [0x40 0x00 0x00 0x02]

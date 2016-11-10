@@ -14,45 +14,75 @@
 # limitations under the License.
 #
 
-property newSourceRef ${nuklei:newInitialRef()} # external scope
+property newInitialRef ${nuklei:newReferenceId()} # external scope
 
 property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)}
 
 property sourceInitial ${nuklei.streams("http", "source")}
-property sourceReply ${nuklei.streams("source", "http#source")}
+property sourceReply ${nuklei.streams("reply", "http#source")}
 
-property newSourceId ${nuklei:newStreamId()}
-property newSourceReplyRef ${nuklei:newReplyRef()}
-property newSourceReplyId ${nuklei:newStreamId()}
+property newInitialId ${nuklei:newStreamId()}
+property newCorrelationId ${nuklei:newCorrelationId()}
 
-connect await ROUTED
+connect await ROUTED_INITIAL
         agrona://stream/bidirectional
-        option reader ${agrona:oneToOneReader(sourceReply.buffer)}
+        option reader ${agrona:oneToOneReader(sourceInitial.throttle)}
         option writer ${agrona:oneToOneWriter(sourceInitial.buffer)}
 connected
 
 write [0x00 0x00 0x00 0x01]
-write ${newSourceId}
-write ${newSourceRef}
-write ${newSourceReplyId}
-write ${newSourceReplyRef}
+write ${newInitialId}
+write ${newInitialRef}
+write ${newCorrelationId}
+write [0x00]
 write flush
 
+read [0x40 0x00 0x00 0x02]
+read ${newInitialId}
+read [0..4]
+
 write [0x00 0x00 0x00 0x02]
-write ${newSourceId}
-write [0x28]
-write "GET / " ${http:randomAscii(8)} "\r\n"
+write ${newInitialId}
+write [0x12]
+write "GET / INVALID\r\n"
 write "Host: localhost:8080\r\n"
 write "\r\n"
 write flush
 
+read [0x40 0x00 0x00 0x02]
+read ${newInitialId}
+read [0..4]
+
+close
+closed
+
+
+connect await ROUTED_REPLY
+        agrona://stream/bidirectional
+        option reader ${agrona:oneToOneReader(sourceReply.buffer)}
+        option writer ${agrona:oneToOneWriter(sourceReply.throttle)}
+connected
+
 read [0x00 0x00 0x00 0x01]
-read ${newSourceReplyId}
-read ${newSourceReplyRef}
-read ${newSourceId}
-read ${newSourceRef}
+read ([0..8]:replyId)
+read ([0..8]:replyRef)
+read ${newCorrelationId}
+read [0x00]
+
+write [0x40 0x00 0x00 0x02]
+write ${replyId}
+write [0x00 0x02 0x00 0x00]
+write flush
 
 read [0x00 0x00 0x00 0x02]
-read ${newSourceReplyId}
-read [0..1]
-read "HTTP/1.1 505"
+read ${replyId}
+read [0x1a]
+read "HTTP/1.1 400 Bad Request\r\n"
+
+write [0x40 0x00 0x00 0x02]
+write ${replyId}
+write [0x1a 0x00 0x00 0x00]
+write flush
+
+close
+closed
