@@ -1,0 +1,42 @@
+#
+# Copyright 2007-2016, Kaazing Corporation. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# external newReplyRef
+
+property nukleiC1C ${nuklei:directory("target/nukleus-itests").controlCapacity(1024, 1024)}
+
+property controlC1C ${nukleiC1C.control("ws")}
+
+connect await BOUND_INITIAL
+        agrona://stream/bidirectional
+        option reader ${agrona:broadcastReceiver(controlC1C.controller)}
+        option writer ${agrona:manyToOneWriter(controlC1C.nukleus)}
+
+connected
+
+write [0x00 0x00 0x00 0x01]
+write ${controlC1C.nextCorrelationId()}
+write [0x12]
+write flush
+
+read [0x40 0x00 0x00 0x01]
+read ${controlC1C.correlationId()}
+read ([0..8]:newReplyRef)
+
+close
+closed
+
+read notify BOUND_REPLY

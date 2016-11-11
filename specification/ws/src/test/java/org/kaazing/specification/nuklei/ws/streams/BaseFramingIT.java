@@ -33,7 +33,8 @@ import org.kaazing.specification.nuklei.common.NukleusRule;
 public class BaseFramingIT
 {
     private final K3poRule k3po = new K3poRule()
-        .setScriptRoot("org/kaazing/specification/nuklei/ws");
+        .addScriptRoot("streams", "org/kaazing/specification/nuklei/ws/streams/framing")
+        .addScriptRoot("ws", "org/kaazing/specification/ws/opening");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
@@ -50,36 +51,34 @@ public class BaseFramingIT
 
     @Test
     @Specification({
-        "control/bind/controller",
-        "control/bind/nukleus",
-        "control/route/controller",
-        "control/route/nukleus",
-        "streams/framing/echo.binary.payload.length.0/bind.source",
-        "streams/framing/echo.binary.payload.length.0/bind.nukleus",
-        "streams/framing/echo.binary.payload.length.0/bind.target" })
+        "${streams}/echo.binary.payload.length.0/server/source",
+        "${streams}/echo.binary.payload.length.0/server/nukleus",
+        "${streams}/echo.binary.payload.length.0/server/target" })
     public void shouldEchoBinaryFrameWithPayloadLength0() throws Exception
     {
+        k3po.start();
+        k3po.notifyBarrier("ROUTED_INITIAL");
+        k3po.notifyBarrier("ROUTED_REPLY");
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "control/bind/controller",
-        "control/bind/nukleus",
-        "control/route/controller",
-        "control/route/nukleus",
-        "streams/framing/echo.binary.payload.length.125/bind.source",
-        "streams/framing/echo.binary.payload.length.125/bind.nukleus",
-        "streams/framing/echo.binary.payload.length.125/bind.target" })
+        "${streams}/echo.binary.payload.length.125/server/source",
+        "${streams}/echo.binary.payload.length.125/server/nukleus",
+        "${streams}/echo.binary.payload.length.125/server/target" })
     public void shouldEchoBinaryFrameWithPayloadLength125() throws Exception
     {
+        k3po.start();
+        k3po.notifyBarrier("ROUTED_INITIAL");
+        k3po.notifyBarrier("ROUTED_REPLY");
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "streams/framing/echo.binary.payload.length.126/handshake.request.and.frame",
-        "streams/framing/echo.binary.payload.length.126/handshake.response.and.frame" })
+        "${streams}/echo.binary.payload.length.126/handshake.request.and.frame",
+        "${streams}/echo.binary.payload.length.126/handshake.response.and.frame" })
     public void shouldEchoBinaryFrameWithPayloadLength126() throws Exception
     {
         k3po.finish();
@@ -87,8 +86,8 @@ public class BaseFramingIT
 
     @Test
     @Specification({
-        "streams/framing/echo.binary.payload.length.127/handshake.request.and.frame",
-        "streams/framing/echo.binary.payload.length.127/handshake.response.and.frame" })
+        "${streams}/echo.binary.payload.length.127/handshake.request.and.frame",
+        "${streams}/echo.binary.payload.length.127/handshake.response.and.frame" })
     public void shouldEchoBinaryFrameWithPayloadLength127() throws Exception
     {
         k3po.finish();
@@ -96,8 +95,8 @@ public class BaseFramingIT
 
     @Test
     @Specification({
-        "streams/framing/echo.binary.payload.length.128/handshake.request.and.frame",
-        "streams/framing/echo.binary.payload.length.128/handshake.response.and.frame" })
+        "${streams}/echo.binary.payload.length.128/handshake.request.and.frame",
+        "${streams}/echo.binary.payload.length.128/handshake.response.and.frame" })
     public void shouldEchoBinaryFrameWithPayloadLength128() throws Exception
     {
         k3po.finish();
@@ -105,8 +104,8 @@ public class BaseFramingIT
 
     @Test
     @Specification({
-        "streams/framing/echo.binary.payload.length.65535/handshake.request.and.frame",
-        "streams/framing/echo.binary.payload.length.65535/handshake.response.and.frame" })
+        "${streams}/echo.binary.payload.length.65535/handshake.request.and.frame",
+        "${streams}/echo.binary.payload.length.65535/handshake.response.and.frame" })
     public void shouldEchoBinaryFrameWithPayloadLength65535() throws Exception
     {
         k3po.finish();
@@ -114,8 +113,8 @@ public class BaseFramingIT
 
     @Test
     @Specification({
-        "streams/framing/echo.binary.payload.length.65536/handshake.request.and.frame",
-        "streams/framing/echo.binary.payload.length.65536/handshake.response.and.frame" })
+        "${streams}/echo.binary.payload.length.65536/handshake.request.and.frame",
+        "${streams}/echo.binary.payload.length.65536/handshake.response.and.frame" })
     public void shouldEchoBinaryFrameWithPayloadLength65536() throws Exception
     {
         k3po.finish();
@@ -123,8 +122,8 @@ public class BaseFramingIT
 
     @Test
     @Specification({
-        "streams/framing/echo.text.payload.length.0/handshake.request.and.frame",
-        "streams/framing/echo.text.payload.length.0/handshake.response.and.frame" })
+        "${streams}/echo.text.payload.length.0/handshake.request.and.frame",
+        "${streams}/echo.text.payload.length.0/handshake.response.and.frame" })
     public void shouldEchoTextFrameWithPayloadLength0() throws Exception
     {
         k3po.finish();
@@ -132,8 +131,8 @@ public class BaseFramingIT
 
     @Test
     @Specification({
-        "streams/framing/echo.text.payload.length.125/handshake.request.and.frame",
-        "streams/framing/echo.text.payload.length.125/handshake.response.and.frame" })
+        "${streams}/echo.text.payload.length.125/handshake.request.and.frame",
+        "${streams}/echo.text.payload.length.125/handshake.response.and.frame" })
     public void shouldEchoTextFrameWithPayloadLength125() throws Exception
     {
         k3po.finish();
@@ -141,8 +140,8 @@ public class BaseFramingIT
 
     @Test
     @Specification({
-        "streams/framing/echo.text.payload.length.126/handshake.request.and.frame",
-        "streams/framing/echo.text.payload.length.126/handshake.response.and.frame" })
+        "${streams}/echo.text.payload.length.126/handshake.request.and.frame",
+        "${streams}/echo.text.payload.length.126/handshake.response.and.frame" })
     public void shouldEchoTextFrameWithPayloadLength126() throws Exception
     {
         k3po.finish();
@@ -150,8 +149,8 @@ public class BaseFramingIT
 
     @Test
     @Specification({
-        "streams/framing/echo.text.payload.length.127/handshake.request.and.frame",
-        "streams/framing/echo.text.payload.length.127/handshake.response.and.frame" })
+        "${streams}/echo.text.payload.length.127/handshake.request.and.frame",
+        "${streams}/echo.text.payload.length.127/handshake.response.and.frame" })
     public void shouldEchoTextFrameWithPayloadLength127() throws Exception
     {
         k3po.finish();
@@ -159,8 +158,8 @@ public class BaseFramingIT
 
     @Test
     @Specification({
-        "streams/framing/echo.text.payload.length.128/handshake.request.and.frame",
-        "streams/framing/echo.text.payload.length.128/handshake.response.and.frame" })
+        "${streams}/echo.text.payload.length.128/handshake.request.and.frame",
+        "${streams}/echo.text.payload.length.128/handshake.response.and.frame" })
     public void shouldEchoTextFrameWithPayloadLength128() throws Exception
     {
         k3po.finish();
@@ -168,8 +167,8 @@ public class BaseFramingIT
 
     @Test
     @Specification({
-        "streams/framing/echo.text.payload.length.65535/handshake.request.and.frame",
-        "streams/framing/echo.text.payload.length.65535/handshake.response.and.frame" })
+        "${streams}/echo.text.payload.length.65535/handshake.request.and.frame",
+        "${streams}/echo.text.payload.length.65535/handshake.response.and.frame" })
     public void shouldEchoTextFrameWithPayloadLength65535() throws Exception
     {
         k3po.finish();
@@ -177,8 +176,8 @@ public class BaseFramingIT
 
     @Test
     @Specification({
-        "streams/framing/echo.text.payload.length.65536/handshake.request.and.frame",
-        "streams/framing/echo.text.payload.length.65536/handshake.response.and.frame" })
+        "${streams}/echo.text.payload.length.65536/handshake.request.and.frame",
+        "${streams}/echo.text.payload.length.65536/handshake.response.and.frame" })
     public void shouldEchoTextFrameWithPayloadLength65536() throws Exception
     {
         k3po.finish();
