@@ -21,14 +21,14 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.collections.LongHashSet;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.ws.internal.Context;
 import org.kaazing.nuklei.ws.internal.conductor.Conductor;
 import org.kaazing.nuklei.ws.internal.routable.Routable;
-
-import org.agrona.collections.LongHashSet;
-import org.agrona.concurrent.status.AtomicCounter;
 
 @Reaktive
 public final class Router extends Nukleus.Composite
@@ -36,8 +36,9 @@ public final class Router extends Nukleus.Composite
     private static final Pattern SOURCE_NAME = Pattern.compile("([^#]+)");
 
     private final Context context;
-    private final LongHashSet routableRefs;
-    private final Map<String, Routable> routablesBySource;
+    private final LongHashSet referenceIds;
+    private final Map<String, Routable> routables;
+    private final Long2ObjectHashMap<Correlation> correlations;
 
     private Conductor conductor;
 
@@ -45,8 +46,9 @@ public final class Router extends Nukleus.Composite
         Context context)
     {
         this.context = context;
-        this.routableRefs = new LongHashSet(-1L);
-        this.routablesBySource = new HashMap<>();
+        this.referenceIds = new LongHashSet(-1L);
+        this.routables = new HashMap<>();
+        this.correlations = new Long2ObjectHashMap<>();
     }
 
     public void setConductor(Conductor conductor)
@@ -61,14 +63,15 @@ public final class Router extends Nukleus.Composite
     }
 
     public void doBind(
-        long correlationId)
+        long correlationId,
+        int kind)
     {
-        final AtomicCounter streamsBound = context.counters().streamsBound();
+        final AtomicCounter targetsBound = context.counters().targetsBound();
 
-        // bind reference: positive, odd
-        final long referenceId = (streamsBound.increment() << 1L) | 1L;
+        final RouteKind routeKind = RouteKind.of(kind);
+        final long referenceId = routeKind.nextRef(targetsBound);
 
-        if (routableRefs.add(referenceId))
+        if (referenceIds.add(referenceId))
         {
             conductor.onBoundResponse(correlationId, referenceId);
         }
@@ -82,42 +85,9 @@ public final class Router extends Nukleus.Composite
         long correlationId,
         long referenceId)
     {
-        if (routableRefs.remove(referenceId))
+        if (referenceIds.remove(referenceId))
         {
-            conductor.onUnboundResponse(correlationId, referenceId);
-        }
-        else
-        {
-            conductor.onErrorResponse(correlationId);
-        }
-    }
-
-    public void doPrepare(
-        long correlationId)
-    {
-        final AtomicCounter streamsPrepared = context.counters().streamsPrepared();
-
-        // prepare reference: positive, even, non-zero
-        streamsPrepared.increment();
-        final long referenceId = streamsPrepared.get() << 1L;
-
-        if (routableRefs.add(referenceId))
-        {
-            conductor.onPreparedResponse(correlationId, referenceId);
-        }
-        else
-        {
-            conductor.onErrorResponse(correlationId);
-        }
-    }
-
-    public void doUnprepare(
-        long correlationId,
-        long referenceId)
-    {
-        if (routableRefs.remove(referenceId))
-        {
-            conductor.onUnpreparedResponse(correlationId, referenceId);
+            conductor.onUnboundResponse(correlationId);
         }
         else
         {
@@ -131,16 +101,12 @@ public final class Router extends Nukleus.Composite
         long sourceRef,
         String targetName,
         long targetRef,
-        String replyName,
         String protocol)
     {
-        if (routableRefs.contains(sourceRef))
+        if (referenceIds.contains(sourceRef) && RouteKind.valid(sourceRef))
         {
-            Routable target = routablesBySource.computeIfAbsent(targetName, this::newRoutable);
-            target.doRouteReply(replyName);
-
-            Routable source = routablesBySource.computeIfAbsent(sourceName, this::newRoutable);
-            source.doRoute(correlationId, sourceRef, targetName, targetRef, replyName, protocol);
+            Routable routable = routables.computeIfAbsent(sourceName, this::newRoutable);
+            routable.doRoute(correlationId, sourceRef, targetName, targetRef, protocol);
         }
         else
         {
@@ -154,13 +120,12 @@ public final class Router extends Nukleus.Composite
         long sourceRef,
         String targetName,
         long targetRef,
-        String replyName,
         String protocol)
     {
-        Routable routable = routablesBySource.get(sourceName);
-        if (routable != null)
+        final Routable routable = routables.get(sourceName);
+        if (routable != null && referenceIds.contains(sourceRef))
         {
-            routable.doUnroute(correlationId, sourceRef, targetName, targetRef, replyName, protocol);
+            routable.doUnroute(correlationId, sourceRef, targetName, targetRef, protocol);
         }
         else
         {
@@ -172,31 +137,15 @@ public final class Router extends Nukleus.Composite
         Path sourcePath)
     {
         String sourceName = source(sourcePath);
-        Routable routable = routablesBySource.computeIfAbsent(sourceName, this::newRoutable);
-        routable.onReadable(sourcePath);
+        Routable routable = routables.computeIfAbsent(sourceName, this::newRoutable);
+        String partitionName = sourcePath.getFileName().toString();
+        routable.onReadable(partitionName);
     }
 
     public void onExpired(
         Path sourcePath)
     {
         // TODO:
-    }
-
-    public void doRegisterReplyEncoder(
-        String sourceName,
-        long sourceRef,
-        long sourceId,
-        String targetName,
-        long targetRef,
-        long targetId,
-        long targetReplyRef,
-        long targetReplyId,
-        String protocol,
-        String handshakeHash)
-    {
-        Routable routable = routablesBySource.computeIfAbsent(sourceName, this::newRoutable);
-        routable.doRegisterReplyEncoder(sourceRef, sourceId, targetName, targetRef, targetId,
-                targetReplyRef, targetReplyId, protocol, handshakeHash);
     }
 
     private static String source(
@@ -216,6 +165,6 @@ public final class Router extends Nukleus.Composite
     private Routable newRoutable(
         String sourceName)
     {
-        return include(new Routable(context, sourceName, sourceName, this, conductor));
+        return include(new Routable(context, conductor, sourceName, correlations::put, correlations::remove));
     }
 }

@@ -15,25 +15,11 @@
  */
 package org.kaazing.nuklei.ws.internal.routable;
 
-import static org.kaazing.nuklei.ws.internal.util.BufferUtil.xor;
 import static org.agrona.BitUtil.SIZE_OF_BYTE;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.kaazing.nuklei.ws.internal.util.BufferUtil.xor;
 
 import java.util.function.Consumer;
-
-import org.kaazing.nuklei.Nukleus;
-import org.kaazing.nuklei.ws.internal.layouts.StreamsLayout;
-import org.kaazing.nuklei.ws.internal.types.HeaderFW;
-import org.kaazing.nuklei.ws.internal.types.ListFW;
-import org.kaazing.nuklei.ws.internal.types.OctetsFW;
-import org.kaazing.nuklei.ws.internal.types.stream.FrameFW;
-import org.kaazing.nuklei.ws.internal.types.stream.HttpBeginFW;
-import org.kaazing.nuklei.ws.internal.types.stream.HttpDataFW;
-import org.kaazing.nuklei.ws.internal.types.stream.HttpEndFW;
-import org.kaazing.nuklei.ws.internal.types.stream.WsBeginFW;
-import org.kaazing.nuklei.ws.internal.types.stream.WsDataFW;
-import org.kaazing.nuklei.ws.internal.types.stream.WsEndFW;
-import org.kaazing.nuklei.ws.internal.types.stream.WsFrameFW;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -41,20 +27,37 @@ import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.MessageHandler;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
+import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.ws.internal.layouts.StreamsLayout;
+import org.kaazing.nuklei.ws.internal.types.Flyweight;
+import org.kaazing.nuklei.ws.internal.types.HttpHeaderFW;
+import org.kaazing.nuklei.ws.internal.types.ListFW;
+import org.kaazing.nuklei.ws.internal.types.OctetsFW;
+import org.kaazing.nuklei.ws.internal.types.stream.BeginFW;
+import org.kaazing.nuklei.ws.internal.types.stream.DataFW;
+import org.kaazing.nuklei.ws.internal.types.stream.EndFW;
+import org.kaazing.nuklei.ws.internal.types.stream.FrameFW;
+import org.kaazing.nuklei.ws.internal.types.stream.HttpBeginExFW;
+import org.kaazing.nuklei.ws.internal.types.stream.WsBeginExFW;
+import org.kaazing.nuklei.ws.internal.types.stream.WsDataExFW;
+import org.kaazing.nuklei.ws.internal.types.stream.WsEndExFW;
+import org.kaazing.nuklei.ws.internal.types.stream.WsFrameFW;
 
 public final class Target implements Nukleus
 {
     private final FrameFW frameRO = new FrameFW();
 
-    private final HttpBeginFW.Builder httpBeginRW = new HttpBeginFW.Builder();
-    private final HttpDataFW.Builder httpDataRW = new HttpDataFW.Builder();
-    private final HttpEndFW.Builder httpEndRW = new HttpEndFW.Builder();
-
     private final WsFrameFW.Builder wsFrameRW = new WsFrameFW.Builder();
 
-    private final WsBeginFW.Builder wsBeginRW = new WsBeginFW.Builder();
-    private final WsDataFW.Builder wsDataRW = new WsDataFW.Builder();
-    private final WsEndFW.Builder wsEndRW = new WsEndFW.Builder();
+    private final BeginFW.Builder beginRW = new BeginFW.Builder();
+    private final DataFW.Builder dataRW = new DataFW.Builder();
+    private final EndFW.Builder endRW = new EndFW.Builder();
+
+    private final WsBeginExFW.Builder wsBeginExRW = new WsBeginExFW.Builder();
+    private final WsDataExFW.Builder wsDataExRW = new WsDataExFW.Builder();
+    private final WsEndExFW.Builder wsEndExRW = new WsEndExFW.Builder();
+
+    private final HttpBeginExFW.Builder httpBeginExRW = new HttpBeginExFW.Builder();
 
     private final String name;
     private final StreamsLayout layout;
@@ -123,6 +126,7 @@ public final class Target implements Nukleus
         frameRO.wrap(buffer, index, index + length);
 
         final long streamId = frameRO.streamId();
+        // TODO: use Long2ObjectHashMap.getOrDefault(long, T) instead
         final MessageHandler throttle = throttles.get(streamId);
 
         if (throttle != null)
@@ -132,96 +136,132 @@ public final class Target implements Nukleus
     }
 
     public void doWsBegin(
-        long routableRef,
-        long streamId,
-        long replyRef,
-        long replyId,
+        long targetId,
+        long targetRef,
+        long correlationId,
         String protocol)
     {
-        WsBeginFW wsBegin = wsBeginRW.wrap(writeBuffer, 0, writeBuffer.capacity())
-                .routableRef(routableRef)
-                .streamId(streamId)
-                .replyRef(replyRef)
-                .replyId(replyId)
-                .protocol(protocol)
+        final BeginFW begin = beginRW.wrap(writeBuffer, 0, writeBuffer.capacity())
+                .referenceId(targetRef)
+                .streamId(targetId)
+                .correlationId(correlationId)
+                .extension(b -> b.set(visitWsBeginEx(protocol)))
                 .build();
 
-        streamsBuffer.write(wsBegin.typeId(), wsBegin.buffer(), wsBegin.offset(), wsBegin.length());
+        streamsBuffer.write(begin.typeId(), begin.buffer(), begin.offset(), begin.length());
     }
 
     public int doWsData(
-        long streamId,
+        long targetId,
         int flags,
         int maskKey,
         DirectBuffer payload)
     {
-        WsDataFW wsData = wsDataRW.wrap(writeBuffer, 0, writeBuffer.capacity())
-                .streamId(streamId)
+        final DataFW data = dataRW.wrap(writeBuffer, 0, writeBuffer.capacity())
+                .streamId(targetId)
                 .payload(p -> p.set(payload, 0, payload.capacity()).set((b, o, l) -> xor(b, o, l, maskKey)))
-                .flags(flags)
+                .extension(b -> b.set(visitWsDataEx(flags)))
                 .build();
 
-        streamsBuffer.write(wsData.typeId(), wsData.buffer(), wsData.offset(), wsData.length());
+        streamsBuffer.write(data.typeId(), data.buffer(), data.offset(), data.length());
 
-        return wsData.length();
+        return data.length();
     }
 
     public void doWsEnd(
-        long streamId,
-        short status)
+        long targetId,
+        int status)
     {
-        WsEndFW wsEnd = wsEndRW.wrap(writeBuffer, 0, writeBuffer.capacity())
-                .streamId(streamId)
-                .code(status)
+        final EndFW end = endRW.wrap(writeBuffer, 0, writeBuffer.capacity())
+                .streamId(targetId)
+                .extension(b -> b.set(visitWsEndEx(status)))
                 .build();
 
-        streamsBuffer.write(wsEnd.typeId(), wsEnd.buffer(), wsEnd.offset(), wsEnd.length());
+        streamsBuffer.write(end.typeId(), end.buffer(), end.offset(), end.length());
     }
 
     public void doHttpBegin(
-        long streamId,
-        long routableRef,
-        long replyId,
-        long replyRef,
-        Consumer<ListFW.Builder<HeaderFW.Builder, HeaderFW>> mutator)
+        long targetId,
+        long targetRef,
+        long correlationId,
+        Consumer<ListFW.Builder<HttpHeaderFW.Builder, HttpHeaderFW>> mutator)
     {
-        HttpBeginFW httpBegin = httpBeginRW.wrap(writeBuffer, 0, writeBuffer.capacity())
-                .streamId(streamId)
-                .routableRef(routableRef)
-                .replyId(replyId)
-                .replyRef(replyRef)
-                .headers(mutator)
+        BeginFW begin = beginRW.wrap(writeBuffer, 0, writeBuffer.capacity())
+                .streamId(targetId)
+                .referenceId(targetRef)
+                .correlationId(correlationId)
+                .extension(b -> b.set(visitHttpBeginEx(mutator)))
                 .build();
 
-        streamsBuffer.write(httpBegin.typeId(), httpBegin.buffer(), httpBegin.offset(), httpBegin.length());
+        streamsBuffer.write(begin.typeId(), begin.buffer(), begin.offset(), begin.length());
     }
 
     public void doHttpData(
-        long streamId,
-        int flagsAndOpcode,
-        OctetsFW payload)
+        long targetId,
+        OctetsFW payload,
+        int flagsAndOpcode)
     {
         WsFrameFW wsFrame = wsFrameRW.wrap(writeBuffer, SIZE_OF_LONG + SIZE_OF_BYTE, writeBuffer.capacity())
                 .payload(payload.buffer(), payload.offset() + SIZE_OF_BYTE, payload.length() - SIZE_OF_BYTE)
                 .flagsAndOpcode(flagsAndOpcode)
                 .build();
 
-        HttpDataFW httpData = httpDataRW.wrap(writeBuffer, 0, writeBuffer.capacity())
-                .streamId(streamId)
+        DataFW data = dataRW.wrap(writeBuffer, 0, writeBuffer.capacity())
+                .streamId(targetId)
                 .payload(p -> p.set(wsFrame.buffer(), wsFrame.offset(), wsFrame.length()))
                 .build();
 
-        streamsBuffer.write(httpData.typeId(), httpData.buffer(), httpData.offset(), httpData.length());
+        streamsBuffer.write(data.typeId(), data.buffer(), data.offset(), data.length());
     }
 
     public void doHttpEnd(
-        long streamId)
+        long targetId)
     {
-        HttpEndFW httpEnd = httpEndRW.wrap(writeBuffer, 0, writeBuffer.capacity())
-                .streamId(streamId)
+        EndFW end = endRW.wrap(writeBuffer, 0, writeBuffer.capacity())
+                .streamId(targetId)
                 .build();
 
-        streamsBuffer.write(httpEnd.typeId(), httpEnd.buffer(), httpEnd.offset(), httpEnd.length());
+        streamsBuffer.write(end.typeId(), end.buffer(), end.offset(), end.length());
+    }
+
+    private Flyweight.Builder.Visitor visitWsBeginEx(
+        String protocol)
+    {
+        return (buffer, offset, limit) ->
+            wsBeginExRW.wrap(buffer, offset, limit)
+                       .protocol(protocol)
+                       .build()
+                       .length();
+    }
+
+    private Flyweight.Builder.Visitor visitWsDataEx(
+        int flags)
+    {
+        return (buffer, offset, limit) ->
+            wsDataExRW.wrap(buffer, offset, limit)
+                      .flags((byte) flags)
+                      .build()
+                      .length();
+    }
+
+    private Flyweight.Builder.Visitor visitWsEndEx(
+        int status)
+    {
+        return (buffer, offset, limit) ->
+            wsEndExRW.wrap(buffer, offset, limit)
+                     .code((short) status)
+                     .build()
+                     .length();
+    }
+
+    private Flyweight.Builder.Visitor visitHttpBeginEx(
+        Consumer<ListFW.Builder<HttpHeaderFW.Builder, HttpHeaderFW>> headers)
+    {
+        return (buffer, offset, limit) ->
+            httpBeginExRW.wrap(buffer, offset, limit)
+                         .headers(headers)
+                         .build()
+                         .length();
     }
 
 }

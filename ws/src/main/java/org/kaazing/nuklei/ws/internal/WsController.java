@@ -20,15 +20,6 @@ import static java.nio.ByteOrder.nativeOrder;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.kaazing.nuklei.Controller;
-import org.kaazing.nuklei.ws.internal.types.control.BindFW;
-import org.kaazing.nuklei.ws.internal.types.control.BoundFW;
-import org.kaazing.nuklei.ws.internal.types.control.ErrorFW;
-import org.kaazing.nuklei.ws.internal.types.control.RouteFW;
-import org.kaazing.nuklei.ws.internal.types.control.RoutedFW;
-import org.kaazing.nuklei.ws.internal.types.control.UnbindFW;
-import org.kaazing.nuklei.ws.internal.types.control.UnboundFW;
-
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AtomicBuffer;
@@ -36,15 +27,29 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.broadcast.BroadcastReceiver;
 import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
+import org.kaazing.nuklei.Controller;
+import org.kaazing.nuklei.ws.internal.types.Flyweight;
+import org.kaazing.nuklei.ws.internal.types.control.BindFW;
+import org.kaazing.nuklei.ws.internal.types.control.BoundFW;
+import org.kaazing.nuklei.ws.internal.types.control.ErrorFW;
+import org.kaazing.nuklei.ws.internal.types.control.RouteFW;
+import org.kaazing.nuklei.ws.internal.types.control.RoutedFW;
+import org.kaazing.nuklei.ws.internal.types.control.UnbindFW;
+import org.kaazing.nuklei.ws.internal.types.control.UnboundFW;
+import org.kaazing.nuklei.ws.internal.types.control.UnrouteFW;
+import org.kaazing.nuklei.ws.internal.types.control.WsRouteExFW;
 
 public final class WsController implements Controller
 {
     private static final int MAX_SEND_LENGTH = 1024; // TODO: Configuration and Context
 
     // TODO: thread-safe flyweights or command queue from public methods
-    private final RouteFW.Builder routeRW = new RouteFW.Builder();
     private final BindFW.Builder bindRW = new BindFW.Builder();
     private final UnbindFW.Builder unbindRW = new UnbindFW.Builder();
+    private final RouteFW.Builder routeRW = new RouteFW.Builder();
+    private final UnrouteFW.Builder unrouteRW = new UnrouteFW.Builder();
+
+    private final WsRouteExFW.Builder routeExRW = new WsRouteExFW.Builder();
 
     private final ErrorFW errorRO = new ErrorFW();
     private final RoutedFW routedRO = new RoutedFW();
@@ -157,7 +162,7 @@ public final class WsController implements Controller
                                  .sourceRef(sourceRef)
                                  .target(target)
                                  .targetRef(targetRef)
-                                 .protocol(protocol)
+                                 .extension(b -> b.set(visitRouteEx(protocol)))
                                  .build();
 
         if (!conductorCommands.write(routeRO.typeId(), routeRO.buffer(), routeRO.offset(), routeRO.length()))
@@ -172,11 +177,53 @@ public final class WsController implements Controller
         return promise;
     }
 
-    public WsStreams streams(
+    public CompletableFuture<Void> unroute(
+        String source,
+        long sourceRef,
+        String target,
+        long targetRef,
+        String protocol)
+    {
+        final CompletableFuture<Void> promise = new CompletableFuture<>();
+
+        long correlationId = conductorCommands.nextCorrelationId();
+
+        UnrouteFW unrouteRO = unrouteRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                       .correlationId(correlationId)
+                                       .source(source)
+                                       .sourceRef(sourceRef)
+                                       .target(target)
+                                       .targetRef(targetRef)
+                                       .extension(b -> b.set(visitRouteEx(protocol)))
+                                       .build();
+
+        if (!conductorCommands.write(unrouteRO.typeId(), unrouteRO.buffer(), unrouteRO.offset(), unrouteRO.length()))
+        {
+            commandSendFailed(promise);
+        }
+        else
+        {
+            commandSent(correlationId, promise);
+        }
+
+        return promise;
+    }
+
+    public WsReadableStreams streams(
         String capture,
         String route)
     {
-        return new WsStreams(context, capture, route);
+        return new WsReadableStreams(context, capture, route);
+    }
+
+    private Flyweight.Builder.Visitor visitRouteEx(
+        String protocol)
+    {
+        return (buffer, offset, limit) ->
+            routeExRW.wrap(buffer, offset, limit)
+                     .protocol(protocol)
+                     .build()
+                     .length();
     }
 
     private int handleResponse(

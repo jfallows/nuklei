@@ -15,40 +15,43 @@
  */
 package org.kaazing.nuklei.ws.internal.routable.stream;
 
-import org.kaazing.nuklei.ws.internal.routable.Source;
-import org.kaazing.nuklei.ws.internal.routable.Target;
+import java.util.List;
+import java.util.function.LongFunction;
+import java.util.function.LongSupplier;
 
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.MessageHandler;
+import org.kaazing.nuklei.ws.internal.routable.Route;
+import org.kaazing.nuklei.ws.internal.routable.Source;
+import org.kaazing.nuklei.ws.internal.router.Correlation;
 
-public final class ReplyDecodingStreamFactory
+public final class ClientReplyStreamFactory
 {
     private final Source source;
+    private final LongFunction<List<Route>> supplyRoutes;
+    private final LongSupplier supplyTargetId;
+    private final LongFunction<Correlation> correlateReply;
 
-    public ReplyDecodingStreamFactory(
-        Source source)
+    public ClientReplyStreamFactory(
+        Source source,
+        LongFunction<List<Route>> supplyRoutes,
+        LongSupplier supplyTargetId,
+        LongFunction<Correlation> correlateReply)
     {
         this.source = source;
+        this.supplyRoutes = supplyRoutes;
+        this.supplyTargetId = supplyTargetId;
+        this.correlateReply = correlateReply;
     }
 
-    public MessageHandler newStream(
-        Target target,
-        long targetRef,
-        long targetId,
-        String protocol,
-        byte[] handshakeKey)
+    public MessageHandler newStream()
     {
-        return new ReplyDecodingStream(target, targetRef, targetId, protocol, handshakeKey)::handleStream;
+        return new ClientReplyStream()::handleStream;
     }
 
-    private final class ReplyDecodingStream
+    private final class ClientReplyStream
     {
-        private ReplyDecodingStream(
-            Target target,
-            long targetRef,
-            long targetId,
-            String protocol,
-            byte[] handshakeKey)
+        private ClientReplyStream()
         {
             // TODO Auto-generated constructor stub
         }

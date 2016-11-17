@@ -13,12 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.ws.internal.routable;
+package org.kaazing.nuklei.ws.internal.util.function;
 
-import org.agrona.concurrent.MessageHandler;
+import java.util.Objects;
+import java.util.function.BiConsumer;
 
 @FunctionalInterface
-public interface HandlerFactory
+public interface LongObjectBiConsumer<T> extends BiConsumer<Long, T>
 {
-    MessageHandler newHandler(Route route, Source source, long streamId);
+    void accept(long value, T t);
+
+    @Override
+    default void accept(Long value, T t)
+    {
+        this.accept(value.longValue(), t);
+    }
+
+    default LongObjectBiConsumer<T> andThen(
+        LongObjectBiConsumer<? super T> after)
+    {
+        Objects.requireNonNull(after);
+
+        return (l, r) ->
+        {
+            accept(l, r);
+            after.accept(l, r);
+        };
+    }
 }

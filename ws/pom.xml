@@ -77,7 +77,7 @@
                 <groupId>org.kaazing</groupId>
                 <artifactId>nuklei-maven-plugin</artifactId>
                 <configuration>
-                    <scopeNames>common::stream::Frame common::stream::Begin http::stream http::Header ws</scopeNames>
+                    <scopeNames>common http ws</scopeNames>
                     <packageName>org.kaazing.nuklei.ws.internal.types</packageName>
                 </configuration>
             </plugin>

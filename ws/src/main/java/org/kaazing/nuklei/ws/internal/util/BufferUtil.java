@@ -47,7 +47,7 @@ public final class BufferUtil
         // utility class, no instances
     }
 
-    public static void xor(
+    public static int xor(
         final MutableDirectBuffer buffer,
         final int offset,
         final int length,
@@ -84,5 +84,7 @@ public final class BufferUtil
                 throw new IllegalStateException("remaining=" + remaining);
             }
         }
+
+        return length;
     }
 }

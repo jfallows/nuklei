@@ -15,122 +15,125 @@
  */
 package org.kaazing.nuklei.ws.internal.routable;
 
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Objects;
-import java.util.function.LongSupplier;
+import java.util.function.Predicate;
 
-import org.agrona.concurrent.MessageHandler;
-
-public final class Route
+public class Route
 {
-    private final HandlerFactory handlerFactory;
-    private final Target replyTo;
-    private final LongSupplier newTargetId;
-    private final List<Option> options;
+    private final String source;
+    private final long sourceRef;
+    private final Target target;
+    private final long targetRef;
+    private final String protocol;
 
     public Route(
-        HandlerFactory handlerFactory,
-        Target replyTo,
-        LongSupplier newTargetId)
-    {
-        this.handlerFactory = handlerFactory;
-        this.replyTo = replyTo;
-        this.newTargetId = newTargetId;
-        this.options = new LinkedList<>();
-    }
-
-    public MessageHandler newStream(
-        Source source,
-        long streamId)
-    {
-        return handlerFactory.newHandler(this, source, streamId);
-    }
-
-    public Target replyTo()
-    {
-        return replyTo;
-    }
-
-    public long newTargetId()
-    {
-        return newTargetId.getAsLong();
-    }
-
-    public boolean add(
-        String protocol,
+        String source,
+        long sourceRef,
         Target target,
         long targetRef,
-        String reply)
+        String protocol)
     {
-        return options.add(new Option(protocol, target, targetRef, reply));
+        this.source = source;
+        this.sourceRef = sourceRef;
+        this.target = target;
+        this.targetRef = targetRef;
+        this.protocol = protocol;
     }
 
-    public Option resolve(
-        String protocols)
+    public String source()
     {
-        // TODO: handle multiple protocols
-        return options.stream().filter(o -> Objects.equals(o.protocol, protocols)).findFirst().orElse(null);
+        return source;
     }
 
-    public boolean removeIf(
-        String protocol,
-        Target target,
-        long targetRef,
-        String reply)
+    public long sourceRef()
     {
-        return options.removeIf(o -> o.equalTo(protocol, target, targetRef, reply));
+        return sourceRef;
     }
 
-    public static final class Option
+    public Target target()
     {
-        private final String protocol;
-        private final Target target;
-        private final long targetRef;
-        private final String reply;
+        return target;
+    }
 
-        Option(
-            String protocol,
-            Target target,
-            long targetRef,
-            String reply)
+    public long targetRef()
+    {
+        return this.targetRef;
+    }
+
+    public String protocol()
+    {
+        return protocol;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = source.hashCode();
+        result = 31 * result + Long.hashCode(sourceRef);
+        result = 31 * result + target.hashCode();
+        result = 31 * result + Long.hashCode(targetRef);
+
+        if (protocol != null)
         {
-            this.protocol = protocol;
-            this.target = target;
-            this.targetRef = targetRef;
-            this.reply = reply;
+            result = 31 * result + protocol.hashCode();
         }
 
-        public String protocol()
+        return result;
+    }
+
+    @Override
+    public boolean equals(
+        Object obj)
+    {
+        if (!(obj instanceof Route))
         {
-            return protocol;
+            return false;
         }
 
-        public Target target()
-        {
-            return target;
-        }
+        Route that = (Route) obj;
+        return this.sourceRef == that.sourceRef &&
+                this.targetRef == that.targetRef &&
+                Objects.equals(this.source, that.source) &&
+                Objects.equals(this.target, that.target) &&
+                Objects.equals(this.protocol, that.protocol);
+    }
 
-        public long targetRef()
-        {
-            return targetRef;
-        }
+    @Override
+    public String toString()
+    {
+        return String.format("[source=\"%s\", sourceRef=%d, target=\"%s\", targetRef=%d, protocol=%s]",
+                source, sourceRef, target.name(), targetRef, protocol);
+    }
 
-        public String reply()
-        {
-            return reply;
-        }
+    public static Predicate<Route> sourceMatches(
+        String source)
+    {
+        Objects.requireNonNull(source);
+        return r -> source.equals(r.source);
+    }
 
-        boolean equalTo(
-            String protocol,
-            Target target,
-            long targetRef,
-            String reply)
-        {
-            return this.targetRef == targetRef &&
-                    Objects.equals(this.target, target) &&
-                    Objects.equals(this.reply, reply) &&
-                    Objects.equals(this.protocol, protocol);
-        }
+    public static Predicate<Route> sourceRefMatches(
+        long sourceRef)
+    {
+        return r -> sourceRef == r.sourceRef;
+    }
+
+    public static Predicate<Route> targetMatches(
+        String target)
+    {
+        Objects.requireNonNull(target);
+        return r -> target.equals(r.target.name());
+    }
+
+    public static Predicate<Route> targetRefMatches(
+        long targetRef)
+    {
+        return r -> targetRef == r.targetRef;
+    }
+
+    public static Predicate<Route> protocolMatches(
+        String protocol)
+    {
+        return r -> protocol == null || protocol.equals(r.protocol);
     }
 }

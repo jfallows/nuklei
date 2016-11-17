@@ -15,25 +15,35 @@
  */
 package org.kaazing.nuklei.ws.internal.routable;
 
-import java.util.function.LongFunction;
+import static org.kaazing.nuklei.ws.internal.router.RouteKind.CLIENT_INITIAL;
+import static org.kaazing.nuklei.ws.internal.router.RouteKind.CLIENT_REPLY;
+import static org.kaazing.nuklei.ws.internal.router.RouteKind.SERVER_INITIAL;
+import static org.kaazing.nuklei.ws.internal.router.RouteKind.SERVER_REPLY;
 
-import org.kaazing.nuklei.Nukleus;
-import org.kaazing.nuklei.ws.internal.layouts.StreamsLayout;
-import org.kaazing.nuklei.ws.internal.routable.stream.InitialDecodingStreamFactory;
-import org.kaazing.nuklei.ws.internal.routable.stream.InitialEncodingStreamFactory;
-import org.kaazing.nuklei.ws.internal.routable.stream.ReplyDecodingStreamFactory;
-import org.kaazing.nuklei.ws.internal.routable.stream.ReplyEncodingStreamFactory;
-import org.kaazing.nuklei.ws.internal.router.Router;
-import org.kaazing.nuklei.ws.internal.types.stream.BeginFW;
-import org.kaazing.nuklei.ws.internal.types.stream.FrameFW;
-import org.kaazing.nuklei.ws.internal.types.stream.ResetFW;
-import org.kaazing.nuklei.ws.internal.types.stream.WindowFW;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.function.LongFunction;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.MessageHandler;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
+import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.ws.internal.layouts.StreamsLayout;
+import org.kaazing.nuklei.ws.internal.routable.stream.ClientInitialStreamFactory;
+import org.kaazing.nuklei.ws.internal.routable.stream.ClientReplyStreamFactory;
+import org.kaazing.nuklei.ws.internal.routable.stream.ServerInitialStreamFactory;
+import org.kaazing.nuklei.ws.internal.routable.stream.ServerReplyStreamFactory;
+import org.kaazing.nuklei.ws.internal.router.Correlation;
+import org.kaazing.nuklei.ws.internal.router.RouteKind;
+import org.kaazing.nuklei.ws.internal.types.stream.BeginFW;
+import org.kaazing.nuklei.ws.internal.types.stream.FrameFW;
+import org.kaazing.nuklei.ws.internal.types.stream.ResetFW;
+import org.kaazing.nuklei.ws.internal.types.stream.WindowFW;
+import org.kaazing.nuklei.ws.internal.util.function.LongObjectBiConsumer;
 
 public final class Source implements Nukleus
 {
@@ -43,40 +53,44 @@ public final class Source implements Nukleus
     private final ResetFW.Builder resetRW = new ResetFW.Builder();
     private final WindowFW.Builder windowRW = new WindowFW.Builder();
 
-    private final String name;
-    private final LongFunction<Route> lookupRoute;
-    private final LongFunction<Reply> lookupReply;
+    private final String sourceName;
+    private final String partitionName;
     private final StreamsLayout layout;
     private final AtomicBuffer writeBuffer;
     private final RingBuffer streamsBuffer;
     private final RingBuffer throttleBuffer;
     private final Long2ObjectHashMap<MessageHandler> streams;
 
-    private final InitialDecodingStreamFactory initialDecoderFactory;
-    private final InitialEncodingStreamFactory initialEncoderFactory;
-    private final ReplyDecodingStreamFactory replyDecoderFactory;
-    private final ReplyEncodingStreamFactory replyEncoderFactory;
+    private final EnumMap<RouteKind, Supplier<MessageHandler>> streamFactories;
 
     Source(
-        String fileName,
-        Router router,
-        LongFunction<Route> lookupRoute,
-        LongFunction<Reply> lookupReply,
+        String sourceName,
+        String partitionName,
         StreamsLayout layout,
-        AtomicBuffer writeBuffer)
+        AtomicBuffer writeBuffer,
+        LongFunction<List<Route>> supplyRoutes,
+        LongSupplier supplyTargetId,
+        LongObjectBiConsumer<Correlation> correlateInitial,
+        LongFunction<Correlation> correlateReply)
     {
-        this.name = String.format("sources[%s]", fileName);
-        this.lookupRoute = lookupRoute;
-        this.lookupReply = lookupReply;
+        this.sourceName = sourceName;
+        this.partitionName = partitionName;
         this.layout = layout;
         this.writeBuffer = writeBuffer;
+
         this.streamsBuffer = layout.streamsBuffer();
         this.throttleBuffer = layout.throttleBuffer();
         this.streams = new Long2ObjectHashMap<>();
-        this.initialDecoderFactory = new InitialDecodingStreamFactory(router, this);
-        this.initialEncoderFactory = new InitialEncodingStreamFactory(router, this);
-        this.replyDecoderFactory = new ReplyDecodingStreamFactory(this);
-        this.replyEncoderFactory = new ReplyEncodingStreamFactory(this);
+
+        this.streamFactories = new EnumMap<>(RouteKind.class);
+        this.streamFactories.put(SERVER_INITIAL,
+                new ServerInitialStreamFactory(this, supplyRoutes, supplyTargetId, correlateInitial)::newStream);
+        this.streamFactories.put(SERVER_REPLY,
+                new ServerReplyStreamFactory(this, supplyRoutes, supplyTargetId, correlateReply)::newStream);
+        this.streamFactories.put(CLIENT_INITIAL,
+                new ClientInitialStreamFactory(this, supplyRoutes, supplyTargetId, correlateInitial)::newStream);
+        this.streamFactories.put(CLIENT_REPLY,
+                new ClientReplyStreamFactory(this, supplyRoutes, supplyTargetId, correlateReply)::newStream);
     }
 
     @Override
@@ -94,13 +108,18 @@ public final class Source implements Nukleus
     @Override
     public String name()
     {
-        return name;
+        return partitionName;
+    }
+
+    public String routableName()
+    {
+        return sourceName;
     }
 
     @Override
     public String toString()
     {
-        return name;
+        return String.format("%s[name=%s]", getClass().getSimpleName(), partitionName);
     }
 
     private void handleRead(
@@ -112,18 +131,37 @@ public final class Source implements Nukleus
         frameRO.wrap(buffer, index, index + length);
 
         final long streamId = frameRO.streamId();
-        final MessageHandler stream = streams.get(streamId);
 
-        if (stream != null)
+        // TODO: use Long2ObjectHashMap.getOrDefault(long, T)
+        final MessageHandler handler = streams.get(streamId);
+
+        if (handler != null)
         {
-            stream.onMessage(msgTypeId, buffer, index, length);
+            handler.onMessage(msgTypeId, buffer, index, length);
         }
-        else if (msgTypeId == BeginFW.TYPE_ID)
+        else
+        {
+            handleUnrecognized(msgTypeId, buffer, index, length);
+        }
+
+    }
+
+    private void handleUnrecognized(
+        int msgTypeId,
+        MutableDirectBuffer buffer,
+        int index,
+        int length)
+    {
+        if (msgTypeId == BeginFW.TYPE_ID)
         {
             handleBegin(msgTypeId, buffer, index, length);
         }
         else
         {
+            frameRO.wrap(buffer, index, index + length);
+
+            final long streamId = frameRO.streamId();
+
             doReset(streamId);
         }
     }
@@ -135,75 +173,13 @@ public final class Source implements Nukleus
         int length)
     {
         beginRO.wrap(buffer, index, index + length);
-        final long streamId = beginRO.streamId();
-        final long routableRef = beginRO.routableRef();
+        final long sourceId = beginRO.streamId();
+        final long sourceRef = beginRO.referenceId();
 
-        if (routableRef > 0)
-        {
-            final Route route = lookupRoute.apply(routableRef);
-            if (route != null)
-            {
-                final MessageHandler newStream = route.newStream(this, streamId);
-                streams.put(streamId, newStream);
-
-                newStream.onMessage(msgTypeId, buffer, index, length);
-            }
-            else
-            {
-                doReset(streamId);
-            }
-        }
-        else
-        {
-            final Reply reply = lookupReply.apply(routableRef);
-            final MessageHandler newStream = (reply != null) ? reply.newStream(this, streamId) : null;
-            if (newStream != null)
-            {
-                streams.put(streamId, newStream);
-
-                newStream.onMessage(msgTypeId, buffer, index, length);
-            }
-            else
-            {
-                new RoutableException().doThrow(ex -> doReset(streamId));
-            }
-        }
-    }
-
-    public MessageHandler newInitialDecodingStream(
-        Route route,
-        long streamId)
-    {
-        return initialDecoderFactory.newStream(route, streamId);
-    }
-
-    public MessageHandler newReplyEncodingStream(
-        Target target,
-        long targetRef,
-        long targetId,
-        long targetReplyRef,
-        long targetReplyId,
-        String protocol,
-        String handshakeHash)
-    {
-        return replyEncoderFactory.newStream(target, targetRef, targetId, targetReplyRef, targetReplyId, protocol, handshakeHash);
-    }
-
-    public MessageHandler newInitialEncodingStream(
-        Route route,
-        long streamId)
-    {
-        return initialEncoderFactory.newStream(route, streamId);
-    }
-
-    public MessageHandler newReplyDecodingStream(
-        Target target,
-        long targetRef,
-        long targetId,
-        String protocol,
-        byte[] handshakeKey)
-    {
-        return replyDecoderFactory.newStream(target, targetRef, targetId, protocol, handshakeKey);
+        final Supplier<MessageHandler> streamFactory = streamFactories.get(RouteKind.match(sourceRef));
+        final MessageHandler newStream = streamFactory.get();
+        streams.put(sourceId, newStream);
+        newStream.onMessage(BeginFW.TYPE_ID, buffer, index, length);
     }
 
     public void doWindow(

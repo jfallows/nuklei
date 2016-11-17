@@ -49,8 +49,8 @@ public final class Context implements Closeable
     private int maximumStreamsCount;
     private int streamsBufferCapacity;
     private int throttleBufferCapacity;
-    private Function<String, Path> captureStreamsPath;
-    private BiFunction<String, String, Path> routeStreamsPath;
+    private Function<String, Path> sourceStreamsPath;
+    private BiFunction<String, String, Path> targetStreamsPath;
     private IdleStrategy idleStrategy;
     private ErrorHandler errorHandler;
     private CountersManager countersManager;
@@ -127,28 +127,28 @@ public final class Context implements Closeable
         return streamsPath;
     }
 
-    public Context captureStreamsPath(
-        Function<String, Path> captureStreamsFile)
+    public Context sourceStreamsPath(
+        Function<String, Path> sourceStreamsFile)
     {
-        this.captureStreamsPath = captureStreamsFile;
+        this.sourceStreamsPath = sourceStreamsFile;
         return this;
     }
 
-    public Function<String, Path> captureStreamsPath()
+    public Function<String, Path> sourceStreamsPath()
     {
-        return captureStreamsPath;
+        return sourceStreamsPath;
     }
 
-    public Context routeStreamsPath(
-        BiFunction<String, String, Path> routeStreamsPath)
+    public Context targetStreamsPath(
+        BiFunction<String, String, Path> targetStreamsPath)
     {
-        this.routeStreamsPath = routeStreamsPath;
+        this.targetStreamsPath = targetStreamsPath;
         return this;
     }
 
-    public BiFunction<String, String, Path> routeStreamsPath()
+    public BiFunction<String, String, Path> targetStreamsPath()
     {
-        return routeStreamsPath;
+        return targetStreamsPath;
     }
 
     public Context idleStrategy(
@@ -266,9 +266,9 @@ public final class Context implements Closeable
             watchService(FileSystems.getDefault().newWatchService());
             streamsPath(configDirectory.resolve("ws/streams"));
 
-            captureStreamsPath(source -> configDirectory.resolve(format("ws/streams/%s", source)));
+            sourceStreamsPath(source -> configDirectory.resolve(format("ws/streams/%s", source)));
 
-            routeStreamsPath((source, target) -> configDirectory.resolve(format("%s/streams/ws#%s", target, source)));
+            targetStreamsPath((source, target) -> configDirectory.resolve(format("%s/streams/ws#%s", target, source)));
 
             this.controlRO = controlRW.controlPath(config.directory().resolve("ws/control"))
                                       .commandBufferCapacity(config.commandBufferCapacity())

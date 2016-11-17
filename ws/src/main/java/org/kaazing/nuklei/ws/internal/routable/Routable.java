@@ -15,54 +15,66 @@
  */
 package org.kaazing.nuklei.ws.internal.routable;
 
-import java.nio.file.Path;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.function.LongSupplier;
+import static java.util.Collections.emptyList;
+import static org.kaazing.nuklei.ws.internal.routable.Route.protocolMatches;
+import static org.kaazing.nuklei.ws.internal.routable.Route.sourceMatches;
+import static org.kaazing.nuklei.ws.internal.routable.Route.sourceRefMatches;
+import static org.kaazing.nuklei.ws.internal.routable.Route.targetMatches;
+import static org.kaazing.nuklei.ws.internal.routable.Route.targetRefMatches;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.LongFunction;
+import java.util.function.LongSupplier;
+import java.util.function.Predicate;
+
+import org.agrona.LangUtil;
+import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.Reaktive;
 import org.kaazing.nuklei.ws.internal.Context;
 import org.kaazing.nuklei.ws.internal.conductor.Conductor;
 import org.kaazing.nuklei.ws.internal.layouts.StreamsLayout;
-import org.kaazing.nuklei.ws.internal.router.Router;
-
-import org.agrona.LangUtil;
-import org.agrona.collections.Long2ObjectHashMap;
-import org.agrona.concurrent.AtomicBuffer;
-import org.agrona.concurrent.status.AtomicCounter;
-import org.agrona.concurrent.MessageHandler;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.kaazing.nuklei.ws.internal.router.Correlation;
+import org.kaazing.nuklei.ws.internal.util.function.LongObjectBiConsumer;
 
 @Reaktive
 public final class Routable extends Nukleus.Composite
 {
+    private static final List<Route> EMPTY_ROUTES = emptyList();
+
     private final Context context;
     private final String sourceName;
-    private final Router router;
     private final Conductor conductor;
     private final AtomicBuffer writeBuffer;
+    private final Map<String, Source> sourcesByPartitionName;
     private final Map<String, Target> targetsByName;
-    private final Long2ObjectHashMap<Route> routesByRef;
-    private final Long2ObjectHashMap<Reply> repliesByRef;
-    private final Target replyTo;
+    private final Long2ObjectHashMap<List<Route>> routesByRef;
+    private final LongObjectBiConsumer<Correlation> correlateInitial;
+    private final LongFunction<Correlation> correlateReply;
+    private final LongSupplier supplyTargetId;
 
     public Routable(
         Context context,
+        Conductor conductor,
         String sourceName,
-        String replyName,
-        Router router,
-        Conductor conductor)
+        LongObjectBiConsumer<Correlation> correlateInitial,
+        LongFunction<Correlation> correlateReply)
     {
         this.context = context;
-        this.sourceName = sourceName;
-        this.router = router;
         this.conductor = conductor;
+        this.sourceName = sourceName;
+        this.correlateInitial = correlateInitial;
+        this.correlateReply = correlateReply;
         this.writeBuffer = new UnsafeBuffer(new byte[context.maxMessageLength()]);
-        this.targetsByName = new TreeMap<>();
+        this.sourcesByPartitionName = new HashMap<>();
+        this.targetsByName = new HashMap<>();
         this.routesByRef = new Long2ObjectHashMap<>();
-        this.repliesByRef = new Long2ObjectHashMap<>();
-        this.replyTo = targetsByName.computeIfAbsent(replyName, this::supplyTarget);
+        this.supplyTargetId = context.counters().streamsTargeted()::increment;
     }
 
     @Override
@@ -72,36 +84,27 @@ public final class Routable extends Nukleus.Composite
     }
 
     public void onReadable(
-        Path sourcePath)
+        String partitionName)
     {
-        StreamsLayout layout = new StreamsLayout.Builder()
-            .path(sourcePath)
-            .streamsCapacity(context.streamsBufferCapacity())
-            .throttleCapacity(context.throttleBufferCapacity())
-            .readonly(true)
-            .build();
-
-        final String sourceName = sourcePath.getFileName().toString();
-        include(new Source(sourceName, router, routesByRef::get, repliesByRef::get, layout, writeBuffer));
+        sourcesByPartitionName.computeIfAbsent(partitionName, this::newSource);
     }
 
     public void doRoute(
         long correlationId,
-        long routableRef,
+        long sourceRef,
         String targetName,
         long targetRef,
-        String replyName,
         String protocol)
     {
         try
         {
-            Target target = targetsByName.computeIfAbsent(targetName, this::supplyTarget);
+            final Target target = targetsByName.computeIfAbsent(targetName, this::newTarget);
+            final Route newRoute = new Route(sourceName, sourceRef, target, targetRef, protocol);
 
-            Route route = routesByRef.computeIfAbsent(routableRef, this::supplyRoute);
+            routesByRef.computeIfAbsent(sourceRef, this::newRoutes)
+                       .add(newRoute);
 
-            route.add(protocol, target, targetRef, replyName);
-
-            conductor.onRoutedResponse(correlationId, sourceName, routableRef, targetName, targetRef, replyName, protocol);
+            conductor.onRoutedResponse(correlationId);
         }
         catch (Exception ex)
         {
@@ -112,25 +115,23 @@ public final class Routable extends Nukleus.Composite
 
     public void doUnroute(
         long correlationId,
-        long routableRef,
+        long sourceRef,
         String targetName,
         long targetRef,
-        String replyName,
         String protocol)
     {
-        Route route = routesByRef.get(routableRef);
-        Target target = targetsByName.get(targetName);
+        final List<Route> routes = supplyRoutes(sourceRef);
 
-        if (route != null && target != null)
+        final Predicate<Route> filter =
+                sourceMatches(sourceName)
+                 .and(sourceRefMatches(sourceRef))
+                 .and(targetMatches(targetName))
+                 .and(targetRefMatches(targetRef))
+                 .and(protocolMatches(protocol));
+
+        if (routes.removeIf(filter))
         {
-            if (route.removeIf(protocol, target, targetRef, replyName))
-            {
-                conductor.onUnroutedResponse(correlationId, sourceName, routableRef, targetName, targetRef, replyName, protocol);
-            }
-            else
-            {
-                conductor.onErrorResponse(correlationId);
-            }
+            conductor.onUnroutedResponse(correlationId);
         }
         else
         {
@@ -138,81 +139,43 @@ public final class Routable extends Nukleus.Composite
         }
     }
 
-    public void doRouteReply(
-        String replyName)
+    private List<Route> newRoutes(
+        long sourceRef)
     {
-        targetsByName.computeIfAbsent(replyName, this::supplyTarget);
+        return new ArrayList<>();
     }
 
-    public void doRegisterReplyEncoder(
-        long sourceRef,
-        long sourceId,
-        String targetName,
-        long targetRef,
-        long targetId,
-        long targetReplyRef,
-        long targetReplyId,
-        String protocol,
-        String handshakeHash)
+    private List<Route> supplyRoutes(
+        long referenceId)
     {
-        Target target = targetsByName.computeIfAbsent(targetName, this::supplyTarget);
-        Reply reply = repliesByRef.computeIfAbsent(sourceRef, v -> new Reply());
-        reply.register(sourceId, s -> s.newReplyEncodingStream(target, targetRef, targetId,
-                targetReplyRef, targetReplyId, protocol, handshakeHash));
+        return routesByRef.getOrDefault(referenceId, EMPTY_ROUTES);
     }
 
-    private Target supplyTarget(
+    private Source newSource(
+        String partitionName)
+    {
+        StreamsLayout layout = new StreamsLayout.Builder()
+            .path(context.sourceStreamsPath().apply(partitionName))
+            .streamsCapacity(context.streamsBufferCapacity())
+            .throttleCapacity(context.throttleBufferCapacity())
+            .readonly(true)
+            .build();
+
+        return include(new Source(sourceName, partitionName, layout, writeBuffer,
+                                  this::supplyRoutes, supplyTargetId,
+                                  correlateInitial, correlateReply));
+    }
+
+    private Target newTarget(
         String targetName)
     {
         StreamsLayout layout = new StreamsLayout.Builder()
-                .path(context.routeStreamsPath().apply(sourceName, targetName))
+                .path(context.targetStreamsPath().apply(sourceName, targetName))
                 .streamsCapacity(context.streamsBufferCapacity())
                 .throttleCapacity(context.throttleBufferCapacity())
                 .readonly(false)
                 .build();
 
         return include(new Target(targetName, layout, writeBuffer));
-    }
-
-    private Route supplyRoute(
-        long routableRef)
-    {
-        final boolean isBindRef = (routableRef & 0x01L) == 0x01L;
-        HandlerFactory handlerFactory = isBindRef ? Routable::newBindHandler : Routable::newPrepareHandler;
-        LongSupplier newTargetId = isBindRef ? this::newAcceptId : this::newConnectId;
-        return new Route(handlerFactory, replyTo, newTargetId);
-    }
-
-    private static MessageHandler newBindHandler(
-        Route route,
-        Source source,
-        long streamId)
-    {
-        return source.newInitialDecodingStream(route, streamId);
-    }
-
-    private static MessageHandler newPrepareHandler(
-        Route route,
-        Source source,
-        long streamId)
-    {
-        return source.newInitialEncodingStream(route, streamId);
-    }
-
-    private long newAcceptId()
-    {
-        return newStreamId(context.counters().streamsAccepted());
-    }
-
-    private long newConnectId()
-    {
-        return newStreamId(context.counters().streamsConnected());
-    }
-
-    private long newStreamId(
-        final AtomicCounter streams)
-    {
-        streams.increment();
-        return streams.get();
     }
 }

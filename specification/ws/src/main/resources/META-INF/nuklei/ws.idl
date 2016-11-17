@@ -17,12 +17,7 @@ scope ws
 {
     scope control
     {
-        struct RouteEx
-        {
-            string protocol;
-        }
-
-        struct UnrouteEx
+        struct WsRouteEx
         {
             string protocol;
         }
@@ -30,17 +25,17 @@ scope ws
 
     scope stream
     {
-        struct BeginEx
+        struct WsBeginEx
         {
             string protocol;
         }
 
-        struct DataEx
+        struct WsDataEx
         {
             uint8 flags;
         }
 
-        struct EndEx
+        struct WsEndEx
         {
             int16 code;
             string reason;
