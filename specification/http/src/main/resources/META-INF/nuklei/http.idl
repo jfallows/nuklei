@@ -15,7 +15,7 @@
  */
 scope http
 {
-    struct Header
+    struct HttpHeader
     {
         int8 representation;
         string name;
@@ -24,22 +24,17 @@ scope http
 
     scope control
     {
-        struct RouteEx
+        struct HttpRouteEx
         {
-            list<http::Header> headers;
-        }
-
-        struct UnrouteEx
-        {
-            list<http::Header> headers;
+            list<http::HttpHeader> headers;
         }
     }
 
     scope stream
     {
-        struct BeginEx
+        struct HttpBeginEx
         {
-            list<http::Header> headers;
+            list<http::HttpHeader> headers;
         }
     }
 }

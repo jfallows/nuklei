@@ -150,6 +150,7 @@ public final class Router extends Nukleus.Composite
                 break;
             default:
                 conductor.onErrorResponse(correlationId);
+                break;
             }
         }
         else

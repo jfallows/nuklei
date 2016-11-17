@@ -24,8 +24,8 @@ import java.util.function.Consumer;
 
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
-import org.kaazing.nuklei.tcp.internal.types.AddressFW;
 import org.kaazing.nuklei.tcp.internal.types.OctetsFW;
+import org.kaazing.nuklei.tcp.internal.types.TcpAddressFW;
 
 public final class IpUtil
 {
@@ -44,13 +44,13 @@ public final class IpUtil
     }
 
     public static InetAddress inetAddress(
-        AddressFW address)
+        TcpAddressFW address)
     {
         switch (address.kind())
         {
-        case AddressFW.KIND_IPV4_ADDRESS:
+        case TcpAddressFW.KIND_IPV4_ADDRESS:
             return address.ipv4Address().get(IpUtil::ipv4Address);
-        case AddressFW.KIND_IPV6_ADDRESS:
+        case TcpAddressFW.KIND_IPV6_ADDRESS:
             return address.ipv6Address().get(IpUtil::ipv6Address);
         default:
             throw new IllegalStateException("Unrecognized kind: " + address.kind());

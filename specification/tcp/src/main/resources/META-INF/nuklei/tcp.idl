@@ -15,7 +15,7 @@
  */
 scope tcp
 {
-    union Address switch (uint8)
+    union TcpAddress switch (uint8)
     {
         case 1: octets[4] ipv4Address;
         case 2: octets[16] ipv6Address;
@@ -23,26 +23,20 @@ scope tcp
 
     scope control
     {
-        struct RouteEx
+        struct TcpRouteEx
         {
-            tcp::Address address;
-            uint16 port;
-        }
-
-        struct UnrouteEx
-        {
-            tcp::Address address;
+            tcp::TcpAddress address;
             uint16 port;
         }
     }
 
     scope stream
     {
-        struct BeginEx
+        struct TcpBeginEx
         {
-            tcp::Address localAddress;
+            tcp::TcpAddress localAddress;
             uint16 localPort;
-            tcp::Address remoteAddress;
+            tcp::TcpAddress remoteAddress;
             uint16 remotePort;
         }
     }

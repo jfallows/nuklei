@@ -34,7 +34,7 @@
         <!-- animal sniffer does not yet support Java8, see MANIMALSNIFFER-45 -->
         <animal.sniffer.skip>true</animal.sniffer.skip>
         <k3po.version>3.0.0-alpha-54</k3po.version>
-        <agrona.version>0.5.2</agrona.version>
+        <agrona.version>0.5.5</agrona.version>
         <jmh.version>1.12</jmh.version>
     </properties>
 

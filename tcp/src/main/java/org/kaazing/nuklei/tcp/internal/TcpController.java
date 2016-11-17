@@ -30,13 +30,13 @@ import org.agrona.concurrent.broadcast.BroadcastReceiver;
 import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.kaazing.nuklei.Controller;
-import org.kaazing.nuklei.tcp.internal.types.Flyweight.Builder.Visitor;
+import org.kaazing.nuklei.tcp.internal.types.Flyweight;
 import org.kaazing.nuklei.tcp.internal.types.control.BindFW;
 import org.kaazing.nuklei.tcp.internal.types.control.BoundFW;
 import org.kaazing.nuklei.tcp.internal.types.control.ErrorFW;
-import org.kaazing.nuklei.tcp.internal.types.control.RouteExFW;
 import org.kaazing.nuklei.tcp.internal.types.control.RouteFW;
 import org.kaazing.nuklei.tcp.internal.types.control.RoutedFW;
+import org.kaazing.nuklei.tcp.internal.types.control.TcpRouteExFW;
 import org.kaazing.nuklei.tcp.internal.types.control.UnbindFW;
 import org.kaazing.nuklei.tcp.internal.types.control.UnboundFW;
 import org.kaazing.nuklei.tcp.internal.types.control.UnrouteFW;
@@ -50,9 +50,10 @@ public final class TcpController implements Controller
     // TODO: thread-safe flyweights or command queue from public methods
     private final BindFW.Builder bindRW = new BindFW.Builder();
     private final UnbindFW.Builder unbindRW = new UnbindFW.Builder();
-    private final UnrouteFW.Builder unrouteRW = new UnrouteFW.Builder();
-    private final RouteExFW.Builder routeExRW = new RouteExFW.Builder();
     private final RouteFW.Builder routeRW = new RouteFW.Builder();
+    private final UnrouteFW.Builder unrouteRW = new UnrouteFW.Builder();
+
+    private final TcpRouteExFW.Builder routeExRW = new TcpRouteExFW.Builder();
 
     private final ErrorFW errorRO = new ErrorFW();
     private final BoundFW boundRO = new BoundFW();
@@ -220,7 +221,7 @@ public final class TcpController implements Controller
         return new TcpReadableStreams(context, source, target);
     }
 
-    private Visitor visitRouteEx(
+    private Flyweight.Builder.Visitor visitRouteEx(
         InetSocketAddress address)
     {
         return (buffer, offset, limit) ->

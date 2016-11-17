@@ -33,9 +33,9 @@ import org.kaazing.nuklei.tcp.internal.types.OctetsFW;
 import org.kaazing.nuklei.tcp.internal.types.control.BindFW;
 import org.kaazing.nuklei.tcp.internal.types.control.BoundFW;
 import org.kaazing.nuklei.tcp.internal.types.control.ErrorFW;
-import org.kaazing.nuklei.tcp.internal.types.control.RouteExFW;
 import org.kaazing.nuklei.tcp.internal.types.control.RouteFW;
 import org.kaazing.nuklei.tcp.internal.types.control.RoutedFW;
+import org.kaazing.nuklei.tcp.internal.types.control.TcpRouteExFW;
 import org.kaazing.nuklei.tcp.internal.types.control.UnbindFW;
 import org.kaazing.nuklei.tcp.internal.types.control.UnboundFW;
 import org.kaazing.nuklei.tcp.internal.types.control.UnrouteFW;
@@ -51,7 +51,7 @@ public final class Conductor implements Nukleus
     private final RouteFW routeRO = new RouteFW();
     private final UnrouteFW unrouteRO = new UnrouteFW();
 
-    private final RouteExFW routeExRO = new RouteExFW();
+    private final TcpRouteExFW routeExRO = new TcpRouteExFW();
 
     private final ErrorFW.Builder errorRW = new ErrorFW.Builder();
     private final BoundFW.Builder boundRW = new BoundFW.Builder();
@@ -205,7 +205,7 @@ public final class Conductor implements Nukleus
         final long targetRef = routeRO.targetRef();
         final OctetsFW extension = routeRO.extension();
 
-        final RouteExFW routeEx = extension.get(routeExRO::wrap);
+        final TcpRouteExFW routeEx = extension.get(routeExRO::wrap);
 
         final InetSocketAddress address = new InetSocketAddress(inetAddress(routeEx.address()), routeEx.port());
 
@@ -226,8 +226,8 @@ public final class Conductor implements Nukleus
         final long targetRef = unrouteRO.targetRef();
         final OctetsFW extension = unrouteRO.extension();
 
-        final RouteExFW routeEx = extension.get(routeExRO::wrap);
-        final InetSocketAddress address = new InetSocketAddress(inetAddress(routeEx.address()), routeEx.port());
+        final TcpRouteExFW unrouteEx = extension.get(routeExRO::wrap);
+        final InetSocketAddress address = new InetSocketAddress(inetAddress(unrouteEx.address()), unrouteEx.port());
 
         router.doUnroute(correlationId, source, sourceRef, target, targetRef, address);
     }

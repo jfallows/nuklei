@@ -33,7 +33,7 @@ import org.kaazing.nuklei.ControllerFactory;
 import org.kaazing.nuklei.NukleusFactory;
 import org.kaazing.nuklei.ws.internal.WsController;
 import org.kaazing.nuklei.ws.internal.WsNukleus;
-import org.kaazing.nuklei.ws.internal.WsStreams;
+import org.kaazing.nuklei.ws.internal.WsReadableStreams;
 import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -65,8 +65,8 @@ public class WsServerBM
 {
     private WsNukleus nukleus;
     private WsController controller;
-    private WsStreams requestStreams;
-    private WsStreams responseStreams;
+    private WsReadableStreams requestStreams;
+    private WsReadableStreams responseStreams;
 
     private MutableDirectBuffer sendBuffer;
     private long streamId;

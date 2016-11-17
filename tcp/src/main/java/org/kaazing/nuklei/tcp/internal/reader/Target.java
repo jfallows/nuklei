@@ -28,11 +28,11 @@ import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
 import org.kaazing.nuklei.tcp.internal.types.Flyweight.Builder.Visitor;
-import org.kaazing.nuklei.tcp.internal.types.stream.BeginExFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.BeginFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.DataFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.EndFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.FrameFW;
+import org.kaazing.nuklei.tcp.internal.types.stream.TcpBeginExFW;
 
 public final class Target implements Nukleus
 {
@@ -42,7 +42,7 @@ public final class Target implements Nukleus
     private final DataFW.Builder tcpDataRW = new DataFW.Builder();
     private final EndFW.Builder tcpEndRW = new EndFW.Builder();
 
-    private final BeginExFW.Builder beginExRW = new BeginExFW.Builder();
+    private final TcpBeginExFW.Builder beginExRW = new TcpBeginExFW.Builder();
 
     private final String name;
     private final StreamsLayout layout;
