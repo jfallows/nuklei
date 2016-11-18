@@ -32,7 +32,7 @@ write [0x00 0x00 0x00 0x11]
 write ${controlC11C.nextCorrelationId()}
 write [0x06] "source"
 write ${newInitialRef}
-write [0x03] "any"
+write [0x06] "target"
 write ${newTargetRef}
 write [0x00]
 write flush

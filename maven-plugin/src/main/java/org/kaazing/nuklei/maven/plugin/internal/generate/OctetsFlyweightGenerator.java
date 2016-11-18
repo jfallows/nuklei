@@ -171,6 +171,7 @@ public final class OctetsFlyweightGenerator extends ClassSpecGenerator
         {
             return classBuilder.addMethod(constructor())
                     .addMethod(wrapMethod())
+                    .addMethod(resetMethod())
                     .addMethod(setMethod())
                     .addMethod(setMethodViaBuffer())
                     .addMethod(setMethodViaByteArray())
@@ -195,6 +196,17 @@ public final class OctetsFlyweightGenerator extends ClassSpecGenerator
                     .addParameter(int.class, "offset")
                     .addParameter(int.class, "maxLimit")
                     .addStatement("super.wrap(buffer, offset, maxLimit)")
+                    .addStatement("return this")
+                    .build();
+        }
+
+        private MethodSpec resetMethod()
+        {
+            return methodBuilder("reset")
+                    .addModifiers(PUBLIC)
+                    .returns(octetsType.nestedClass("Builder"))
+                    .addStatement("buffer().putByte(offset() + FIELD_OFFSET_LENGTH, (byte) 0)")
+                    .addStatement("limit(offset() + FIELD_OFFSET_LENGTH + FIELD_SIZE_LENGTH)")
                     .addStatement("return this")
                     .build();
         }

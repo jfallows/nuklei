@@ -50,10 +50,12 @@ public final class BufferUtil
     public static int xor(
         final MutableDirectBuffer buffer,
         final int offset,
-        final int length,
+        final int limit,
         final int bits)
     {
-        if (bits != 0)
+        final int length = limit - offset;
+
+        if (bits != 0 && length != 0)
         {
             int index = offset;
             int remaining = length;

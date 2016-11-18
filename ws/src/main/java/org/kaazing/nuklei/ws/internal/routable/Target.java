@@ -157,9 +157,10 @@ public final class Target implements Nukleus
         int maskKey,
         DirectBuffer payload)
     {
+        final int capacity = payload.capacity();
         final DataFW data = dataRW.wrap(writeBuffer, 0, writeBuffer.capacity())
                 .streamId(targetId)
-                .payload(p -> p.set(payload, 0, payload.capacity()).set((b, o, l) -> xor(b, o, l, maskKey)))
+                .payload(p -> p.set(payload, 0, capacity).set((b, o, l) -> xor(b, o, o + capacity, maskKey)))
                 .extension(b -> b.set(visitWsDataEx(flags)))
                 .build();
 
@@ -209,6 +210,7 @@ public final class Target implements Nukleus
         DataFW data = dataRW.wrap(writeBuffer, 0, writeBuffer.capacity())
                 .streamId(targetId)
                 .payload(p -> p.set(wsFrame.buffer(), wsFrame.offset(), wsFrame.length()))
+                .extension(e -> e.reset())
                 .build();
 
         streamsBuffer.write(data.typeId(), data.buffer(), data.offset(), data.length());
@@ -219,6 +221,7 @@ public final class Target implements Nukleus
     {
         EndFW end = endRW.wrap(writeBuffer, 0, writeBuffer.capacity())
                 .streamId(targetId)
+                .extension(e -> e.reset())
                 .build();
 
         streamsBuffer.write(end.typeId(), end.buffer(), end.offset(), end.length());

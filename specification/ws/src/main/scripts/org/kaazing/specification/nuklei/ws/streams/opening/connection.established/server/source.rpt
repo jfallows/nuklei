@@ -19,7 +19,7 @@ property newInitialRef ${nuklei:newReferenceId()} # external scope
 property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)}
 
 property sourceInitial ${nuklei.streams("ws", "source")}
-property sourceReply ${nuklei.streams("reply", "ws#target")}
+property sourceReply ${nuklei.streams("replyTarget", "ws#replySource")}
 
 property newInitialId ${nuklei:newStreamId()}
 property newCorrelationId ${nuklei:newCorrelationId()}

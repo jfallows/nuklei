@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.ws.internal.streams;
+package org.kaazing.nuklei.ws.internal.streams.server;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
@@ -34,7 +34,8 @@ import org.kaazing.nuklei.test.NukleusRule;
 public class OpeningHandshakeIT
 {
     private final K3poRule k3po = new K3poRule()
-            .setScriptRoot("org/kaazing/specification/nuklei/ws");
+            .addScriptRoot("control", "org/kaazing/specification/nuklei/ws/control")
+            .addScriptRoot("streams", "org/kaazing/specification/nuklei/ws/streams/opening");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
@@ -43,18 +44,22 @@ public class OpeningHandshakeIT
         .commandBufferCapacity(1024)
         .responseBufferCapacity(1024)
         .counterValuesBufferCapacity(1024)
-        .streams("source", "ws")
-        .streams("destination", "ws");
+        .streams("ws", "source")
+        .streams("target", "ws#source")
+        .streams("ws", "replySource")
+        .streams("replyTarget", "ws#replySource");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);
 
     @Test
     @Specification({
-        "control/bind/controller",
-        "control/route/controller",
-        "streams/opening/connection.established/bind.source",
-        "streams/opening/connection.established/bind.target" })
+        "${control}/bind/server/initial/controller",
+        "${control}/bind/server/reply/controller",
+        "${control}/route/server/initial/controller",
+        "${control}/route/server/reply/controller",
+        "${streams}/connection.established/server/source",
+        "${streams}/connection.established/server/target" })
     public void shouldEstablishConnection() throws Exception
     {
         k3po.finish();

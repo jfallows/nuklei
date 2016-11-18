@@ -32,7 +32,7 @@ connected
 
 write [0x00 0x00 0x00 0x11]
 write ${correlationIdC11C}
-write [0x03] "any"
+write [0x06] "source"
 write ${newInitialRef}
 write [0x06] "target"
 write ${newTargetRef}

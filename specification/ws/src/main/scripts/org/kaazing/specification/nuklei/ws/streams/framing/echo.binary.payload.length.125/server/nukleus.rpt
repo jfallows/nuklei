@@ -21,8 +21,8 @@ property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024
 
 property sourceInitial ${nuklei.streams("ws", "source")}
 property targetInitial ${nuklei.streams("target", "ws#source")}
-property targetReply ${nuklei.streams("ws", "target")}
-property sourceReply ${nuklei.streams("reply", "ws#target")}
+property targetReply ${nuklei.streams("ws", "replySource")}
+property sourceReply ${nuklei.streams("replyTarget", "ws#replySource")}
 
 property newTargetInitialId ${nuklei:newStreamId()}
 property newSourceReplyId ${nuklei:newStreamId()}

@@ -279,9 +279,9 @@ public final class ServerInitialStreamFactory
                     final byte[] digest = sha1.digest(HANDSHAKE_GUID);
                     final Encoder encoder = Base64.getEncoder();
                     final String handshakeHash = new String(encoder.encode(digest), US_ASCII);
-                    final Correlation correlation = new Correlation(targetCorrelationId, handshakeHash);
+                    final Correlation correlation = new Correlation(correlationId, handshakeHash);
 
-                    correlateInitial.accept(correlationId, correlation);
+                    correlateInitial.accept(targetCorrelationId, correlation);
 
                     final Route route = optional.get();
                     final Target newTarget = route.target();
@@ -425,7 +425,7 @@ public final class ServerInitialStreamFactory
             int index,
             int length)
         {
-            windowRO.wrap(buffer, index, length);
+            windowRO.wrap(buffer, index, index + length);
 
             final int update = windowRO.update();
 
@@ -437,7 +437,7 @@ public final class ServerInitialStreamFactory
             int index,
             int length)
         {
-            resetRO.wrap(buffer, index, length);
+            resetRO.wrap(buffer, index, index + length);
 
             source.doReset(sourceId);
         }

@@ -27,10 +27,10 @@ connected
 
 read [0x00 0x00 0x00 0x12]
 read ([0..8]:correlationIdC12N)
-read [0x05] "reply"
+read [0x0b] "replySource"
 read ([0..8]:replyRefC12N)
-read [0x03] "any"
-read ([0..8]:targetRefC12N)
+read [0x0b] "replyTarget"
+read ([0..8]:replyTargetRefC12N)
 read [0x0d]
 read [0x0c] "sub-protocol"
 

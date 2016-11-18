@@ -64,6 +64,8 @@ public final class ServerReplyStreamFactory
     private final LongSupplier supplyTargetId;
     private final LongFunction<Correlation> correlateReply;
 
+    private final int initialWindowSize;
+
     public ServerReplyStreamFactory(
         Source source,
         LongFunction<List<Route>> supplyRoutes,
@@ -74,6 +76,7 @@ public final class ServerReplyStreamFactory
         this.supplyRoutes = supplyRoutes;
         this.supplyTargetId = supplyTargetId;
         this.correlateReply = correlateReply;
+        this.initialWindowSize = 8192; // TODO: configure
     }
 
     public MessageHandler newStream()
@@ -220,12 +223,23 @@ public final class ServerReplyStreamFactory
 
                 final Correlation correlation = correlateReply.apply(correlationId);
 
-                newTarget.doHttpBegin(newTargetId, targetRef, correlation.id(), setHttpHeaders(correlation.hash()));
-                newTarget.addThrottle(newTargetId, this::handleThrottle);
+                if (correlation != null)
+                {
+                    newTarget.doHttpBegin(newTargetId, targetRef, correlation.id(), setHttpHeaders(correlation.hash()));
+                    newTarget.addThrottle(newTargetId, this::handleThrottle);
 
-                this.sourceId = newSourceId;
-                this.target = newTarget;
-                this.targetId = newTargetId;
+                    this.sourceId = newSourceId;
+                    this.target = newTarget;
+                    this.targetId = newTargetId;
+
+                    source.doWindow(newSourceId, initialWindowSize);
+
+                    nextState(this::afterBeginOrData);
+                }
+                else
+                {
+                    processUnexpected(buffer, index, length);
+                }
             }
             else
             {
@@ -313,7 +327,7 @@ public final class ServerReplyStreamFactory
             int index,
             int length)
         {
-            windowRO.wrap(buffer, index, length);
+            windowRO.wrap(buffer, index, index + length);
 
             final int httpUpdate = windowRO.update();
             final int wsUpdate = httpUpdate - ENCODE_OVERHEAD_MAXIMUM;
@@ -326,7 +340,7 @@ public final class ServerReplyStreamFactory
             int index,
             int length)
         {
-            resetRO.wrap(buffer, index, length);
+            resetRO.wrap(buffer, index, index + length);
 
             source.doReset(sourceId);
         }

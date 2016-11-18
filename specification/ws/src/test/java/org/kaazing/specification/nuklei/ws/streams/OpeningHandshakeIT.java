@@ -43,8 +43,8 @@ public class OpeningHandshakeIT
             .directory("target/nukleus-itests")
             .streams("ws", "source")
             .streams("target", "ws#source")
-            .streams("ws", "target")
-            .streams("reply", "ws#target");
+            .streams("ws", "replySource")
+            .streams("replyTarget", "ws#replySource");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);
