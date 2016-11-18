@@ -41,7 +41,7 @@ import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.reaktor.internal.Reaktor;
 import org.kaazing.nuklei.tcp.internal.TcpController;
-import org.kaazing.nuklei.tcp.internal.TcpReadableStreams;
+import org.kaazing.nuklei.tcp.internal.TcpStreams;
 import org.kaazing.nuklei.tcp.internal.types.OctetsFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.BeginFW;
 import org.kaazing.nuklei.tcp.internal.types.stream.DataFW;
@@ -74,26 +74,26 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @OutputTimeUnit(SECONDS)
 public class TcpServerBM
 {
-    private static final Configuration CONFIGURATION;
-    private static final Reaktor REAKTOR;
+    private final Configuration configuration;
+    private final Reaktor reaktor;
 
-    static
     {
         Properties properties = new Properties();
         properties.setProperty(DIRECTORY_PROPERTY_NAME, "target/nukleus-benchmarks");
         properties.setProperty(STREAMS_BUFFER_CAPACITY_PROPERTY_NAME, Long.toString(1024L * 1024L * 16L));
 
-        CONFIGURATION = new Configuration(properties);
-        REAKTOR = Reaktor.launch(CONFIGURATION, n -> "tcp".equals(n), TcpController.class::isAssignableFrom);
+        configuration = new Configuration(properties);
+        reaktor = Reaktor.launch(configuration, n -> "tcp".equals(n), TcpController.class::isAssignableFrom);
     }
 
     private final BeginFW beginRO = new BeginFW();
     private final DataFW dataRO = new DataFW();
     private final WindowFW.Builder windowRW = new WindowFW.Builder();
 
-    private TcpReadableStreams streams;
+    private TcpStreams streams;
     private ByteBuffer sendByteBuffer;
     private AtomicBuffer throttleBuffer;
+
     private final Random random = new Random();
     private final long targetRef = random.nextLong();
     private long sourceRef;
@@ -106,10 +106,11 @@ public class TcpServerBM
 
         this.throttleBuffer = new UnsafeBuffer(allocateDirect(SIZE_OF_LONG + SIZE_OF_INT));
 
-        File target = new File("target/nukleus-benchmarks/tcp/streams/target");
-        createEmptyFile(target.getAbsoluteFile(), CONFIGURATION.streamsBufferCapacity() + RingBufferDescriptor.TRAILER_LENGTH);
+        File target = configuration.directory().resolve("tcp/streams/target").toFile();
+        int length = configuration.streamsBufferCapacity() + RingBufferDescriptor.TRAILER_LENGTH;
+        createEmptyFile(target.getAbsoluteFile(), length);
 
-        TcpController controller = REAKTOR.controller(TcpController.class);
+        TcpController controller = reaktor.controller(TcpController.class);
         this.sourceRef = controller.bind(SERVER_INITIAL.kind()).get();
         controller.route("any", sourceRef, "target", targetRef, new InetSocketAddress("localhost", 8080)).get();
 
@@ -122,12 +123,12 @@ public class TcpServerBM
         this.streams.close();
         this.streams = null;
 
-        TcpController controller = REAKTOR.controller(TcpController.class);
+        TcpController controller = reaktor.controller(TcpController.class);
         controller.unroute("any", sourceRef, "target", targetRef, new InetSocketAddress("localhost", 8080)).get();
     }
 
     @Benchmark
-    @Group("asymmetric")
+    @Group("throughput")
     @GroupThreads(1)
     public void writer(
         final Control control) throws Exception
@@ -140,7 +141,7 @@ public class TcpServerBM
                 channel.configureBlocking(false);
                 while (control.startMeasurement && !control.stopMeasurement)
                 {
-                    sendByteBuffer.rewind();
+                    sendByteBuffer.position(0);
                     if (channel.write(sendByteBuffer) == 0)
                     {
                         Thread.yield();
@@ -151,14 +152,14 @@ public class TcpServerBM
     }
 
     @Benchmark
-    @Group("asymmetric")
+    @Group("throughput")
     @GroupThreads(1)
     public void reader(
         final Control control) throws Exception
     {
         final MessageHandler handler = this::handleRead;
         while (!control.stopMeasurement &&
-               streams.read(handler) == 0)
+               streams.readStreams(handler) == 0)
         {
             Thread.yield();
         }
@@ -196,7 +197,7 @@ public class TcpServerBM
                 .update(update)
                 .build();
 
-        streams.write(window.typeId(), window.buffer(), window.offset(), window.length());
+        streams.writeThrottle(window.typeId(), window.buffer(), window.offset(), window.length());
     }
 
     public static void main(String[] args) throws RunnerException

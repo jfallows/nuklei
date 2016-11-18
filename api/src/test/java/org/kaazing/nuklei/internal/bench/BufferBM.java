@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.bench;
+package org.kaazing.nuklei.internal.bench;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
@@ -44,6 +44,10 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Control;
+import org.openjdk.jmh.runner.Runner;
+import org.openjdk.jmh.runner.RunnerException;
+import org.openjdk.jmh.runner.options.Options;
+import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.Throughput)
@@ -51,7 +55,7 @@ import org.openjdk.jmh.infra.Control;
 @Warmup(iterations = 10, time = 1, timeUnit = SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = SECONDS)
 @OutputTimeUnit(SECONDS)
-public class BaselineBM
+public class BufferBM
 {
     private AtomicBuffer buffer;
     private OneToOneRingBuffer source;
@@ -89,7 +93,7 @@ public class BaselineBM
     }
 
     @Benchmark
-    @Group("asymmetric")
+    @Group("throughput")
     @GroupThreads(1)
     public void writer(
         final Control control) throws Exception
@@ -102,7 +106,7 @@ public class BaselineBM
     }
 
     @Benchmark
-    @Group("asymmetric")
+    @Group("throughput")
     @GroupThreads(1)
     public void reader(
         final Control control) throws Exception
@@ -112,5 +116,16 @@ public class BaselineBM
         {
             Thread.yield();
         }
+    }
+
+    public static void main(
+        String[] args) throws RunnerException
+    {
+        Options opt = new OptionsBuilder()
+                .include(BufferBM.class.getSimpleName())
+                .forks(0)
+                .build();
+
+        new Runner(opt).run();
     }
 }

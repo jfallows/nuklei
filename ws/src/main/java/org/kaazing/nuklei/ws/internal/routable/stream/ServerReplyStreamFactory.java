@@ -64,8 +64,6 @@ public final class ServerReplyStreamFactory
     private final LongSupplier supplyTargetId;
     private final LongFunction<Correlation> correlateReply;
 
-    private final int initialWindowSize;
-
     public ServerReplyStreamFactory(
         Source source,
         LongFunction<List<Route>> supplyRoutes,
@@ -76,7 +74,6 @@ public final class ServerReplyStreamFactory
         this.supplyRoutes = supplyRoutes;
         this.supplyTargetId = supplyTargetId;
         this.correlateReply = correlateReply;
-        this.initialWindowSize = 8192; // TODO: configure
     }
 
     public MessageHandler newStream()
@@ -86,7 +83,7 @@ public final class ServerReplyStreamFactory
 
     private final class ServerReplyStream
     {
-        private MessageHandler currentState;
+        private MessageHandler streamState;
 
         private long sourceId;
 
@@ -95,7 +92,7 @@ public final class ServerReplyStreamFactory
 
         private ServerReplyStream()
         {
-            nextState(this::beforeBegin);
+            this.streamState = this::beforeBegin;
         }
 
         private void handleStream(
@@ -104,7 +101,7 @@ public final class ServerReplyStreamFactory
             int index,
             int length)
         {
-            currentState.onMessage(msgTypeId, buffer, index, length);
+            streamState.onMessage(msgTypeId, buffer, index, length);
         }
 
         private void beforeBegin(
@@ -152,7 +149,7 @@ public final class ServerReplyStreamFactory
             processUnexpected(buffer, index, length);
         }
 
-        private void afterReplyOrReset(
+        private void afterRejectOrReset(
             int msgTypeId,
             MutableDirectBuffer buffer,
             int index,
@@ -172,7 +169,7 @@ public final class ServerReplyStreamFactory
 
                 source.removeStream(streamId);
 
-                nextState(this::afterEnd);
+                this.streamState = this::afterEnd;
             }
         }
 
@@ -187,7 +184,7 @@ public final class ServerReplyStreamFactory
 
             source.doReset(streamId);
 
-            nextState(this::afterReplyOrReset);
+            this.streamState = this::afterRejectOrReset;
         }
 
         private void processBegin(
@@ -232,9 +229,7 @@ public final class ServerReplyStreamFactory
                     this.target = newTarget;
                     this.targetId = newTargetId;
 
-                    source.doWindow(newSourceId, initialWindowSize);
-
-                    nextState(this::afterBeginOrData);
+                    this.streamState = this::afterBeginOrData;
                 }
                 else
                 {
@@ -343,12 +338,6 @@ public final class ServerReplyStreamFactory
             resetRO.wrap(buffer, index, index + length);
 
             source.doReset(sourceId);
-        }
-
-        private void nextState(
-            final MessageHandler nextState)
-        {
-            this.currentState = nextState;
         }
     }
 }

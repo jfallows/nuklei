@@ -83,8 +83,6 @@ public final class ServerInitialStreamFactory
     private final LongSupplier supplyTargetId;
     private final LongObjectBiConsumer<Correlation> correlateInitial;
 
-    private final int initialWindowSize;
-
     public ServerInitialStreamFactory(
         Source source,
         LongFunction<List<Route>> supplyRoutes,
@@ -95,7 +93,6 @@ public final class ServerInitialStreamFactory
         this.supplyRoutes = supplyRoutes;
         this.supplyTargetId = supplyTargetId;
         this.correlateInitial = correlateInitial;
-        this.initialWindowSize = 8192; // TODO: configure
     }
 
     public MessageHandler newStream()
@@ -105,7 +102,7 @@ public final class ServerInitialStreamFactory
 
     private final class ServerInitialStream
     {
-        private MessageHandler currentState;
+        private MessageHandler streamState;
 
         private long sourceId;
 
@@ -114,7 +111,7 @@ public final class ServerInitialStreamFactory
 
         private ServerInitialStream()
         {
-            nextState(this::beforeBegin);
+            this.streamState = this::beforeBegin;
         }
 
         private void handleStream(
@@ -123,7 +120,7 @@ public final class ServerInitialStreamFactory
             int index,
             int length)
         {
-            currentState.onMessage(msgTypeId, buffer, index, length);
+            streamState.onMessage(msgTypeId, buffer, index, length);
         }
 
         private void beforeBegin(
@@ -191,7 +188,7 @@ public final class ServerInitialStreamFactory
 
                 source.removeStream(streamId);
 
-                nextState(this::afterEnd);
+                this.streamState = this::afterEnd;
             }
         }
 
@@ -206,7 +203,7 @@ public final class ServerInitialStreamFactory
 
             source.doReset(streamId);
 
-            nextState(this::afterReplyOrReset);
+            this.streamState = this::afterReplyOrReset;
         }
 
         private void processInvalidRequest(
@@ -230,7 +227,7 @@ public final class ServerInitialStreamFactory
 
                 replyTo.doHttpEnd(newTargetId);
 
-                nextState(this::afterReplyOrReset);
+                this.streamState = this::afterReplyOrReset;
             }
             else
             {
@@ -306,9 +303,7 @@ public final class ServerInitialStreamFactory
                 processInvalidRequest(buffer, index, length, sourceRef, "404");
             }
 
-            source.doWindow(newSourceId, initialWindowSize);
-
-            nextState(this::afterBeginOrData);
+            this.streamState = this::afterBeginOrData;
         }
 
         private void processData(
@@ -333,7 +328,7 @@ public final class ServerInitialStreamFactory
 
             target.doWsEnd(targetId, STATUS_NORMAL_CLOSURE);
 
-            nextState(this::afterEnd);
+            this.streamState = this::afterEnd;
 
             source.removeStream(streamId);
             target.removeThrottle(targetId);
@@ -440,12 +435,6 @@ public final class ServerInitialStreamFactory
             resetRO.wrap(buffer, index, index + length);
 
             source.doReset(sourceId);
-        }
-
-        private void nextState(
-            final MessageHandler nextState)
-        {
-            this.currentState = nextState;
         }
     }
 

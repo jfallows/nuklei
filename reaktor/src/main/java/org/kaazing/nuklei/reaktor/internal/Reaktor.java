@@ -19,7 +19,8 @@ import static java.lang.String.format;
 import static java.util.Arrays.binarySearch;
 import static java.util.Arrays.sort;
 import static java.util.Collections.unmodifiableMap;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.agrona.IoUtil.tmpDirName;
 import static org.agrona.LangUtil.rethrowUnchecked;
 import static org.apache.commons.cli.Option.builder;
@@ -34,9 +35,9 @@ import org.agrona.ErrorHandler;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentRunner;
+import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SigIntBarrier;
-import org.agrona.concurrent.SleepingIdleStrategy;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -90,7 +91,7 @@ public final class Reaktor implements AutoCloseable
 
         final Nukleus[] nuklei0 = nuklei;
         final Controller[] controllers0 = controllers;
-        IdleStrategy idleStrategy = new SleepingIdleStrategy(MILLISECONDS.toNanos(50L));
+        IdleStrategy idleStrategy = new BackoffIdleStrategy(64, 64, NANOSECONDS.toNanos(64L), MICROSECONDS.toNanos(64L));
         ErrorHandler errorHandler = throwable -> throwable.printStackTrace(System.err);
         Agent agent = new Agent()
         {

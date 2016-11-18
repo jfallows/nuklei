@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.bench.jmh.ws;
+package org.kaazing.nuklei.http.internal.bench;
 
+import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.STREAMS_BUFFER_CAPACITY_PROPERTY_NAME;
@@ -22,18 +23,16 @@ import static org.agrona.IoUtil.createEmptyFile;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.ControllerFactory;
+import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.NukleusFactory;
-import org.kaazing.nuklei.ws.internal.WsController;
-import org.kaazing.nuklei.ws.internal.WsNukleus;
-import org.kaazing.nuklei.ws.internal.WsReadableStreams;
+import org.kaazing.nuklei.http.internal.HttpController;
+import org.kaazing.nuklei.http.internal.HttpStreams;
 import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -61,12 +60,12 @@ import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 @Warmup(iterations = 5, time = 1, timeUnit = SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = SECONDS)
 @OutputTimeUnit(SECONDS)
-public class WsServerBM
+public class HttpServerBM
 {
-    private WsNukleus nukleus;
-    private WsController controller;
-    private WsReadableStreams requestStreams;
-    private WsReadableStreams responseStreams;
+    private Nukleus nukleus;
+    private HttpController controller;
+    private HttpStreams requestStreams;
+    private HttpStreams responseStreams;
 
     private MutableDirectBuffer sendBuffer;
     private long streamId;
@@ -84,10 +83,10 @@ public class WsServerBM
         NukleusFactory nuklei = NukleusFactory.instantiate();
         ControllerFactory controllers = ControllerFactory.instantiate();
 
-        this.nukleus = (WsNukleus) nuklei.create("ws", config);
-        this.controller = controllers.create(WsController.class, config);
+        this.nukleus = nuklei.create("http", config);
+        this.controller = controllers.create(HttpController.class, config);
 
-        File source = new File("target/nukleus-benchmarks/source/streams/ws").getAbsoluteFile();
+        File source = new File("target/nukleus-benchmarks/source/streams/http").getAbsoluteFile();
         createEmptyFile(source, streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH);
 
         final CompletableFuture<Long> bind = controller.bind();
@@ -95,36 +94,27 @@ public class WsServerBM
         {
             // intentional
         }
-        final long sourceRef = bind.get();
+        final Long sourceRef = bind.get();
 
-        File target = new File("target/nukleus-benchmarks/target/streams/ws").getAbsoluteFile();
-        createEmptyFile(target, streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH);
+        File destination = new File("target/nukleus-benchmarks/target/streams/http").getAbsoluteFile();
+        createEmptyFile(destination, streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH);
 
         final long targetRef = (long) (Math.random() * Long.MAX_VALUE);
-        CompletableFuture<Void> route = controller.route("source", sourceRef, "target", targetRef, null);
+        CompletableFuture<Void> route = controller.route("source", sourceRef, "target", targetRef, "source", emptyMap());
         while (this.nukleus.process() != 0L || this.controller.process() != 0L)
         {
             // intentional
         }
         route.get();
 
-        this.requestStreams = controller.streams("source", "target");
-        this.responseStreams = controller.streams("target", "source");
+        this.requestStreams = controller.streams("source", "destination");
+        this.responseStreams = controller.streams("destination", "source");
 
         // odd, positive, non-zero
         final Random random = new Random();
         this.streamId = (random.nextLong() & 0x3fffffffffffffffL) | 0x0000000000000001L;
 
-        Map<String, String> headers = new LinkedHashMap<>();
-        headers.put(":scheme", "http");
-        headers.put(":method", "GET");
-        headers.put(":path", "/");
-        headers.put("host", "localhost:8080");
-        headers.put("upgrade", "websocket");
-        headers.put("sec-websocket-key", "dGhlIHNhbXBsZSBub25jZQ==");
-        headers.put("sec-websocket-version", "13");
-
-        this.requestStreams.httpBegin(streamId, sourceRef, headers);
+        this.requestStreams.begin(streamId, sourceRef);
         while (this.nukleus.process() != 0L)
         {
             // intentional
@@ -134,28 +124,8 @@ public class WsServerBM
             // intentional
         }
 
-        byte[] charBytes = "Hello, world".getBytes(StandardCharsets.UTF_8);
-
-        byte[] byteArray = new byte[18];
-        byteArray[0] = (byte) 0x82; // fin, binary
-        byteArray[1] = (byte) 0x8c; // masked
-        byteArray[2] = (byte) 0x01; // masking key (4 bytes)
-        byteArray[3] = (byte) 0x02;
-        byteArray[4] = (byte) 0x03;
-        byteArray[5] = (byte) 0x04;
-        byteArray[6] = (byte) (charBytes[0] ^ byteArray[2]);
-        byteArray[7] = (byte) (charBytes[1] ^ byteArray[3]);
-        byteArray[8] = (byte) (charBytes[2] ^ byteArray[4]);
-        byteArray[9] = (byte) (charBytes[3] ^ byteArray[5]);
-        byteArray[10] = (byte) (charBytes[4] ^ byteArray[2]);
-        byteArray[11] = (byte) (charBytes[5] ^ byteArray[3]);
-        byteArray[12] = (byte) (charBytes[6] ^ byteArray[4]);
-        byteArray[13] = (byte) (charBytes[7] ^ byteArray[5]);
-        byteArray[14] = (byte) (charBytes[8] ^ byteArray[2]);
-        byteArray[15] = (byte) (charBytes[9] ^ byteArray[3]);
-        byteArray[16] = (byte) (charBytes[10] ^ byteArray[4]);
-        byteArray[17] = (byte) (charBytes[11] ^ byteArray[5]);
-
+        byte[] byteArray = "POST / HTTP/1.1\r\nHost: localhost:8080\r\nContent-Length:12\r\n\r\nHello, world"
+                                .getBytes(StandardCharsets.UTF_8);
         this.sendBuffer = new UnsafeBuffer(byteArray);
     }
 
@@ -187,7 +157,7 @@ public class WsServerBM
     public void writer(Control control) throws Exception
     {
         while (!control.stopMeasurement &&
-               !requestStreams.httpData(streamId, sendBuffer, 0, sendBuffer.capacity()))
+               !requestStreams.data(streamId, sendBuffer, 0, sendBuffer.capacity()))
         {
             Thread.yield();
         }

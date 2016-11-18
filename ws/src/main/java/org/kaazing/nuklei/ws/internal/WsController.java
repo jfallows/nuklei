@@ -18,6 +18,7 @@ package org.kaazing.nuklei.ws.internal;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 
+import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
@@ -37,6 +38,7 @@ import org.kaazing.nuklei.ws.internal.types.control.RoutedFW;
 import org.kaazing.nuklei.ws.internal.types.control.UnbindFW;
 import org.kaazing.nuklei.ws.internal.types.control.UnboundFW;
 import org.kaazing.nuklei.ws.internal.types.control.UnrouteFW;
+import org.kaazing.nuklei.ws.internal.types.control.UnroutedFW;
 import org.kaazing.nuklei.ws.internal.types.control.WsRouteExFW;
 
 public final class WsController implements Controller
@@ -52,9 +54,10 @@ public final class WsController implements Controller
     private final WsRouteExFW.Builder routeExRW = new WsRouteExFW.Builder();
 
     private final ErrorFW errorRO = new ErrorFW();
-    private final RoutedFW routedRO = new RoutedFW();
     private final BoundFW boundRO = new BoundFW();
     private final UnboundFW unboundRO = new UnboundFW();
+    private final RoutedFW routedRO = new RoutedFW();
+    private final UnroutedFW unroutedRO = new UnroutedFW();
 
     private final Context context;
     private final RingBuffer conductorCommands;
@@ -99,7 +102,8 @@ public final class WsController implements Controller
         return "ws";
     }
 
-    public CompletableFuture<Long> bind()
+    public CompletableFuture<Long> bind(
+        int kind)
     {
         final CompletableFuture<Long> promise = new CompletableFuture<>();
 
@@ -107,6 +111,7 @@ public final class WsController implements Controller
 
         BindFW bindRO = bindRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                               .correlationId(correlationId)
+                              .kind((byte) kind)
                               .build();
 
         if (!conductorCommands.write(bindRO.typeId(), bindRO.buffer(), bindRO.offset(), bindRO.length()))
@@ -209,11 +214,25 @@ public final class WsController implements Controller
         return promise;
     }
 
-    public WsReadableStreams streams(
-        String capture,
-        String route)
+    public WsStreams streams(
+        String source)
     {
-        return new WsReadableStreams(context, capture, route);
+        int streamsCapacity = context.streamsBufferCapacity();
+        int throttleCapacity = context.throttleBufferCapacity();
+        Path path = context.sourceStreamsPath().apply(source);
+
+        return new WsStreams(streamsCapacity, throttleCapacity, path, false);
+    }
+
+    public WsStreams streams(
+        String source,
+        String target)
+    {
+        int streamsCapacity = context.streamsBufferCapacity();
+        int throttleCapacity = context.throttleBufferCapacity();
+        Path path = context.targetStreamsPath().apply(source, target);
+
+        return new WsStreams(streamsCapacity, throttleCapacity, path, true);
     }
 
     private Flyweight.Builder.Visitor visitRouteEx(
@@ -245,6 +264,9 @@ public final class WsController implements Controller
             break;
         case RoutedFW.TYPE_ID:
             handleRoutedResponse(buffer, index, length);
+            break;
+        case UnroutedFW.TYPE_ID:
+            handleUnroutedResponse(buffer, index, length);
             break;
         default:
             break;
@@ -307,6 +329,21 @@ public final class WsController implements Controller
     {
         routedRO.wrap(buffer, index, length);
         long correlationId = routedRO.correlationId();
+
+        CompletableFuture<?> promise = promisesByCorrelationId.remove(correlationId);
+        if (promise != null)
+        {
+            commandSucceeded(promise);
+        }
+    }
+
+    private void handleUnroutedResponse(
+        DirectBuffer buffer,
+        int index,
+        int length)
+    {
+        unroutedRO.wrap(buffer, index, length);
+        long correlationId = unroutedRO.correlationId();
 
         CompletableFuture<?> promise = promisesByCorrelationId.remove(correlationId);
         if (promise != null)

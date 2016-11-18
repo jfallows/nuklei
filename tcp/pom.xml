@@ -56,20 +56,20 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest-all</artifactId>
-            <version>1.3</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-library</artifactId>
+            <version>1.3</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>1.9.5</version>
+            <artifactId>mockito-core</artifactId>
+            <version>2.2.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -81,11 +81,6 @@
             <groupId>org.openjdk.jmh</groupId>
             <artifactId>jmh-generator-annprocess</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <!-- Needed for EL only, not AST -->
-            <groupId>org.kaazing</groupId>
-            <artifactId>k3po.lang</artifactId>
         </dependency>
     </dependencies>
 
@@ -118,12 +113,8 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <attachTestJar>false</attachTestJar>
-                </configuration>
                 <executions>
                     <execution>
-                        <phase>package</phase>
                         <goals>
                             <goal>test-jar</goal>
                         </goals>
@@ -136,12 +127,10 @@
                 <version>2.4.4.2</version>
                 <configuration>
                     <shadeTestJar>true</shadeTestJar>
-                    <outputFile>${project.build.directory}/${artifactId}-shaded.jar</outputFile>
-                    <testOutputFile>${project.build.directory}/microbenchmarks.jar</testOutputFile>
+                    <outputFile>${project.build.directory}/${project.artifactId}-shaded.jar</outputFile>
                 </configuration>
                 <executions>
                     <execution>
-                        <phase>package</phase>
                         <goals>
                             <goal>shade</goal>
                         </goals>
@@ -151,10 +140,21 @@
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>org.openjdk.jmh.Main</mainClass>
                                     <manifestEntries>
-                                        <Class-Path>${project.build.directory}/${artifactId}-shaded.jar</Class-Path>
+                                        <Class-Path>${project.build.directory}/${project.artifactId}-shaded.jar</Class-Path>
                                     </manifestEntries>
                                 </transformer>
                             </transformers>
+                            <artifactSet>
+                                <includes>
+                                    <include>org.agrona:Agrona</include>
+                                    <include>org.kaazing:nuklei-api</include>
+                                    <include>org.kaazing:nuklei-reaktor</include>
+                                    <include>org.openjdk.jmh:jmh-core</include>
+                                    <include>net.sf.jopt-simple:jopt-simple</include>
+                                    <include>org.apache.commons:commons-math3</include>
+                                    <include>commons-cli:commons-cli</include>
+                                </includes>
+                            </artifactSet>
                         </configuration>
                     </execution>
                 </executions>

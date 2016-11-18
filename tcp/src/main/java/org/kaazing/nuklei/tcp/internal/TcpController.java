@@ -214,11 +214,11 @@ public final class TcpController implements Controller
         return promise;
     }
 
-    public TcpReadableStreams streams(
+    public TcpStreams streams(
         String source,
         String target)
     {
-        return new TcpReadableStreams(context, source, target);
+        return new TcpStreams(context, source, target);
     }
 
     private Flyweight.Builder.Visitor visitRouteEx(

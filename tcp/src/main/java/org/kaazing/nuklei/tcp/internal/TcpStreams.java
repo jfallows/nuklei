@@ -13,49 +13,52 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.ws.internal;
+package org.kaazing.nuklei.tcp.internal;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.MessageHandler;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
-import org.kaazing.nuklei.ws.internal.layouts.StreamsLayout;
+import org.kaazing.nuklei.tcp.internal.layouts.StreamsLayout;
 
-public final class WsReadableStreams
+public final class TcpStreams
 {
-    private final StreamsLayout routeStreams;
-    private final RingBuffer throttleBuffer;
-    private final RingBuffer routeBuffer;
+    private final StreamsLayout layout;
+    private final RingBuffer streams;
+    private final RingBuffer throttle;
 
-    WsReadableStreams(
+    TcpStreams(
         Context context,
         String source,
         String target)
     {
-        this.routeStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsBufferCapacity())
-                                                       .path(context.targetStreamsPath().apply(source, target))
-                                                       .readonly(false)
-                                                       .build();
-        this.routeBuffer = this.routeStreams.streamsBuffer();
-        this.throttleBuffer = this.routeStreams.throttleBuffer();
+        this.layout = new StreamsLayout.Builder()
+                .streamsCapacity(context.streamsBufferCapacity())
+                .throttleCapacity(context.throttleBufferCapacity())
+                .path(context.routeStreamsPath().apply(source, target))
+                .readonly(true)
+                .build();
+
+        this.streams = this.layout.streamsBuffer();
+        this.throttle = this.layout.throttleBuffer();
     }
 
     public void close()
     {
-        routeStreams.close();
+        layout.close();
     }
 
-    public int read(
+    public int readStreams(
         MessageHandler handler)
     {
-        return routeBuffer.read(handler);
+        return streams.read(handler);
     }
 
-    public boolean write(
+    public boolean writeThrottle(
         int msgTypeId,
         DirectBuffer srcBuffer,
         int srcIndex,
         int length)
     {
-        return throttleBuffer.write(msgTypeId, srcBuffer, srcIndex, length);
+        return throttle.write(msgTypeId, srcBuffer, srcIndex, length);
     }
 }

@@ -33,7 +33,7 @@ import org.kaazing.nuklei.ws.internal.routable.Routable;
 @Reaktive
 public final class Router extends Nukleus.Composite
 {
-    private static final Pattern SOURCE_NAME = Pattern.compile("([^#]+)");
+    private static final Pattern SOURCE_NAME = Pattern.compile("([^#]+).*");
 
     private final Context context;
     private final LongHashSet referenceIds;
