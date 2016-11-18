@@ -50,7 +50,6 @@
         <module>ws</module>
         <module>shell</module>
         <module>reaktor</module>
-        <module>bench</module>
         <module>maven-plugin</module>
     </modules>
 
