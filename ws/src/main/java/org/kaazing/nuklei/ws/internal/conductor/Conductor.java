@@ -208,8 +208,8 @@ public final class Conductor implements Nukleus
         }
         else
         {
-            final WsRouteExFW wsRouteEx = extension.get(wsRouteExRO::wrap);
-            final String protocol = wsRouteEx.protocol().asString();
+            final WsRouteExFW routeEx = extension.get(wsRouteExRO::wrap);
+            final String protocol = routeEx.protocol().asString();
 
             router.doRoute(correlationId, source, sourceRef, target, targetRef, protocol);
         }

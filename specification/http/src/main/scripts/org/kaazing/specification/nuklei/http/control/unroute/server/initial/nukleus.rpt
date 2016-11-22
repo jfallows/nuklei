@@ -27,7 +27,7 @@ connected
 
 read [0x00 0x00 0x00 0x12]
 read ([0..8]:correlationIdC12N)
-read [0x03] "any"
+read [0x06] "source"
 read ([0..8]:initialRefC12N)
 read [0x06] "target"
 read ([0..8]:targetRefC12N)

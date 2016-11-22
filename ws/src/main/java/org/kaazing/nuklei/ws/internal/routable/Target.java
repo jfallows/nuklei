@@ -145,7 +145,7 @@ public final class Target implements Nukleus
                 .referenceId(targetRef)
                 .streamId(targetId)
                 .correlationId(correlationId)
-                .extension(b -> b.set(visitWsBeginEx(protocol)))
+                .extension(e -> e.set(visitWsBeginEx(protocol)))
                 .build();
 
         streamsBuffer.write(begin.typeId(), begin.buffer(), begin.offset(), begin.length());
@@ -161,7 +161,7 @@ public final class Target implements Nukleus
         final DataFW data = dataRW.wrap(writeBuffer, 0, writeBuffer.capacity())
                 .streamId(targetId)
                 .payload(p -> p.set(payload, 0, capacity).set((b, o, l) -> xor(b, o, o + capacity, maskKey)))
-                .extension(b -> b.set(visitWsDataEx(flags)))
+                .extension(e -> e.set(visitWsDataEx(flags)))
                 .build();
 
         streamsBuffer.write(data.typeId(), data.buffer(), data.offset(), data.length());
@@ -175,7 +175,7 @@ public final class Target implements Nukleus
     {
         final EndFW end = endRW.wrap(writeBuffer, 0, writeBuffer.capacity())
                 .streamId(targetId)
-                .extension(b -> b.set(visitWsEndEx(status)))
+                .extension(e -> e.set(visitWsEndEx(status)))
                 .build();
 
         streamsBuffer.write(end.typeId(), end.buffer(), end.offset(), end.length());
@@ -191,7 +191,7 @@ public final class Target implements Nukleus
                 .streamId(targetId)
                 .referenceId(targetRef)
                 .correlationId(correlationId)
-                .extension(b -> b.set(visitHttpBeginEx(mutator)))
+                .extension(e -> e.set(visitHttpBeginEx(mutator)))
                 .build();
 
         streamsBuffer.write(begin.typeId(), begin.buffer(), begin.offset(), begin.length());
@@ -266,5 +266,4 @@ public final class Target implements Nukleus
                          .build()
                          .length();
     }
-
 }

@@ -27,12 +27,11 @@ connected
 
 read [0x00 0x00 0x00 0x11]
 read ([0..8]:correlationIdC11N)
-read [0x05] "reply"
+read [0x0b] "replySource"
 read ([0..8]:replyRefC11N)
-read [0x03] "any"
-read ([0..8]:targetRefC11N)
-read [0x15]
-read [0x00] [0x04] "host" [0x0e] "localhost:8080"
+read [0x0b] "replyTarget"
+read ([0..8]:replyTargetRefC11N)
+read [0x00]
 
 write [0x40 0x00 0x00 0x11]
 write ${correlationIdC11N}

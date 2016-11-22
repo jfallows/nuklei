@@ -50,27 +50,17 @@ public final class WsStreams
         layout.close();
     }
 
-    private int streamReads;
-
     public int readStreams(
         MessageHandler handler)
     {
-        final int messages = streams.read(handler);
-        streamReads += messages;
-        return messages;
+        return streams.read(handler);
     }
-
-    private int throttleReads;
 
     public int readThrottle(
         MessageHandler handler)
     {
-        final int messages = throttle.read(handler);
-        throttleReads += messages;
-        return messages;
+        return throttle.read(handler);
     }
-
-    private int streamWrites;
 
     public boolean writeStreams(
         int msgTypeId,
@@ -78,10 +68,8 @@ public final class WsStreams
         int srcIndex,
         int length)
     {
-        return streams.write(msgTypeId, srcBuffer, srcIndex, length) && streamWrites++ != -1;
+        return streams.write(msgTypeId, srcBuffer, srcIndex, length);
     }
-
-    private int throttleWrites;
 
     public boolean writeThrottle(
         int msgTypeId,
@@ -89,6 +77,6 @@ public final class WsStreams
         int srcIndex,
         int length)
     {
-        return throttle.write(msgTypeId, srcBuffer, srcIndex, length) && throttleWrites++ != -1;
+        return throttle.write(msgTypeId, srcBuffer, srcIndex, length);
     }
 }

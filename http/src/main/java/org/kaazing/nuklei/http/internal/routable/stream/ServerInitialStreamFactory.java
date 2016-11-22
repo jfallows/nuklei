@@ -1,0 +1,483 @@
+/**
+ * Copyright 2007-2016, Kaazing Corporation. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.kaazing.nuklei.http.internal.routable.stream;
+
+import static org.kaazing.nuklei.http.internal.routable.Route.headersMatch;
+import static org.kaazing.nuklei.http.internal.routable.Route.sourceMatches;
+import static org.kaazing.nuklei.http.internal.util.BufferUtil.limitOfBytes;
+
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.LongFunction;
+import java.util.function.LongSupplier;
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.LongLongConsumer;
+import org.agrona.concurrent.MessageHandler;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.kaazing.nuklei.http.internal.routable.Route;
+import org.kaazing.nuklei.http.internal.routable.Source;
+import org.kaazing.nuklei.http.internal.routable.Target;
+import org.kaazing.nuklei.http.internal.types.OctetsFW;
+import org.kaazing.nuklei.http.internal.types.stream.BeginFW;
+import org.kaazing.nuklei.http.internal.types.stream.DataFW;
+import org.kaazing.nuklei.http.internal.types.stream.EndFW;
+import org.kaazing.nuklei.http.internal.types.stream.FrameFW;
+import org.kaazing.nuklei.http.internal.types.stream.ResetFW;
+import org.kaazing.nuklei.http.internal.types.stream.WindowFW;
+
+public final class ServerInitialStreamFactory
+{
+    private static final byte[] CRLFCRLF_BYTES = "\r\n\r\n".getBytes(StandardCharsets.US_ASCII);
+
+    private final FrameFW frameRO = new FrameFW();
+
+    private final BeginFW beginRO = new BeginFW();
+    private final DataFW dataRO = new DataFW();
+    private final EndFW endRO = new EndFW();
+
+    private final WindowFW windowRO = new WindowFW();
+    private final ResetFW resetRO = new ResetFW();
+
+    private final Source source;
+    private final LongFunction<List<Route>> supplyRoutes;
+    private final LongSupplier supplyTargetId;
+    private final LongLongConsumer correlateInitial;
+
+    public ServerInitialStreamFactory(
+        Source source,
+        LongFunction<List<Route>> supplyRoutes,
+        LongSupplier supplyTargetId,
+        LongLongConsumer correlateInitial)
+    {
+        this.source = source;
+        this.supplyRoutes = supplyRoutes;
+        this.supplyTargetId = supplyTargetId;
+        this.correlateInitial = correlateInitial;
+    }
+
+    public MessageHandler newStream()
+    {
+        return new ServerInitialStream()::handleStream;
+    }
+
+    private final class ServerInitialStream
+    {
+        private MessageHandler streamState;
+        private DecoderState decoderState;
+
+        private long sourceId;
+
+        private Target target;
+        private long targetId;
+        private long sourceRef;
+        private long correlationId;
+
+        private ServerInitialStream()
+        {
+            this.streamState = this::beforeBegin;
+        }
+
+        private void handleStream(
+            int msgTypeId,
+            MutableDirectBuffer buffer,
+            int index,
+            int length)
+        {
+            streamState.onMessage(msgTypeId, buffer, index, length);
+        }
+
+        private void beforeBegin(
+            int msgTypeId,
+            DirectBuffer buffer,
+            int index,
+            int length)
+        {
+            if (msgTypeId == BeginFW.TYPE_ID)
+            {
+                processBegin(buffer, index, length);
+            }
+            else
+            {
+                processUnexpected(buffer, index, length);
+            }
+        }
+
+        private void afterBeginOrData(
+            int msgTypeId,
+            DirectBuffer buffer,
+            int index,
+            int length)
+        {
+            switch (msgTypeId)
+            {
+            case DataFW.TYPE_ID:
+                processData(buffer, index, length);
+                break;
+            case EndFW.TYPE_ID:
+                processEnd(buffer, index, length);
+                break;
+            default:
+                processUnexpected(buffer, index, length);
+                break;
+            }
+        }
+
+        private void afterEnd(
+            int msgTypeId,
+            DirectBuffer buffer,
+            int index,
+            int length)
+        {
+            processUnexpected(buffer, index, length);
+        }
+
+        private void afterReplyOrReset(
+            int msgTypeId,
+            MutableDirectBuffer buffer,
+            int index,
+            int length)
+        {
+            if (msgTypeId == DataFW.TYPE_ID)
+            {
+                dataRO.wrap(buffer, index, index + length);
+                final long streamId = dataRO.streamId();
+
+                source.doWindow(streamId, length);
+            }
+            else if (msgTypeId == EndFW.TYPE_ID)
+            {
+                endRO.wrap(buffer, index, index + length);
+                final long streamId = endRO.streamId();
+
+                source.removeStream(streamId);
+
+                this.streamState = this::afterEnd;
+            }
+        }
+
+        private void processUnexpected(
+            DirectBuffer buffer,
+            int index,
+            int length)
+        {
+            frameRO.wrap(buffer, index, index + length);
+
+            long streamId = frameRO.streamId();
+
+            processUnexpected(streamId);
+        }
+
+        private void processUnexpected(
+            long streamId)
+        {
+            source.doReset(streamId);
+
+            this.streamState = this::afterReplyOrReset;
+        }
+
+        private void processInvalidRequest(
+            String payloadChars)
+        {
+            final Optional<Route> optional = resolveReplyTo(sourceRef);
+
+            if (optional.isPresent())
+            {
+                final Route route = optional.get();
+                final Target replyTo = route.target();
+                final long targetRef = route.targetRef();
+                final long newTargetId = supplyTargetId.getAsLong();
+
+                // TODO: replace with connection pool (start)
+                replyTo.doBegin(targetRef, newTargetId, correlationId);
+                // TODO: replace with connection pool (end)
+
+                DirectBuffer payload = new UnsafeBuffer(payloadChars.getBytes(StandardCharsets.UTF_8));
+                replyTo.doData(newTargetId, payload, 0, payload.capacity());
+
+                this.decoderState = this::decodeHttpBegin;
+                this.streamState = this::afterReplyOrReset;
+            }
+            else
+            {
+                processUnexpected(sourceId);
+            }
+        }
+
+        private void processBegin(
+            DirectBuffer buffer,
+            int index,
+            int length)
+        {
+            beginRO.wrap(buffer, index, index + length);
+
+            this.sourceId = beginRO.streamId();
+            this.sourceRef = beginRO.referenceId();
+            this.correlationId = beginRO.correlationId();
+
+            this.streamState = this::afterBeginOrData;
+            this.decoderState = this::decodeHttpBegin;
+
+            // TODO: acquire slab size 8192
+            source.doWindow(sourceId, 8192);
+        }
+
+        private void processData(
+            DirectBuffer buffer,
+            int index,
+            int length)
+        {
+            dataRO.wrap(buffer, index, index + length);
+
+            final OctetsFW payload = dataRO.payload();
+            final int limit = payload.limit();
+
+            int offset = payload.offset() + 1;
+            while (offset < limit)
+            {
+                offset = decoderState.decode(buffer, offset, limit);
+            }
+        }
+
+        private void processEnd(
+            DirectBuffer buffer,
+            int index,
+            int length)
+        {
+            endRO.wrap(buffer, index, index + length);
+            final long streamId = endRO.streamId();
+
+            decoderState = (b, o, l) -> o;
+
+            source.removeStream(streamId);
+            target.removeThrottle(targetId);
+        }
+
+        private int decodeHttpBegin(
+            final DirectBuffer payload,
+            final int offset,
+            final int limit)
+        {
+            final int endOfHeadersAt = limitOfBytes(payload, offset, limit, CRLFCRLF_BYTES);
+            if (endOfHeadersAt == -1)
+            {
+                throw new IllegalStateException("incomplete http headers");
+            }
+
+            // TODO: replace with lightweight approach (start)
+            String[] lines = payload.getStringWithoutLengthUtf8(offset, endOfHeadersAt - offset).split("\r\n");
+            String[] start = lines[0].split("\\s+");
+
+            Pattern versionPattern = Pattern.compile("HTTP/1\\.(\\d)");
+            Matcher versionMatcher = versionPattern.matcher(start[2]);
+            if (!versionMatcher.matches())
+            {
+                processInvalidRequest("HTTP/1.1 505 HTTP Version Not Supported\r\n\r\n");
+            }
+            else
+            {
+                URI requestURI = URI.create(start[1]);
+
+                Map<String, String> headers = new LinkedHashMap<>();
+                headers.put(":scheme", "http");
+                headers.put(":method", start[0]);
+                headers.put(":path", requestURI.getPath());
+
+                String host = null;
+                String upgrade = null;
+                Pattern headerPattern = Pattern.compile("([^\\s:]+)\\s*:\\s*(.*)");
+                for (int i = 1; i < lines.length; i++)
+                {
+                    Matcher headerMatcher = headerPattern.matcher(lines[i]);
+                    if (!headerMatcher.matches())
+                    {
+                        throw new IllegalStateException("illegal http header syntax");
+                    }
+
+                    String name = headerMatcher.group(1).toLowerCase();
+                    String value = headerMatcher.group(2);
+
+                    if ("host".equals(name))
+                    {
+                        host = value;
+                    }
+                    else if ("upgrade".equals(name))
+                    {
+                        upgrade = value;
+                    }
+
+                    headers.put(name, value);
+                }
+                // TODO: replace with lightweight approach (end)
+
+                if (host == null || requestURI.getUserInfo() != null)
+                {
+                    processInvalidRequest("HTTP/1.1 400 Bad Request\r\n\r\n");
+                }
+                else
+                {
+                    final Optional<Route> optional = resolveTarget(sourceRef, headers);
+                    if (optional.isPresent())
+                    {
+                        final long newTargetId = supplyTargetId.getAsLong();
+                        final long targetCorrelationId = newTargetId;
+
+                        correlateInitial.accept(targetCorrelationId, correlationId);
+
+                        final Route route = optional.get();
+                        final Target newTarget = route.target();
+                        final long targetRef = route.targetRef();
+
+                        newTarget.doHttpBegin(newTargetId, targetRef, targetCorrelationId,
+                                hs -> headers.forEach((k, v) -> hs.item(i -> i.name(k).value(v))));
+                        newTarget.addThrottle(newTargetId, this::handleThrottle);
+
+                        this.target = newTarget;
+                        this.targetId = newTargetId;
+                    }
+                    else
+                    {
+                        processInvalidRequest("HTTP/1.1 404 Not Found\r\n\r\n");
+                    }
+
+                    // TODO: wait for 101 first
+                    if (upgrade != null)
+                    {
+                        decoderState = this::decodeHttpDataAfterUpgrade;
+                    }
+                    else
+                    {
+                        decoderState = this::decodeHttpData;
+                    }
+                }
+            }
+
+            return endOfHeadersAt;
+        }
+
+        private int decodeHttpData(
+            DirectBuffer payload,
+            int offset,
+            int limit)
+        {
+            // TODO: consider chunks
+            target.doHttpData(targetId, payload, offset, limit - offset);
+            return limit;
+        }
+
+        private int decodeHttpDataAfterUpgrade(
+            DirectBuffer payload,
+            int offset,
+            int limit)
+        {
+            target.doData(targetId, payload, offset, limit - offset);
+            return limit;
+        }
+
+        @SuppressWarnings("unused")
+        private int decodeHttpEnd(
+            DirectBuffer payload,
+            int offset,
+            int limit)
+        {
+            // TODO: consider chunks, trailers
+            target.doHttpEnd(targetId);
+            return limit;
+        }
+
+        private Optional<Route> resolveTarget(
+            long sourceRef,
+            Map<String, String> headers)
+        {
+            final List<Route> routes = supplyRoutes.apply(sourceRef);
+            final Predicate<Route> predicate = headersMatch(headers);
+
+            return routes.stream().filter(predicate).findFirst();
+        }
+
+        private Optional<Route> resolveReplyTo(
+            long sourceRef)
+        {
+            final List<Route> routes = supplyRoutes.apply(sourceRef);
+            final Predicate<Route> predicate = sourceMatches(source.routableName());
+
+            return routes.stream().filter(predicate).findFirst();
+        }
+
+        private void handleThrottle(
+            int msgTypeId,
+            DirectBuffer buffer,
+            int index,
+            int length)
+        {
+            switch (msgTypeId)
+            {
+            case WindowFW.TYPE_ID:
+                processWindow(buffer, index, length);
+                break;
+            case ResetFW.TYPE_ID:
+                processReset(buffer, index, length);
+                break;
+            default:
+                // ignore
+                break;
+            }
+        }
+
+        private void processWindow(
+            DirectBuffer buffer,
+            int index,
+            int length)
+        {
+            windowRO.wrap(buffer, index, index + length);
+
+            final int update = windowRO.update();
+
+            source.doWindow(sourceId, update + framing(update));
+        }
+
+        private void processReset(
+            DirectBuffer buffer,
+            int index,
+            int length)
+        {
+            resetRO.wrap(buffer, index, index + length);
+
+            source.doReset(sourceId);
+        }
+    }
+
+    private static int framing(
+        int payloadSize)
+    {
+        // TODO: consider chunks
+        return payloadSize;
+    }
+
+    @FunctionalInterface
+    private interface DecoderState
+    {
+        int decode(DirectBuffer buffer, int offset, int length);
+    }
+}

@@ -15,7 +15,7 @@
 #
 
 property newReplyRef ${nuklei:newReferenceId()} # external scope
-property newTargetRef ${nuklei:newReferenceId()} # external scope
+property newReplyTargetRef ${nuklei:newReferenceId()} # external scope
 
 property nukleiC11C ${nuklei:directory("target/nukleus-itests").controlCapacity(1024, 1024)}
 
@@ -30,12 +30,11 @@ connected
 
 write [0x00 0x00 0x00 0x11]
 write ${controlC11C.nextCorrelationId()}
-write [0x05] "reply"
+write [0x0b] "replySource"
 write ${newReplyRef}
-write [0x03] "any"
-write ${newTargetRef}
-write [0x15]
-write [0x00] [0x04] "host" [0x0e] "localhost:8080"
+write [0x0b] "replyTarget"
+write ${newReplyTargetRef}
+write [0x00]
 write flush
 
 read [0x40 0x00 0x00 0x11]

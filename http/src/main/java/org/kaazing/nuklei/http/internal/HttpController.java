@@ -15,10 +15,10 @@
  */
 package org.kaazing.nuklei.http.internal;
 
-
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -30,13 +30,17 @@ import org.agrona.concurrent.broadcast.BroadcastReceiver;
 import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.kaazing.nuklei.Controller;
+import org.kaazing.nuklei.http.internal.types.Flyweight;
 import org.kaazing.nuklei.http.internal.types.control.BindFW;
 import org.kaazing.nuklei.http.internal.types.control.BoundFW;
 import org.kaazing.nuklei.http.internal.types.control.ErrorFW;
+import org.kaazing.nuklei.http.internal.types.control.HttpRouteExFW;
 import org.kaazing.nuklei.http.internal.types.control.RouteFW;
 import org.kaazing.nuklei.http.internal.types.control.RoutedFW;
 import org.kaazing.nuklei.http.internal.types.control.UnbindFW;
 import org.kaazing.nuklei.http.internal.types.control.UnboundFW;
+import org.kaazing.nuklei.http.internal.types.control.UnrouteFW;
+import org.kaazing.nuklei.http.internal.types.control.UnroutedFW;
 
 public final class HttpController implements Controller
 {
@@ -46,11 +50,15 @@ public final class HttpController implements Controller
     private final BindFW.Builder bindRW = new BindFW.Builder();
     private final UnbindFW.Builder unbindRW = new UnbindFW.Builder();
     private final RouteFW.Builder routeRW = new RouteFW.Builder();
+    private final UnrouteFW.Builder unrouteRW = new UnrouteFW.Builder();
+
+    private final HttpRouteExFW.Builder routeExRW = new HttpRouteExFW.Builder();
 
     private final ErrorFW errorRO = new ErrorFW();
     private final BoundFW boundRO = new BoundFW();
     private final UnboundFW unboundRO = new UnboundFW();
     private final RoutedFW routedRO = new RoutedFW();
+    private final UnroutedFW unroutedRO = new UnroutedFW();
 
     private final Context context;
     private final RingBuffer conductorCommands;
@@ -95,7 +103,8 @@ public final class HttpController implements Controller
         return "http";
     }
 
-    public CompletableFuture<Long> bind()
+    public CompletableFuture<Long> bind(
+        int kind)
     {
         final CompletableFuture<Long> promise = new CompletableFuture<Long>();
 
@@ -103,6 +112,7 @@ public final class HttpController implements Controller
 
         BindFW bindRO = bindRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
                               .correlationId(correlationId)
+                              .kind((byte) kind)
                               .build();
 
         if (!conductorCommands.write(bindRO.typeId(), bindRO.buffer(), bindRO.offset(), bindRO.length()))
@@ -146,7 +156,6 @@ public final class HttpController implements Controller
         long sourceRef,
         String target,
         long targetRef,
-        String reply,
         Map<String, String> headers)
     {
         final CompletableFuture<Void> promise = new CompletableFuture<>();
@@ -159,16 +168,7 @@ public final class HttpController implements Controller
                                  .sourceRef(sourceRef)
                                  .target(target)
                                  .targetRef(targetRef)
-                                 .reply(reply)
-                                 .iterate(headers.entrySet(), entry ->
-                                 {
-                                     routeRW.headers(b -> b.item(i ->
-                                     {
-                                       String name = entry.getKey();
-                                       String value = entry.getValue();
-                                       i.name(name).value(value);
-                                     }));
-                                 })
+                                 .extension(e -> e.set(visitRouteEx(headers)))
                                  .build();
 
         if (!conductorCommands.write(routeRO.typeId(), routeRO.buffer(), routeRO.offset(), routeRO.length()))
@@ -183,11 +183,73 @@ public final class HttpController implements Controller
         return promise;
     }
 
-    public HttpStreams streams(
-        String capture,
-        String route)
+    public CompletableFuture<Void> unroute(
+        String source,
+        long sourceRef,
+        String target,
+        long targetRef,
+        Map<String, String> headers)
     {
-        return new HttpStreams(context, capture, route);
+        final CompletableFuture<Void> promise = new CompletableFuture<>();
+
+        long correlationId = conductorCommands.nextCorrelationId();
+
+        UnrouteFW unrouteRO = unrouteRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
+                                 .correlationId(correlationId)
+                                 .source(source)
+                                 .sourceRef(sourceRef)
+                                 .target(target)
+                                 .targetRef(targetRef)
+                                 .extension(e -> e.set(visitRouteEx(headers)))
+                                 .build();
+
+        if (!conductorCommands.write(unrouteRO.typeId(), unrouteRO.buffer(), unrouteRO.offset(), unrouteRO.length()))
+        {
+            commandSendFailed(promise);
+        }
+        else
+        {
+            commandSent(correlationId, promise);
+        }
+
+        return promise;
+    }
+
+    public HttpStreams streams(
+        String source)
+    {
+        int streamsCapacity = context.streamsBufferCapacity();
+        int throttleCapacity = context.throttleBufferCapacity();
+        Path path = context.sourceStreamsPath().apply(source);
+
+        return new HttpStreams(streamsCapacity, throttleCapacity, path, false);
+    }
+
+    public HttpStreams streams(
+        String source,
+        String target)
+    {
+        int streamsCapacity = context.streamsBufferCapacity();
+        int throttleCapacity = context.throttleBufferCapacity();
+        Path path = context.targetStreamsPath().apply(source, target);
+
+        return new HttpStreams(streamsCapacity, throttleCapacity, path, true);
+    }
+
+    private Flyweight.Builder.Visitor visitRouteEx(
+        Map<String, String> headers)
+    {
+        return (buffer, offset, limit) ->
+            routeExRW.wrap(buffer, offset, limit)
+                     .headers(hs ->
+                     {
+                         headers.forEach((k, v) ->
+                         {
+                             hs.item(h -> h.name(k).value(v));
+                         });
+                     })
+                     .build()
+                     .length();
     }
 
     private int handleResponse(
@@ -209,6 +271,9 @@ public final class HttpController implements Controller
             break;
         case RoutedFW.TYPE_ID:
             handleRoutedResponse(buffer, index, length);
+            break;
+        case UnroutedFW.TYPE_ID:
+            handleUnroutedResponse(buffer, index, length);
             break;
         default:
             break;
@@ -270,6 +335,21 @@ public final class HttpController implements Controller
     {
         routedRO.wrap(buffer, index, length);
         long correlationId = routedRO.correlationId();
+
+        CompletableFuture<?> promise = promisesByCorrelationId.remove(correlationId);
+        if (promise != null)
+        {
+            promise.complete(null);
+        }
+    }
+
+    private void handleUnroutedResponse(
+        DirectBuffer buffer,
+        int index,
+        int length)
+    {
+        unroutedRO.wrap(buffer, index, length);
+        long correlationId = unroutedRO.correlationId();
 
         CompletableFuture<?> promise = promisesByCorrelationId.remove(correlationId);
         if (promise != null)

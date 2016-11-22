@@ -17,37 +17,33 @@ package org.kaazing.nuklei.http.internal.routable;
 
 import java.util.function.Consumer;
 
-import org.kaazing.nuklei.Nukleus;
-import org.kaazing.nuklei.http.internal.layouts.StreamsLayout;
-import org.kaazing.nuklei.http.internal.types.HeaderFW;
-import org.kaazing.nuklei.http.internal.types.ListFW;
-import org.kaazing.nuklei.http.internal.types.OctetsFW;
-import org.kaazing.nuklei.http.internal.types.stream.BeginFW;
-import org.kaazing.nuklei.http.internal.types.stream.DataFW;
-import org.kaazing.nuklei.http.internal.types.stream.EndFW;
-import org.kaazing.nuklei.http.internal.types.stream.FrameFW;
-import org.kaazing.nuklei.http.internal.types.stream.HttpBeginFW;
-import org.kaazing.nuklei.http.internal.types.stream.HttpDataFW;
-import org.kaazing.nuklei.http.internal.types.stream.HttpEndFW;
-
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.MessageHandler;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
+import org.kaazing.nuklei.Nukleus;
+import org.kaazing.nuklei.http.internal.layouts.StreamsLayout;
+import org.kaazing.nuklei.http.internal.types.Flyweight;
+import org.kaazing.nuklei.http.internal.types.HttpHeaderFW;
+import org.kaazing.nuklei.http.internal.types.ListFW;
+import org.kaazing.nuklei.http.internal.types.OctetsFW;
+import org.kaazing.nuklei.http.internal.types.stream.BeginFW;
+import org.kaazing.nuklei.http.internal.types.stream.DataFW;
+import org.kaazing.nuklei.http.internal.types.stream.EndFW;
+import org.kaazing.nuklei.http.internal.types.stream.FrameFW;
+import org.kaazing.nuklei.http.internal.types.stream.HttpBeginExFW;
 
 public final class Target implements Nukleus
 {
     private final FrameFW frameRO = new FrameFW();
 
-    private final HttpBeginFW.Builder httpBeginRW = new HttpBeginFW.Builder();
-    private final HttpDataFW.Builder httpDataRW = new HttpDataFW.Builder();
-    private final HttpEndFW.Builder httpEndRW = new HttpEndFW.Builder();
-
     private final BeginFW.Builder beginRW = new BeginFW.Builder();
     private final DataFW.Builder dataRW = new DataFW.Builder();
     private final EndFW.Builder endRW = new EndFW.Builder();
+
+    private final HttpBeginExFW.Builder httpBeginExRW = new HttpBeginExFW.Builder();
 
     private final String name;
     private final StreamsLayout layout;
@@ -125,30 +121,30 @@ public final class Target implements Nukleus
     }
 
     public void doBegin(
-        long routableRef,
-        long streamId,
-        long replyRef,
-        long replyId)
+        long targetId,
+        long targetRef,
+        long correlationId)
     {
         BeginFW begin = beginRW.wrap(writeBuffer, 0, writeBuffer.capacity())
-                .routableRef(routableRef)
-                .streamId(streamId)
-                .replyRef(replyRef)
-                .replyId(replyId)
+                .streamId(targetId)
+                .referenceId(targetRef)
+                .correlationId(correlationId)
+                .extension(e -> e.reset())
                 .build();
 
         streamsBuffer.write(begin.typeId(), begin.buffer(), begin.offset(), begin.length());
     }
 
     public int doData(
-        long streamId,
+        long targetId,
         DirectBuffer payload,
         int offset,
         int length)
     {
         DataFW data = dataRW.wrap(writeBuffer, 0, writeBuffer.capacity())
-                .streamId(streamId)
+                .streamId(targetId)
                 .payload(p -> p.set(payload, offset, length))
+                .extension(e -> e.reset())
                 .build();
 
         streamsBuffer.write(data.typeId(), data.buffer(), data.offset(), data.length());
@@ -157,12 +153,13 @@ public final class Target implements Nukleus
     }
 
     public int doData(
-        long streamId,
+        long targetId,
         OctetsFW payload)
     {
         DataFW data = dataRW.wrap(writeBuffer, 0, writeBuffer.capacity())
-                .streamId(streamId)
+                .streamId(targetId)
                 .payload(p -> p.set(payload))
+                .extension(e -> e.reset())
                 .build();
 
         streamsBuffer.write(data.typeId(), data.buffer(), data.offset(), data.length());
@@ -171,55 +168,65 @@ public final class Target implements Nukleus
     }
 
     public void doEnd(
-        long streamId)
+        long targetId)
     {
         EndFW end = endRW.wrap(writeBuffer, 0, writeBuffer.capacity())
-                .streamId(streamId)
+                .streamId(targetId)
+                .extension(e -> e.reset())
                 .build();
 
         streamsBuffer.write(end.typeId(), end.buffer(), end.offset(), end.length());
     }
 
     public void doHttpBegin(
-        long streamId,
-        long routableRef,
-        long replyId,
-        long replyRef,
-        Consumer<ListFW.Builder<HeaderFW.Builder, HeaderFW>> mutator)
+        long targetId,
+        long targetRef,
+        long correlationId,
+        Consumer<ListFW.Builder<HttpHeaderFW.Builder, HttpHeaderFW>> mutator)
     {
-        HttpBeginFW httpBegin = httpBeginRW.wrap(writeBuffer, 0, writeBuffer.capacity())
-                .streamId(streamId)
-                .routableRef(routableRef)
-                .replyId(replyId)
-                .replyRef(replyRef)
-                .headers(mutator)
+        BeginFW begin = beginRW.wrap(writeBuffer, 0, writeBuffer.capacity())
+                .streamId(targetId)
+                .referenceId(targetRef)
+                .correlationId(correlationId)
+                .extension(e -> e.set(visitHttpBeginEx(mutator)))
                 .build();
 
-        streamsBuffer.write(httpBegin.typeId(), httpBegin.buffer(), httpBegin.offset(), httpBegin.length());
+        streamsBuffer.write(begin.typeId(), begin.buffer(), begin.offset(), begin.length());
     }
 
     public void doHttpData(
-        long streamId,
+        long targetId,
         DirectBuffer payload,
         int offset,
         int length)
     {
-        HttpDataFW httpData = httpDataRW.wrap(writeBuffer, 0, writeBuffer.capacity())
-                .streamId(streamId)
+        DataFW data = dataRW.wrap(writeBuffer, 0, writeBuffer.capacity())
+                .streamId(targetId)
                 .payload(p -> p.set(payload, offset, length))
+                .extension(e -> e.reset())
                 .build();
 
-        streamsBuffer.write(httpData.typeId(), httpData.buffer(), httpData.offset(), httpData.length());
+        streamsBuffer.write(data.typeId(), data.buffer(), data.offset(), data.length());
     }
 
     public void doHttpEnd(
-        long streamId)
+        long targetId)
     {
-        HttpEndFW httpEnd = httpEndRW.wrap(writeBuffer, 0, writeBuffer.capacity())
-                .streamId(streamId)
+        EndFW end = endRW.wrap(writeBuffer, 0, writeBuffer.capacity())
+                .streamId(targetId)
+                .extension(e -> e.reset())
                 .build();
 
-        streamsBuffer.write(httpEnd.typeId(), httpEnd.buffer(), httpEnd.offset(), httpEnd.length());
+        streamsBuffer.write(end.typeId(), end.buffer(), end.offset(), end.length());
     }
 
+    private Flyweight.Builder.Visitor visitHttpBeginEx(
+        Consumer<ListFW.Builder<HttpHeaderFW.Builder, HttpHeaderFW>> headers)
+    {
+        return (buffer, offset, limit) ->
+            httpBeginExRW.wrap(buffer, offset, limit)
+                         .headers(headers)
+                         .build()
+                         .length();
+    }
 }

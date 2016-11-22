@@ -143,7 +143,6 @@ public final class Source implements Nukleus
         {
             handleUnrecognized(msgTypeId, buffer, index, length);
         }
-
     }
 
     private void handleUnrecognized(
@@ -179,7 +178,7 @@ public final class Source implements Nukleus
         final Supplier<MessageHandler> streamFactory = streamFactories.get(RouteKind.match(sourceRef));
         final MessageHandler newStream = streamFactory.get();
         streams.put(sourceId, newStream);
-        newStream.onMessage(BeginFW.TYPE_ID, buffer, index, length);
+        newStream.onMessage(msgTypeId, buffer, index, length);
     }
 
     public void doWindow(
@@ -199,13 +198,6 @@ public final class Source implements Nukleus
                 .streamId(streamId).build();
 
         throttleBuffer.write(reset.typeId(), reset.buffer(), reset.offset(), reset.length());
-    }
-
-    public void replaceStream(
-        long streamId,
-        MessageHandler handler)
-    {
-        streams.put(streamId, handler);
     }
 
     public void removeStream(

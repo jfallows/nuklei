@@ -15,151 +15,68 @@
  */
 package org.kaazing.nuklei.http.internal;
 
-import static java.nio.ByteBuffer.allocateDirect;
-import static java.nio.ByteOrder.nativeOrder;
-
-import java.util.Map;
-
-import org.kaazing.nuklei.http.internal.layouts.StreamsLayout;
-import org.kaazing.nuklei.http.internal.types.stream.BeginFW;
-import org.kaazing.nuklei.http.internal.types.stream.DataFW;
-import org.kaazing.nuklei.http.internal.types.stream.EndFW;
-import org.kaazing.nuklei.http.internal.types.stream.HttpBeginFW;
-import org.kaazing.nuklei.http.internal.types.stream.HttpDataFW;
-import org.kaazing.nuklei.http.internal.types.stream.HttpEndFW;
+import java.nio.file.Path;
 
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.MessageHandler;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
+import org.kaazing.nuklei.http.internal.layouts.StreamsLayout;
 
 public final class HttpStreams
 {
-    private final BeginFW.Builder beginRW = new BeginFW.Builder();
-    private final DataFW.Builder dataRW = new DataFW.Builder();
-    private final EndFW.Builder endRW = new EndFW.Builder();
-
-    private final HttpBeginFW.Builder httpBeginRW = new HttpBeginFW.Builder();
-    private final HttpDataFW.Builder httpDataRW = new HttpDataFW.Builder();
-    private final HttpEndFW.Builder httpEndRW = new HttpEndFW.Builder();
-
-    private final StreamsLayout sourceStreams;
-    private final StreamsLayout targetStreams;
-    private final RingBuffer sourceBuffer;
-    private final RingBuffer targetBuffer;
-    private final AtomicBuffer atomicBuffer;
+    private final StreamsLayout layout;
+    private final RingBuffer throttle;
+    private final RingBuffer streams;
 
     HttpStreams(
-        Context context,
-        String source,
-        String target)
+        int streamsCapacity,
+        int throttleCapacity,
+        Path path,
+        boolean readonly)
     {
-        this.sourceStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsBufferCapacity())
-                                                        .path(context.captureStreamsPath().apply(source))
-                                                        .readonly(true)
-                                                        .build();
-        this.sourceBuffer = this.sourceStreams.streamsBuffer();
+        this.layout = new StreamsLayout.Builder()
+                .streamsCapacity(streamsCapacity)
+                .throttleCapacity(throttleCapacity)
+                .path(path)
+                .readonly(readonly)
+                .build();
 
-        this.targetStreams = new StreamsLayout.Builder().streamsCapacity(context.streamsBufferCapacity())
-                                                        .path(context.routeStreamsPath().apply(target, source))
-                                                        .readonly(false)
-                                                        .build();
-        this.targetBuffer = this.targetStreams.streamsBuffer();
-
-        this.atomicBuffer = new UnsafeBuffer(allocateDirect(context.maxMessageLength()).order(nativeOrder()));
+        this.streams = this.layout.streamsBuffer();
+        this.throttle = this.layout.throttleBuffer();
     }
 
     public void close()
     {
-        sourceStreams.close();
-        targetStreams.close();
+        layout.close();
     }
 
-    public boolean begin(
-        long streamId,
-        long routableRef)
-    {
-        BeginFW begin = beginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                               .streamId(streamId)
-                               .routableRef(routableRef)
-                               .build();
-
-        return sourceBuffer.write(begin.typeId(), begin.buffer(), begin.offset(), begin.length());
-    }
-
-    public boolean data(
-        long streamId,
-        DirectBuffer buffer,
-        int offset,
-        int length)
-    {
-        DataFW data = dataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                            .streamId(streamId)
-                            .payload(b-> b.set(buffer, offset, length))
-                            .build();
-
-        return sourceBuffer.write(data.typeId(), data.buffer(), data.offset(), data.length());
-    }
-
-    public boolean end(
-        long streamId)
-    {
-        EndFW endRO = endRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                           .streamId(streamId)
-                           .build();
-
-        return sourceBuffer.write(endRO.typeId(), endRO.buffer(), endRO.offset(), endRO.length());
-    }
-
-    public boolean httpBegin(
-        long streamId,
-        long routableRef,
-        Map<String, String> headers)
-    {
-        httpBeginRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                   .streamId(streamId)
-                   .routableRef(routableRef);
-
-        for (Map.Entry<String, String> header : headers.entrySet())
-        {
-            String name = header.getKey();
-            String value = header.getValue();
-            httpBeginRW.headers(headersRW -> headersRW.item(itemRW -> itemRW.name(name).value(value)));
-        }
-
-        HttpBeginFW httpBegin = httpBeginRW.build();
-
-        return sourceBuffer.write(httpBegin.typeId(), httpBegin.buffer(), httpBegin.offset(), httpBegin.length());
-    }
-
-    public boolean httpData(
-        long streamId,
-        DirectBuffer buffer,
-        int offset,
-        int length)
-    {
-        HttpDataFW httpData = httpDataRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                        .streamId(streamId)
-                                        .payload(b-> b.set(buffer, offset, length))
-                                        .build();
-
-        return sourceBuffer.write(httpData.typeId(), httpData.buffer(), httpData.offset(), httpData.length());
-    }
-
-    public boolean httpEnd(
-        long streamId)
-    {
-        HttpEndFW end = httpEndRW.wrap(atomicBuffer, 0, atomicBuffer.capacity())
-                                 .streamId(streamId)
-                                 .build();
-
-        return sourceBuffer.write(end.typeId(), end.buffer(), end.offset(), end.length());
-    }
-
-    public int read(
+    public int readStreams(
         MessageHandler handler)
     {
-        return targetBuffer.read(handler);
+        return streams.read(handler);
+    }
+
+    public int readThrottle(
+        MessageHandler handler)
+    {
+        return throttle.read(handler);
+    }
+
+    public boolean writeStreams(
+        int msgTypeId,
+        DirectBuffer srcBuffer,
+        int srcIndex,
+        int length)
+    {
+        return streams.write(msgTypeId, srcBuffer, srcIndex, length);
+    }
+
+    public boolean writeThrottle(
+        int msgTypeId,
+        DirectBuffer srcBuffer,
+        int srcIndex,
+        int length)
+    {
+        return throttle.write(msgTypeId, srcBuffer, srcIndex, length);
     }
 }

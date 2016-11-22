@@ -15,122 +15,130 @@
  */
 package org.kaazing.nuklei.http.internal.routable;
 
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.LongSupplier;
-
-import org.agrona.concurrent.MessageHandler;
+import java.util.function.Predicate;
 
 public final class Route
 {
-    private final HandlerFactory handlerFactory;
-    private final Target replyTo;
-    private final LongSupplier newTargetId;
-    private final List<Option> options;
+    private final String source;
+    private final long sourceRef;
+    private final Target target;
+    private final long targetRef;
+    private final Map<String, String> headers;
 
     public Route(
-        HandlerFactory handlerFactory,
-        Target replyTo,
-        LongSupplier newTargetId)
-    {
-        this.handlerFactory = handlerFactory;
-        this.replyTo = replyTo;
-        this.newTargetId = newTargetId;
-        this.options = new LinkedList<>();
-    }
-
-    public MessageHandler newStream(
-        Source source,
-        long streamId)
-    {
-        return handlerFactory.newHandler(this, source, streamId);
-    }
-
-    public Target replyTo()
-    {
-        return replyTo;
-    }
-
-    public long newTargetId()
-    {
-        return newTargetId.getAsLong();
-    }
-
-    public boolean add(
-        Map<String, String> headers,
+        String source,
+        long sourceRef,
         Target target,
         long targetRef,
-        String reply)
-    {
-        return options.add(new Option(headers, target, targetRef, reply));
-    }
-
-    public Option resolve(
         Map<String, String> headers)
     {
-        return options.stream().filter(o -> headers.entrySet().containsAll(o.headers.entrySet())).findFirst().orElse(null);
+        Objects.requireNonNull(target);
+        Objects.requireNonNull(headers);
+
+        this.source = source;
+        this.sourceRef = sourceRef;
+        this.target = target;
+        this.targetRef = targetRef;
+        this.headers = headers;
     }
 
-    public boolean removeIf(
-        Map<String, String> headers,
-        Target target,
-        long targetRef,
-        String reply)
+    public String source()
     {
-        return options.removeIf(o -> o.equalTo(headers, target, targetRef, reply));
+        return source;
     }
 
-    public static final class Option
+    public long sourceRef()
     {
-        private final Map<String, String> headers;
-        private final Target target;
-        private final long targetRef;
-        private final String reply;
+        return sourceRef;
+    }
 
-        Option(
-            Map<String, String> headers,
-            Target target,
-            long targetRef,
-            String reply)
+    public Target target()
+    {
+        return target;
+    }
+
+    public long targetRef()
+    {
+        return this.targetRef;
+    }
+
+    public Map<String, String> headers()
+    {
+        return headers;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = source.hashCode();
+        result = 31 * result + Long.hashCode(sourceRef);
+        result = 31 * result + target.hashCode();
+        result = 31 * result + Long.hashCode(targetRef);
+
+        if (headers != null)
         {
-            this.headers = headers;
-            this.target = target;
-            this.targetRef = targetRef;
-            this.reply = reply;
+            result = 31 * result + headers.hashCode();
         }
 
-        public Map<String, String> headers()
+        return result;
+    }
+
+    @Override
+    public boolean equals(
+        Object obj)
+    {
+        if (!(obj instanceof Route))
         {
-            return headers;
+            return false;
         }
 
-        public Target target()
-        {
-            return target;
-        }
+        Route that = (Route) obj;
+        return this.sourceRef == that.sourceRef &&
+                this.targetRef == that.targetRef &&
+                Objects.equals(this.source, that.source) &&
+                Objects.equals(this.target, that.target) &&
+                Objects.equals(this.headers, that.headers);
+    }
 
-        public long targetRef()
-        {
-            return targetRef;
-        }
+    @Override
+    public String toString()
+    {
+        return String.format("[source=\"%s\", sourceRef=%d, target=\"%s\", targetRef=%d, headers=%s]",
+                source, sourceRef, target.name(), targetRef, headers);
+    }
 
-        public String reply()
-        {
-            return reply;
-        }
+    public static Predicate<Route> sourceMatches(
+        String source)
+    {
+        Objects.requireNonNull(source);
+        return r -> source.equals(r.source);
+    }
 
-        boolean equalTo(
-            Map<String, String> headers,
-            Target target,
-            long targetRef,
-            String reply)
-        {
-            return this.targetRef == targetRef &&
-                    Objects.equals(this.target, target) &&
-                    Objects.equals(this.reply, reply) &&
-                    Objects.equals(this.headers, headers);
-        }
+    public static Predicate<Route> sourceRefMatches(
+        long sourceRef)
+    {
+        return r -> sourceRef == r.sourceRef;
+    }
+
+    public static Predicate<Route> targetMatches(
+        String target)
+    {
+        Objects.requireNonNull(target);
+        return r -> target.equals(r.target.name());
+    }
+
+    public static Predicate<Route> targetRefMatches(
+        long targetRef)
+    {
+        return r -> targetRef == r.targetRef;
+    }
+
+    public static Predicate<Route> headersMatch(
+        Map<String, String> headers)
+    {
+        Objects.requireNonNull(headers);
+        return r -> headers.entrySet().containsAll(r.headers.entrySet());
     }
 }

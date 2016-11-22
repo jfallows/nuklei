@@ -43,7 +43,7 @@ read [0..4]
 
 write [0x00 0x00 0x00 0x02]
 write ${newInitialId}
-write [0x12]
+write [0x27]
 write "GET / INVALID\r\n"
 write "Host: localhost:8080\r\n"
 write "\r\n"

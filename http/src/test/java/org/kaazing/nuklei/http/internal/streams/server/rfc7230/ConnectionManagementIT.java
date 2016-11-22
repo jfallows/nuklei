@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kaazing.nuklei.http.internal.streams.rfc7230;
+package org.kaazing.nuklei.http.internal.streams.server.rfc7230;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.rules.RuleChain.outerRule;
@@ -29,30 +29,34 @@ import org.kaazing.nuklei.test.NukleusRule;
 
 public class ConnectionManagementIT
 {
-    private final K3poRule k3po = new K3poRule().setScriptRoot("org/kaazing/specification");
+    private final K3poRule k3po = new K3poRule()
+            .addScriptRoot("control", "org/kaazing/specification/nuklei/http/control")
+            .addScriptRoot("streams", "org/kaazing/specification/nuklei/http/streams/rfc7230/connection.management");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
     private final NukleusRule nukleus = new NukleusRule("http")
-            .directory("target/nukleus-itests")
-            .commandBufferCapacity(1024)
-            .responseBufferCapacity(1024)
-            .counterValuesBufferCapacity(1024)
-            .streams("http", "source")
-            .streams("target", "http#source")
-            .streams("http", "target")
-            .streams("reply", "http#target");
+        .directory("target/nukleus-itests")
+        .commandBufferCapacity(1024)
+        .responseBufferCapacity(1024)
+        .counterValuesBufferCapacity(1024)
+        .streams("http", "source")
+        .streams("target", "http#source")
+        .streams("reply", "http#target")
+        .streams("source", "http#source");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);
 
     @Test
     @Specification({
-        "nuklei/http/control/bind/controller",
-        "nuklei/http/control/route/controller",
-        "nuklei/http/streams/rfc7230/connection.management/payload.bytes.passthrough.verbatim.after.101.upgrade/source",
-        "nuklei/http/streams/rfc7230/connection.management/payload.bytes.passthrough.verbatim.after.101.upgrade/target" })
-    public void shouldPassthroughPayloadBytesAfter101Upgrade() throws Exception
+        "${control}/bind/server/initial/controller",
+        "${control}/bind/server/reply/controller",
+        "${control}/route/server/initial/controller",
+        "${control}/route/server/reply/controller",
+        "${streams}/response.status.101.with.upgrade/server/source",
+        "${streams}/response.status.101.with.upgrade/server/target" })
+    public void shouldSwitchProtocolAfterUpgrade() throws Exception
     {
         k3po.finish();
     }

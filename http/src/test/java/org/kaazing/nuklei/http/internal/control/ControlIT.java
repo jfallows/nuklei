@@ -30,7 +30,7 @@ import org.kaazing.nuklei.test.NukleusRule;
 public class ControlIT
 {
     private final K3poRule k3po = new K3poRule()
-        .setScriptRoot("org/kaazing/specification/nuklei/http/control");
+            .setScriptRoot("org/kaazing/specification/nuklei/http/control");
 
     private final TestRule timeout = new DisableOnDebug(new Timeout(5, SECONDS));
 
@@ -45,59 +45,197 @@ public class ControlIT
 
     @Test
     @Specification({
-        "bind/controller"
+        "bind/client/initial/controller"
     })
-    public void shouldBind() throws Exception
+    public void shouldBindClientInitial() throws Exception
     {
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "bind/controller",
-        "unbind/controller"
+        "bind/client/reply/controller"
     })
-    public void shouldUnbind() throws Exception
+    public void shouldBindClientReply() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("BOUND_INITIAL");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "bind/server/initial/controller"
+    })
+    public void shouldBindServerInitial() throws Exception
     {
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "prepare/controller"
+        "bind/server/reply/controller"
     })
-    public void shouldPrepare() throws Exception
+    public void shouldBindServerReply() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("BOUND_INITIAL");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "bind/server/initial/controller",
+        "unbind/initial/controller"
+    })
+    public void shouldUnbindServerInitial() throws Exception
     {
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "prepare/controller",
-        "unprepare/controller"
+        "bind/client/initial/controller",
+        "unbind/initial/controller"
     })
-    public void shouldUnprepare() throws Exception
+    public void shouldUnbindClientInitial() throws Exception
     {
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "bind/controller",
-        "route/controller"
+        "bind/server/reply/controller",
+        "unbind/reply/controller"
     })
-    public void shouldRoute() throws Exception
+    public void shouldUnbindServerReply() throws Exception
     {
+        k3po.start();
+        k3po.notifyBarrier("BOUND_INITIAL");
         k3po.finish();
     }
 
     @Test
     @Specification({
-        "bind/controller",
-        "route.headers/controller"
+        "bind/client/reply/controller",
+        "unbind/reply/controller"
     })
-    public void shouldRouteHeaders() throws Exception
+    public void shouldUnbindClientReply() throws Exception
     {
+        k3po.start();
+        k3po.notifyBarrier("BOUND_INITIAL");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "bind/server/initial/controller",
+        "route/server/initial/controller"
+    })
+    public void shouldRouteServerInitial() throws Exception
+    {
+        k3po.start();
+        k3po.awaitBarrier("BOUND_INITIAL");
+        k3po.notifyBarrier("BOUND_REPLY");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "bind/server/reply/controller",
+        "route/server/reply/controller"
+    })
+    public void shouldRouteServerReply() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("BOUND_INITIAL");
+        k3po.awaitBarrier("BOUND_REPLY");
+        k3po.notifyBarrier("ROUTED_INITIAL");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "bind/client/initial/controller",
+        "route/client/initial/controller"
+    })
+    public void shouldRouteClientInitial() throws Exception
+    {
+        k3po.start();
+        k3po.awaitBarrier("BOUND_INITIAL");
+        k3po.notifyBarrier("BOUND_REPLY");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "bind/client/reply/controller",
+        "route/client/reply/controller"
+    })
+    public void shouldRouteClientReply() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("BOUND_INITIAL");
+        k3po.awaitBarrier("BOUND_REPLY");
+        k3po.notifyBarrier("ROUTED_INITIAL");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "bind/server/initial/controller",
+        "route/server/initial/controller",
+        "unroute/server/initial/controller"
+    })
+    public void shouldUnrouteServerInitial() throws Exception
+    {
+        k3po.start();
+        k3po.awaitBarrier("BOUND_INITIAL");
+        k3po.notifyBarrier("BOUND_REPLY");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "bind/server/reply/controller",
+        "route/server/reply/controller",
+        "unroute/server/reply/controller"
+    })
+    public void shouldUnrouteServerReply() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("BOUND_INITIAL");
+        k3po.awaitBarrier("BOUND_REPLY");
+        k3po.notifyBarrier("ROUTED_INITIAL");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "bind/client/initial/controller",
+        "route/client/initial/controller",
+        "unroute/client/initial/controller"
+    })
+    public void shouldUnrouteClientInitial() throws Exception
+    {
+        k3po.start();
+        k3po.awaitBarrier("BOUND_INITIAL");
+        k3po.notifyBarrier("BOUND_REPLY");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "bind/client/reply/controller",
+        "route/client/reply/controller",
+        "unroute/client/reply/controller"
+    })
+    public void shouldUnrouteClientReply() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("BOUND_INITIAL");
+        k3po.awaitBarrier("BOUND_REPLY");
+        k3po.notifyBarrier("ROUTED_INITIAL");
         k3po.finish();
     }
 }

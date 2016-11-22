@@ -15,25 +15,31 @@
  */
 package org.kaazing.nuklei.http.internal.bench;
 
-import static java.util.Collections.emptyMap;
+import static java.nio.ByteBuffer.allocateDirect;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.STREAMS_BUFFER_CAPACITY_PROPERTY_NAME;
-import static org.agrona.IoUtil.createEmptyFile;
+import static org.kaazing.nuklei.http.internal.router.RouteKind.SERVER_INITIAL;
+import static org.kaazing.nuklei.http.internal.router.RouteKind.SERVER_REPLY;
 
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import java.util.Random;
-import java.util.concurrent.CompletableFuture;
 
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.MessageHandler;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.kaazing.nuklei.Configuration;
-import org.kaazing.nuklei.ControllerFactory;
-import org.kaazing.nuklei.Nukleus;
-import org.kaazing.nuklei.NukleusFactory;
 import org.kaazing.nuklei.http.internal.HttpController;
 import org.kaazing.nuklei.http.internal.HttpStreams;
-import org.openjdk.jmh.annotations.AuxCounters;
+import org.kaazing.nuklei.http.internal.types.OctetsFW;
+import org.kaazing.nuklei.http.internal.types.stream.BeginFW;
+import org.kaazing.nuklei.http.internal.types.stream.DataFW;
+import org.kaazing.nuklei.http.internal.types.stream.WindowFW;
+import org.kaazing.nuklei.reaktor.internal.Reaktor;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -49,10 +55,10 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Control;
-
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+import org.openjdk.jmh.runner.Runner;
+import org.openjdk.jmh.runner.RunnerException;
+import org.openjdk.jmh.runner.options.Options;
+import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.Throughput)
@@ -62,124 +68,189 @@ import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 @OutputTimeUnit(SECONDS)
 public class HttpServerBM
 {
-    private Nukleus nukleus;
-    private HttpController controller;
-    private HttpStreams requestStreams;
-    private HttpStreams responseStreams;
+    private final Configuration configuration;
+    private final Reaktor reaktor;
 
-    private MutableDirectBuffer sendBuffer;
-    private long streamId;
-
-    @Setup
-    public void init() throws Exception
     {
-        long streamsCapacity = 1024L * 1024L * 16L;
-
-        final Properties properties = new Properties();
+        Properties properties = new Properties();
         properties.setProperty(DIRECTORY_PROPERTY_NAME, "target/nukleus-benchmarks");
-        properties.setProperty(STREAMS_BUFFER_CAPACITY_PROPERTY_NAME, Long.toString(streamsCapacity));
-        final Configuration config = new Configuration(properties);
+        properties.setProperty(STREAMS_BUFFER_CAPACITY_PROPERTY_NAME, Long.toString(1024L * 1024L * 16L));
 
-        NukleusFactory nuklei = NukleusFactory.instantiate();
-        ControllerFactory controllers = ControllerFactory.instantiate();
+        configuration = new Configuration(properties);
+        reaktor = Reaktor.launch(configuration, n -> "ws".equals(n), HttpController.class::isAssignableFrom);
+    }
 
-        this.nukleus = nuklei.create("http", config);
-        this.controller = controllers.create(HttpController.class, config);
+    private final BeginFW beginRO = new BeginFW();
+    private final DataFW dataRO = new DataFW();
 
-        File source = new File("target/nukleus-benchmarks/source/streams/http").getAbsoluteFile();
-        createEmptyFile(source, streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH);
+    private final BeginFW.Builder beginRW = new BeginFW.Builder();
+    private final DataFW.Builder dataRW = new DataFW.Builder();
+    private final WindowFW.Builder windowRW = new WindowFW.Builder();
 
-        final CompletableFuture<Long> bind = controller.bind();
-        while (this.nukleus.process() != 0L || this.controller.process() != 0L)
-        {
-            // intentional
-        }
-        final Long sourceRef = bind.get();
+    private HttpStreams initialStreams;
+    private HttpStreams replyStreams;
 
-        File destination = new File("target/nukleus-benchmarks/target/streams/http").getAbsoluteFile();
-        createEmptyFile(destination, streamsCapacity + RingBufferDescriptor.TRAILER_LENGTH);
+    private MutableDirectBuffer throttleBuffer;
 
-        final long targetRef = (long) (Math.random() * Long.MAX_VALUE);
-        CompletableFuture<Void> route = controller.route("source", sourceRef, "target", targetRef, "source", emptyMap());
-        while (this.nukleus.process() != 0L || this.controller.process() != 0L)
-        {
-            // intentional
-        }
-        route.get();
+    private long initialRef;
+    private long replyRef;
 
-        this.requestStreams = controller.streams("source", "destination");
-        this.responseStreams = controller.streams("destination", "source");
+    private long targetRef;
+    private long sourceId;
+    private DataFW data;
 
-        // odd, positive, non-zero
+    private MessageHandler replyHandler;
+
+    @Setup(Level.Trial)
+    public void reinit() throws Exception
+    {
         final Random random = new Random();
-        this.streamId = (random.nextLong() & 0x3fffffffffffffffL) | 0x0000000000000001L;
+        final HttpController controller = reaktor.controller(HttpController.class);
 
-        this.requestStreams.begin(streamId, sourceRef);
-        while (this.nukleus.process() != 0L)
-        {
-            // intentional
-        }
-        while (this.responseStreams.read((msgTypeId, buffer, offset, length) -> {}) != 0)
-        {
-            // intentional
-        }
+        this.initialRef = controller.bind(SERVER_INITIAL.kind()).get();
+        this.replyRef = controller.bind(SERVER_REPLY.kind()).get();
+        this.targetRef = random.nextLong();
+        this.replyHandler = this::processBegin;
 
-        byte[] byteArray = "POST / HTTP/1.1\r\nHost: localhost:8080\r\nContent-Length:12\r\n\r\nHello, world"
-                                .getBytes(StandardCharsets.UTF_8);
-        this.sendBuffer = new UnsafeBuffer(byteArray);
+        controller.route("source", initialRef, "ws", replyRef, null).get();
+        controller.route("ws", replyRef, "target", targetRef, null).get();
+
+        this.initialStreams = controller.streams("source");
+        this.replyStreams = controller.streams("ws", "target");
+
+        this.sourceId = random.nextLong();
+
+        final AtomicBuffer writeBuffer = new UnsafeBuffer(new byte[256]);
+
+        BeginFW begin = beginRW.wrap(writeBuffer, 0, writeBuffer.capacity())
+                .streamId(sourceId)
+                .referenceId(initialRef)
+                .correlationId(random.nextLong())
+                .extension(e -> e.reset())
+                .build();
+
+        this.initialStreams.writeStreams(begin.typeId(), begin.buffer(), begin.offset(), begin.length());
+
+        String payload =
+                "POST / HTTP/1.1\r\n" +
+                "Host: localhost:8080\r\n" +
+                "Content-Length:12\r\n" +
+                "\r\n" +
+                "Hello, world";
+        byte[] sendArray = payload.getBytes(StandardCharsets.UTF_8);
+
+        this.data = dataRW.wrap(writeBuffer, 0, writeBuffer.capacity())
+                          .streamId(sourceId)
+                          .payload(p -> p.set(sendArray))
+                          .extension(e -> e.reset())
+                          .build();
+
+        this.throttleBuffer = new UnsafeBuffer(allocateDirect(SIZE_OF_LONG + SIZE_OF_INT));
     }
 
-    @TearDown
-    public void destroy() throws Exception
+    @TearDown(Level.Trial)
+    public void reset() throws Exception
     {
-        this.nukleus.close();
-        this.controller.close();
-        this.requestStreams.close();
-        this.responseStreams.close();
-    }
+        HttpController controller = reaktor.controller(HttpController.class);
 
-    @AuxCounters
-    @State(Scope.Thread)
-    public static class Counters
-    {
-        public int messages;
+        controller.unroute("source", initialRef, "http", replyRef, null).get();
+        controller.unroute("http", replyRef, "target", targetRef, null).get();
 
-        @Setup(Level.Iteration)
-        public void init()
-        {
-            messages = 0;
-        }
+        controller.unbind(initialRef).get();
+        controller.unbind(replyRef).get();
+
+        this.initialStreams.close();
+        this.initialStreams = null;
+
+        this.replyStreams.close();
+        this.replyStreams = null;
     }
 
     @Benchmark
-    @Group("asymmetric")
+    @Group("throughput")
     @GroupThreads(1)
     public void writer(Control control) throws Exception
     {
         while (!control.stopMeasurement &&
-               !requestStreams.data(streamId, sendBuffer, 0, sendBuffer.capacity()))
+               !initialStreams.writeStreams(data.typeId(), data.buffer(), 0, data.limit()))
+        {
+            Thread.yield();
+        }
+
+        while (!control.stopMeasurement &&
+                initialStreams.readThrottle((t, b, o, l) -> {}) == 0)
         {
             Thread.yield();
         }
     }
 
     @Benchmark
-    @Group("asymmetric")
-    @GroupThreads(1)
-    public void nukleus(Counters counters) throws Exception
-    {
-        counters.messages += this.nukleus.process();
-    }
-
-    @Benchmark
-    @Group("asymmetric")
+    @Group("throughput")
     @GroupThreads(1)
     public void reader(Control control) throws Exception
     {
         while (!control.stopMeasurement &&
-               requestStreams.read((msgTypeId, buffer, offset, length) -> {}) == 0)
+               replyStreams.readStreams(this::handleReply) == 0)
         {
             Thread.yield();
         }
+    }
+
+    private void handleReply(
+        int msgTypeId,
+        MutableDirectBuffer buffer,
+        int index,
+        int length)
+    {
+        replyHandler.onMessage(msgTypeId, buffer, index, length);
+    }
+
+    private void processBegin(
+        int msgTypeId,
+        MutableDirectBuffer buffer,
+        int index,
+        int length)
+    {
+        beginRO.wrap(buffer, index, index + length);
+        final long streamId = beginRO.streamId();
+        doWindow(streamId, 8192);
+
+        this.replyHandler = this::processData;
+    }
+
+    private void processData(
+        int msgTypeId,
+        MutableDirectBuffer buffer,
+        int index,
+        int length)
+    {
+        dataRO.wrap(buffer, index, index + length);
+        final long streamId = dataRO.streamId();
+        final OctetsFW payload = dataRO.payload();
+
+        final int update = payload.length();
+        doWindow(streamId, update);
+    }
+
+    private void doWindow(
+        final long streamId,
+        final int update)
+    {
+        final WindowFW window = windowRW.wrap(throttleBuffer, 0, throttleBuffer.capacity())
+                .streamId(streamId)
+                .update(update)
+                .build();
+
+        replyStreams.writeThrottle(window.typeId(), window.buffer(), window.offset(), window.length());
+    }
+
+    public static void main(String[] args) throws RunnerException
+    {
+        Options opt = new OptionsBuilder()
+                .include(HttpServerBM.class.getSimpleName())
+                .forks(0)
+                .build();
+
+        new Runner(opt).run();
     }
 }
