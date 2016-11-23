@@ -41,6 +41,7 @@ public class ArchitectureIT
         .responseBufferCapacity(1024)
         .counterValuesBufferCapacity(1024)
         .streams("http", "source")
+        .streams("rejectTarget", "http#source")
         .streams("target", "http#source")
         .streams("http", "replySource")
         .streams("replyTarget", "http#replySource");
@@ -66,7 +67,7 @@ public class ArchitectureIT
         "${control}/bind/server/initial/controller",
         "${control}/bind/server/reply/controller",
         "${control}/route/server/initial/controller",
-        "${control}/route/server/reply/controller",
+        "${control}/reject/server/initial/controller",
         "${streams}/request.header.host.missing/server/source" })
     public void shouldRejectRequestWhenHostHeaderMissing() throws Exception
     {
@@ -91,7 +92,7 @@ public class ArchitectureIT
         "${control}/bind/server/initial/controller",
         "${control}/bind/server/reply/controller",
         "${control}/route/server/initial/controller",
-        "${control}/route/server/reply/controller",
+        "${control}/reject/server/initial/controller",
         "${streams}/request.version.invalid/server/source" })
     public void shouldRejectRequestWhenVersionInvalid() throws Exception
     {
@@ -103,7 +104,7 @@ public class ArchitectureIT
         "${control}/bind/server/initial/controller",
         "${control}/bind/server/reply/controller",
         "${control}/route/server/initial/controller",
-        "${control}/route/server/reply/controller",
+        "${control}/reject/server/initial/controller",
         "${streams}/request.version.not.http.1.x/server/source" })
     public void shouldRejectRequestWhenVersionNotHttp1x() throws Exception
     {
@@ -115,7 +116,7 @@ public class ArchitectureIT
         "${control}/bind/server/initial/controller",
         "${control}/bind/server/reply/controller",
         "${control}/route/server/initial/controller",
-        "${control}/route/server/reply/controller",
+        "${control}/reject/server/initial/controller",
         "${streams}/request.uri.with.user.info/server/source", })
     public void shouldRejectRequestWithUserInfo() throws Exception
     {

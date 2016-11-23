@@ -133,6 +133,7 @@ write ${newSourceReplyId}
 write [0x13]
 write "HTTP/1.1 200 OK\r\n"
 write "\r\n"
+write [0x00]
 write flush
 
 read [0x40 0x00 0x00 0x02]

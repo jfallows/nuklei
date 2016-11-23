@@ -19,7 +19,7 @@ property newInitialRef ${nuklei:newReferenceId()} # external scope
 property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)}
 
 property sourceInitial ${nuklei.streams("http", "source")}
-property sourceReply ${nuklei.streams("reply", "http#source")}
+property sourceReply ${nuklei.streams("rejectTarget", "http#source")}
 
 property newInitialId ${nuklei:newStreamId()}
 property newCorrelationId ${nuklei:newCorrelationId()}
@@ -57,31 +57,33 @@ close
 closed
 
 
-connect await ROUTED_REPLY
+connect await REJECTED_INITIAL
         agrona://stream/bidirectional
         option reader ${agrona:oneToOneReader(sourceReply.buffer)}
         option writer ${agrona:oneToOneWriter(sourceReply.throttle)}
 connected
 
 read [0x00 0x00 0x00 0x01]
-read ([0..8]:replyId)
-read ([0..8]:replyRef)
+read ([0..8]:rejectId)
+read ([0..8]:rejectRef)
 read ${newCorrelationId}
 read [0x00]
 
 write [0x40 0x00 0x00 0x02]
-write ${replyId}
+write ${rejectId}
 write [0x00 0x02 0x00 0x00]
 write flush
 
 read [0x00 0x00 0x00 0x02]
-read ${replyId}
-read [0x1a]
-read "HTTP/1.1 400 Bad Request\r\n"
+read ${rejectId}
+read [0x2b]
+read "HTTP/1.1 505 HTTP Version Not Supported\r\n"
+read "\r\n"
+read [0x00]
 
 write [0x40 0x00 0x00 0x02]
-write ${replyId}
-write [0x1a 0x00 0x00 0x00]
+write ${rejectId}
+write [0x2b 0x00 0x00 0x00]
 write flush
 
 close

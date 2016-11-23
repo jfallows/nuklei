@@ -198,4 +198,28 @@ public class ControlIT
         k3po.notifyBarrier("ROUTED_REPLY");
         k3po.finish();
     }
+
+    @Test
+    @Specification({
+        "reject/server/initial/nukleus",
+        "reject/server/initial/controller"
+    })
+    public void shouldRejectServerInitial() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("ROUTED_INITIAL");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "unreject/server/initial/nukleus",
+        "unreject/server/initial/controller"
+    })
+    public void shouldUnrejectServerInitial() throws Exception
+    {
+        k3po.start();
+        k3po.notifyBarrier("REJECTED_INITIAL");
+        k3po.finish();
+    }
 }

@@ -33,7 +33,7 @@ read [0x00 0x00 0x00 0x01]
 read ([0..8]:targetInitialId)
 read ([0..8]:targetInitialRef)
 read ([0..8]:targetCorrelationId)
-read [0x6e]
+read [0x5f]
 read [0x00] [0x07] ":scheme" [0x04] "http"
 read [0x00] [0x07] ":method" [0x03] "GET"
 read [0x00] [0x05] ":path" [0x01] "/"
@@ -59,9 +59,6 @@ write [0x40 0x00 0x00 0x02]
 write ${targetInitialId}
 write [0x00 0x02 0x00 0x00]
 write flush
-
-close
-closed
 
 connect await ROUTED_REPLY
         agrona://stream/bidirectional
@@ -95,6 +92,3 @@ write flush
 read [0x40 0x00 0x00 0x02]
 read ${newReplyId}
 read [0..4]
-
-close
-closed

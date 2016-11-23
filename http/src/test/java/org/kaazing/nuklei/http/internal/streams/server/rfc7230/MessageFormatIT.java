@@ -41,9 +41,10 @@ public class MessageFormatIT
         .responseBufferCapacity(1024)
         .counterValuesBufferCapacity(1024)
         .streams("http", "source")
+        .streams("rejectTarget", "http#source")
         .streams("target", "http#source")
-        .streams("reply", "http#target")
-        .streams("source", "http#source");
+        .streams("http", "replySource")
+        .streams("replyTarget", "http#replySource");
 
     @Rule
     public final TestRule chain = outerRule(nukleus).around(k3po).around(timeout);

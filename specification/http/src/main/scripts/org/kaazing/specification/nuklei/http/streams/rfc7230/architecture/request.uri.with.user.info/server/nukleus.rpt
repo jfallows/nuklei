@@ -15,14 +15,14 @@
 #
 
 property newTargetInitialRef ${nuklei:newReferenceId()} # external scope
-property newSourceReplyRef ${nuklei:newReferenceId()} # external scope
+property newRejectTargetRef ${nuklei:newReferenceId()} # external scope
 
 property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)}
 
 property sourceInitial ${nuklei.streams("http", "source")}
-property sourceReply ${nuklei.streams("reply", "http#source")}
+property sourceReply ${nuklei.streams("rejectTarget", "http#source")}
 
-property newSourceReplyId ${nuklei:newStreamId()}
+property newRejectTargetId ${nuklei:newStreamId()}
 
 connect await ROUTED_INITIAL
         agrona://stream/bidirectional
@@ -43,7 +43,7 @@ write flush
 
 read [0x00 0x00 0x00 0x02]
 read ${initialId}
-read [0x12]
+write [0x39]
 read "GET http://username:password@localhost:8000/ HTTP/1.1\r\n"
 read "\r\n"
 
@@ -64,24 +64,26 @@ connect await REQUEST_DECODED
 connected
 
 write [0x00 0x00 0x00 0x01]
-write ${newSourceReplyId}
-write ${newSourceReplyRef}
+write ${newRejectTargetId}
+write ${newRejectTargetRef}
 write ${correlationId}
 write [0x00]
 write flush
 
 read [0x40 0x00 0x00 0x02]
-read ${newSourceReplyId}
+read ${newRejectTargetId}
 read [0..4]
 
 write [0x00 0x00 0x00 0x02]
-write ${newSourceReplyId}
-write [0x1a]
+write ${newRejectTargetId}
+write [0x1c]
 write "HTTP/1.1 400 Bad Request\r\n"
+write "\r\n"
+write [0x00]
 write flush
 
 read [0x40 0x00 0x00 0x02]
-read ${newSourceReplyId}
+read ${newRejectTargetId}
 read [0..4]
 
 close

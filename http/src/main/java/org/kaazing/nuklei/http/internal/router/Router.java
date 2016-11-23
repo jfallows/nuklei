@@ -133,6 +133,44 @@ public final class Router extends Nukleus.Composite
         }
     }
 
+    public void doReject(
+        long correlationId,
+        String sourceName,
+        long sourceRef,
+        String targetName,
+        long targetRef,
+        Map<String, String> headers)
+    {
+        if (referenceIds.contains(sourceRef) && RouteKind.match(sourceRef) == RouteKind.SERVER_INITIAL)
+        {
+            Routable routable = routables.computeIfAbsent(sourceName, this::newRoutable);
+            routable.doReject(correlationId, sourceRef, targetName, targetRef, headers);
+        }
+        else
+        {
+            conductor.onErrorResponse(correlationId);
+        }
+    }
+
+    public void doUnreject(
+        long correlationId,
+        String sourceName,
+        long sourceRef,
+        String targetName,
+        long targetRef,
+        Map<String, String> headers)
+    {
+        final Routable routable = routables.get(sourceName);
+        if (routable != null && referenceIds.contains(sourceRef) && RouteKind.match(sourceRef) == RouteKind.SERVER_INITIAL)
+        {
+            routable.doUnreject(correlationId, sourceRef, targetName, targetRef, headers);
+        }
+        else
+        {
+            conductor.onErrorResponse(correlationId);
+        }
+    }
+
     public void onReadable(
         Path sourcePath)
     {

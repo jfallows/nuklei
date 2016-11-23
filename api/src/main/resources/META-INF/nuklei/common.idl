@@ -72,6 +72,32 @@ scope common
         {
         }
 
+        struct Reject extends common::control::Frame [0x00000013]
+        {
+            string source;
+            int64 sourceRef;
+            string target;
+            int64 targetRef;
+            octets extension;
+        }
+
+        struct Rejected extends common::control::Frame [0x40000013]
+        {
+        }
+
+        struct Unreject extends common::control::Frame [0x00000014]
+        {
+            string source;
+            int64 sourceRef;
+            string target;
+            int64 targetRef;
+            octets extension;
+        }
+
+        struct Unrejected extends common::control::Frame [0x40000014]
+        {
+        }
+
 
         struct Connect extends common::control::Frame [0x00000021]
         {

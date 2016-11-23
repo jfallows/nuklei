@@ -28,9 +28,9 @@ connected
 read [0x00 0x00 0x00 0x12]
 read ([0..8]:correlationIdC12N)
 read [0x06] "source"
-read ([0..8]:initialRefC12N)
-read [0x03] "any"
-read ([0..8]:targetRefC12N)
+read ([0..8]:initialRefC11N)
+read [0x06] "target"
+read ([0..8]:targetRefC11N)
 read [0x15]
 read [0x00] [0x04] "host" [0x0e] "localhost:8080"
 

@@ -69,6 +69,7 @@ public final class Source implements Nukleus
         StreamsLayout layout,
         AtomicBuffer writeBuffer,
         LongFunction<List<Route>> supplyRoutes,
+        LongFunction<List<Route>> supplyRejects,
         LongSupplier supplyTargetId,
         LongLongConsumer correlateInitial,
         LongUnaryOperator correlateReply)
@@ -84,7 +85,7 @@ public final class Source implements Nukleus
 
         this.streamFactories = new EnumMap<>(RouteKind.class);
         this.streamFactories.put(SERVER_INITIAL,
-                new ServerInitialStreamFactory(this, supplyRoutes, supplyTargetId, correlateInitial)::newStream);
+                new ServerInitialStreamFactory(this, supplyRoutes, supplyRejects, supplyTargetId, correlateInitial)::newStream);
         this.streamFactories.put(SERVER_REPLY,
                 new ServerReplyStreamFactory(this, supplyRoutes, supplyTargetId, correlateReply)::newStream);
         this.streamFactories.put(CLIENT_INITIAL,

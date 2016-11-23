@@ -238,4 +238,31 @@ public class ControlIT
         k3po.notifyBarrier("ROUTED_INITIAL");
         k3po.finish();
     }
+
+    @Test
+    @Specification({
+        "bind/server/initial/controller",
+        "reject/server/initial/controller"
+    })
+    public void shouldRejectServerInitial() throws Exception
+    {
+        k3po.start();
+        k3po.awaitBarrier("BOUND_INITIAL");
+        k3po.notifyBarrier("ROUTED_INITIAL");
+        k3po.finish();
+    }
+
+    @Test
+    @Specification({
+        "bind/server/initial/controller",
+        "reject/server/initial/controller",
+        "unreject/server/initial/controller"
+    })
+    public void shouldUnrejectServerInitial() throws Exception
+    {
+        k3po.start();
+        k3po.awaitBarrier("BOUND_INITIAL");
+        k3po.notifyBarrier("ROUTED_INITIAL");
+        k3po.finish();
+    }
 }

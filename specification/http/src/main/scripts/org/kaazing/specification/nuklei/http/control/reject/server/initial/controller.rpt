@@ -15,33 +15,34 @@
 #
 
 property newInitialRef ${nuklei:newReferenceId()} # external scope
-property newTargetRef ${nuklei:newReferenceId()} # external scope
+property newRejectTargetRef ${nuklei:newReferenceId()} # external scope
 
-property nukleiC12C ${nuklei:directory("target/nukleus-itests").controlCapacity(1024, 1024)}
+property nukleiC13C ${nuklei:directory("target/nukleus-itests").controlCapacity(1024, 1024)}
 
-property controlC12C ${nukleiC12C.control("http")}
+property controlC13C ${nukleiC13C.control("http")}
+
+property correlationIdC13C ${nuklei:newCorrelationId()}
 
 connect await ROUTED_INITIAL
         agrona://stream/bidirectional
-        option reader ${agrona:broadcastReceiver(controlC12C.controller)}
-        option writer ${agrona:manyToOneWriter(controlC12C.nukleus)}
+        option reader ${agrona:broadcastReceiver(controlC13C.controller)}
+        option writer ${agrona:manyToOneWriter(controlC13C.nukleus)}
 
 connected
 
-write [0x00 0x00 0x00 0x12]
-write ${controlC12C.nextCorrelationId()}
+write [0x00 0x00 0x00 0x13]
+write ${correlationIdC13C}
 write [0x06] "source"
 write ${newInitialRef}
-write [0x06] "target"
-write ${newTargetRef}
-write [0x15]
-write [0x00] [0x04] "host" [0x0e] "localhost:8080"
+write [0x0c] "rejectTarget"
+write ${newRejectTargetRef}
+write [0x00]
 write flush
 
-read [0x40 0x00 0x00 0x12]
-read ${controlC12C.correlationId()}
+read [0x40 0x00 0x00 0x13]
+read ${correlationIdC13C}
 
 close
 closed
 
-read notify UNROUTED_INITIAL
+read notify REJECTED_INITIAL

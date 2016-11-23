@@ -47,9 +47,6 @@ write ${targetInitialId}
 write ${replyWindowUpdate}
 write flush
 
-close
-closed
-
 connect await ROUTED_REPLY
         agrona://stream/bidirectional
         option reader ${agrona:oneToOneReader(targetReply.throttle)}
@@ -71,10 +68,3 @@ read ${newReplyId}
 read ([0..4]:replyWindowUpdate)
 
 read notify HTTP_REQUEST_WINDOW_UPDATED
-
-read [0x40 0x00 0x00 0x02]
-read ${newReplyId}
-read [0..4]
-
-close
-closed

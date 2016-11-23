@@ -53,6 +53,7 @@ public final class Routable extends Nukleus.Composite
     private final Map<String, Source> sourcesByPartitionName;
     private final Map<String, Target> targetsByName;
     private final Long2ObjectHashMap<List<Route>> routesByRef;
+    private final Long2ObjectHashMap<List<Route>> rejectsByRef;
     private final LongLongConsumer correlateInitial;
     private final LongUnaryOperator correlateReply;
     private final LongSupplier supplyTargetId;
@@ -73,6 +74,7 @@ public final class Routable extends Nukleus.Composite
         this.sourcesByPartitionName = new HashMap<>();
         this.targetsByName = new HashMap<>();
         this.routesByRef = new Long2ObjectHashMap<>();
+        this.rejectsByRef = new Long2ObjectHashMap<>();
         this.supplyTargetId = context.counters().streamsTargeted()::increment;
     }
 
@@ -138,6 +140,56 @@ public final class Routable extends Nukleus.Composite
         }
     }
 
+    public void doReject(
+        long correlationId,
+        long sourceRef,
+        String targetName,
+        long targetRef,
+        Map<String, String> headers)
+    {
+        try
+        {
+            final Target target = targetsByName.computeIfAbsent(targetName, this::newTarget);
+            final Route newRoute = new Route(sourceName, sourceRef, target, targetRef, headers);
+
+            rejectsByRef.computeIfAbsent(sourceRef, this::newRoutes)
+                        .add(newRoute);
+
+            conductor.onRejectedResponse(correlationId);
+        }
+        catch (Exception ex)
+        {
+            conductor.onErrorResponse(correlationId);
+            LangUtil.rethrowUnchecked(ex);
+        }
+    }
+
+    public void doUnreject(
+        long correlationId,
+        long sourceRef,
+        String targetName,
+        long targetRef,
+        Map<String, String> headers)
+    {
+        final List<Route> rejects = supplyRejects(sourceRef);
+
+        final Predicate<Route> filter =
+                sourceMatches(sourceName)
+                 .and(sourceRefMatches(sourceRef))
+                 .and(targetMatches(targetName))
+                 .and(targetRefMatches(targetRef))
+                 .and(headersMatch(headers));
+
+        if (rejects.removeIf(filter))
+        {
+            conductor.onUnrejectedResponse(correlationId);
+        }
+        else
+        {
+            conductor.onErrorResponse(correlationId);
+        }
+    }
+
     private List<Route> newRoutes(
         long sourceRef)
     {
@@ -148,6 +200,12 @@ public final class Routable extends Nukleus.Composite
         long referenceId)
     {
         return routesByRef.getOrDefault(referenceId, EMPTY_ROUTES);
+    }
+
+    private List<Route> supplyRejects(
+        long referenceId)
+    {
+        return rejectsByRef.getOrDefault(referenceId, EMPTY_ROUTES);
     }
 
     private Source newSource(
@@ -161,7 +219,7 @@ public final class Routable extends Nukleus.Composite
             .build();
 
         return include(new Source(sourceName, partitionName, layout, writeBuffer,
-                                  this::supplyRoutes, supplyTargetId,
+                                  this::supplyRoutes, this::supplyRejects, supplyTargetId,
                                   correlateInitial, correlateReply));
     }
 

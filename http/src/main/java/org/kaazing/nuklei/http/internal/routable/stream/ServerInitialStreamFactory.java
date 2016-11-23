@@ -62,17 +62,20 @@ public final class ServerInitialStreamFactory
 
     private final Source source;
     private final LongFunction<List<Route>> supplyRoutes;
+    private final LongFunction<List<Route>> supplyRejects;
     private final LongSupplier supplyTargetId;
     private final LongLongConsumer correlateInitial;
 
     public ServerInitialStreamFactory(
         Source source,
         LongFunction<List<Route>> supplyRoutes,
+        LongFunction<List<Route>> supplyRejects,
         LongSupplier supplyTargetId,
         LongLongConsumer correlateInitial)
     {
         this.source = source;
         this.supplyRoutes = supplyRoutes;
+        this.supplyRejects = supplyRejects;
         this.supplyTargetId = supplyTargetId;
         this.correlateInitial = correlateInitial;
     }
@@ -200,21 +203,22 @@ public final class ServerInitialStreamFactory
         private void processInvalidRequest(
             String payloadChars)
         {
-            final Optional<Route> optional = resolveReplyTo(sourceRef);
+            final Optional<Route> optional = resolveReject(sourceRef);
 
             if (optional.isPresent())
             {
-                final Route route = optional.get();
-                final Target replyTo = route.target();
-                final long targetRef = route.targetRef();
+                final Route reject = optional.get();
+                final Target target = reject.target();
+                final long targetRef = reject.targetRef();
                 final long newTargetId = supplyTargetId.getAsLong();
 
                 // TODO: replace with connection pool (start)
-                replyTo.doBegin(targetRef, newTargetId, correlationId);
+                target.doBegin(newTargetId, targetRef, correlationId);
+                target.addThrottle(newTargetId, this::handleThrottle);
                 // TODO: replace with connection pool (end)
 
                 DirectBuffer payload = new UnsafeBuffer(payloadChars.getBytes(StandardCharsets.UTF_8));
-                replyTo.doData(newTargetId, payload, 0, payload.capacity());
+                target.doData(newTargetId, payload, 0, payload.capacity());
 
                 this.decoderState = this::decodeHttpBegin;
                 this.streamState = this::afterReplyOrReset;
@@ -416,10 +420,10 @@ public final class ServerInitialStreamFactory
             return routes.stream().filter(predicate).findFirst();
         }
 
-        private Optional<Route> resolveReplyTo(
+        private Optional<Route> resolveReject(
             long sourceRef)
         {
-            final List<Route> routes = supplyRoutes.apply(sourceRef);
+            final List<Route> routes = supplyRejects.apply(sourceRef);
             final Predicate<Route> predicate = sourceMatches(source.routableName());
 
             return routes.stream().filter(predicate).findFirst();
