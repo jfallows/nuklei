@@ -82,7 +82,7 @@ public class ServerIT
         k3po.start();
         k3po.awaitBarrier("ROUTED_REPLY");
 
-        try (final Socket socket = new Socket("127.0.0.1", 0x1f90))
+        try (Socket socket = new Socket("127.0.0.1", 0x1f90))
         {
             final InputStream in = socket.getInputStream();
 
@@ -107,7 +107,7 @@ public class ServerIT
         k3po.notifyBarrier("BOUND_REPLY");
         k3po.awaitBarrier("ROUTED_INITIAL");
 
-        try (final Socket socket = new Socket("127.0.0.1", 0x1f90))
+        try (Socket socket = new Socket("127.0.0.1", 0x1f90))
         {
             final OutputStream out = socket.getOutputStream();
 
@@ -130,7 +130,7 @@ public class ServerIT
         k3po.start();
         k3po.awaitBarrier("ROUTED_REPLY");
 
-        try (final Socket socket = new Socket("127.0.0.1", 0x1f90))
+        try (Socket socket = new Socket("127.0.0.1", 0x1f90))
         {
             final InputStream in = socket.getInputStream();
             final OutputStream out = socket.getOutputStream();
@@ -165,7 +165,7 @@ public class ServerIT
         k3po.start();
         k3po.awaitBarrier("ROUTED_REPLY");
 
-        try (final Socket socket = new Socket("127.0.0.1", 0x1f90))
+        try (Socket socket = new Socket("127.0.0.1", 0x1f90))
         {
             final InputStream in = socket.getInputStream();
 
@@ -191,7 +191,7 @@ public class ServerIT
         k3po.start();
         k3po.awaitBarrier("ROUTED_REPLY");
 
-        try (final Socket socket = new Socket("127.0.0.1", 0x1f90))
+        try (Socket socket = new Socket("127.0.0.1", 0x1f90))
         {
             socket.shutdownOutput();
 

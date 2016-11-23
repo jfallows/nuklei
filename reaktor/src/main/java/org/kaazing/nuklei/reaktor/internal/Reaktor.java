@@ -207,7 +207,7 @@ public final class Reaktor implements AutoCloseable
                 includes = name -> binarySearch(nuklei, name, comparator) >= 0;
             }
 
-            try (final Reaktor reaktor = Reaktor.launch(config, includes))
+            try (Reaktor reaktor = Reaktor.launch(config, includes))
             {
                 System.out.println("Started in " + directory);
 

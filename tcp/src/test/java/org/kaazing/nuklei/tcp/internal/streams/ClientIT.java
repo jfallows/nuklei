@@ -92,7 +92,7 @@ public class ClientIT
             k3po.start();
             k3po.awaitBarrier("ROUTED_REPLY");
 
-            try (final Socket socket = server.accept())
+            try (Socket socket = server.accept())
             {
                 final OutputStream out = socket.getOutputStream();
 
@@ -119,7 +119,7 @@ public class ClientIT
             k3po.start();
             k3po.awaitBarrier("ROUTED_REPLY");
 
-            try (final Socket socket = server.accept())
+            try (Socket socket = server.accept())
             {
                 final InputStream in = socket.getInputStream();
 
@@ -149,7 +149,7 @@ public class ClientIT
             k3po.start();
             k3po.awaitBarrier("ROUTED_REPLY");
 
-            try (final Socket socket = server.accept())
+            try (Socket socket = server.accept())
             {
                 final InputStream in = socket.getInputStream();
                 final OutputStream out = socket.getOutputStream();
@@ -188,7 +188,7 @@ public class ClientIT
             k3po.start();
             k3po.awaitBarrier("ROUTED_REPLY");
 
-            try (final Socket socket = server.accept())
+            try (Socket socket = server.accept())
             {
                 socket.shutdownOutput();
                 k3po.finish();
@@ -213,7 +213,7 @@ public class ClientIT
             k3po.start();
             k3po.awaitBarrier("ROUTED_REPLY");
 
-            try (final Socket socket = server.accept())
+            try (Socket socket = server.accept())
             {
                 final InputStream in = socket.getInputStream();
 
