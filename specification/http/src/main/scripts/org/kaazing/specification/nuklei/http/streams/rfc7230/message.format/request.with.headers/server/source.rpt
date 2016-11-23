@@ -19,7 +19,7 @@ property newInitialRef ${nuklei:newReferenceId()} # external scope
 property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)}
 
 property sourceInitial ${nuklei.streams("http", "source")}
-property sourceReply ${nuklei.streams("reply", "http#target")}
+property sourceReply ${nuklei.streams("replyTarget", "http#replySource")}
 
 property newInitialId ${nuklei:newStreamId()}
 property newCorrelationId ${nuklei:newCorrelationId()}
@@ -48,6 +48,7 @@ write "GET / HTTP/1.1\r\n"
 write "Host: localhost:8080\r\n"
 write "X-Custom: header\r\n"
 write "\r\n"
+write [0x00]
 write flush
 
 read [0x40 0x00 0x00 0x02]
@@ -80,6 +81,7 @@ read ${replyId}
 read [0x13]
 read "HTTP/1.1 200 OK\r\n"
 read "\r\n"
+read [0x00]
 
 write [0x40 0x00 0x00 0x02]
 write ${replyId}

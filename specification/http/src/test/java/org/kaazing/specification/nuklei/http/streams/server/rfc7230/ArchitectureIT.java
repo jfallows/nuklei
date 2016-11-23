@@ -69,7 +69,7 @@ public class ArchitectureIT
     {
         k3po.start();
         k3po.notifyBarrier("ROUTED_INITIAL");
-        k3po.notifyBarrier("ROUTED_REPLY");
+        k3po.notifyBarrier("REJECTED_INITIAL");
         k3po.finish();
     }
 
@@ -96,7 +96,7 @@ public class ArchitectureIT
     {
         k3po.start();
         k3po.notifyBarrier("ROUTED_INITIAL");
-        k3po.notifyBarrier("ROUTED_REPLY");
+        k3po.notifyBarrier("REJECTED_INITIAL");
         k3po.finish();
     }
 
@@ -109,7 +109,7 @@ public class ArchitectureIT
     {
         k3po.start();
         k3po.notifyBarrier("ROUTED_INITIAL");
-        k3po.notifyBarrier("ROUTED_REPLY");
+        k3po.notifyBarrier("REJECTED_INITIAL");
         k3po.finish();
     }
 
@@ -122,7 +122,7 @@ public class ArchitectureIT
     {
         k3po.start();
         k3po.notifyBarrier("ROUTED_INITIAL");
-        k3po.notifyBarrier("ROUTED_REPLY");
+        k3po.notifyBarrier("REJECTED_INITIAL");
         k3po.finish();
     }
 

@@ -19,7 +19,7 @@ property newReplyRef ${nuklei:newReferenceId()}
 property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)}
 
 property targetInitial ${nuklei.streams("target", "http#source")}
-property targetReply ${nuklei.streams("http", "target")}
+property targetReply ${nuklei.streams("http", "replySource")}
 
 property newReplyId ${nuklei:newStreamId()}
 
@@ -33,9 +33,9 @@ read [0x00 0x00 0x00 0x01]
 read ([0..8]:targetInitialId)
 read ([0..8]:targetInitialRef)
 read ([0..8]:targetCorrelationId)
-read [0x5c]
+read [0x4d]
 read [0x00] [0x07] ":scheme" [0x04] "http"
-read [0x00] [0x07] ":method" [0x03] "GET"
+read [0x00] [0x07] ":method" [0x04] "POST"
 read [0x00] [0x05] ":path" [0x01] "/"
 read [0x00] [0x04] "host" [0x0e] "localhost:8080"
 read [0x00] [0x0e] "content-length" [0x02] "11"
@@ -51,6 +51,7 @@ read [0x00 0x00 0x00 0x02]
 read ${targetInitialId}
 read [0x0b]
 read "hello world"
+read [0x00]
 
 write [0x40 0x00 0x00 0x02]
 write ${targetInitialId}

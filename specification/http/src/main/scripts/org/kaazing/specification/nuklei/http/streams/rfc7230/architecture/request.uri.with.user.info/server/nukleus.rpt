@@ -43,7 +43,7 @@ write flush
 
 read [0x00 0x00 0x00 0x02]
 read ${initialId}
-write [0x39]
+read [0x39]
 read "GET http://username:password@localhost:8000/ HTTP/1.1\r\n"
 read "\r\n"
 

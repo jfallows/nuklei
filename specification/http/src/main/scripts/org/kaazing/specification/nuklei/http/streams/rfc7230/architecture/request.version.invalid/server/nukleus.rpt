@@ -77,8 +77,10 @@ read [0..4]
 
 write [0x00 0x00 0x00 0x02]
 write ${newRejectTargetId}
-write [0x1a]
-write "HTTP/1.1 400 Bad Request\r\n"
+write [0x2b]
+write "HTTP/1.1 505 HTTP Version Not Supported\r\n"
+write "\r\n"
+write [0x00]
 write flush
 
 read [0x40 0x00 0x00 0x02]

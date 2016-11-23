@@ -18,7 +18,7 @@ property nukleiC13N ${nuklei:directory("target/nukleus-itests").controlCapacity(
 
 property controlC13N ${nukleiC13N.controlNew("http")}
 
-connect await BOUND_REPLY
+connect await ROUTED_INITIAL
         agrona://stream/bidirectional
         option reader ${agrona:manyToOneReader(controlC13N.nukleus)}
         option writer ${agrona:broadcastTransmitter(controlC13N.controller)}
