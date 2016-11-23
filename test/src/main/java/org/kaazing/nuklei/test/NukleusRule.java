@@ -17,7 +17,9 @@ package org.kaazing.nuklei.test;
 
 import static java.lang.String.valueOf;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.agrona.IoUtil.createEmptyFile;
 import static org.junit.Assert.assertEquals;
 import static org.kaazing.nuklei.Configuration.COMMAND_BUFFER_CAPACITY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.COUNTERS_BUFFER_CAPACITY_PROPERTY_NAME;
@@ -25,7 +27,6 @@ import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.RESPONSE_BUFFER_CAPACITY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.STREAMS_BUFFER_CAPACITY_PROPERTY_NAME;
 import static org.kaazing.nuklei.Configuration.THROTTLE_BUFFER_CAPACITY_PROPERTY_NAME;
-import static org.agrona.IoUtil.createEmptyFile;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -33,16 +34,15 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.agrona.concurrent.BackoffIdleStrategy;
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.kaazing.nuklei.Configuration;
 import org.kaazing.nuklei.Nukleus;
 import org.kaazing.nuklei.NukleusFactory;
-
-import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.SleepingIdleStrategy;
-import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 public final class NukleusRule implements TestRule
 {
@@ -147,7 +147,8 @@ public final class NukleusRule implements TestRule
                 Configuration config = configuration();
                 final AtomicBoolean finished = new AtomicBoolean();
                 final AtomicInteger errorCount = new AtomicInteger();
-                final IdleStrategy idler = new SleepingIdleStrategy(MILLISECONDS.toNanos(50L));
+                final IdleStrategy idler = new BackoffIdleStrategy(64, 64, NANOSECONDS.toNanos(64L), MICROSECONDS.toNanos(64L));
+
                 for (int i=0; i < names.length; i++)
                 {
                     nuklei[i] = factory.create(names[i], config);
