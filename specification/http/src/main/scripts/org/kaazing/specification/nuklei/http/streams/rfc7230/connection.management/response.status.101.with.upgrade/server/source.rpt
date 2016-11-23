@@ -19,7 +19,7 @@ property newInitialRef ${nuklei:newReferenceId()} # external scope
 property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)}
 
 property sourceInitial ${nuklei.streams("http", "source")}
-property sourceReply ${nuklei.streams("reply", "http#target")}
+property sourceReply ${nuklei.streams("replyTarget", "http#replySource")}
 
 property newInitialId ${nuklei:newStreamId()}
 property newCorrelationId ${nuklei:newCorrelationId()}
@@ -49,6 +49,7 @@ write "Host: localhost:8080\r\n"
 write "Connection: Upgrade\r\n"
 write "Upgrade: protocol\r\n"
 write "\r\n"
+write [0x00]
 write flush
 
 read [0x40 0x00 0x00 0x02]
@@ -59,6 +60,7 @@ write [0x00 0x00 0x00 0x02]
 write ${newInitialId}
 write [0x17]
 write "custom protocol payload"
+write [0x00]
 write flush
 
 read [0x40 0x00 0x00 0x02]
@@ -92,6 +94,7 @@ read [0x37]
 read "HTTP/1.1 101 Switching Protocols\r\n"
 read "Upgrade: protocol\r\n"
 read "\r\n"
+read [0x00]
 
 write [0x40 0x00 0x00 0x02]
 write ${replyId}
@@ -102,6 +105,7 @@ read [0x00 0x00 0x00 0x02]
 read ${replyId}
 read [0x17]
 read "custom protocol payload"
+read [0x00]
 
 write [0x40 0x00 0x00 0x02]
 write ${replyId}

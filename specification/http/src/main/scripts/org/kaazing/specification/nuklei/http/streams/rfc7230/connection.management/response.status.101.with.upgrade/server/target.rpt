@@ -19,7 +19,7 @@ property newReplyRef ${nuklei:newReferenceId()}
 property nuklei ${nuklei:directory("target/nukleus-itests").streamsCapacity(1024 * 1024, 64 * 1024)}
 
 property targetInitial ${nuklei.streams("target", "http#source")}
-property targetReply ${nuklei.streams("http", "target")}
+property targetReply ${nuklei.streams("http", "replySource")}
 
 property newReplyId ${nuklei:newStreamId()}
 
