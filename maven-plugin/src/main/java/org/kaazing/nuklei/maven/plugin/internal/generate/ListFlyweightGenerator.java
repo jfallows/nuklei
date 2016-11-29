@@ -215,6 +215,7 @@ public final class ListFlyweightGenerator extends ParameterizedTypeSpecGenerator
                     .addParameter(int.class, "offset")
                     .addParameter(int.class, "maxLimit")
                     .addStatement("super.wrap(buffer, offset, maxLimit)")
+                    .addStatement("super.limit(offset)")
                     .addStatement("itemRW.wrap(buffer, offset, maxLimit)")
                     .addStatement("return this")
                     .build();

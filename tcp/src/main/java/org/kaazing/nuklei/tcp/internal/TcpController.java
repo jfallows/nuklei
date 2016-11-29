@@ -224,6 +224,11 @@ public final class TcpController implements Controller
     private Flyweight.Builder.Visitor visitRouteEx(
         InetSocketAddress address)
     {
+        if (address == null)
+        {
+            return (buffer, offset, limit) -> routeExRW.wrap(buffer, offset, limit).build().length();
+        }
+
         return (buffer, offset, limit) ->
             routeExRW.wrap(buffer, offset, limit)
                      .address(a -> ipAddress(address, a::ipv4Address, a::ipv6Address))

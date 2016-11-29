@@ -15,96 +15,58 @@
  */
 package org.kaazing.nuklei.shell;
 
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.kaazing.nuklei.Configuration.DIRECTORY_PROPERTY_NAME;
-import static org.agrona.concurrent.AgentRunner.startOnThread;
 
 import java.net.InetSocketAddress;
 import java.util.Properties;
+import java.util.Scanner;
 
 import org.kaazing.nuklei.Configuration;
-import org.kaazing.nuklei.Controller;
-import org.kaazing.nuklei.ControllerFactory;
 import org.kaazing.nuklei.http.internal.HttpController;
+import org.kaazing.nuklei.reaktor.internal.Reaktor;
 import org.kaazing.nuklei.tcp.internal.TcpController;
 import org.kaazing.nuklei.ws.internal.WsController;
-
-import org.agrona.ErrorHandler;
-import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.AgentRunner;
-import org.agrona.concurrent.AtomicBuffer;
-import org.agrona.concurrent.status.AtomicCounter;
-import org.agrona.concurrent.CompositeAgent;
-import org.agrona.concurrent.status.CountersManager;
-import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.SleepingIdleStrategy;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public final class Main
 {
     public static void main(final String[] args) throws Exception
     {
-        IdleStrategy idleStrategy = new SleepingIdleStrategy(MILLISECONDS.toNanos(100));
-        ErrorHandler errorHandler = throwable -> throwable.printStackTrace(System.err);
-        AtomicBuffer labelsBuffer = new UnsafeBuffer(new byte[CountersManager.MAX_LABEL_LENGTH]);
-        AtomicBuffer countersBuffer = new UnsafeBuffer(new byte[CountersManager.COUNTER_LENGTH]);
-        CountersManager counters = new CountersManager(labelsBuffer, countersBuffer);
-        AtomicCounter errorCounter = counters.newCounter("errors");
-
         final Properties properties = new Properties();
         properties.setProperty(DIRECTORY_PROPERTY_NAME, "target/controller-example");
         Configuration config = new Configuration(properties);
 
-        ControllerFactory controllers = ControllerFactory.instantiate();
-        TcpController tcpctl = controllers.create(TcpController.class, config);
-        WsController wsctl = controllers.create(WsController.class, config);
-        HttpController httpctl = controllers.create(HttpController.class, config);
+        try (Reaktor reaktor = Reaktor.launch(config, n -> true, c -> true))
+        {
+            TcpController tcpctl = reaktor.controller(TcpController.class);
+            WsController wsctl = reaktor.controller(WsController.class);
+            HttpController httpctl = reaktor.controller(HttpController.class);
 
-        Agent control = new CompositeAgent(new CompositeAgent(new ControllerAgent(tcpctl), new ControllerAgent(httpctl)),
-                                           new ControllerAgent(wsctl));
+            long tcpInitRef = tcpctl.bind(0x21).get();
+            long httpInitRef = httpctl.bind(0x21).get();
+            long wsInitRef = wsctl.bind(0x21).get();
+            long wsReplyRef = wsctl.bind(0x22).get();
+            long httpReplyRef = httpctl.bind(0x22).get();
+            long tcpReplyRef = tcpctl.bind(0x22).get();
 
-        AgentRunner runner = new AgentRunner(idleStrategy, errorHandler, errorCounter, control);
+            tcpctl.route("any", tcpInitRef, "http", httpInitRef, new InetSocketAddress("localhost", 8080)).get();
+            httpctl.route("tcp", httpInitRef, "ws", wsInitRef, singletonMap(":path", "/")).get();
+            wsctl.route("http", wsInitRef, "ws", wsReplyRef, null).get();
+            wsctl.route("ws", wsReplyRef, "http", httpReplyRef, null).get();
+            httpctl.route("ws", httpReplyRef, "tcp", tcpReplyRef, emptyMap()).get();
+            tcpctl.route("http", tcpReplyRef, "any", 0, null);
 
-        startOnThread(runner);
+            System.out.println("echo bound to ws://localhost:8080/");
 
-        long tcpInitRef = tcpctl.bind(0x21).get();
-        long httpInitRef = httpctl.bind().get();
-        long wsInitRef = wsctl.bind().get();
-        long wsReplyRef = wsInitRef; // TODO: unidirectional binds
-
-        tcpctl.route("any", tcpInitRef, "http", httpInitRef, new InetSocketAddress("localhost", 8080)).get();
-        httpctl.route("tcp", httpInitRef, "ws", wsInitRef, "http", singletonMap(":path", "/")).get();
-        wsctl.route("http", wsInitRef, "ws", wsReplyRef, null).get();
-
-        // TODO: resource cleanup via try-with-resources
-        System.out.println("echo bound to ws://localhost:8080/");
-
-        runner.close();
+            try (Scanner scanner = new Scanner(System.in))
+            {
+                scanner.nextLine();
+            }
+        }
     }
 
     private Main()
     {
-    }
-
-    private static final class ControllerAgent implements Agent
-    {
-        private final Controller controller;
-
-        private ControllerAgent(Controller controller)
-        {
-            this.controller = controller;
-        }
-        @Override
-        public int doWork() throws Exception
-        {
-            return controller.process();
-        }
-
-        @Override
-        public String roleName()
-        {
-            return controller.kind().getSimpleName();
-        }
     }
 }

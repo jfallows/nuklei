@@ -129,10 +129,6 @@ public final class Source implements Nukleus
         int index,
         int length)
     {
-        if (length == 0)
-        {
-            return;
-        }
         frameRO.wrap(buffer, index, index + length);
 
         final long streamId = frameRO.streamId();
