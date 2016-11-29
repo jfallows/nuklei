@@ -16,6 +16,8 @@
 package org.kaazing.nuklei.http.internal.bench;
 
 import static java.nio.ByteBuffer.allocateDirect;
+import static java.nio.file.FileVisitOption.FOLLOW_LINKS;
+import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -24,10 +26,15 @@ import static org.kaazing.nuklei.Configuration.STREAMS_BUFFER_CAPACITY_PROPERTY_
 import static org.kaazing.nuklei.http.internal.router.RouteKind.SERVER_INITIAL;
 import static org.kaazing.nuklei.http.internal.router.RouteKind.SERVER_REPLY;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
 import java.util.Random;
 
+import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.MessageHandler;
@@ -77,7 +84,19 @@ public class HttpServerBM
         properties.setProperty(STREAMS_BUFFER_CAPACITY_PROPERTY_NAME, Long.toString(1024L * 1024L * 16L));
 
         configuration = new Configuration(properties);
-        reaktor = Reaktor.launch(configuration, n -> "ws".equals(n), HttpController.class::isAssignableFrom);
+
+        try
+        {
+            Files.walk(configuration.directory(), FOLLOW_LINKS)
+                 .map(Path::toFile)
+                 .forEach(File::delete);
+        }
+        catch (IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        reaktor = Reaktor.launch(configuration, n -> "http".equals(n), HttpController.class::isAssignableFrom);
     }
 
     private final BeginFW beginRO = new BeginFW();
@@ -112,11 +131,11 @@ public class HttpServerBM
         this.targetRef = random.nextLong();
         this.replyHandler = this::processBegin;
 
-        controller.route("source", initialRef, "ws", replyRef, null).get();
-        controller.route("ws", replyRef, "target", targetRef, null).get();
+        controller.route("source", initialRef, "http", replyRef, emptyMap()).get();
+        controller.route("http", replyRef, "target", targetRef, emptyMap()).get();
 
         this.initialStreams = controller.streams("source");
-        this.replyStreams = controller.streams("ws", "target");
+        this.replyStreams = controller.streams("http", "target");
 
         this.sourceId = random.nextLong();
 
