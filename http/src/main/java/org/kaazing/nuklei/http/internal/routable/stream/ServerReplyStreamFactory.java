@@ -85,17 +85,26 @@ public final class ServerReplyStreamFactory
     private final class ServerReplyStream
     {
         private MessageHandler streamState;
+        private MessageHandler throttleState;
 
         private long sourceId;
 
         private Target target;
         private long targetId;
 
-        private int throttleOffset;
+        private int window;
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s[source=%s, sourceId=%016x, window=%d, targetId=%016x]",
+                    getClass().getSimpleName(), source.routableName(), sourceId, window, targetId);
+        }
 
         private ServerReplyStream()
         {
             this.streamState = this::beforeBegin;
+            this.throttleState = this::throttleSkipNextWindow;
         }
 
         private void handleStream(
@@ -266,7 +275,7 @@ public final class ServerReplyStreamFactory
                     target.doData(targetId, payload, 0, payload.capacity());
 
                     this.streamState = this::afterBeginOrData;
-                    this.throttleOffset = -payload.capacity();
+                    this.throttleState = this::throttleNextThenSkipWindow;
                 }
                 else
                 {
@@ -284,11 +293,20 @@ public final class ServerReplyStreamFactory
             int index,
             int length)
         {
+
             dataRO.wrap(buffer, index, index + length);
 
             OctetsFW payload = dataRO.payload();
+            window -= payload.length() - 1;
 
-            target.doData(targetId, payload);
+            if (window < 0)
+            {
+                processUnexpected(buffer, index, length);
+            }
+            else
+            {
+                target.doData(targetId, payload);
+            }
         }
 
         private void processEnd(
@@ -304,6 +322,15 @@ public final class ServerReplyStreamFactory
 
         private void handleThrottle(
             int msgTypeId,
+            MutableDirectBuffer buffer,
+            int index,
+            int length)
+        {
+            throttleState.onMessage(msgTypeId, buffer, index, length);
+        }
+
+        private void throttleNextThenSkipWindow(
+            int msgTypeId,
             DirectBuffer buffer,
             int index,
             int length)
@@ -311,7 +338,7 @@ public final class ServerReplyStreamFactory
             switch (msgTypeId)
             {
             case WindowFW.TYPE_ID:
-                processWindow(buffer, index, length);
+                processNextThenSkipWindow(buffer, index, length);
                 break;
             case ResetFW.TYPE_ID:
                 processReset(buffer, index, length);
@@ -322,7 +349,57 @@ public final class ServerReplyStreamFactory
             }
         }
 
-        private void processWindow(
+        private void throttleSkipNextWindow(
+            int msgTypeId,
+            DirectBuffer buffer,
+            int index,
+            int length)
+        {
+            switch (msgTypeId)
+            {
+            case WindowFW.TYPE_ID:
+                processSkipNextWindow(buffer, index, length);
+                break;
+            case ResetFW.TYPE_ID:
+                processReset(buffer, index, length);
+                break;
+            default:
+                // ignore
+                break;
+            }
+        }
+
+        private void throttleNextWindow(
+            int msgTypeId,
+            DirectBuffer buffer,
+            int index,
+            int length)
+        {
+            switch (msgTypeId)
+            {
+            case WindowFW.TYPE_ID:
+                processNextWindow(buffer, index, length);
+                break;
+            case ResetFW.TYPE_ID:
+                processReset(buffer, index, length);
+                break;
+            default:
+                // ignore
+                break;
+            }
+        }
+
+        private void processSkipNextWindow(
+            DirectBuffer buffer,
+            int index,
+            int length)
+        {
+            windowRO.wrap(buffer, index, index + length);
+
+            throttleState = this::throttleNextWindow;
+        }
+
+        private void processNextWindow(
             DirectBuffer buffer,
             int index,
             int length)
@@ -331,18 +408,23 @@ public final class ServerReplyStreamFactory
 
             final int update = windowRO.update();
 
-            if (throttleOffset < 0)
-            {
-                throttleOffset += update;
-                if (throttleOffset > 0)
-                {
-                    source.doWindow(sourceId, throttleOffset);
-                }
-            }
-            else
-            {
-                source.doWindow(sourceId, update);
-            }
+            window += update;
+            source.doWindow(sourceId, update);
+        }
+
+        private void processNextThenSkipWindow(
+            DirectBuffer buffer,
+            int index,
+            int length)
+        {
+            windowRO.wrap(buffer, index, index + length);
+
+            final int update = windowRO.update();
+
+            window += update;
+            source.doWindow(sourceId, update);
+
+            throttleState = this::throttleSkipNextWindow;
         }
 
         private void processReset(

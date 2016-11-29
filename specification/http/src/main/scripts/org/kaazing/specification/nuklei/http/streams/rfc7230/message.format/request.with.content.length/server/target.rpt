@@ -58,6 +58,10 @@ write ${targetInitialId}
 write [0x0b 0x00 0x00 0x00]
 write flush
 
+read [0x00 0x00 0x00 0x03]
+read ${targetInitialId}
+read [0x00]
+
 close
 closed
 
@@ -80,6 +84,11 @@ write flush
 read [0x40 0x00 0x00 0x02]
 read ${newReplyId}
 read [0..4]
+
+write [0x00 0x00 0x00 0x03]
+write ${newReplyId}
+write [0x00]
+write flush
 
 close
 closed

@@ -15,6 +15,7 @@
  */
 package org.kaazing.nuklei.http.internal.routable.stream;
 
+import static java.lang.Integer.parseInt;
 import static org.kaazing.nuklei.http.internal.routable.Route.headersMatch;
 import static org.kaazing.nuklei.http.internal.routable.Route.sourceMatches;
 import static org.kaazing.nuklei.http.internal.util.BufferUtil.limitOfBytes;
@@ -88,6 +89,7 @@ public final class ServerInitialStreamFactory
     private final class ServerInitialStream
     {
         private MessageHandler streamState;
+        private MessageHandler throttleState;
         private DecoderState decoderState;
 
         private long sourceId;
@@ -96,10 +98,21 @@ public final class ServerInitialStreamFactory
         private long targetId;
         private long sourceRef;
         private long correlationId;
+        private int window;
+        private int contentRemaining;
+        private int sourceUpdateDeferred;
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s[source=%s, sourceId=%016x, window=%d, targetId=%016x]",
+                    getClass().getSimpleName(), source.routableName(), sourceId, window, targetId);
+        }
 
         private ServerInitialStream()
         {
-            this.streamState = this::beforeBegin;
+            this.streamState = this::streamBeforeBegin;
+            this.throttleState = this::throttleSkipNextWindow;
         }
 
         private void handleStream(
@@ -111,7 +124,7 @@ public final class ServerInitialStreamFactory
             streamState.onMessage(msgTypeId, buffer, index, length);
         }
 
-        private void beforeBegin(
+        private void streamBeforeBegin(
             int msgTypeId,
             DirectBuffer buffer,
             int index,
@@ -127,7 +140,7 @@ public final class ServerInitialStreamFactory
             }
         }
 
-        private void afterBeginOrData(
+        private void streamAfterBeginOrData(
             int msgTypeId,
             DirectBuffer buffer,
             int index,
@@ -147,7 +160,7 @@ public final class ServerInitialStreamFactory
             }
         }
 
-        private void afterEnd(
+        private void streamAfterEnd(
             int msgTypeId,
             DirectBuffer buffer,
             int index,
@@ -156,7 +169,7 @@ public final class ServerInitialStreamFactory
             processUnexpected(buffer, index, length);
         }
 
-        private void afterReplyOrReset(
+        private void streamAfterReplyOrReset(
             int msgTypeId,
             MutableDirectBuffer buffer,
             int index,
@@ -176,7 +189,7 @@ public final class ServerInitialStreamFactory
 
                 source.removeStream(streamId);
 
-                this.streamState = this::afterEnd;
+                this.streamState = this::streamAfterEnd;
             }
         }
 
@@ -186,7 +199,6 @@ public final class ServerInitialStreamFactory
             int length)
         {
             frameRO.wrap(buffer, index, index + length);
-
             long streamId = frameRO.streamId();
 
             processUnexpected(streamId);
@@ -197,10 +209,11 @@ public final class ServerInitialStreamFactory
         {
             source.doReset(streamId);
 
-            this.streamState = this::afterReplyOrReset;
+            this.streamState = this::streamAfterReplyOrReset;
         }
 
         private void processInvalidRequest(
+            int requestBytes,
             String payloadChars)
         {
             final Optional<Route> optional = resolveReject(sourceRef);
@@ -217,11 +230,14 @@ public final class ServerInitialStreamFactory
                 target.addThrottle(newTargetId, this::handleThrottle);
                 // TODO: replace with connection pool (end)
 
+                // TODO: acquire slab for response if targetWindow requires partial write
                 DirectBuffer payload = new UnsafeBuffer(payloadChars.getBytes(StandardCharsets.UTF_8));
                 target.doData(newTargetId, payload, 0, payload.capacity());
 
                 this.decoderState = this::decodeHttpBegin;
-                this.streamState = this::afterReplyOrReset;
+                this.streamState = this::streamAfterReplyOrReset;
+                this.throttleState = this::throttleSkipNextWindow;
+                this.sourceUpdateDeferred = requestBytes - payload.capacity();
             }
             else
             {
@@ -240,11 +256,13 @@ public final class ServerInitialStreamFactory
             this.sourceRef = beginRO.referenceId();
             this.correlationId = beginRO.correlationId();
 
-            this.streamState = this::afterBeginOrData;
+            this.streamState = this::streamAfterBeginOrData;
             this.decoderState = this::decodeHttpBegin;
 
-            // TODO: acquire slab size 8192
-            source.doWindow(sourceId, 8192);
+            // TODO: acquire slab for request decode of up to initial bytes
+            final int initial = 512;
+            this.window += initial;
+            source.doWindow(sourceId, initial);
         }
 
         private void processData(
@@ -255,12 +273,21 @@ public final class ServerInitialStreamFactory
             dataRO.wrap(buffer, index, index + length);
 
             final OctetsFW payload = dataRO.payload();
-            final int limit = payload.limit();
-
             int offset = payload.offset() + 1;
-            while (offset < limit)
+            window -= payload.length() - 1;
+
+            if (window < 0)
             {
-                offset = decoderState.decode(buffer, offset, limit);
+                processUnexpected(buffer, index, length);
+            }
+            else
+            {
+                final int limit = payload.limit();
+
+                while (offset < limit)
+                {
+                    offset = decoderState.decode(buffer, offset, limit);
+                }
             }
         }
 
@@ -297,7 +324,7 @@ public final class ServerInitialStreamFactory
             Matcher versionMatcher = versionPattern.matcher(start[2]);
             if (!versionMatcher.matches())
             {
-                processInvalidRequest("HTTP/1.1 505 HTTP Version Not Supported\r\n\r\n");
+                processInvalidRequest(endOfHeadersAt - offset, "HTTP/1.1 505 HTTP Version Not Supported\r\n\r\n");
             }
             else
             {
@@ -337,7 +364,7 @@ public final class ServerInitialStreamFactory
 
                 if (host == null || requestURI.getUserInfo() != null)
                 {
-                    processInvalidRequest("HTTP/1.1 400 Bad Request\r\n\r\n");
+                    processInvalidRequest(endOfHeadersAt - offset, "HTTP/1.1 400 Bad Request\r\n\r\n");
                 }
                 else
                 {
@@ -357,22 +384,37 @@ public final class ServerInitialStreamFactory
                                 hs -> headers.forEach((k, v) -> hs.item(i -> i.name(k).value(v))));
                         newTarget.addThrottle(newTargetId, this::handleThrottle);
 
-                        this.target = newTarget;
-                        this.targetId = newTargetId;
-                    }
-                    else
-                    {
-                        processInvalidRequest("HTTP/1.1 404 Not Found\r\n\r\n");
-                    }
+                        // TODO: wait for 101 first
+                        if (upgrade != null)
+                        {
+                            this.decoderState = this::decodeHttpDataAfterUpgrade;
+                        }
+                        else
+                        {
+                            this.contentRemaining = parseInt(headers.getOrDefault("content-length", "0"));
+                            this.decoderState = this::decodeHttpData;
+                        }
 
-                    // TODO: wait for 101 first
-                    if (upgrade != null)
-                    {
-                        decoderState = this::decodeHttpDataAfterUpgrade;
+
+                        if (upgrade != null || contentRemaining != 0)
+                        {
+                            // content stream
+                            this.target = newTarget;
+                            this.targetId = newTargetId;
+                            this.throttleState = this::throttleNextWindow;
+                            this.sourceUpdateDeferred = endOfHeadersAt - offset;
+                        }
+                        else
+                        {
+                            // no content
+                            newTarget.doHttpEnd(newTargetId);
+                            source.doWindow(sourceId, limit - offset);
+                            this.throttleState = this::throttleSkipNextWindow;
+                        }
                     }
                     else
                     {
-                        decoderState = this::decodeHttpData;
+                        processInvalidRequest(endOfHeadersAt - offset, "HTTP/1.1 404 Not Found\r\n\r\n");
                     }
                 }
             }
@@ -385,9 +427,27 @@ public final class ServerInitialStreamFactory
             int offset,
             int limit)
         {
+            final int length = Math.min(limit - offset, contentRemaining);
+
             // TODO: consider chunks
-            target.doHttpData(targetId, payload, offset, limit - offset);
-            return limit;
+            target.doHttpData(targetId, payload, offset, length);
+
+            contentRemaining -= length;
+
+            if (contentRemaining == 0)
+            {
+                target.doHttpEnd(targetId);
+
+                if (sourceUpdateDeferred != 0)
+                {
+                    source.doWindow(sourceId, sourceUpdateDeferred);
+                    sourceUpdateDeferred = 0;
+                }
+
+                this.throttleState = this::throttleSkipNextWindow;
+            }
+
+            return offset + length;
         }
 
         private int decodeHttpDataAfterUpgrade(
@@ -431,6 +491,15 @@ public final class ServerInitialStreamFactory
 
         private void handleThrottle(
             int msgTypeId,
+            MutableDirectBuffer buffer,
+            int index,
+            int length)
+        {
+            throttleState.onMessage(msgTypeId, buffer, index, length);
+        }
+
+        private void throttleSkipNextWindow(
+            int msgTypeId,
             DirectBuffer buffer,
             int index,
             int length)
@@ -438,7 +507,7 @@ public final class ServerInitialStreamFactory
             switch (msgTypeId)
             {
             case WindowFW.TYPE_ID:
-                processWindow(buffer, index, length);
+                processSkipNextWindow(buffer, index, length);
                 break;
             case ResetFW.TYPE_ID:
                 processReset(buffer, index, length);
@@ -449,17 +518,55 @@ public final class ServerInitialStreamFactory
             }
         }
 
-        private void processWindow(
+        private void throttleNextWindow(
+            int msgTypeId,
+            DirectBuffer buffer,
+            int index,
+            int length)
+        {
+            switch (msgTypeId)
+            {
+            case WindowFW.TYPE_ID:
+                processNextWindow(buffer, index, length);
+                break;
+            case ResetFW.TYPE_ID:
+                processReset(buffer, index, length);
+                break;
+            default:
+                // ignore
+                break;
+            }
+        }
+
+        private void processSkipNextWindow(
             DirectBuffer buffer,
             int index,
             int length)
         {
             windowRO.wrap(buffer, index, index + length);
 
-            final int update = windowRO.update();
+            throttleState = this::throttleNextWindow;
+        }
 
+        private void processNextWindow(
+            DirectBuffer buffer,
+            int index,
+            int length)
+        {
+            windowRO.wrap(buffer, index, index + length);
+
+            int update = windowRO.update();
+
+            if (sourceUpdateDeferred != 0)
+            {
+                update += sourceUpdateDeferred;
+                sourceUpdateDeferred = 0;
+            }
+
+            window += update;
             source.doWindow(sourceId, update + framing(update));
         }
+
 
         private void processReset(
             DirectBuffer buffer,
@@ -476,7 +583,7 @@ public final class ServerInitialStreamFactory
         int payloadSize)
     {
         // TODO: consider chunks
-        return payloadSize;
+        return 0;
     }
 
     @FunctionalInterface
